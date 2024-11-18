@@ -1,0 +1,28 @@
+# This is for managing an assignment project with perforce. Basically, I don't want to have my engine in
+# perforce.
+
+# Here you can specify files to ignore when adding files to the depot.
+#
+# The syntax for P4IGNORE files is not the same as Helix syntax. 
+# Instead, it is similar to that used by other versioning systems: 
+#
+# - Files are specified in local syntax
+# - a # character at the beginning of a line denotes a comment
+# - a ! character at the beginning of a line excludes the file specification
+# - a * wildcard matches substrings.
+#
+# For example:
+# 
+# foo.txt    Ignore files called "foo.txt"
+# *.exe      Ignore all executables
+# !bar.exe   Exclude bar.exe from being ignored
+#
+#
+.p4ignore.txt
+*.vcxproj
+*.h
+*.cpp
+*.ixx
+
+# Just ignore everything in this directory.
+*.*

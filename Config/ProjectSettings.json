@@ -1,0 +1,18 @@
+{
+    "ProjectName": "TestGame",
+    "StartupProject": "TestGame",
+    "Projects":
+    [
+        {
+            "Name": "Nessie",
+            "Group": "Engine",
+            "ProjectDir": "Source\\Engine\\"
+        },
+
+        {
+            "Name": "TestGame",
+            "Group": "Game",
+            "ProjectDir": "Source\\TestGame\\"
+        }
+    ]
+}
