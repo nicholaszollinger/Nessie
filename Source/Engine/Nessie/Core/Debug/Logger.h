@@ -132,19 +132,19 @@ namespace nes
             case LogSeverity::kWarning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [WARNING]", args..., "\n");
+                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [WARNING] ", args..., "\n");
             }
 
             case LogSeverity::kError:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [ERROR]", args..., "\n");
+                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [ERROR] ", args..., "\n");
             }
 
             case LogSeverity::kCritical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [CRITICAL]", args..., "\n");
+                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [CRITICAL] ", args..., "\n");
             }
         }
 

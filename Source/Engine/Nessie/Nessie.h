@@ -1,6 +1,4 @@
 #pragma once
-#if NESSIE_EXPORTS
-    #define NESSIE_API __declspec(dllexport)
-#else
-    #define NESSIE_API __declspec(dllimport)
-#endif
+// Main Header for the Nessie Engine.
+// [TODO]: Add all core headers here.
+#include "Core/Debug/Assert.h"
