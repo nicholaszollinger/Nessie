@@ -143,16 +143,16 @@ function m.CreateSolution()
         
         -- Solution-wide Debug config settings
         filter "configurations:Debug"
-            defines { "DEBUG" }
+            defines { "DEBUG", "NES_DEBUG" }
             symbols "On"
 
         -- Optimized, but with Logs
         filter "configurations:Test"
-            --defines { "NDEBUG" } -- Define the LOGGING macro.
+            defines { "NDEBUG", "NES_TEST" }
             optimize "On"
 
         filter "configurations:Release"
-            defines { "NDEBUG" }
+            defines { "NDEBUG" , "NES_RELEASE" }
             optimize "On"
 
         filter "platforms:x64"

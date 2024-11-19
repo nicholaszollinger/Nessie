@@ -1,9 +1,8 @@
 #pragma once
 // Assert.h
-
 #include "Log.h"
-#if NES_LOGGING_ENABLED
 
+#if NES_LOGGING_ENABLED
 //----------------------------------------------------------------------------------------------------
 ///		@brief : Assert that a condition is true. If not, log an error message and break.
 //----------------------------------------------------------------------------------------------------

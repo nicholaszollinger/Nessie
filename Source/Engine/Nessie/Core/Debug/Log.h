@@ -1,8 +1,8 @@
 #pragma once
 // Log.h
-
 #include "Logger.h"
 
+#undef NES_LOGGING_ENABLED
 #ifndef NES_RELEASE
 #define NES_LOGGING_ENABLED 1
 #else

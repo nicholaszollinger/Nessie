@@ -13,7 +13,6 @@ function p.ConfigureProject(projectDir)
     includedirs { "$(ProjectDir)Nessie\\", "$(ProjectDir)_ThirdParty\\yaml_cpp\\include\\", "$(ProjectDir)_ThirdParty\\BleachLeakDetector\\include\\" }
     warnings("Extra")
     links {}
-    libdirs { "$(ProjectDir)_ThirdParty\\yaml_cpp\\lib\\$(Configuration)\\" }
 
     defines { "YAML_CPP_STATIC_DEFINE" }
 
@@ -21,16 +20,16 @@ function p.ConfigureProject(projectDir)
         defines { "NES_PLATFORM_WINDOWS" };
 
     filter "configurations:Debug"
-        defines { "NES_DEBUG" , "NES_LOGGING_ENABLED"}
         links { "yaml-cppd.lib" }
+        libdirs { "$(ProjectDir)_ThirdParty\\yaml_cpp\\lib\\$(Configuration)\\" }
 
     filter "configurations:Release"
-        defines { "NES_RELEASE" }
         links { "yaml-cpp.lib" }
+        libdirs { "$(ProjectDir)_ThirdParty\\yaml_cpp\\lib\\$(Configuration)\\" }
 
     filter "configurations:Test"
-        defines { "NES_TEST" , "NES_LOGGING_ENABLED" }
         links { "yaml-cpp.lib" }
+        libdirs { "$(ProjectDir)_ThirdParty\\yaml_cpp\\lib\\Release\\" }
 
     filter {}
     

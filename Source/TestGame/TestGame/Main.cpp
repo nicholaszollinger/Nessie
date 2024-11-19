@@ -1,6 +1,10 @@
 // Main.cpp
 #include <Nessie.h>
 
+#if NES_LOGGING_ENABLED
+void Foo() {}
+#endif
+
 int main()
 {
     NES_INIT_LOGGER("/Log");

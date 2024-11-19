@@ -18,18 +18,6 @@ function p.ConfigureProject(projectDir)
 
     defines { "YAML_CPP_STATIC_DEFINE" }
 
-    filter "configurations:Debug"
-        --defines { "NES_LOGGING_ENABLED" }
-        --links { "yaml-cppd.lib" }
-
-    filter "configurations:Release"
-        --defines { }
-        --links { "yaml-cpp.lib" }
-
-    filter "configurations:Test"
-        --defines { "NES_LOGGING_ENABLED" }
-        --links { "yaml-cpp.lib" }
-
     filter {}
     
     files 
