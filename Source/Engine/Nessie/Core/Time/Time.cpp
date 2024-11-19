@@ -2,6 +2,7 @@
 
 #include "Time.h"
 #include <chrono>
+#include <format>
 
 namespace nes
 {
