@@ -1,6 +1,7 @@
 #pragma once
 // GenerationalID.hpp
 
+#include <string>
 #include "Core/Generic/Concepts.h"
 
 namespace nes
