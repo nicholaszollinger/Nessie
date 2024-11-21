@@ -1,6 +1,8 @@
 -- Project.lua
--- This module will be able to initialize a Project script with
--- all the necessary information.
+-- [TODO]: This isn't currently used. The plan is to have this handle some of the default
+--         setup for projects. However, I found it easier to just have the Project scripts themselves
+--         do the setup. I may just keep it that way.
+
 local utility = require("Utility");
 
 premake.modules.ProjectIntializer = {};

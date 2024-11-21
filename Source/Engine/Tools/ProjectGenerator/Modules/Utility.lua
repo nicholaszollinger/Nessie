@@ -24,21 +24,48 @@ end
 ---@param module table Module we are setting variables for.
 -----------------------------------------------------------------------------------
 function m.RegisterPrintFunctions(module)
+    -----------------------------------------------------------------------------------
+    --- Print out a message from this module. If module.DEBUG is false, nothing
+    --- will print.
+    ---@param ... any : Any additional arguments you want to print.
+    -----------------------------------------------------------------------------------
     module.PrintMessage = function(...)
         m.PrintMessage(module, ...);
         end;
 
+    -----------------------------------------------------------------------------------
+    --- Print out a info message, with the text brightened.
+    ---@param ... any : Any additional arguments you want to print.
+    -----------------------------------------------------------------------------------
     module.PrintInfo = function(...)
         m.PrintInfo(module, ...);
         end;
 
+    -----------------------------------------------------------------------------------
+    --- Print out a warning message.
+    ---@param ... any : Any additional arguments you want to print.
+    -----------------------------------------------------------------------------------
     module.PrintWarning = function(...)
         m.PrintWarning(module, ...);
         end;
-
+    
+    -----------------------------------------------------------------------------------
+    --- Print out an error message.
+    ---@param ... any : Any additional arguments you want to print.
+    -----------------------------------------------------------------------------------
     module.PrintError = function(...)
         m.PrintError(module, ...);
         end;
+
+    -----------------------------------------------------------------------------------
+    --- Print out a message from this module. If module.DEBUG is false, nothing
+    --- will print.
+    ---@param taskString string : String that describes the task.
+    ---@param success boolean : Whether the task failed or succeeded.
+    -----------------------------------------------------------------------------------
+    module.PrintSuccessOrFail = function(taskString, success)
+        m.PrintSuccessOrFail(module, taskString, success);
+        end
 end
 
 -----------------------------------------------------------------------------------
@@ -65,8 +92,30 @@ end
 function m.PrintInfo(module, ...)
     assert(module.moduleName);
 
-    term.setTextColor(term.green);
+    term.setTextColor(term.white);
     print("[INFO:" .. module.moduleName .. "] " ..  ...);
+    term.setTextColor(term.gray); -- Default Color
+end
+
+-----------------------------------------------------------------------------------
+--- Print a success or fail message in the format: "[ModuleName] taskString... successMsg"
+---@param module table Module we are printing info for.
+---@param taskString string Describes the Task.
+---@param success boolean Whether the task succeeded or failed.
+-----------------------------------------------------------------------------------
+function m.PrintSuccessOrFail(module, taskString, success)
+    assert(module.moduleName);
+    local successMsg;
+
+    if (success == true) then
+        term.setTextColor(term.green);
+        successMsg = "SUCCESS."
+    else
+        term.setTextColor(term.red);
+        successMsg = "FAILED."
+    end
+
+    print("[" .. module.moduleName .. "] " .. taskString .. " ... " .. successMsg);
     term.setTextColor(term.gray); -- Default Color
 end
 
@@ -157,7 +206,12 @@ function m.ReadIniFile(filename)
     return fileData;
 end
 
-
+--------------------------------------------------------------------------------------------------------------
+--- Get a Key Value pair from a string. The Key is on the left of the equal sign, the value is on the right. 
+---@param stringValue any
+---@return string|nil Key Name of the Key, or nil on failure.
+---@return any|nil Value Value or nil on failure. The value could be a table, boolean, integer, float.
+--------------------------------------------------------------------------------------------------------------
 function m.GetKeyValuePair(stringValue)
     local key = "";
     local value = nil;

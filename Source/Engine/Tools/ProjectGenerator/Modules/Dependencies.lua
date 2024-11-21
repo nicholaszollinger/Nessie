@@ -1,5 +1,9 @@
 -- Dependencies.lua
--- This module provides the interface for linking projects and libraries.
+-- [TODO] This isn't currently used. I am planning on using this to build a table of 
+--        Dependencies that a project can use to add what they need. The Project would give it a table
+--        of Dependency names, and if those dependencies are available, then they would be linked to the project.
+--        This includes projects and libraries.
+
 local utility = require("Utility")
 
 premake.modules.Dependencies = {};

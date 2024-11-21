@@ -1,8 +1,9 @@
--- Nessie Project Info.
+-- Nessie Project Configuration.
+-- Premake Documentation: https://premake.github.io/docs/
 
 local p = {};
 p.Name = "Nessie";
-p.Group = "Engine"; -- TODO: Get rid, this should be in the ProjectSettings.json.
+p.Group = "Engine"; -- [TODO] Groups should be handled by the ProjectSettings
 p.TargetType = "StaticLib"
 p.Language = "C++";
 p.CppDialect = "C++20";
@@ -45,11 +46,3 @@ function p.ConfigureProject(projectDir)
 end
 
 return p;
-
--- local p = {};
-
--- function p.Do()
-
--- end
-
--- return p;

@@ -1,6 +1,9 @@
 # Nessie
 This is a C++20 Game Engine that I am developing to learn and experiment with!
-The engine is *only* for Windows and is meant to be used in tandem with in Visual Studio.
+
+# Compatibility
+**Supported Platforms**: *Windows*
+**Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
 # How to Build
 Double click `GenerateSolution.bat` to generate the Visual Studio Projects and Solution!

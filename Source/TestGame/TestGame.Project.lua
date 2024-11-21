@@ -1,8 +1,10 @@
--- Test Game Project Info
+-- TestGame Project Configuration.
+-- Premake Documentation: https://premake.github.io/docs/
+
 local p = {};
 
 p.Name = "TestGame";
-p.Group = "Game"; -- TODO: Get rid, this should be in the ProjectSettings.json.
+p.Group = "Game"; -- [TODO] Groups should be handled by the ProjectSettings
 p.TargetType = "ConsoleApp";
 p.Language = "C++";
 p.CppDialect = "C++20";
@@ -21,7 +23,7 @@ function p.ConfigureProject(projectDir)
     filter {}
     
     files 
-    {
+	{
         projectDir .. "TestGame\\**.h",
         projectDir .. "TestGame\\**.cpp",
         projectDir .. "TestGame\\**.ixx",

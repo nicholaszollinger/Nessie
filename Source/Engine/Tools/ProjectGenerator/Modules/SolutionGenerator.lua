@@ -1,7 +1,7 @@
 --SolutionGenerator.lua
 
 local utility = require("Utility");
---local luaYAML, _ = require("LuaYaml");
+local ps = require("ProjectSettings");
 
 premake.modules.SolutionGenerator = {};
 local m = premake.modules.SolutionGenerator;
@@ -14,126 +14,37 @@ m.DefaultIntermediateDir = "$(SolutionDir)Intermediate/$(ProjectName)/$(Configur
 
 ---------------------------------------------------------------------------------------------------------
 --- Generate the Solution files for the project.
----@param solutionDirectory string Absolute directory path to create the solution in.
 ---@return boolean Success True if the solution was properly generated.
 ---------------------------------------------------------------------------------------------------------
-function m.GenerateSolution(solutionDirectory)
-    -- Load the ProjectSettings.ini:
-    if m.LoadProjectSettings(solutionDirectory) == false then
-        return false;
-    end
-
-    -- Cleanup old files.
-    if m.CleanSolutionFolder() == false then
+function m.GenerateSolution()
+    if (ps == nil or ps.IsValid == false) then
+        m.PrintError("Failed to generate Solution! ProjectSettings were invalid!");
         return false;
     end
 
     -- Create the new Solution
+    m.PrintInfo("Creating Solution...")
     m.CreateSolution();
+    m.AddPremakeProject();
 
     -- Add Projects
     if m.AddProjects() == false then
         return false;
     end
 
+    m.PrintSuccessOrFail("Solution Generation", true);
     return true;
-end
-
----------------------------------------------------------------------------------------------------------
---- Cleanup the .vs, Build, Intermediate, & Saved folders, and delete the old .sln file.
----------------------------------------------------------------------------------------------------------
-function m.CleanSolutionFolder()
-    m.PrintInfo("Cleaning up old solution files...");
-
-    local success = m.DeleteFolderIfExists(m.solutionDir .. ".vs/", ".vs");
-    if success == false then
-        return false;
-    end
-
-    success = m.DeleteFolderIfExists(m.solutionDir .. "Build/", "Build");
-    if success == false then
-        return false;
-    end
-
-    success = m.DeleteFolderIfExists(m.solutionDir .. "Intermediate/", "Intermediate");
-    if success == false then
-        return false;
-    end
-
-    success = m.DeleteFolderIfExists(m.solutionDir .. "Saved/", "Saved");
-    if success == false then
-        return false;
-    end
-
-    -- Delete the old .sln.
-    local existingSlnFilepath = m.solutionDir .. m.projectSettings["ProjectName"] .. ".sln";
-    if os.locate(existingSlnFilepath) ~= nil then
-        m.PrintMessage("Deleting old .sln...");
-        local errorMsg;
-        success, errorMsg = os.remove(existingSlnFilepath);
-        if success == false then
-            m.PrintError("Failed to delete old Solution File! Error msg: " .. errorMsg);
-        end
-    end
-
-    return true;
-end
-
----------------------------------------------------------------------------------------------------------
---- Sets the m.projectName variable.
----@param solutionDirectory string SolutionDir.
----@return boolean Success False if we failed to load the project settings!
----------------------------------------------------------------------------------------------------------
-function m.LoadProjectSettings(solutionDirectory)
-    -- Get ProjectName field from the ProjectSettings.yaml file.
-    m.solutionDir = solutionDirectory;
-    m.PrintInfo("Loading ProjectSettings...");
-    local projectSettingsPath = m.solutionDir .. "Config\\ProjectSettings.json";
-    if os.locate(projectSettingsPath) == nil then
-        m.PrintError("Failed to find ProjectSettings file!");
-        return false;
-    end
-
-    local errorMsg;
-    local jsonData = utility.ReadFile(projectSettingsPath);
-    m.projectSettings, errorMsg = json.decode(jsonData);
-    if (m.projectSettings == nil) then
-        m.PrintError("Failed to load ProjectSettings file! Error: " .. errorMsg);
-        return false;
-    end
-
-    return true;
-end
-
----------------------------------------------------------------------------------------------------------
---- Delete a folder and its contents, if it exists.
----------------------------------------------------------------------------------------------------------
-function m.DeleteFolderIfExists(folderPath, name)
-    local success = true;
-    local errorMsg;
-    local dirs = os.matchdirs(folderPath);
-
-    for _, match in pairs(dirs) do
-        m.PrintMessage("Deleting ".. name .. " folder...");
-        success, errorMsg = os.rmdir(match);
-        if success == false then
-            m.PrintError("Failed to delete " .. name .. " folder! Error msg: " .. errorMsg);
-        end
-    end
-
-    return success;
 end
 
 ---------------------------------------------------------------------------------------------------------
 --- Create the new Visual Studio Solution.
 ---------------------------------------------------------------------------------------------------------
 function m.CreateSolution()
-    m.PrintInfo("Creating Solution...")
-    workspace (m.projectSettings["ProjectName"])
+    workspace (ps.ProjectSettings["ProjectName"])
         configurations { "Debug", "Test", "Release" }
-        location(m.solutionDir)
+        location(ps.SolutionDir)
         platforms {"x64"}
-        startproject(m.projectSettings["ProjectName"]);
+        startproject(ps.ProjectSettings["StartupProject"]);
         staticruntime "Off"
         flags { "MultiProcessorCompile" }
 
@@ -169,35 +80,65 @@ function m.CreateSolution()
 end
 
 ---------------------------------------------------------------------------------------------------------
----Iterate through the Projects array and attempt to run the premake5.lua file in the ProjectDir.
+--- Add a Premake Project to the Solution that can regenerate the projects directly from VS.
 ---------------------------------------------------------------------------------------------------------
-function m.AddProjects()
-    local projectsArray = m.projectSettings["Projects"];
+function m.AddPremakeProject()
+    local premakeProjectDir = ps.SolutionDir .. "Source/Engine/Tools/ProjectGenerator/"
+    group("_Premake")
+        project ("Regenerate")
+            location(premakeProjectDir)
+            targetdir(m.DefaultOutDir)
+            objdir(m.DefaultIntermediateDir)
+            kind "Makefile"
+            buildcommands { 'call Premake\\premake5.exe --file="Actions\\RegenerateProjects.lua" %{_ACTION} %{table.concat(_ARGS, " ")}'  }
+            files { premakeProjectDir .. "Actions/RegenerateProjects.lua" }
+end
+
+---------------------------------------------------------------------------------------------------------
+---Iterate through the Projects array and attempt to run the premake5.lua file in the ProjectDir.
+---comment
+---@param guidTable table|nil Optional table of guids in the event that we are regenerating the projects.
+---@return boolean Success False if there was an error.
+---------------------------------------------------------------------------------------------------------
+function m.AddProjects(guidTable)
+    local projectsArray = ps.ProjectSettings["Projects"];
 
     for i = 1, #projectsArray do
         local projectName = projectsArray[i].Name;
-        local projectDir = m.solutionDir .. projectsArray[i].ProjectDir;
+        local projectDir = ps.SolutionDir .. projectsArray[i].ProjectDir;
         
         m.PrintInfo("Loading " .. projectName);
+
+        local buildScript = projectDir .. projectName .. ".Project.lua";
+        local guid = nil;
+
+        if guidTable ~= nil then
+            assert(type(guidTable) == "table");
+            guid = guidTable[projectName];
+        end
 
         -- Ensure the directory exists.
         if (os.isdir(projectDir) == false) then
             os.mkdir(projectDir);
-            -- Generate the premake5.lua file...
-        
-        elseif (os.isfile(projectDir .. "premake5.lua") == false) then
+            -- [TODO] Generate the "ProjectName.Project.lua" file?
+                
+        elseif (os.isfile(buildScript) == false) then
             m.PrintError("Failed to find '" .. projectName .. "' premake file! Skipping...");
-            -- Generate the premake5.lua file.
+            -- [TODO] Generate the "ProjectName.Project.lua" file?
 
         else
-            m.PrintMessage("Running premake5 script...");
-            local projectData = include(projectDir);
+            m.PrintMessage("Running project script...");
+            local projectData = dofile(buildScript);
 
             local projectFilepath = projectDir .. projectName .. ".vcxproj";
             if (os.isfile(projectFilepath) == true) then
                 m.AddExistingProject(projectData, projectDir, projectFilepath);
             else
-                m.CreateNewProject(projectData, projectDir);
+                m.CreateNewProject(projectData, projectDir, guid);
+                filter {}
+
+                -- Add the Build Script itself to the project, for ease of use.
+                files { buildScript }
             end
         end
     end
@@ -213,7 +154,8 @@ end
 ---@param projectFilepath string Path to to the Project File (.vcxproj)
 ---------------------------------------------------------------------------------------------------------
 function m.AddExistingProject(projectData, projectDir, projectFilepath)
-
+    filter {}
+    
     group(projectData.Group)
         externalproject(projectData.Name)
         location(projectDir)
@@ -230,13 +172,17 @@ end
 ---Create a new project in the Source Folder.
 ---@param projectData table Table of information about the Project.
 ---@param projectDir string Name of the Project.
+---@param guid string|nil Optional guid value to set for the project.
 ---------------------------------------------------------------------------------------------------------
-function m.CreateNewProject(projectData, projectDir)
+function m.CreateNewProject(projectData, projectDir, guid)
     filter {}
-
     group(projectData.Group)
         project(projectData.Name)
             location(projectDir)
+            if (guid ~= nil) then
+                uuid(guid)
+            end
+
             kind(projectData.TargetType)
             language(projectData.Language)
             if (projectData.Language == "C++") then
