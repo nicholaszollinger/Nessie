@@ -3,6 +3,7 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 
 # Compatibility
 **Supported Platforms**: *Windows*
+
 **Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
 # How to Build
