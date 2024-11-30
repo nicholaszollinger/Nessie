@@ -1,7 +1,7 @@
 // GenerationalID.cpp
 
 #include "GenerationalID.h"
-#include "Core/Debug/Log.h"
+#include "Core/Log/Log.h"
 
 namespace nes
 {

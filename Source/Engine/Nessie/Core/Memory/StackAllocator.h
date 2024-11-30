@@ -1,7 +1,7 @@
 #pragma once
 // StackAllocator.h
 
-#include "Core/Debug/Assert.h"
+#include "Debug/Assert.h"
 
 namespace nes
 {

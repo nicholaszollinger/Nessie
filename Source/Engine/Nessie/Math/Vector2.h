@@ -1,7 +1,7 @@
 #pragma once
 // Vector2.h
 #include "Generic.h"
-#include "Core/Debug/Assert.h"
+#include "Debug/Assert.h"
 #include "Core/Generic/Concepts.h"
 
 namespace nes

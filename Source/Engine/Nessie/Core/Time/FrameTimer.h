@@ -1,6 +1,6 @@
 #pragma once
 // FrameTimer.h
-#include "HighPrecisionTimer.h"
+#include "Timer.h"
 
 namespace nes
 {
@@ -10,7 +10,7 @@ namespace nes
     //-----------------------------------------------------------------------------------------------------------------------------
     class FrameTimer
     {
-        HighPrecisionTimer m_timer;
+        Timer m_timer;
 
     public:
         FrameTimer();

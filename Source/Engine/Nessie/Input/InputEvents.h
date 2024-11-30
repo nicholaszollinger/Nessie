@@ -1,0 +1,82 @@
+#pragma once
+// InputEvents.h
+#include "Input/InputCodes.h"
+#include "Core/Events/Event.h"
+#include "Math/Vector2.h"
+
+namespace nes
+{
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Keyboard Event that contains the KeyCode, KeyAction, and Modifiers.
+    //----------------------------------------------------------------------------------------------------
+    class KeyEvent final : public Event
+    {
+        NES_EVENT(KeyEvent)
+
+        KeyCode m_keyCode = KeyCode::Unknown;
+        KeyAction m_action = KeyAction::Unknown;
+        Modifiers m_modifiers = Modifiers{};
+
+    public:
+        KeyEvent(KeyCode code, KeyAction action, Modifiers modifiers);
+
+        [[nodiscard]] KeyCode GetKeyCode() const        { return m_keyCode; }
+        [[nodiscard]] KeyAction GetAction() const       { return m_action; }
+        [[nodiscard]] Modifiers GetModifiers() const    { return m_modifiers; }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Event called when a Mouse Button is activated.
+    //----------------------------------------------------------------------------------------------------
+    class MouseButtonEvent final : public Event
+    {
+        NES_EVENT(MouseButtonEvent)
+
+        MouseButton m_button = MouseButton::Unknown;
+        MouseAction m_action = MouseAction::Unknown;
+        Modifiers m_modifiers = Modifiers{};
+        Vec2 m_position;
+
+    public:
+        MouseButtonEvent(const MouseButton button, const MouseAction action, const Modifiers modifiers, const float xPos, const float yPos);
+
+        [[nodiscard]] MouseButton GetButton() const     { return m_button; }
+        [[nodiscard]] MouseAction GetAction() const     { return m_action; }
+        [[nodiscard]] Modifiers GetModifiers() const    { return m_modifiers; }
+        [[nodiscard]] Vec2 GetPosition() const          { return m_position; }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Event called when the Mouse is moved.
+    //----------------------------------------------------------------------------------------------------
+    class MouseMoveEvent final : public Event
+    {
+        NES_EVENT(MouseMoveEvent)
+
+        Vec2 m_position{};
+        Vec2 m_delta{};
+
+    public:
+        MouseMoveEvent(const float xPos, const float yPos, const float xDelta, const float yDelta);
+
+        [[nodiscard]] Vec2 GetPosition() const { return m_position; }
+        [[nodiscard]] Vec2 GetDelta() const { return m_delta; }
+    };
+
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Event called when the Mouse Wheel is scrolled.
+    //----------------------------------------------------------------------------------------------------
+    class MouseScrollEvent final : public Event
+    {
+        NES_EVENT(MouseScrollEvent)
+
+        Vec2 m_delta{};
+
+    public:
+        MouseScrollEvent(const float xDelta, const float yDelta);
+
+        [[nodiscard]] float GetDeltaX() const { return m_delta.x; }
+        [[nodiscard]] float GetDeltaY() const { return m_delta.y; }
+    };
+}

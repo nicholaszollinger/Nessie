@@ -1,0 +1,20 @@
+# Log Categories Configuration File
+
+# Defining Log Categories:
+#     - To define a new Log Category, write '[NewLogCategoryName]: [LogOutputCode]'
+#     - Log Output Level codes:
+#         0 = "kNone"    This will disable the log category.
+#         1 = "kDisplay" This will only display the log to the LogTarget (Somewhere the user can see like the console window, for example)
+#         2 = "kFile"    This will only write the log to a file output.
+#         3 = "kAll"     This logs to BOTH LogTarget and write to a file.
+#       
+#     - EXAMPLES:
+#         Application: 0  <- Logs with the 'Application' category will NOT be posted.
+#         Window: 1       <- Logs with the 'Window' category will be displayed to the LogTarget.
+#         Entity: 2       <- Logs with the 'Entity' category won't be displayed to the LogTarget, but will written to a file. 
+#         Graphics: 3     <- Logs with the 'Graphics' category will be displayed AND written to a file.
+
+Platform: 3
+Application: 2.0
+Window: 3			# This is a thing.
+	Height: [800, 600]

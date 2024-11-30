@@ -2,7 +2,7 @@
 // RefCounter.h
 #include <BleachNew.h>
 #include <cstdint>
-#include "Core/Debug/CheckedCast.h"
+#include "Debug/CheckedCast.h"
 
 namespace nes::internal
 {

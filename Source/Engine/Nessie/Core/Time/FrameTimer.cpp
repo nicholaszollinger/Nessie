@@ -22,8 +22,7 @@ namespace nes
     //-----------------------------------------------------------------------------------------------------------------------------
     double FrameTimer::NewFrame()
     {
-        const double deltaTimeMs = m_timer.GetElapsedTime();
-        m_timer.Start();
+        const double deltaTimeMs = m_timer.Tick();
         return deltaTimeMs;
     }
 }
