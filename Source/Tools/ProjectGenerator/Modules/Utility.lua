@@ -1,4 +1,6 @@
 --Utility.lua
+require("BuildEnabledCommand");
+
 premake.modules.Utility = {};
 local m = premake.modules.Utility;
 

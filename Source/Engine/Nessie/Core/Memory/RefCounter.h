@@ -103,7 +103,7 @@ namespace nes::internal
             DestroyObject();
         }
     }
-
+    
     template <typename Type>
     void RefCounter<Type>::DestroyObject()
     {

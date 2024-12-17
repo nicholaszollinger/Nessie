@@ -9,6 +9,7 @@ p.Name = "ProjectGenerator";
 function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
     kind "Makefile"
+    buildenabled "Off"
 
     local premakeDir = projectDir .. "Premake/"
     local absoluteSolutionDir = path.getabsolute(projectCore.SolutionDir) .. "/";    

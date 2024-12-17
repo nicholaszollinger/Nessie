@@ -12,10 +12,12 @@ __pycache__/
 
 # JetBrains Rider
 *.sln.iml
+.idea/
 
 # Perforce
 #.p4ignore.txt
 
+# Visual Studio
 .vs/
 *.sln
 *.vcxproj

@@ -11,6 +11,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     kind "ConsoleApp"
 
     dependencyInjector.Link("Nessie");
+    dependencyInjector.Include("BleachLeakDetector");
 
     defines { "YAML_CPP_STATIC_DEFINE" }
 

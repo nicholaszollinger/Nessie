@@ -31,7 +31,8 @@ function m.Init()
 end
 
 -----------------------------------------------------------------------------------
----Create and register a new Dependency.
+---Link a registered Dependency. This will call Link and Include in the Dependency's 
+---Build script.
 ---@param targetName string Name of the Dependency
 ---@return boolean Success Whether the dependency was successfully linked.
 -----------------------------------------------------------------------------------
@@ -41,13 +42,13 @@ function m.Link(targetName)
 
         -- Ensure Include function
         if (target.Include == nil) then
-            m.PrintError("Failed to Link Target: '" .. targetName .. "'! No Include() function found!");
+            m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Include() function found!");
             return false;
         end
 
         -- Ensure Link function
         if (target.Link == nil) then
-            m.PrintError("Failed to Link Target: '" .. targetName .. "'! No Link() function found!");
+            m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Link() function found!");
             return false;
         end
 
@@ -62,7 +63,32 @@ function m.Link(targetName)
         return true;
     end
 
-    m.PrintError("Failed to Link Target: '" .. targetName .. "'! No Target with that name was found!");
+    m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Dependency with that name was found!");
+    return false;
+end
+
+-----------------------------------------------------------------------------------
+---Include the files from a registered Dependency. This will call the Include() from
+---the Dependency's Build script.
+---@param targetName string Name of the Dependency
+---@return boolean Success Whether the dependency was successfully linked.
+-----------------------------------------------------------------------------------
+function m.Include(targetName)
+    if (m._targets[targetName] ~= nil) then
+        local target = m._targets[targetName];
+
+        -- Ensure Include function
+        if (target.Include == nil) then
+            m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Include() function found!");
+            return false;
+        end
+
+        target.Include(target.Directory);
+
+        return true;
+    end
+
+    m.PrintError("Failed to Include Dependency: '" .. targetName .. "'! No Dependency with that name was found!");
     return false;
 end
 
@@ -73,7 +99,7 @@ end
 -----------------------------------------------------------------------------------
 function m.AddFilesToProject(dependencyName)
     if (m._targets[dependencyName] == nil) then
-        m.PrintError("Failed to add Files to Current Project from Target: '" .. "'! No Dependency with that name was found!");
+        m.PrintError("Failed to add Files to Current Project from Dependency: '" .. "'! No Dependency with that name was found!");
         return false;
     end
 

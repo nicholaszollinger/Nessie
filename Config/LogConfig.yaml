@@ -15,6 +15,5 @@
 #         Graphics: 3     <- Logs with the 'Graphics' category will be displayed AND written to a file.
 
 Platform: 3
-Application: 2.0
-Window: 3			# This is a thing.
-	Height: [800, 600]
+Application: 3
+Window: 3
