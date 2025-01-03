@@ -105,7 +105,7 @@ namespace nes
     constexpr Rect<Type>::Rect(Vector2<Type>* pPoints, const size_t count)
         : Rect()
     {
-        NES_ASSERT(pPoints != nullptr, "Invalid points array!");
+        NES_ASSERTV(pPoints != nullptr, "Invalid points array!");
         for (size_t i = 0; i < count; ++i)
         {
             *this += pPoints[i];

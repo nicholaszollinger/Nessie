@@ -52,6 +52,9 @@ function m.Link(targetName)
             return false;
         end
 
+        -- Set the flag for denoting that this Dependency is actually used.
+        target.IsUsed = true;
+
         target.Include(target.Directory);
         target.Link(target.Directory);
 
@@ -83,6 +86,8 @@ function m.Include(targetName)
             return false;
         end
 
+        -- Set the flag for denoting that this Dependency is actually used.
+        target.IsUsed = true;
         target.Include(target.Directory);
 
         return true;
@@ -114,8 +119,13 @@ function m.AddFilesToProject(dependencyName)
         return false;
     end
 
+    -- Set the flag for denoting that this Dependency is actually used.
+    dependency.IsUsed = true;
     dependency.AddFilesToProject(dependency.Directory);
     dependency.Include(dependency.Directory);
+
+    -- Add the Build Script as Well:
+    files {dependency.BuildScript};
 
     return true;
 end
@@ -127,12 +137,17 @@ function m.AddProjectsToWorkspace()
     filter{};
     m.PrintInfo("Adding Projects to Solution...");
 
+    -- Add the Non-Optional Target Projects first:
     for name, target in pairs(m._targets) do
         if (target.ConfigureProject == nil) then
-            goto skip
+            goto skip;
         end
 
-        m.PrintMessage("Adding Project: " .. name);
+        if (target.IsOptional == true) then
+            goto skip;
+        end
+
+        m.PrintMessage("Adding Required Project: " .. name);
         group(target.Group)
             project(target.Name);
             location(projectCore.ProjectFilesLocation)
@@ -169,6 +184,59 @@ function m.AddProjectsToWorkspace()
                 ["Source/*"] = { buildScriptDir .. "**.*"},
             }
 
+        -- End of Loop
+        ::skip::
+    end
+
+    -- Add the Optional Target Projects, only if they are used.
+    for name, target in pairs(m._targets) do
+        if (target.ConfigureProject == nil) then
+            goto skip;
+        end
+
+        -- Skip non-optional or non-used targets.
+        -- I opted for this over just excluding from the build order because
+        -- it makes it very clear if you need to rebuild the solution.
+        if (target.IsOptional == false or target.IsUsed == false) then
+            goto skip;
+        end
+
+        m.PrintMessage("Adding Optional Project: " .. name);
+        group(target.Group)
+            project(target.Name);
+            location(projectCore.ProjectFilesLocation)
+
+            if (target.UUID ~= nil) then
+                uuid(target.UUID);
+            end
+
+            target.ConfigureProject(target.Directory, m);
+
+            -- Reset the Filter.
+            filter {};
+
+            -- Add the Build Script
+            files {target.BuildScript};
+
+            local buildScriptDir = path.getdirectory(target.BuildScript);
+
+            -- [TODO]: I want:
+            --      - The Project's folder that contains the Source files to be in a filter called "Source"
+            --      - The Build Script to be on the outermost project filter.
+            --      - Any ThirdParty files that were added to be in a ThirdParty filter.
+            -- I have tried a bunch of combinations, but the order of how these rules are applied is non-determinent, so it's a bit
+            -- frustrating. The best I was able to get is having all of the included files' in a single source filter.
+            -- Not the best, but is the closest to what I want.
+            vpaths
+            {
+                --["ThirdParty/*"] = { projectCore.SourceFolder .. "**.*" },
+                --["Source/*"] = { target.Directory .. ".**"},
+                --["*"] = { buildScriptDir .. "*." .. BUILD_EXTENSION, projectCore.SourceFolder}
+                --{ ["ThirdParty/*"] = projectCore.SourceFolder .. "**.*"},
+                --{ ["*"] = projectCore.SourceFolder .. "/" .. target.Group .. "/**.*" },
+                --["*"] = { projectCore.SourceFolder .. "**.*"},
+                ["Source/*"] = { buildScriptDir .. "**.*"},
+            }
 
         -- End of Loop
         ::skip::
@@ -221,6 +289,13 @@ function m._RegisterBuildTargetsFromFolder(folder)
         target.BuildScript = file;
         target.UUID = nil;
         target.Group = groupName;
+        target.IsUsed = false;
+
+        -- Dependencies can be set as optional. If this isn't defined, 
+        -- it is assumed to be required.
+        if (target.IsOptional == nil) then
+            target.IsOptional = false;
+        end
 
         -- If this target defined a ConfigureProject function, try to get an existing UUID.
         if (os.isdir(projectCore.ProjectFilesLocation) and target.ConfigureProject ~= nil and type(target.ConfigureProject) == "function") then
@@ -230,10 +305,8 @@ function m._RegisterBuildTargetsFromFolder(folder)
                 target.UUID = projectCore.GetVSProjectUUID(projectFilepath);
             end
         end
-
-        -- Add the Dependency to the map.
+   
         m._targets[target.Name] = target;
-
     end
 
     return true;

@@ -1,6 +1,6 @@
 #pragma once
 // EntryPoint.h
-#include "Platform.h"
+#include "Application.h"
 
 #if defined(NES_PLATFORM_WINDOWS)
 #define NES_MAIN()                                                                  \
@@ -8,16 +8,17 @@ int main(int argc, char** argv)                                                 
 {                                                                                   \
     nes::CommandLineArgs args = {static_cast<size_t>(argc), argv };                 \
                                                                                     \
-    nes::Platform platform(args);                                                   \
-    auto code = platform.Initialize();                                              \
+    nes::Application* pApp = CreateApplication(args);                               \
+    auto code = pApp->Init();                                                       \
                                                                                     \
-    if (code == nes::Platform::ExitCode::Success)                                   \
+    if (code == nes::Application::ExitCode::Success)                                \
     {                                                                               \
-        code = platform.MainLoop();                                                 \
+        code = pApp->RunMainLoop();                                                 \
     }                                                                               \
                                                                                     \
-    platform.Terminate(code);                                                       \
+    pApp->Close(code);                                                              \
                                                                                     \
-    return 0;                                                                       \
+    delete (pApp);                                                                  \
+    return static_cast<int>(code);                                                  \
 }                                                                                   
 #endif

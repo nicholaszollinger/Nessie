@@ -1,9 +1,8 @@
 // GLFW_Window.cpp
-
-#if NES_PLATFORM_WINDOWS
+#include "Core/Config.h"
+#ifdef NES_WINDOW_API_GLFW
 #include <GLFW/glfw3.h>
 #include "Application/Application.h"
-#include "Application/Platform.h"
 #include "Application/Window.h"
 #include "Debug/CheckedCast.h"
 #include "Input/InputEvents.h"
@@ -23,11 +22,11 @@ namespace nes
     //		NOTES:
     //		
     ///		@brief : Creates the Window and sets up Window Callbacks.
-    ///		@param platform : Platform creating this Window.
+    ///		@param app : Application creating this Window.
     ///		@param props : Properties for the Window.
     ///		@returns : False if there was an error setting up the Window.
     //----------------------------------------------------------------------------------------------------
-    bool Window::Init(Platform& platform, const WindowProperties& props)
+    bool Window::Init(Application& app, const WindowProperties& props)
     {
         m_properties = props;
 
@@ -88,41 +87,41 @@ namespace nes
             return false;
         }
 
-        glfwSetWindowUserPointer(pWindow, &platform);
-        m_pNativeWindowHandle = pWindow;
+        glfwSetWindowUserPointer(pWindow, &app);
+        m_pWindowContext = pWindow;
 
         // Set the GLFW Callbacks:
         // Window Resize Callback.
         glfwSetWindowSizeCallback(pWindow, [](GLFWwindow* pWindow, const int width, const int height)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
-            pPlatform->GetWindow().Resize(width, height);
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
+            pApp->GetWindow().Resize(width, height);
         });
 
         // Window Close Callback.
         glfwSetWindowCloseCallback(pWindow, [](GLFWwindow* pWindow)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
-            pPlatform->GetApplication().Quit();
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
+            pApp->GetApplication().Quit();
         });
 
         // Window Key Callback.
         glfwSetKeyCallback(pWindow, [](GLFWwindow* pWindow, const int key, [[maybe_unused]] const int scanCode, const int action, const int modifiers)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
             const Modifiers mods = GLFW_ConvertToModifiers(modifiers);
             const KeyCode keyCode = GLFW_ConvertToKeyCode(key);
             const KeyAction keyAction = GLFW_ConvertToKeyAction(action);
 
             KeyEvent event(keyCode, keyAction, mods);
-            pPlatform->GetApplication().PushEvent(event);
+            pApp->PushEvent(event);
         });
 
         // Mouse Button Callback.
         glfwSetMouseButtonCallback(pWindow, [](GLFWwindow* pWindow, const int button, const int action, const int modifiers)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
             // Get the mouse position at the time of the event.
             double xPos, yPos;
@@ -133,23 +132,23 @@ namespace nes
             const MouseAction mouseAction = GLFW_ConvertToMouseAction(action);
 
             MouseButtonEvent event(mouseButton, mouseAction, mods, mousePos.x, mousePos.y);
-            pPlatform->GetApplication().PushEvent(event);
+            pApp->PushEvent(event);
         });
 
         // Mouse Scroll Callback.
         glfwSetScrollCallback(pWindow, [](GLFWwindow* pWindow, const double deltaX, const double deltaY)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
             MouseScrollEvent event(static_cast<float>(deltaX), static_cast<float>(deltaY));
-            pPlatform->GetApplication().PushEvent(event);
+            pApp->PushEvent(event);
         });
 
         // Mouse Move Callback.
         glfwSetCursorPosCallback(pWindow, [](GLFWwindow* pWindow, const double xPos, const double yPos)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
-            Window& window = pPlatform->GetWindow();
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
+            Window& window = pApp->GetWindow();
 
             // New Mouse Position.
             Vec2 position{static_cast<float>(xPos), static_cast<float>(yPos)};
@@ -161,53 +160,53 @@ namespace nes
             window.m_cursorPosition = position;
 
             MouseMoveEvent event(position.x, position.y, deltaPosition.x, deltaPosition.y);
-            pPlatform->GetApplication().PushEvent(event);
+            pApp->PushEvent(event);
         });
 
         // Set Window Size.
         glfwSetWindowSizeCallback(pWindow, [](GLFWwindow* pWindow, const int width, const int height)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
-            pPlatform->GetWindow().m_properties.m_extent = WindowExtent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+            pApp->GetWindow().m_properties.m_extent = WindowExtent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
             WindowResizeEvent event(width, height);
-            pPlatform->GetApplication().PushEvent(event);
+            pApp->PushEvent(event);
         });
 
         // [TODO]: 
         // FrameBuffer Resize Callback.
         glfwSetFramebufferSizeCallback(pWindow, [](GLFWwindow* pWindow, const int width, const int height)
         {
-            Platform* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+            Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
-            auto& window = pPlatform->GetWindow();
+            auto& window = pApp->GetWindow();
 
             // Window Minimized:
             if ((width == 0 || height == 0) && !window.IsMinimized())
             {
-                pPlatform->GetWindow().SetIsMinimized(true);
+                pApp->GetWindow().SetIsMinimized(true);
 
                 WindowMinimizeEvent event(true);
-                pPlatform->GetApplication().PushEvent(event);
+                pApp->PushEvent(event);
             }
 
             // If the window is un-minimized
             else if (window.IsMinimized())
             {
-                pPlatform->GetWindow().SetIsMinimized(false);
+                pApp->GetWindow().SetIsMinimized(false);
 
                 WindowMinimizeEvent event(false);
-                pPlatform->GetApplication().PushEvent(event);
+                pApp->PushEvent(event);
             }
 
             // Normal Resize:
             else
             {
                 WindowResizeEvent event(width, height);
-                pPlatform->GetWindow().m_properties.m_extent = WindowExtent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+                pApp->GetWindow().m_properties.m_extent = WindowExtent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-                pPlatform->GetApplication().PushEvent(event);
+                pApp->PushEvent(event);
             }
         });
 
@@ -227,14 +226,14 @@ namespace nes
 
     void Window::Close()
     {
-        glfwDestroyWindow(checked_cast<GLFWwindow*>(m_pNativeWindowHandle));
+        glfwDestroyWindow(checked_cast<GLFWwindow*>(m_pWindowContext));
         glfwTerminate();
-        m_pNativeWindowHandle = nullptr;
+        m_pWindowContext = nullptr;
     }
 
     bool Window::ShouldClose()
     {
-        return glfwWindowShouldClose(checked_cast<GLFWwindow*>(m_pNativeWindowHandle));
+        return glfwWindowShouldClose(checked_cast<GLFWwindow*>(m_pWindowContext));
     }
 
     void Window::SetIsMinimized(const bool minimized)
@@ -255,7 +254,7 @@ namespace nes
 
     WindowExtent Window::Resize(const uint32_t width, const uint32_t height)
     {
-        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_pNativeWindowHandle);
+        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_pWindowContext);
         glfwSetWindowSize(pWindow, static_cast<int>(width), static_cast<int>(height));
         m_properties.m_extent.m_width = width;
         m_properties.m_extent.m_height = height;

@@ -11,6 +11,12 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     kind "Makefile"
     buildenabled "Off"
 
+    files 
+    {
+        projectDir .. "premake5.lua",
+        projectDir .. "Modules/**.lua"
+    }
+
     local premakeDir = projectDir .. "Premake/"
     local absoluteSolutionDir = path.getabsolute(projectCore.SolutionDir) .. "/";    
     buildcommands { 'call ' .. premakeDir .. 'premake5.exe --file="' .. projectDir .. 'premake5.lua" --cleanTempFiles=true %{_ACTION} ' .. absoluteSolutionDir}

@@ -3,10 +3,14 @@ local projectCore = require("ProjectCore");
 
 local d = {};
 d.Name = "glfw";
+d.IsOptional = true;
+
+local libFolder = projectCore.ProjectIntermediateLibsLocation .. "GLFW\\";
 
 function d.ConfigureProject(projectDir)
     projectCore.SetProjectDefaults();
 
+    targetdir(libFolder);
     kind "StaticLib"
     language "C"
     warnings "off"
@@ -75,7 +79,7 @@ function d.ConfigureProject(projectDir)
     filter "configurations:Test"
 		runtime "Release"
 		optimize "speed"
-        symbols "off"
+        symbols "on"
     
 end
 
@@ -85,8 +89,8 @@ end
 
 function d.Link(projectDir)
     filter "system:windows"
-        links { "glfw3.lib"}
-        libdirs { projectCore.DefaultOutDir }
+        links { "glfw3.lib" }
+        libdirs { libFolder }
 end
 
 return d;

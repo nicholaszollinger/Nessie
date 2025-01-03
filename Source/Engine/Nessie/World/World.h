@@ -28,7 +28,7 @@ namespace nes
 
         // TimeInfo:
         double m_realTimeElapsed = 0.0f;                // The amount of Time elapsed since the start of the Application.
-        double m_timeLeftForFixed = 0.f;                 // The amount of Time left before the next Fixed Update is run.
+        double m_timeLeftForFixed = 0.f;                // The amount of Time left before the next Fixed Update is run.
         float m_fixedTimeStep = kDefaultFixedTimeStep;  // The Interval at which the Fixed Update is run.
         float m_worldTimeScale = 1.f;                   // Current Time Scale applied to the World.
         float m_worldDeltaTime = 0.f;                   // Current Delta Time of the World, scaled by the World Time Scale.

@@ -12,6 +12,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     dependencyInjector.Link("Nessie");
     dependencyInjector.Include("BleachLeakDetector");
+    dependencyInjector.Include("imgui");
 
     defines { "YAML_CPP_STATIC_DEFINE" }
 
@@ -20,6 +21,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     files
     {
 		projectCore.SolutionDir .. "\\Config\\**.*",
+        projectCore.SolutionDir .. "\\*" .. projectCore.ProjectFileExtension;
         projectDir .. "**.h",
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",

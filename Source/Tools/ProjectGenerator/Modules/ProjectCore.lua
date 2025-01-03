@@ -16,7 +16,6 @@ local m = premake.modules.ProjectCore;
 -- Better yet, I would use the projectLocation option above.
 -- - This isn't correct at all btw. I need to fix this.
 local DefaultProjectDirectory = path.getabsolute("../../../../../")
-local PROJECT_FILE_EXTENSION = ".Project.json";
 
 -----------------------------------------------------------------------------------
 --- Initialize the Project Core module. This will load the Project file.
@@ -25,16 +24,18 @@ function m.Init()
     utility.SetupModule(m, "ProjectCore", true);
 
     m.PrintMessage("Loading Project Settings...");
-    m.BUILD_FILE_EXTENSION = ".Build.lua";
+    m.BuildFileExtension = ".Build.lua";
+    m.ProjectFileExtension = ".Project.json";
     m.SolutionDir = utility.GetArgOrDefault(1, DefaultProjectDirectory);
     m.SourceFolder = m.SolutionDir .. "Source\\";
     m.ProjectFilesLocation = m.SolutionDir .. "Intermediate\\ProjectFiles\\";
+    m.ProjectIntermediateLibsLocation = m.SolutionDir .. "Intermediate\\Libs\\";
     m.DefaultOutDir = "$(SolutionDir)Build/$(Configuration)_$(PlatformTarget)/";
     m.DefaultIntermediateDir = "!$(SolutionDir)Intermediate/Obj/$(Configuration)_$(PlatformTarget)/$(ProjectName)/"
     m.ProjectConfigurations = {"Debug", "Release", "Test"};
     m.ProjectSettings = nil;
 
-    local match = os.matchfiles(m.SolutionDir .. "*" .. PROJECT_FILE_EXTENSION);
+    local match = os.matchfiles(m.SolutionDir .. "*" .. m.ProjectFileExtension);
     local projectFile = match[1] or nil;
     if (projectFile == nil) then
         m.PrintError("Failed to find Project File in Project Directory: '" .. m.SolutionDir .. "'");

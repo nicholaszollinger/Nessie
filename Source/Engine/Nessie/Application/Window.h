@@ -33,10 +33,10 @@ namespace nes
 
     class Window
     {
-        friend Platform;
-
+        friend class Application;
+        
         WindowProperties m_properties{};
-        void* m_pNativeWindowHandle = nullptr;
+        void* m_pWindowContext = nullptr;
         Vec2 m_cursorPosition{};
 
     private:
@@ -52,7 +52,7 @@ namespace nes
         Window& operator=(Window&&) noexcept = delete;
 
     private:
-        bool Init(Platform& platform, const WindowProperties& props);
+        bool Init(Application& app, const WindowProperties& props);
         void ProcessEvents();
         bool ShouldClose();
         void Close();
@@ -63,13 +63,13 @@ namespace nes
         WindowExtent Resize(const WindowExtent& extent);
         WindowExtent Resize(const uint32_t width, const uint32_t height);
         
-        [[nodiscard]] void* GetNativeHandle() const         { return m_pNativeWindowHandle; }
+        [[nodiscard]] void* GetWindowContext() const         { return m_pWindowContext; }
         [[nodiscard]] const WindowExtent& GetExtent() const { return m_properties.m_extent; }
         [[nodiscard]] WindowMode GetWindowMode() const      { return m_properties.m_windowMode; }
+        [[nodiscard]] const Vec2& GetCursorPosition() const { return m_cursorPosition; }
         [[nodiscard]] bool IsResizable() const              { return m_properties.m_isResizable; }
         [[nodiscard]] bool IsVsyncEnabled() const           { return m_properties.m_vsyncEnabled; }
         [[nodiscard]] bool IsMinimized() const              { return m_properties.m_isMinimized; }
-        [[nodiscard]] const Vec2& GetCursorPosition() const { return m_cursorPosition; }
 
     };
 }

@@ -78,6 +78,11 @@ function m.CleanSolution()
         return false;
     end
 
+    -- .idea folder (Rider)
+    if utility.DeleteFolderIfExists(core.SolutionDir .. ".idea/", ".idea") == false then
+        return false;
+    end
+
     -- .sln File.
     if utility.DeleteFileIfExists(core.SolutionDir .. core.ProjectSettings["ProjectName"] .. ".sln") == false then
         return false;
