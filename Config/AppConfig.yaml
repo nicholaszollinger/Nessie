@@ -1,0 +1,11 @@
+# Application Configuration Settings:
+Application:
+    Name: "Test App"
+    Version: [0, 0, 1]
+
+Window:
+    Label: "Test Game"
+    Extent: [1600, 900]
+    Mode: 0
+    IsResizable: true
+    VsyncEnabled: false

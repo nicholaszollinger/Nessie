@@ -14,6 +14,6 @@
 #         Entity: 2       <- Logs with the 'Entity' category won't be displayed to the LogTarget, but will written to a file. 
 #         Graphics: 3     <- Logs with the 'Graphics' category will be displayed AND written to a file.
 
-Platform: 3
 Application: 3
 Window: 3
+SDL: 3

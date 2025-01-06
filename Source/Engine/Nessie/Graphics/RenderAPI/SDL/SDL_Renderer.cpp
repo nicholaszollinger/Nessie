@@ -18,7 +18,7 @@ namespace nes
 
     static void SetDrawColor(const LinearColor& linearColor);
     static SDL_FRect ToSDL_FRect(const Rectf& rect);
-    static SDL_Rect ToSDL_Rect(const Recti& rect);
+    //static SDL_Rect ToSDL_Rect(const Recti& rect);
     
     bool Renderer::Init(Window* pWindow)
     {
@@ -71,6 +71,10 @@ namespace nes
 
     void Renderer::Close()
     {
+        // If no Renderer was created, then there is nothing to cleanup.
+        if (!s_pRenderer)
+            return;
+        
         // Cleanup IMGUI
         ImGui_ImplSDLRenderer2_Shutdown();
         ImGui_ImplSDL2_Shutdown();
@@ -219,10 +223,10 @@ namespace nes
         return SDL_FRect{rect.x, rect.y, rect.width, rect.height};
     }
 
-    SDL_Rect ToSDL_Rect(const Recti& rect)
-    {
-        return SDL_Rect{rect.x, rect.y, rect.width, rect.height};
-    }
+    // SDL_Rect ToSDL_Rect(const Recti& rect)
+    // {
+    //     return SDL_Rect{rect.x, rect.y, rect.width, rect.height};
+    // }
 }
 
 

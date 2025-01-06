@@ -21,7 +21,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     defines 
     {
         "YAML_CPP_STATIC_DEFINE"
-		, "NES_LOG_DIR=R\"($(SolutionDir)Saved\\Logs\\)\""        
+		, "NES_LOG_DIR=R\"($(SolutionDir)Saved\\Logs\\)\""
     }
     
     -- Set the Render API based on the Project Settings:

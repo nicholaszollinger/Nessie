@@ -1,6 +1,7 @@
 // Application.h
 #pragma once
 #include "Window.h"
+#include "Core/Generic/Version.h"
 #include "Core/Time/Timer.h"
 #include "Debug/Assert.h"
 #include "Graphics/Renderer.h"
@@ -31,6 +32,18 @@ namespace nes
             return args[index];
         }
     };
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Settings used to initialize the Application instance. 
+    //----------------------------------------------------------------------------------------------------
+    struct ApplicationProperties
+    {
+        CommandLineArgs m_commandLineArgs{};    // Command line arguments sent to the App Executable.
+        std::string m_appName{};                // Application Name.
+        Version m_appVersion{};                 // Application Version.
+    };
 }
 
 //----------------------------------------------------------------------------------------------------
@@ -60,7 +73,7 @@ namespace nes
         };
 
     private:
-        CommandLineArgs m_commandLineArgs{};
+        ApplicationProperties m_properties;
         Window m_window{};
         Renderer m_renderer{};
         Timer m_timer{};

@@ -57,6 +57,7 @@ function m.CreateSolution()
         defines
         {
             "YAML_CPP_STATIC_DEFINE"
+            , "NES_CONFIG_DIR=R\"($(SolutionDir)Config\\)\""
         }
 end
 

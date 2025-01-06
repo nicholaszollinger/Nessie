@@ -13,6 +13,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     dependencyInjector.Link("Nessie");
     dependencyInjector.Include("BleachLeakDetector");
     dependencyInjector.Include("imgui");
+    dependencyInjector.Include("yaml_cpp");
 
     defines { "YAML_CPP_STATIC_DEFINE" }
 

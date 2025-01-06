@@ -27,7 +27,6 @@ namespace nes
     }
 
     Application::Application(const CommandLineArgs& args)
-        : m_commandLineArgs(args)
     {
         if (s_pInstance != nullptr)
         {
@@ -36,6 +35,7 @@ namespace nes
 
         s_pInstance = this;
         s_mainThreadId = std::this_thread::get_id();
+        m_properties.m_commandLineArgs = args;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -64,15 +64,38 @@ namespace nes
     {
         BLEACH_INIT_LEAK_DETECTOR();
         Logger::Init(NES_LOG_DIR);
-        // [TODO]:
-        // Logger::LoadCategories();
+        
+        const std::string logConfigDir = NES_CONFIG_DIR;
+        Logger::LoadCategories(std::string(logConfigDir + "LogConfig.yaml"));
 
-        WindowProperties windowProps{};
-        windowProps.m_label = "TestApp";
-        windowProps.m_extent = {.m_width = 1600, .m_height = 900 };
+        // Load the Application Settings:
+        auto settingsFile = YAML::LoadFile(std::string(logConfigDir + "AppConfig.yaml"));
+        if (!settingsFile)
+            return ExitCode::FatalError;
 
+        auto application = settingsFile["Application"];
+        if (!application)
+            return ExitCode::FatalError;
+
+        m_properties.m_appName = application["Name"].as<std::string>();
+        m_properties.m_appVersion.Deserialize(application["Version"]);
+
+        // Load Window Properties
+        auto window = settingsFile["Window"];
+        if (!window)
+            return ExitCode::FatalError;
+        
+        WindowProperties windowProperties;
+        windowProperties.m_label = window["Label"].as<std::string>();
+        const auto extent = window["Extent"].as<std::array<int, 2>>();
+        windowProperties.m_extent.m_width = extent[0];
+        windowProperties.m_extent.m_height = extent[1];
+        windowProperties.m_windowMode = static_cast<WindowMode>(window["Mode"].as<int>());
+        windowProperties.m_isResizable = window["IsResizable"].as<bool>();
+        windowProperties.m_vsyncEnabled = window["VsyncEnabled"].as<bool>();
+        
         // Create the Window:
-        if (!m_window.Init(*this, windowProps))
+        if (!m_window.Init(*this, windowProperties))
         {
             NES_ERRORV("Application", "Failed to intiailize the Application! Failed to Initialize the Window!");
             return ExitCode::FatalError;
@@ -84,6 +107,8 @@ namespace nes
             NES_ERRORV("Application", "Failed to intiailize the Application! Failed to initialize the Renderer!");
             return ExitCode::FatalError;
         }
+
+        NES_LOGV("Application", "Initialized App: \"", m_properties.m_appName, "\" Version: ", m_properties.m_appVersion.ToString());
         
         return ExitCode::Success;
     }
