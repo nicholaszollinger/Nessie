@@ -44,10 +44,10 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
 
     ImGui::Begin("Matrices");
     static nes::SquareMatrix<2> aMatrix = nes::SquareMatrix<2>::Identity();
-    ImGui::InputFloat4("A Matrix", aMatrix.GetData());
+    ImGui::InputFloat4("A Matrix", aMatrix.m[0]);
     
     static nes::SquareMatrix<2> bMatrix = nes::SquareMatrix<2>::Identity();
-    ImGui::InputFloat4("B Matrix", bMatrix.GetData());
+    ImGui::InputFloat4("B Matrix", bMatrix.m[0]);
     // static float s_value = 1.f;
     // ImGui::InputFloat("Set the 3rd Value", &s_value);
     // result[1][0] = s_value;
@@ -67,19 +67,15 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     ImGui::Text("Transpose of A: %s", aMatrix.GetTranspose().ToString().c_str());
     ImGui::Text("Determinant of A: %.2f", aMatrix.CalculateDeterminant());
 
+    constexpr float kValues[]
+    {
+        -4.f, -3.f, 3.f,
+        0.f, 2.f, -2.f,
+        1.f, 4.f, -1.f,
+    };
+    
     // 3x3
-    static nes::Matrix3x3 aMatrix3 = nes::Matrix3x3::Identity();
-    aMatrix3[0][0] = -4;
-    aMatrix3[0][1] = -3;
-    aMatrix3[0][2] = 3;
-
-    aMatrix3[1][0] = 0;
-    aMatrix3[1][1] = 2;
-    aMatrix3[1][2] = -2;
-
-    aMatrix3[2][0] = 1;
-    aMatrix3[2][1] = 4;
-    aMatrix3[2][2] = -1;
+    static nes::Matrix3x3 aMatrix3 = nes::Matrix3x3(kValues);
 
     ImGui::Text("3x3 Matrix: %s", aMatrix3.ToString().c_str());
     ImGui::Text("3x3 Determinant: %.2f", aMatrix3.CalculateDeterminant());
