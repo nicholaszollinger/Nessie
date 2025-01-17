@@ -1,5 +1,5 @@
-#pragma once
 // Rect.h
+#pragma once
 #include "Vector2.h"
 
 namespace nes

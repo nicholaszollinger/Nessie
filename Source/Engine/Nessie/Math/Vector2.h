@@ -30,7 +30,7 @@ namespace nes
         Vector2& operator*=(const ScalarType auto scalar);
         Vector2& operator/=(const ScalarType auto scalar);
 
-        constexpr float Magnitude() const;
+        float Magnitude() const;
         constexpr float SquaredMagnitude() const;
         constexpr float Dot(const Vector2& right) const;
         constexpr Vector2& Normalize();
@@ -42,16 +42,16 @@ namespace nes
 
         [[nodiscard]] std::string ToString() const;
 
-        static constexpr float Dot(const Vector2& left, const Vector2& right);
+        static constexpr float CalculateDot(const Vector2& left, const Vector2& right);
         static Vector2 FromAngle(const float radians);
         static Vector2 FromAngleDegrees(const float degrees);
 
-        static constexpr Vector2 UnitVector()   { return Vector2(static_cast<Type>(1), static_cast<Type>(1)); }
-        static constexpr Vector2 ZeroVector()   { return Vector2(static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr Vector2 UpVector()     { return Vector2(static_cast<Type>(0), static_cast<Type>(1)); }
-        static constexpr Vector2 DownVector()   { return Vector2(static_cast<Type>(0), static_cast<Type>(-1)); }
-        static constexpr Vector2 LeftVector()   { return Vector2(static_cast<Type>(-1), static_cast<Type>(0)); }
-        static constexpr Vector2 RightVector()  { return Vector2(static_cast<Type>(1), static_cast<Type>(0)); }
+        static constexpr Vector2 GetUnitVector()   { return Vector2(static_cast<Type>(1), static_cast<Type>(1)); }
+        static constexpr Vector2 GetZeroVector()   { return Vector2(static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr Vector2 GetUpVector()     { return Vector2(static_cast<Type>(0), static_cast<Type>(1)); }
+        static constexpr Vector2 GetDownVector()   { return Vector2(static_cast<Type>(0), static_cast<Type>(-1)); }
+        static constexpr Vector2 GetLeftVector()   { return Vector2(static_cast<Type>(-1), static_cast<Type>(0)); }
+        static constexpr Vector2 GetRightVector()  { return Vector2(static_cast<Type>(1), static_cast<Type>(0)); }
     };
 
     using Vec2 = Vector2<float>;
@@ -162,7 +162,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    constexpr float Vector2<Type>::Magnitude() const
+    float Vector2<Type>::Magnitude() const
     {
         return nmath::SafeSqrt(SquaredMagnitude());
     }
@@ -251,7 +251,7 @@ namespace nes
     ///		@brief : Calculate the Dot Product between two vectors.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr float Vector2<Type>::Dot(const Vector2& left, const Vector2& right)
+    constexpr float Vector2<Type>::CalculateDot(const Vector2& left, const Vector2& right)
     {
         return left.Dot(right);
     }

@@ -114,13 +114,13 @@ namespace nmath
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the square root of the value, clamping the value to 0 if it is negative.
     //----------------------------------------------------------------------------------------------------
-    template<std::floating_point Type>
+    template<std::floating_point Type = float>
     Type SafeSqrt(Type value)
     {
         return std::sqrt(Max(value, static_cast<Type>(0.0)));
     }
 
-    template<std::floating_point Type>
+    template<std::floating_point Type = float>
     Type Log2(Type value)
     {
         return std::log2(value);
