@@ -171,10 +171,10 @@ namespace nes
         float smoothX = nmath::SmoothStep(deltaX);
         float smoothY = nmath::SmoothStep(deltaY);
 
-        float v1 = Vec2::CalculateDot(c00, p00);
-        float v2 = Vec2::CalculateDot(c10, p10);
-        float v3 = Vec2::CalculateDot(c01, p01);
-        float v4 = Vec2::CalculateDot(c11, p11);
+        float v1 = Vec2::Dot(c00, p00);
+        float v2 = Vec2::Dot(c10, p10);
+        float v3 = Vec2::Dot(c01, p01);
+        float v4 = Vec2::Dot(c11, p11);
 
         float resultX = nmath::Lerp(v1, v2, smoothX);
         float resultY = nmath::Lerp(v3, v4, smoothX);

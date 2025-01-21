@@ -18,39 +18,46 @@ namespace nes
 
         constexpr bool operator==(const Vector2 right) const;
         constexpr bool operator!=(const Vector2 right) const { return !(*this == right); }
+
+        constexpr Vector2 operator-() const;
         constexpr Vector2 operator+(const Vector2 right) const;
         constexpr Vector2 operator-(const Vector2 right) const;
         constexpr Vector2 operator*(const Vector2 right) const;
         constexpr Vector2 operator*(const ScalarType auto scalar) const;
         constexpr Vector2 operator/(const ScalarType auto scalar) const;
+        
+        constexpr Type& operator[](const size_t index);
+        constexpr Type operator[](const size_t index) const;
 
+        Vector2& operator-();
         Vector2& operator+=(const Vector2 right);
         Vector2& operator-=(const Vector2 right);
         Vector2& operator*=(const Vector2 right);
         Vector2& operator*=(const ScalarType auto scalar);
         Vector2& operator/=(const ScalarType auto scalar);
 
-        float Magnitude() const;
-        constexpr float SquaredMagnitude() const;
-        constexpr float Dot(const Vector2& right) const;
+        Type Magnitude() const;
+        constexpr Type SquaredMagnitude() const;
+        constexpr Type Dot(const Vector2& right) const;
         constexpr Vector2& Normalize();
         constexpr Vector2 GetNormalized() const;
         void SwapAxes();
         float ToAngle() const;
         float ToAngleDegrees() const;
-        template <ScalarType To> Vector2<To> GetAs() const;
+        template <ScalarType To> Vector2<To> CastTo() const;
 
         [[nodiscard]] std::string ToString() const;
 
-        static constexpr float CalculateDot(const Vector2& left, const Vector2& right);
         static Vector2 FromAngle(const float radians);
         static Vector2 FromAngleDegrees(const float degrees);
+        
+        static constexpr Type Dot(const Vector2& a, const Vector2& b);
+        static constexpr Type Distance(const Vector2& a, const Vector2& b);
+        static constexpr Type DistanceSquared(const Vector2& a, const Vector2& b);
 
         static constexpr Vector2 GetUnitVector()   { return Vector2(static_cast<Type>(1), static_cast<Type>(1)); }
         static constexpr Vector2 GetZeroVector()   { return Vector2(static_cast<Type>(0), static_cast<Type>(0)); }
         static constexpr Vector2 GetUpVector()     { return Vector2(static_cast<Type>(0), static_cast<Type>(1)); }
-        static constexpr Vector2 GetDownVector()   { return Vector2(static_cast<Type>(0), static_cast<Type>(-1)); }
-        static constexpr Vector2 GetLeftVector()   { return Vector2(static_cast<Type>(-1), static_cast<Type>(0)); }
         static constexpr Vector2 GetRightVector()  { return Vector2(static_cast<Type>(1), static_cast<Type>(0)); }
     };
 
@@ -77,6 +84,15 @@ namespace nes
         {
             return x == right.x && y == right.y;
         }
+    }
+
+    template <ScalarType Type>
+    constexpr Vector2<Type> Vector2<Type>::operator-() const
+    {
+        Vector2 result;
+        result.x = -x;
+        result.y = -y;
+        return result;
     }
 
     template <ScalarType Type>
@@ -127,6 +143,28 @@ namespace nes
     }
 
     template <ScalarType Type>
+    constexpr Type& Vector2<Type>::operator[](const size_t index)
+    {
+        NES_ASSERT(index < 2);
+        return *(&x + index);
+    }
+
+    template <ScalarType Type>
+    constexpr Type Vector2<Type>::operator[](const size_t index) const
+    {
+        NES_ASSERT(index < 2);
+        return *(&x + index);
+    }
+
+    template <ScalarType Type>
+    Vector2<Type>& Vector2<Type>::operator-()
+    {
+        x = -x;
+        y = -y;
+        return *this;
+    }
+
+    template <ScalarType Type>
     Vector2<Type>& Vector2<Type>::operator+=(const Vector2 right)
     {
         *this = *this + right;
@@ -162,22 +200,22 @@ namespace nes
     }
 
     template <ScalarType Type>
-    float Vector2<Type>::Magnitude() const
+    Type Vector2<Type>::Magnitude() const
     {
         return nmath::SafeSqrt(SquaredMagnitude());
     }
 
     template <ScalarType Type>
-    constexpr float Vector2<Type>::SquaredMagnitude() const
+    constexpr Type Vector2<Type>::SquaredMagnitude() const
     {
-        return static_cast<float>((x * x) + (y * y));
+        return (x * x) + (y * y);
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------
     ///		@brief : Calculate the Dot Product between this and another vector.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr float Vector2<Type>::Dot(const Vector2& right) const
+    constexpr Type Vector2<Type>::Dot(const Vector2& right) const
     {
         return static_cast<float>((x * right.x) + (y * right.y));
     }
@@ -236,8 +274,10 @@ namespace nes
 
     template <ScalarType Type>
     template <ScalarType To>
-    Vector2<To> Vector2<Type>::GetAs() const
+    Vector2<To> Vector2<Type>::CastTo() const
     {
+        static_assert(!std::same_as<Type, To>, "Attempting to cast to the same type!");
+        
         return Vector2<To>(static_cast<To>(x), static_cast<To>(y));
     }
 
@@ -251,17 +291,43 @@ namespace nes
     ///		@brief : Calculate the Dot Product between two vectors.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr float Vector2<Type>::CalculateDot(const Vector2& left, const Vector2& right)
+    constexpr Type Vector2<Type>::Dot(const Vector2& a, const Vector2& b)
     {
-        return left.Dot(right);
+        return a.Dot(b);
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance between two Vectors. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr Type Vector2<Type>::Distance(const Vector2& a, const Vector2& b)
+    {
+        const Vector2 diff = b - a;
+        return diff.Magnitude();
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance squared between two vectors. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr Type Vector2<Type>::DistanceSquared(const Vector2& a, const Vector2& b)
+    {
+        const Vector2 diff = b - a;
+        return diff.SquaredMagnitude();
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Create a 2D Vector from an angle in radians. 
+    //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
     Vector2<Type> Vector2<Type>::FromAngle(const float radians)
     {
         return Vector2(std::cos(radians), std::sin(radians));
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Create a 2D Vector from an angle in degrees. 
+    //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
     Vector2<Type> Vector2<Type>::FromAngleDegrees(const float degrees)
     {
