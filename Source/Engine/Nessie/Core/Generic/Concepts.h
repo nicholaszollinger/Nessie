@@ -7,6 +7,12 @@
 namespace nes
 {
     template <typename Type>
+    concept FloatingPointType = std::floating_point<Type>;
+
+    template <typename Type>
+    concept IntergralType = std::integral<Type>;
+    
+    template <typename Type>
     concept ScalarType = std::floating_point<Type> || std::integral<Type>;
 
     template <typename Type>

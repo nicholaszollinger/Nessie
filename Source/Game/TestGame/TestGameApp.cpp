@@ -22,11 +22,13 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     const auto& renderer = GetRenderer();
     renderer.Clear(kClearColor);
 
+    constexpr nes::Vec2 kHalfWindowSize = {800.f, 450.f};
+
     // Primitives...
-    renderer.DrawCircle(nes::Vec2{0.f, 0.f}, 500.f, nes::LinearColor::Blue());
-    renderer.DrawLine(nes::Vec2{50.f, 50.f}, nes::Vec2{5.f, 0.f}, nes::LinearColor::Green());
-    renderer.DrawRect(nes::Rectf(0.f, 100.f, 100.f, 100.f), nes::LinearColor::White());
-    renderer.DrawFillRect(nes::Rectf(0.f, 200.f, 100.f, 100.f), nes::LinearColor::Red());
+    renderer.DrawCircle(kHalfWindowSize, 400.f, nes::LinearColor::Blue());
+    renderer.DrawLine(kHalfWindowSize + nes::Vec2{50.f, 50.f}, nes::Vec2{5.f, 0.f}, nes::LinearColor::Green());
+    renderer.DrawRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 100.f, 100.f, 100.f), nes::LinearColor::White());
+    renderer.DrawFillRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 200.f, 100.f, 100.f), nes::LinearColor::Red());
 
     auto& io = ImGui::GetIO();
     ImGui::Begin("App Stats");
@@ -34,24 +36,14 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     ImGui::End();
     
     // Matrix Tests
-    //ImGui::InputFloat("Scalar to Multiply", &s_value);
-    // static int s_row = 0;
-    // static int s_column = 0;
-    // ImGui::SliderInt("Matrix Row", &s_row, 0, 1);
-    // const auto span = result[s_row];
-    // ImGui::SliderInt("Matrix Column", &s_column, 0, 1);
-    // ImGui::Text("Value: %.2f", span[s_column]);
-
     ImGui::Begin("Matrices");
-    static nes::SquareMatrix<2> aMatrix = nes::SquareMatrix<2>::Identity();
+    static nes::Matrix2x2f aMatrix = nes::Matrix2x2f::Identity();
     ImGui::InputFloat4("A Matrix", aMatrix.m[0]);
     
-    static nes::SquareMatrix<2> bMatrix = nes::SquareMatrix<2>::Identity();
+    static nes::Matrix2x2f bMatrix = nes::Matrix2x2f::Identity();
     ImGui::InputFloat4("B Matrix", bMatrix.m[0]);
-    // static float s_value = 1.f;
-    // ImGui::InputFloat("Set the 3rd Value", &s_value);
-    // result[1][0] = s_value;
-    nes::SquareMatrix<2> result = aMatrix + bMatrix;
+    
+    nes::Matrix2x2f result = aMatrix + bMatrix;
     ImGui::Text("A + B: %s", result.ToString().c_str());
 
     result = aMatrix - bMatrix;
@@ -75,12 +67,12 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     };
     
     // 3x3
-    static nes::Matrix3x3 aMatrix3 = nes::Matrix3x3(kValues);
+    static nes::Matrix3x3f aMatrix3 = nes::Matrix3x3f(kValues);
 
     ImGui::Text("3x3 Matrix: %s", aMatrix3.ToString().c_str());
     ImGui::Text("3x3 Determinant: %.2f", aMatrix3.CalculateDeterminant());
 
-    if (nes::SquareMatrix<3> inverseMatrix; aMatrix3.TryGetInverse(inverseMatrix))
+    if (nes::Matrix3x3f inverseMatrix; aMatrix3.TryGetInverse(inverseMatrix))
     {
         ImGui::Text("3x3 Inverse: %s", inverseMatrix.ToString().c_str());
     }

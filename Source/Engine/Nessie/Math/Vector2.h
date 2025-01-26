@@ -76,8 +76,8 @@ namespace nes
     {
         if constexpr (std::is_floating_point_v<Type>)
         {
-            return nmath::CheckEqualFloats(x, right.x)
-                && nmath::CheckEqualFloats(y, right.y);
+            return math::CheckEqualFloats(x, right.x)
+                && math::CheckEqualFloats(y, right.y);
         }
 
         else
@@ -202,7 +202,7 @@ namespace nes
     template <ScalarType Type>
     Type Vector2<Type>::Magnitude() const
     {
-        return nmath::SafeSqrt(SquaredMagnitude());
+        return math::SafeSqrt(SquaredMagnitude());
     }
 
     template <ScalarType Type>
@@ -231,7 +231,7 @@ namespace nes
         const auto magnitude = Magnitude();
 
         // If our magnitude is zero, the return immediately.
-        if (nmath::CheckEqualFloats(magnitude, 0.0f, 0.0001f))
+        if (math::CheckEqualFloats(magnitude, 0.0f, 0.0001f))
             return *this;
 
         x = x / magnitude;
@@ -269,7 +269,7 @@ namespace nes
     template <ScalarType Type>
     float Vector2<Type>::ToAngleDegrees() const
     {
-        return nmath::ToDegrees(ToAngle());
+        return math::ToDegrees(ToAngle());
     }
 
     template <ScalarType Type>
@@ -331,7 +331,7 @@ namespace nes
     template <ScalarType Type>
     Vector2<Type> Vector2<Type>::FromAngleDegrees(const float degrees)
     {
-        return FromAngle(nmath::ToRadians(degrees));
+        return FromAngle(math::ToRadians(degrees));
     }
 
     template <ScalarType VecType>

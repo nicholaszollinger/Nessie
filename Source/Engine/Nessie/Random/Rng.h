@@ -131,7 +131,7 @@ namespace nes
     template <std::floating_point Type>
     Vector2<Type> Rng::RandUnitVector2D()
     {
-        const Type angle = NormalizedRand<Type>() * nmath::TwoPi<Type>();
+        const Type angle = NormalizedRand<Type>() * math::TwoPi<Type>();
         return { std::cos(angle), std::sin(angle) };
     }
 }

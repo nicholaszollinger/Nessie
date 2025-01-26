@@ -4,81 +4,81 @@
 #include <cmath>
 #include "Core/Generic/Concepts.h"
 
-namespace nmath
+namespace nes::math
 {
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type Pi()
     {
         return static_cast<Type>(3.141592653589793238462643383279502884197169399);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type TwoPi()
     {
         return static_cast<Type>(6.283185307179586476925286766559005768394338798);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type InversePi()
     {
         return static_cast<Type>(0.318309886183790671537767526745028724068919291480912897495334688);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type InverseTwoPi()
     {
         return static_cast<Type>(0.159154943091895335768883763372514362034459645740456448747667344);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type InverseFourPi()
     {
         return static_cast<Type>(0.079577471545947667884441881686257181017229822870228224373833672);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type PiOverTwo()
     {
         return static_cast<Type>(1.570796326794896619231321691639751442098584699687552910487472296);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type PiOverFour()
     {
         return static_cast<Type>(0.785398163397448309615660845819875721049292349843776455243736148);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type SqrtTwo()
     {
         return static_cast<Type>(1.414213562373095048801688724209698078569671875376948073176679737);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type PrecisionDelta()
     {
         return static_cast<Type>(0.0001);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type EulersNumber()
     {
         return static_cast<Type>(2.7182818284590452353602874713526624977572);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type RadiansToDegrees()
     {
         return static_cast<Type>(180.0 / Pi());
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type DegreesToRadians()
     {
         return static_cast<Type>(Pi() / 180.0);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type Infinity() 
     {
         return std::numeric_limits<Type>::infinity();
@@ -92,20 +92,20 @@ namespace nmath
     ///		@param right : Right hand value.
     ///		@param closeEnough : How close do the values need to be to be considered equal? Default is equal to PrecisionDelta().
     //-----------------------------------------------------------------------------------------------------------------------------
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr bool CheckEqualFloats(const Type left, const Type right, const float closeEnough = PrecisionDelta())
     {   
         const auto closeConversion = static_cast<Type>(closeEnough);
         return std::abs(left - right) < closeConversion || std::abs(right - left) < closeConversion;
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type ToDegrees(const Type radians)
     {
         return radians * RadiansToDegrees<Type>();
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type ToRadians(const Type degrees)
     {
         return degrees * DegreesToRadians<Type>();
@@ -114,37 +114,37 @@ namespace nmath
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the square root of the value, clamping the value to 0 if it is negative.
     //----------------------------------------------------------------------------------------------------
-    template<std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     Type SafeSqrt(Type value)
     {
         return std::sqrt(Max(value, static_cast<Type>(0.0)));
     }
 
-    template<std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     Type Log2(Type value)
     {
         return std::log2(value);
     }
 
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type Round(const Type value)
     {
         return std::round(value);
     }
 
-    template <nes::ScalarType ReturnType, std::floating_point Type>
+    template <ScalarType ReturnType, FloatingPointType Type>
     ReturnType FloorTo(Type value)
     {
         return static_cast<ReturnType>(std::floor(value));
     }
 
-    template <nes::ScalarType ReturnType, std::floating_point Type>
+    template <ScalarType ReturnType, FloatingPointType Type>
     ReturnType CeilTo(Type value)
     {
         return static_cast<ReturnType>(std::ceil(value));
     }
 
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Clamp(const Type value, const Type min, const Type max)
     {
         if (value < min)
@@ -163,7 +163,7 @@ namespace nmath
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Clamps a value to be between 0 and 1.
     //----------------------------------------------------------------------------------------------------
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type ClampNormalized(const Type type)
     {
         return Clamp(type, static_cast<Type>(0.0), static_cast<Type>(1.0));
@@ -172,43 +172,43 @@ namespace nmath
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Clamps a value to be between -1 and 1.
     //----------------------------------------------------------------------------------------------------
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type ClampSignedNormalized(const Type type)
     {
         return Clamp(type, static_cast<Type>(-1.0), static_cast<Type>(1.0));
     }
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr Type Lerp(const Type a, const Type b, const Type t)
     {
         return a + t * (b - a);
     }
 
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Min(const Type a, const Type b)
     {
         return a < b ? a : b;
     }
 
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Max(const Type a, const Type b)
     {
         return a > b ? a : b;
     }
 
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Abs(const Type value)
     {
         return value < 0 ? -value : value;
     }
 
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Squared(const Type value)
     {
         return value * value;
     }
 
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Cubed(const Type value)
     {
         return value * value * value;
@@ -220,7 +220,7 @@ namespace nmath
     ///		@param value : Value to raise to a power.
     ///		@param exponent : Exponent to raise the value to.
     //----------------------------------------------------------------------------------------------------
-    template <nes::ScalarType Type>
+    template <ScalarType Type>
     constexpr Type Power(const Type value, const uint32_t exponent)
     {
         if (exponent == 0)
@@ -243,7 +243,7 @@ namespace nmath
     ///		@param value : Value to raise to a power.
     ///		@param exponent : Exponent to raise the value to.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr Type PowerF(const Type value, const int exponent)
     {
         if (exponent == 0)
@@ -273,7 +273,7 @@ namespace nmath
     ///		@param value : Value to mod.
     ///		@param mod : Mod value.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type = float>
+    template <FloatingPointType Type = float>
     constexpr Type ModF(const Type value, const Type mod)
     {
         return value - static_cast<Type>(static_cast<long long>(value / mod)) * mod;
@@ -332,7 +332,7 @@ namespace nmath
     ///		@brief : Returns the arc sine of the value, clamping the value to be between -1 and 1, to ensure a
     ///        valid result.
     //----------------------------------------------------------------------------------------------------
-    template<std::floating_point Type>
+    template <FloatingPointType Type>
     Type SafeASin(Type value)
     {
         return std::asin(ClampSignedNormalized(value));
@@ -342,7 +342,7 @@ namespace nmath
     ///		@brief : Returns the arc cosine of the value, clamping the value to be between -1 and 1, to ensure a
     ///        valid result.
     //----------------------------------------------------------------------------------------------------
-    template<std::floating_point Type>
+    template <FloatingPointType Type>
     Type SafeACos(Type value)
     {
         return std::acos(ClampSignedNormalized(value));
@@ -360,12 +360,12 @@ namespace nmath
         return 0.5f - std::sin(SafeASin(1.f - 2.f * x) / 3.f);
     }
 
-    bool IsNan(const std::floating_point auto value)
+    bool IsNan(const FloatingPointType auto value)
     {
         return std::isnan(value);
     }
 
-    bool IsInf(const std::floating_point auto value)
+    bool IsInf(const FloatingPointType auto value)
     {
         return std::isinf(value);
     }

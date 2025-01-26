@@ -123,10 +123,10 @@ namespace nes
     {
         if (HasValidDimensions())
         {
-            x = nmath::Min(x, point.x);
-            y = nmath::Min(y, point.y);
-            width = nmath::Max(width, point.x - x);
-            height = nmath::Max(height, point.y - y);
+            x = math::Min(x, point.x);
+            y = math::Min(y, point.y);
+            width = math::Max(width, point.x - x);
+            height = math::Max(height, point.y - y);
         }
 
         else
@@ -136,8 +136,8 @@ namespace nes
             // along with a bool that is set to true when the Min and Max are set.
             x = point.x;
             y = point.y;
-            width = static_cast<Type>(nmath::PrecisionDelta());
-            height = static_cast<Type>(nmath::PrecisionDelta());
+            width = static_cast<Type>(math::PrecisionDelta());
+            height = static_cast<Type>(math::PrecisionDelta());
         }
 
         return *this;
@@ -155,10 +155,10 @@ namespace nes
     {
         if (HasValidDimensions() && other.HasValidDimensions())
         {
-            const Type minX = nmath::Min(x, other.x);
-            const Type minY = nmath::Min(y, other.y);
-            const Type maxX = nmath::Max(x + width, other.x + other.width);
-            const Type maxY = nmath::Max(y + height, other.y + other.height);
+            const Type minX = math::Min(x, other.x);
+            const Type minY = math::Min(y, other.y);
+            const Type maxX = math::Max(x + width, other.x + other.width);
+            const Type maxY = math::Max(y + height, other.y + other.height);
 
             x = minX;
             y = minY;
@@ -288,10 +288,10 @@ namespace nes
     constexpr Rect<Type> Rect<Type>::GetOverlap(const Rect other) const
     {
         Rect result;
-        result.x = nmath::Max(x, other.x);
-        result.y = nmath::Max(y, other.y);
-        result.width = nmath::Min(x + width, other.x + other.width) - other.x;
-        result.height = nmath::Min(y + height, other.y + other.height) - other.y;
+        result.x = math::Max(x, other.x);
+        result.y = math::Max(y, other.y);
+        result.width = math::Min(x + width, other.x + other.width) - other.x;
+        result.height = math::Min(y + height, other.y + other.height) - other.y;
 
         return result;
     }
@@ -310,16 +310,16 @@ namespace nes
         Type distSquared = 0.f;
 
         if (point.x < x)
-            distSquared += nmath::Squared(x - point.x);
+            distSquared += math::Squared(x - point.x);
 
         else if (point.x > x + width)
-            distSquared += nmath::Squared(point.x - (x + width));
+            distSquared += math::Squared(point.x - (x + width));
 
         else if (point.y < y)
-            distSquared += nmath::Squared(y - point.y);
+            distSquared += math::Squared(y - point.y);
 
         else if (point.y > y + height)
-            distSquared += nmath::Squared(point.y - (y + height));
+            distSquared += math::Squared(point.y - (y + height));
 
         return distSquared;
     }

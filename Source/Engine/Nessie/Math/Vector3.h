@@ -16,6 +16,8 @@ namespace nes
         constexpr Vector3() = default;
         constexpr Vector3(const Type x, const Type y, const Type z) : x(x) , y(y), z(z) {}
         constexpr Vector3(const ScalarType auto x, const ScalarType auto y, const ScalarType auto z) : x(static_cast<Type>(x)), y(static_cast<Type>(y)), z(static_cast<Type>(z)) {}
+        constexpr Vector3(const Vector2<Type>& vector2, const Type z) : x(vector2.x), y(vector2.y), z(z) {}
+        explicit constexpr Vector3(const Vector2<Type>& vector2) : x(vector2.x), y(vector2.y), z(0) {}
 
         constexpr bool operator==(const Vector3 right) const;
         constexpr bool operator!=(const Vector3 right) const { return !(*this == right); }
@@ -72,6 +74,14 @@ namespace nes
     using Vec3i = Vector3<int>;
     using Vec3u = Vector3<unsigned int>;
 
+    template <FloatingPointType Type>
+    Type ScalarTripleProduct(const Vector3<Type>& u, const Vector3<Type>& v, const Vector3<Type>& w);
+}
+
+namespace nes
+{
+        
+ 
     template <ScalarType Type>
     constexpr bool Vector3<Type>::operator==(const Vector3 right) const
     {
@@ -262,7 +272,7 @@ namespace nes
         static_assert(std::floating_point<Type>, "Type must be floating point");
 
         const auto magnitude = Magnitude();
-        if (!nmath::CheckEqualFloats(magnitude, 0.f, 0.0001f))
+        if (!math::CheckEqualFloats(magnitude, 0.f, 0.0001f))
         {
             x = x / magnitude;
             x = y / magnitude;
@@ -379,7 +389,21 @@ namespace nes
     float Vector3<Type>::GetAngleBetweenVectorsDegrees(const Vector3& a, const Vector3& b)
     {
         const float angleRadians = GetAngleBetweenVectors(a, b);
-        return nmath::ToDegrees(angleRadians);
+        return math::ToDegrees(angleRadians);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : The Scalar Triple Product is found by taking the cross product between u and v, and then
+    ///              using that result and getting the dot product with w: (u x v) * w. The resulting value represents
+    ///             the *signed* volume of the parallelepiped formed by the three vectors.
+    ///             - If the result is 0, then the three vectors are all coplanar.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type ScalarTripleProduct(const Vector3<Type>& u, const Vector3<Type>& v, const Vector3<Type>& w)
+    {
+        return Vector3<Type>::Cross(u, v).Dot(w);
     }
 }
 

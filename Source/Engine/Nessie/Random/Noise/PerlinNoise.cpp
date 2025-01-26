@@ -136,8 +136,8 @@ namespace nes
 
     float PerlinNoise2D::GetNoise(float noiseX, float noiseY) const
     {
-        int xi0 = nmath::FloorTo<int>(noiseX);
-        int yi0 = nmath::FloorTo<int>(noiseY);
+        int xi0 = math::FloorTo<int>(noiseX);
+        int yi0 = math::FloorTo<int>(noiseY);
 
         int xi1 = (xi0 + 1) & static_cast<int>(internal::kMaxTableSizeMask);
         int yi1 = (yi0 + 1) & static_cast<int>(internal::kMaxTableSizeMask);
@@ -168,17 +168,17 @@ namespace nes
         Vec2 p01 = { x0, y1 };
         Vec2 p11 = { x1, y1 };
 
-        float smoothX = nmath::SmoothStep(deltaX);
-        float smoothY = nmath::SmoothStep(deltaY);
+        float smoothX = math::SmoothStep(deltaX);
+        float smoothY = math::SmoothStep(deltaY);
 
         float v1 = Vec2::Dot(c00, p00);
         float v2 = Vec2::Dot(c10, p10);
         float v3 = Vec2::Dot(c01, p01);
         float v4 = Vec2::Dot(c11, p11);
 
-        float resultX = nmath::Lerp(v1, v2, smoothX);
-        float resultY = nmath::Lerp(v3, v4, smoothX);
-        float result = nmath::Lerp(resultX, resultY, smoothY);
+        float resultX = math::Lerp(v1, v2, smoothX);
+        float resultY = math::Lerp(v3, v4, smoothX);
+        float result = math::Lerp(resultX, resultY, smoothY);
 
         // Normalize the Result:
         return (result + 1.f) * 0.5f;
