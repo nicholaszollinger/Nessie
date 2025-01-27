@@ -62,6 +62,7 @@ namespace nes
     };
 
     using Vec2 = Vector2<float>;
+    using Vec2d = Vector2<double>;
     using Vec2i = Vector2<int>;
     using Vec2u = Vector2<unsigned int>;
 

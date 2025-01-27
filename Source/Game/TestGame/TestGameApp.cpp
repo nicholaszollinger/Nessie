@@ -3,6 +3,7 @@
 #include "TestGameApp.h"
 #include "imgui.h"
 #include "Math/Matrix.h"
+#include "Math/Triangles.h"
 
 nes::Application* CreateApplication(const nes::CommandLineArgs& args)
 {
@@ -81,7 +82,15 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     {
         ImGui::Text("3x3 Inverse: None");
     }
+
+    static nes::Vector2<float> position2D{};
     
+    ImGui::InputFloat2("Test Point", &position2D.x);
+    nes::Triangle2D<float> triangle{};
+    const bool isInside = triangle.ContainsPoint(position2D);
+    ImGui::Text("Triangle2D: %s", triangle.ToString().c_str());
+    ImGui::Text("Triangle Contains Test Point: %s", isInside? "true" : "false");
+    ImGui::Text("Signed Area: %.2f", triangle.Area());
     
     ImGui::End();
 }

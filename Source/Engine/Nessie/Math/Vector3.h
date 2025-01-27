@@ -16,8 +16,9 @@ namespace nes
         constexpr Vector3() = default;
         constexpr Vector3(const Type x, const Type y, const Type z) : x(x) , y(y), z(z) {}
         constexpr Vector3(const ScalarType auto x, const ScalarType auto y, const ScalarType auto z) : x(static_cast<Type>(x)), y(static_cast<Type>(y)), z(static_cast<Type>(z)) {}
-        constexpr Vector3(const Vector2<Type>& vector2, const Type z) : x(vector2.x), y(vector2.y), z(z) {}
-        explicit constexpr Vector3(const Vector2<Type>& vector2) : x(vector2.x), y(vector2.y), z(0) {}
+        constexpr Vector3(const Vector2<Type>& vector2, const Type z = 0) : x(vector2.x), y(vector2.y), z(z) {}
+        
+        Vector3& operator=(const Vector2<Type>& vector2);
 
         constexpr bool operator==(const Vector3 right) const;
         constexpr bool operator!=(const Vector3 right) const { return !(*this == right); }
@@ -71,6 +72,7 @@ namespace nes
     };
 
     using Vec3 = Vector3<float>;
+    using Vec3d = Vector3<double>;
     using Vec3i = Vector3<int>;
     using Vec3u = Vector3<unsigned int>;
 
@@ -80,8 +82,6 @@ namespace nes
 
 namespace nes
 {
-        
- 
     template <ScalarType Type>
     constexpr bool Vector3<Type>::operator==(const Vector3 right) const
     {
@@ -158,6 +158,20 @@ namespace nes
         result.y /= scalar;
         result.z /= scalar;
         return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Sets the xy component values to match the 2D vector. This Z component is set to 0!
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    Vector3<Type>& Vector3<Type>::operator=(const Vector2<Type>& vector2)
+    {
+        x = vector2.x;
+        y = vector2.y;
+        z = 0.f;
+        return *this;
     }
 
     template <ScalarType Type>
@@ -405,9 +419,4 @@ namespace nes
     {
         return Vector3<Type>::Cross(u, v).Dot(w);
     }
-}
-
-namespace nes
-{
-    
 }

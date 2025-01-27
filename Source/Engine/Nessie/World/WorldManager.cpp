@@ -57,7 +57,7 @@ namespace nes
     ///              occur when the destination World is loaded.
     ///		@param worldName : Name of the World to transition to.
     //----------------------------------------------------------------------------------------------------
-    void WorldManager::QueueWorldTransition(const StringID& worldName)
+    void WorldManager::QueueWorldTransition([[maybe_unused]] const StringID& worldName)
     {
         // [TODO]: Should I fail here? Throw an Error?
         if (IsTransitionQueued())
