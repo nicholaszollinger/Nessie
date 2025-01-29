@@ -5,6 +5,8 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
+    //     [TODO]: I want to rename this to TBox2, and TBox3 for the 3D version.
+    //    
     ///		@brief : 2D Rect class. The Position is the bottom-left corner of the Rect.
     ///		@tparam Type : Type of the Rect.
     //----------------------------------------------------------------------------------------------------
@@ -18,35 +20,36 @@ namespace nes
 
         constexpr Rect() = default;
         constexpr Rect(const Type x, const Type y, const Type width, const Type height);
-        constexpr Rect(const Vector2<Type> position, const Vector2<Type> size);
-        constexpr Rect(const std::vector<Vector2<Type>>& points);
-        constexpr Rect(Vector2<Type>* pPoints, const size_t count);
+        constexpr Rect(const TVector2<Type> position, const TVector2<Type> size);
+        constexpr Rect(const std::vector<TVector2<Type>>& points);
+        constexpr Rect(TVector2<Type>* pPoints, const size_t count);
 
         constexpr bool operator==(const Rect& other) const;
         constexpr bool operator!=(const Rect& other) const { return !(*this == other); }
-        constexpr Rect& operator+=(const Vector2<Type> point);
+        constexpr Rect& operator+=(const TVector2<Type> point);
         constexpr Rect& operator+=(const Rect& other);
 
         void SetPosition(const Type _x, const Type _y);
-        void SetPosition(const Vector2<Type> pos);
+        void SetPosition(const TVector2<Type> pos);
         void SetSize(const Type _width, const Type _height);
-        void SetSize(const Vector2<Type> size);
+        void SetSize(const TVector2<Type> size);
 
-        constexpr Vector2<Type> GetPosition() const;
-        constexpr Vector2<Type> GetSize() const;
-        constexpr Vector2<Type> GetCenter() const;
-        constexpr Vector2<Type> Min() const;
-        constexpr Vector2<Type> Max() const;
+        constexpr TVector2<Type> GetPosition() const;
+        constexpr TVector2<Type> GetSize() const;
+        constexpr TVector2<Type> GetCenter() const;
+        constexpr TVector2<Type> Min() const;
+        constexpr TVector2<Type> Max() const;
 
         constexpr bool HasValidDimensions() const;
         constexpr Type GetArea() const;
         constexpr bool Intersects(const Rect other) const;
-        constexpr bool Contains(const Vector2<Type> point) const;
+        constexpr bool Contains(const TVector2<Type> point) const;
         constexpr bool Contains(const Rect other) const;
         constexpr Rect GetOverlap(const Rect<Type> other) const;
-        constexpr Type ComputeSquaredDistanceToPoint(const Vector2<Type> point) const;
-        Vector2<Type> GetClosestPontTo(const Vector2<Type> point) const;
-        Vector2<Type> GetExtent() const;
+        constexpr Type ComputeDistanceToPoint(const TVector2<Type> point) const;
+        constexpr Type ComputeSquaredDistanceToPoint(const TVector2<Type> point) const;
+        TVector2<Type> GetClosestPointTo(const TVector2<Type> point) const;
+        TVector2<Type> GetExtent() const;
 
         std::string ToString() const;
     };
@@ -69,7 +72,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    constexpr Rect<Type>::Rect(const Vector2<Type> position, const Vector2<Type> size)
+    constexpr Rect<Type>::Rect(const TVector2<Type> position, const TVector2<Type> size)
         : x(position.x)
         , y(position.y)
         , width(size.x)
@@ -85,7 +88,7 @@ namespace nes
     ///		@param points : Points to include in the bounding Rect.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Rect<Type>::Rect(const std::vector<Vector2<Type>>& points)
+    constexpr Rect<Type>::Rect(const std::vector<TVector2<Type>>& points)
         : Rect()
     {
         for (const auto point : points)
@@ -102,7 +105,7 @@ namespace nes
     ///		@param count : Number of points in the array.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Rect<Type>::Rect(Vector2<Type>* pPoints, const size_t count)
+    constexpr Rect<Type>::Rect(TVector2<Type>* pPoints, const size_t count)
         : Rect()
     {
         NES_ASSERTV(pPoints != nullptr, "Invalid points array!");
@@ -119,7 +122,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    constexpr Rect<Type>& Rect<Type>::operator+=(const Vector2<Type> point)
+    constexpr Rect<Type>& Rect<Type>::operator+=(const TVector2<Type> point)
     {
         if (HasValidDimensions())
         {
@@ -184,7 +187,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    void Rect<Type>::SetPosition(const Vector2<Type> pos)
+    void Rect<Type>::SetPosition(const TVector2<Type> pos)
     {
         x = pos.x;
         y = pos.y;
@@ -198,40 +201,40 @@ namespace nes
     }
 
     template <ScalarType Type>
-    void Rect<Type>::SetSize(const Vector2<Type> size)
+    void Rect<Type>::SetSize(const TVector2<Type> size)
     {
         width = size.x;
         height = size.y;
     }
 
     template <ScalarType Type>
-    constexpr Vector2<Type> Rect<Type>::GetPosition() const
+    constexpr TVector2<Type> Rect<Type>::GetPosition() const
     {
-        return Vector2<Type>(x, y);
+        return TVector2<Type>(x, y);
     }
 
     template <ScalarType Type>
-    constexpr Vector2<Type> Rect<Type>::GetSize() const
+    constexpr TVector2<Type> Rect<Type>::GetSize() const
     {
-        return Vector2<Type>(width, height);
+        return TVector2<Type>(width, height);
     }
 
     template <ScalarType Type>
-    constexpr Vector2<Type> Rect<Type>::GetCenter() const
+    constexpr TVector2<Type> Rect<Type>::GetCenter() const
     {
-        return Vector2<Type>(x + width / 2, y + height / 2);
+        return TVector2<Type>(x + width / 2, y + height / 2);
     }
 
     template <ScalarType Type>
-    constexpr Vector2<Type> Rect<Type>::Min() const
+    constexpr TVector2<Type> Rect<Type>::Min() const
     {
-        return Vector2<Type>(x, y);
+        return TVector2<Type>(x, y);
     }
 
     template <ScalarType Type>
-    constexpr Vector2<Type> Rect<Type>::Max() const
+    constexpr TVector2<Type> Rect<Type>::Max() const
     {
-        return Vector2<Type>(x + width, y + height);
+        return TVector2<Type>(x + width, y + height);
     }
 
     template <ScalarType Type>
@@ -259,7 +262,7 @@ namespace nes
     ///		@brief : Returns true if the point is inside this Rect.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr bool Rect<Type>::Contains(const Vector2<Type> point) const
+    constexpr bool Rect<Type>::Contains(const TVector2<Type> point) const
     {
         return point.x >= x
             && point.x <= x + width
@@ -297,15 +300,21 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Calculates the Distance Squared of a point to this Rect. If the point is inside, the
-    ///              value would be 0.
-    ///		@param point : The point to test.
-    ///		@returns : Squared Distance.
+    ///		@brief : Calculates the Distance of a point to this Rect. If the point is inside, the value would
+    ///             be zero.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Type Rect<Type>::ComputeSquaredDistanceToPoint(const Vector2<Type> point) const
+    constexpr Type Rect<Type>::ComputeDistanceToPoint(const TVector2<Type> point) const
+    {
+        return std::sqrt(ComputeSquaredDistanceToPoint(point));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Calculates the Squared Distance of a point to this Rect. If the point is inside, the
+    ///              value would be zero.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr Type Rect<Type>::ComputeSquaredDistanceToPoint(const TVector2<Type> point) const
     {
         Type distSquared = 0.f;
 
@@ -333,9 +342,9 @@ namespace nes
     ///		@returns : Closest point on the rect.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    Vector2<Type> Rect<Type>::GetClosestPontTo(const Vector2<Type> point) const
+    TVector2<Type> Rect<Type>::GetClosestPointTo(const TVector2<Type> point) const
     {
-        Vector2<Type> closestPoint = point;
+        TVector2<Type> closestPoint = point;
 
         // Clamp to X Dimension
         if (point.x < x)
@@ -355,7 +364,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    Vector2<Type> Rect<Type>::GetExtent() const
+    TVector2<Type> Rect<Type>::GetExtent() const
     {
         return GetSize() / static_cast<Type>(2); 
     }

@@ -17,7 +17,7 @@ namespace nes
     ///              - When the result is equal to 0, then all points are coplanar.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    Type Orient3D(const Vector3<Type>& a, const Vector3<Type>& b, const Vector3<Type>& c, const Vector3<Type>& d)
+    Type Orient3D(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c, const TVector3<Type>& d)
     {
         const Type elements[9] =
             {
@@ -26,7 +26,7 @@ namespace nes
                 c.x - d.x, c.y - d.y, c.z - d.z
         };
         
-        const SquareMatrix<3, Type> mat(elements);
+        const TSquareMatrix<3, Type> mat(elements);
         return mat.CalculateDeterminant();
     }
 

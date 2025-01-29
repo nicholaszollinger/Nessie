@@ -129,7 +129,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Draw a line connecting 'from' and 'to'.
     //----------------------------------------------------------------------------------------------------
-    void Renderer::DrawLine(Vec2 from, Vec2 to, const LinearColor& color) const
+    void Renderer::DrawLine(Vector2f from, Vector2f to, const LinearColor& color) const
     {
         SetDrawColor(color);
         SDL_RenderDrawLineF(s_pRenderer, from.x, from.y, to.x, to.y);
@@ -162,7 +162,7 @@ namespace nes
     //
     ///		@brief : Draw a wire circle.
     //----------------------------------------------------------------------------------------------------
-    void Renderer::DrawCircle(Vec2 position, float radius, const LinearColor& color) const
+    void Renderer::DrawCircle(Vector2f position, float radius, const LinearColor& color) const
     {
         SetDrawColor(color);
 
@@ -206,7 +206,7 @@ namespace nes
     //		
     ///		@brief : NOT SUPPORTED CURRENTLY. This will just draw the wire circle.
     //----------------------------------------------------------------------------------------------------
-    void Renderer::DrawFillCircle(Vec2 position, float radius, const LinearColor& color) const
+    void Renderer::DrawFillCircle(Vector2f position, float radius, const LinearColor& color) const
     {
         DrawCircle(position, radius, color);
     }

@@ -20,7 +20,7 @@ namespace nes
     class PerlinNoise2D
     {
         Rng m_rng;
-        Vec2 m_gradients[internal::kMaxPermutationCount];
+        Vector2f m_gradients[internal::kMaxPermutationCount];
 
     public:
         PerlinNoise2D();

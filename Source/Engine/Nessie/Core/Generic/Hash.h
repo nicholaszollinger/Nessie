@@ -1,5 +1,5 @@
-#pragma once
 // Hash.h
+#pragma once
 
 #include <concepts>
 #include <cstdint>

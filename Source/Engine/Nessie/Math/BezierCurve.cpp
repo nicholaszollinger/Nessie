@@ -13,7 +13,7 @@ namespace nes
         //
     }
 
-    BezierCurve::BezierCurve(const float start, const float end, const Vec2 control1, const Vec2 control2)
+    BezierCurve::BezierCurve(const float start, const float end, const Vector2f control1, const Vector2f control2)
         : m_start(0.0f, start)
         , m_end(1.0f, end)
         , m_control1(control1)
@@ -37,7 +37,7 @@ namespace nes
         const float c = 3 * t2 * (1 - t);
 
         // d = t^3 = t3
-        const Vec2 result = m_start * a + m_control1 * b + m_control2 * c + m_end * t3;
+        const Vector2f result = m_start * a + m_control1 * b + m_control2 * c + m_end * t3;
         return result.y;
     }
 }

@@ -149,32 +149,32 @@ namespace nes
         yi0 &= internal::kMaxTableSizeMask;
 
         // c00 == corner x0, y0
-        const Vec2& c00 = m_gradients[internal::GetPermutationValue2D(xi0, yi0)];
+        const Vector2f& c00 = m_gradients[internal::GetPermutationValue2D(xi0, yi0)];
         // c10 == corner x1, y0
-        const Vec2& c10 = m_gradients[internal::GetPermutationValue2D(xi1, yi0)];
+        const Vector2f& c10 = m_gradients[internal::GetPermutationValue2D(xi1, yi0)];
         // c01 == corner x0, y1
-        const Vec2& c01 = m_gradients[internal::GetPermutationValue2D(xi0, yi1)];
+        const Vector2f& c01 = m_gradients[internal::GetPermutationValue2D(xi0, yi1)];
         // c11 == corner x1, y1
-        const Vec2& c11 = m_gradients[internal::GetPermutationValue2D(xi1, yi1)];
+        const Vector2f& c11 = m_gradients[internal::GetPermutationValue2D(xi1, yi1)];
 
         float x0 = deltaX;
         float x1 = deltaX - 1.f;
         float y0 = deltaY;
         float y1 = deltaY - 1.f;
 
-        // Vec2 p00 == to Corner 00 
-        Vec2 p00 = { x0, y0 };
-        Vec2 p10 = { x1, y0 };
-        Vec2 p01 = { x0, y1 };
-        Vec2 p11 = { x1, y1 };
+        // Vector2f p00 == to Corner 00 
+        Vector2f p00 = { x0, y0 };
+        Vector2f p10 = { x1, y0 };
+        Vector2f p01 = { x0, y1 };
+        Vector2f p11 = { x1, y1 };
 
         float smoothX = math::SmoothStep(deltaX);
         float smoothY = math::SmoothStep(deltaY);
 
-        float v1 = Vec2::Dot(c00, p00);
-        float v2 = Vec2::Dot(c10, p10);
-        float v3 = Vec2::Dot(c01, p01);
-        float v4 = Vec2::Dot(c11, p11);
+        float v1 = Vector2f::Dot(c00, p00);
+        float v2 = Vector2f::Dot(c10, p10);
+        float v3 = Vector2f::Dot(c01, p01);
+        float v4 = Vector2f::Dot(c11, p11);
 
         float resultX = math::Lerp(v1, v2, smoothX);
         float resultY = math::Lerp(v3, v4, smoothX);

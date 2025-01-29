@@ -35,7 +35,7 @@ namespace nes
         MouseButton m_button = MouseButton::Unknown;
         MouseAction m_action = MouseAction::Unknown;
         Modifiers m_modifiers = Modifiers{};
-        Vec2 m_position;
+        Vector2f m_position;
 
     public:
         MouseButtonEvent(const MouseButton button, const MouseAction action, const Modifiers modifiers, const float xPos, const float yPos);
@@ -43,7 +43,7 @@ namespace nes
         [[nodiscard]] MouseButton GetButton() const     { return m_button; }
         [[nodiscard]] MouseAction GetAction() const     { return m_action; }
         [[nodiscard]] Modifiers GetModifiers() const    { return m_modifiers; }
-        [[nodiscard]] Vec2 GetPosition() const          { return m_position; }
+        [[nodiscard]] Vector2f GetPosition() const          { return m_position; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -53,14 +53,14 @@ namespace nes
     {
         NES_EVENT(MouseMoveEvent)
 
-        Vec2 m_position{};
-        Vec2 m_delta{};
+        Vector2f m_position{};
+        Vector2f m_delta{};
 
     public:
         MouseMoveEvent(const float xPos, const float yPos, const float xDelta, const float yDelta);
 
-        [[nodiscard]] Vec2 GetPosition() const { return m_position; }
-        [[nodiscard]] Vec2 GetDelta() const { return m_delta; }
+        [[nodiscard]] Vector2f GetPosition() const { return m_position; }
+        [[nodiscard]] Vector2f GetDelta() const { return m_delta; }
     };
 
 
@@ -71,7 +71,7 @@ namespace nes
     {
         NES_EVENT(MouseScrollEvent)
 
-        Vec2 m_delta{};
+        Vector2f m_delta{};
 
     public:
         MouseScrollEvent(const float xDelta, const float yDelta);

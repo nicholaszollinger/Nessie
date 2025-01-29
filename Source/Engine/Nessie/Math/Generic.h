@@ -1,6 +1,5 @@
-#pragma once
 // Generic.h
-
+#pragma once
 #include <cmath>
 #include "Core/Generic/Concepts.h"
 

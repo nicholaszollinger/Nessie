@@ -26,11 +26,11 @@ namespace nes
         void Clear(const LinearColor& color) const;
 
         // 2D
-        void DrawLine(Vec2 from, Vec2 to, const LinearColor& color) const;
+        void DrawLine(Vector2f from, Vector2f to, const LinearColor& color) const;
         void DrawRect(const Rectf& rect, const LinearColor& color) const;
         void DrawFillRect(const Rectf& rect, const LinearColor& color) const;
-        void DrawCircle(Vec2 position, float radius, const LinearColor& color) const;
-        void DrawFillCircle(Vec2 position, float radius, const LinearColor& color) const;
+        void DrawCircle(Vector2f position, float radius, const LinearColor& color) const;
+        void DrawFillCircle(Vector2f position, float radius, const LinearColor& color) const;
         
     protected:
         bool Init(Window* pWindow);

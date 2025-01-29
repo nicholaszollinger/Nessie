@@ -49,7 +49,7 @@ namespace nes
 	    Type SignedNormalizedRand();
 
 	    template <std::floating_point Type = float>
-	    Vector2<Type> RandUnitVector2D();
+	    TVector2<Type> RandUnitVector2D();
 
     private:
         void InitState(uint64_t seed);
@@ -129,7 +129,7 @@ namespace nes
     ///		@tparam Type : Floating point element type.
     //----------------------------------------------------------------------------------------------------
     template <std::floating_point Type>
-    Vector2<Type> Rng::RandUnitVector2D()
+    TVector2<Type> Rng::RandUnitVector2D()
     {
         const Type angle = NormalizedRand<Type>() * math::TwoPi<Type>();
         return { std::cos(angle), std::sin(angle) };

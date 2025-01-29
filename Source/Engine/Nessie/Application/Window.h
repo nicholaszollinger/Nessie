@@ -37,7 +37,7 @@ namespace nes
         
         WindowProperties m_properties{};
         void* m_pWindowContext = nullptr;
-        Vec2 m_cursorPosition{};
+        Vector2f m_cursorPosition{};
 
     private:
         Window() = default;
@@ -66,7 +66,7 @@ namespace nes
         [[nodiscard]] void* GetWindowContext() const         { return m_pWindowContext; }
         [[nodiscard]] const WindowExtent& GetExtent() const { return m_properties.m_extent; }
         [[nodiscard]] WindowMode GetWindowMode() const      { return m_properties.m_windowMode; }
-        [[nodiscard]] const Vec2& GetCursorPosition() const { return m_cursorPosition; }
+        [[nodiscard]] const Vector2f& GetCursorPosition() const { return m_cursorPosition; }
         [[nodiscard]] bool IsResizable() const              { return m_properties.m_isResizable; }
         [[nodiscard]] bool IsVsyncEnabled() const           { return m_properties.m_vsyncEnabled; }
         [[nodiscard]] bool IsMinimized() const              { return m_properties.m_isMinimized; }

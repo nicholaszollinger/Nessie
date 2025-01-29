@@ -3,7 +3,7 @@
 #include "TestGameApp.h"
 #include "imgui.h"
 #include "Math/Matrix.h"
-#include "Math/Triangles.h"
+#include "Math/Triangle.h"
 
 nes::Application* CreateApplication(const nes::CommandLineArgs& args)
 {
@@ -23,11 +23,11 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     const auto& renderer = GetRenderer();
     renderer.Clear(kClearColor);
 
-    constexpr nes::Vec2 kHalfWindowSize = {800.f, 450.f};
+    constexpr nes::Vector2f kHalfWindowSize = {800.f, 450.f};
 
     // Primitives...
     renderer.DrawCircle(kHalfWindowSize, 400.f, nes::LinearColor::Blue());
-    renderer.DrawLine(kHalfWindowSize + nes::Vec2{50.f, 50.f}, nes::Vec2{5.f, 0.f}, nes::LinearColor::Green());
+    renderer.DrawLine(kHalfWindowSize + nes::Vector2f{50.f, 50.f}, nes::Vector2f{5.f, 0.f}, nes::LinearColor::Green());
     renderer.DrawRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 100.f, 100.f, 100.f), nes::LinearColor::White());
     renderer.DrawFillRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 200.f, 100.f, 100.f), nes::LinearColor::Red());
 
@@ -83,10 +83,10 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
         ImGui::Text("3x3 Inverse: None");
     }
 
-    static nes::Vector2<float> position2D{};
+    static Vector2 position2D{};
     
     ImGui::InputFloat2("Test Point", &position2D.x);
-    nes::Triangle2D<float> triangle{};
+    nes::TTriangle2<float> triangle{};
     const bool isInside = triangle.ContainsPoint(position2D);
     ImGui::Text("Triangle2D: %s", triangle.ToString().c_str());
     ImGui::Text("Triangle Contains Test Point: %s", isInside? "true" : "false");

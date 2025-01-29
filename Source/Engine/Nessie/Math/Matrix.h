@@ -25,50 +25,55 @@ namespace nes
     ///		@tparam N : Dimension of the Square Matrix. Ex: N == 2 would be a 2x2 Matrix. 
     //----------------------------------------------------------------------------------------------------
     template <int N, FloatingPointType Type>
-    struct SquareMatrix
+    struct TSquareMatrix
     {
         Type m[N][N] {};
         
-        constexpr SquareMatrix();
-        constexpr SquareMatrix(const Type values[N * N]);
-        constexpr SquareMatrix(const SquareMatrix&) = default;
-        constexpr SquareMatrix(SquareMatrix&&) = default;
-        constexpr SquareMatrix& operator=(const SquareMatrix&) = default;
-        constexpr SquareMatrix& operator=(SquareMatrix&&) = default;
+        constexpr TSquareMatrix();
+        constexpr ~TSquareMatrix() = default;
+        constexpr TSquareMatrix(const Type values[N * N]);
+        constexpr TSquareMatrix(const TSquareMatrix&) = default;
+        constexpr TSquareMatrix(TSquareMatrix&&) = default;
+        constexpr TSquareMatrix& operator=(const TSquareMatrix&) = default;
+        constexpr TSquareMatrix& operator=(TSquareMatrix&&) = default;
         
-        constexpr bool operator==(const SquareMatrix& other) const;
-        constexpr bool operator!=(const SquareMatrix& other) const;
-        SquareMatrix  operator+(const SquareMatrix& other) const;
-        SquareMatrix& operator+=(const SquareMatrix& other);
-        SquareMatrix  operator-(const SquareMatrix& other) const;
-        SquareMatrix& operator-=(const SquareMatrix& other);
-        SquareMatrix  operator*(const SquareMatrix& other) const;
-        SquareMatrix& operator*=(const SquareMatrix& other);
-        SquareMatrix  operator*(const float scalar);
-        SquareMatrix& operator*=(const float scalar);
+        constexpr bool operator==(const TSquareMatrix& other) const;
+        constexpr bool operator!=(const TSquareMatrix& other) const;
+        TSquareMatrix  operator+(const TSquareMatrix& other) const;
+        TSquareMatrix& operator+=(const TSquareMatrix& other);
+        TSquareMatrix  operator-(const TSquareMatrix& other) const;
+        TSquareMatrix& operator-=(const TSquareMatrix& other);
+        TSquareMatrix  operator*(const TSquareMatrix& other) const;
+        TSquareMatrix& operator*=(const TSquareMatrix& other);
+        TSquareMatrix  operator*(const float scalar);
+        TSquareMatrix& operator*=(const float scalar);
         
         bool TryInvert();
-        bool TryGetInverse(SquareMatrix& result) const;
-        SquareMatrix& Transpose();
-        SquareMatrix GetTranspose() const;
+        bool TryGetInverse(TSquareMatrix& result) const;
+        TSquareMatrix& Transpose();
+        TSquareMatrix GetTranspose() const;
         float CalculateDeterminant() const;
         bool IsIdentity() const;
         
         std::string ToString() const;
         
-        static constexpr SquareMatrix Zero();
-        static constexpr SquareMatrix Identity();
+        static constexpr TSquareMatrix Zero();
+        static constexpr TSquareMatrix Identity();
     };
     
-    using Matrix2x2f = SquareMatrix<2, float>;
-    using Matrix2x2d = SquareMatrix<2, double>;
-    using Matrix3x3f = SquareMatrix<3, float>;
-    using Matrix3x3d = SquareMatrix<3, double>;
-    using Matrix4x4f = SquareMatrix<4, float>;
-    using Matrix4x4d = SquareMatrix<4, double>;
+    using Matrix2x2f = TSquareMatrix<2, float>;
+    using Matrix2x2d = TSquareMatrix<2, double>;
+    using Matrix3x3f = TSquareMatrix<3, float>;
+    using Matrix3x3d = TSquareMatrix<3, double>;
+    using Matrix4x4f = TSquareMatrix<4, float>;
+    using Matrix4x4d = TSquareMatrix<4, double>;
     
-    constexpr Matrix4x4f To3DMatrix(const Matrix2x2f& matrix2D, const Vec2& translation);
+    constexpr Matrix4x4f To3DMatrix(const Matrix2x2f& matrix2D, const Vector2f& translation);
 }
+
+using Matrix2x2 = nes::TSquareMatrix<2, NES_MATH_DEFAULT_REAL_TYPE>;
+using Matrix3x3 = nes::TSquareMatrix<3, NES_MATH_DEFAULT_REAL_TYPE>;
+using Matrix4x4 = nes::TSquareMatrix<4, NES_MATH_DEFAULT_REAL_TYPE>;
 
 namespace nes
 {
@@ -76,13 +81,13 @@ namespace nes
     ///		@brief : Default constructor initializes all elements to 0. 
     //----------------------------------------------------------------------------------------------------
     template <int N, FloatingPointType Type>
-    constexpr SquareMatrix<N, Type>::SquareMatrix()
+    constexpr TSquareMatrix<N, Type>::TSquareMatrix()
     {
         memset(&(m[0][0]), 0, N * N * sizeof(float));
     }
 
     template <int N, FloatingPointType Type>
-    constexpr SquareMatrix<N, Type>::SquareMatrix(const Type values[N * N])
+    constexpr TSquareMatrix<N, Type>::TSquareMatrix(const Type values[N * N])
     {
         NES_ASSERT(values != nullptr);
         //NES_ASSERTV((sizeof(values) / sizeof(values[0])) == (N * N), "Array of values must have size equal to N * N.");
@@ -91,7 +96,7 @@ namespace nes
     }
     
     template <int N, FloatingPointType Type>
-    constexpr bool SquareMatrix<N, Type>::operator==(const SquareMatrix& other) const
+    constexpr bool TSquareMatrix<N, Type>::operator==(const TSquareMatrix& other) const
     {
         for (int i = 0; i < N; ++i)
         {
@@ -106,21 +111,21 @@ namespace nes
     }
 
     template <int N, FloatingPointType Type>
-    constexpr bool SquareMatrix<N, Type>::operator!=(const SquareMatrix& other) const
+    constexpr bool TSquareMatrix<N, Type>::operator!=(const TSquareMatrix& other) const
     {
         return !(*this == other);
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type> SquareMatrix<N, Type>::operator+(const SquareMatrix& other) const
+    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::operator+(const TSquareMatrix& other) const
     {
-        SquareMatrix result(*this);
+        TSquareMatrix result(*this);
         result += other;
         return result;
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type>& SquareMatrix<N, Type>::operator+=(const SquareMatrix& other)
+    TSquareMatrix<N, Type>& TSquareMatrix<N, Type>::operator+=(const TSquareMatrix& other)
     {
         for (int i = 0; i < N; ++i)
         {
@@ -134,15 +139,15 @@ namespace nes
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type> SquareMatrix<N, Type>::operator-(const SquareMatrix& other) const
+    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::operator-(const TSquareMatrix& other) const
     {
-        SquareMatrix result(*this);
+        TSquareMatrix result(*this);
         result -= other;
         return result;
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type>& SquareMatrix<N, Type>::operator-=(const SquareMatrix& other)
+    TSquareMatrix<N, Type>& TSquareMatrix<N, Type>::operator-=(const TSquareMatrix& other)
     {
         for (int i = 0; i < N; ++i)
         {
@@ -156,9 +161,9 @@ namespace nes
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type> SquareMatrix<N, Type>::operator*(const SquareMatrix& other) const
+    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::operator*(const TSquareMatrix& other) const
     {
-        SquareMatrix result{};
+        TSquareMatrix result{};
 
         // 2x2
         if constexpr (N == 2)
@@ -228,22 +233,22 @@ namespace nes
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type>& SquareMatrix<N, Type>::operator*=(const SquareMatrix& other)
+    TSquareMatrix<N, Type>& TSquareMatrix<N, Type>::operator*=(const TSquareMatrix& other)
     {
         *this = *this * other;
         return *this;
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type> SquareMatrix<N, Type>::operator*(const float scalar)
+    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::operator*(const float scalar)
     {
-        SquareMatrix result(*this);
+        TSquareMatrix result(*this);
         result *= scalar;
         return result;
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type>& SquareMatrix<N, Type>::operator*=(const float scalar)
+    TSquareMatrix<N, Type>& TSquareMatrix<N, Type>::operator*=(const float scalar)
     {
         for (int i = 0; i < N; ++i)
         {
@@ -264,9 +269,9 @@ namespace nes
     ///             the Matrix will remain unchanged.
     //----------------------------------------------------------------------------------------------------
     template <int N, FloatingPointType Type>
-    bool SquareMatrix<N, Type>::TryInvert()
+    bool TSquareMatrix<N, Type>::TryInvert()
     {
-        const SquareMatrix<N, Type> copy = *this;
+        const TSquareMatrix<N, Type> copy = *this;
         
         // 2x2
         if constexpr (N == 2)
@@ -422,23 +427,23 @@ namespace nes
     ///		@param result : The resulting inverse of the Matrix, or equal to the Matrix if no inverse is possible.
     //----------------------------------------------------------------------------------------------------
     template <int N, FloatingPointType Type>
-    bool SquareMatrix<N, Type>::TryGetInverse(SquareMatrix<N, Type>& result) const
+    bool TSquareMatrix<N, Type>::TryGetInverse(TSquareMatrix<N, Type>& result) const
     {
         result = *this;
         return result.TryInvert();
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type>& SquareMatrix<N, Type>::Transpose()
+    TSquareMatrix<N, Type>& TSquareMatrix<N, Type>::Transpose()
     {
         *this = GetTranspose();
         return *this;
     }
 
     template <int N, FloatingPointType Type>
-    SquareMatrix<N, Type> SquareMatrix<N, Type>::GetTranspose() const
+    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::GetTranspose() const
     {
-        SquareMatrix result;
+        TSquareMatrix result;
 
         for (int i = 0; i < N; ++i)
         {
@@ -452,7 +457,7 @@ namespace nes
     }
     
     template <int N, FloatingPointType Type>
-    float SquareMatrix<N, Type>::CalculateDeterminant() const
+    float TSquareMatrix<N, Type>::CalculateDeterminant() const
     {
         // Page 162 of my Math Textbook: "3D Math Primer for Graphics and Game Development".
 
@@ -513,7 +518,7 @@ namespace nes
     }
 
     template <int N, FloatingPointType Type>
-    bool SquareMatrix<N, Type>::IsIdentity() const
+    bool TSquareMatrix<N, Type>::IsIdentity() const
     {
         for (int i = 0; i < N; ++i)
         {
@@ -536,17 +541,17 @@ namespace nes
 
 
     template <int N, FloatingPointType Type>
-    constexpr SquareMatrix<N, Type> SquareMatrix<N, Type>::Zero()
+    constexpr TSquareMatrix<N, Type> TSquareMatrix<N, Type>::Zero()
     {
-        SquareMatrix result{};
+        TSquareMatrix result{};
         memset(&(result.m[0][0]), 0, N * N * sizeof(float));
         return result;
     }
 
     template <int N, FloatingPointType Type>
-    constexpr SquareMatrix<N, Type> SquareMatrix<N, Type>::Identity()
+    constexpr TSquareMatrix<N, Type> TSquareMatrix<N, Type>::Identity()
     {
-        SquareMatrix result{};
+        TSquareMatrix result{};
         
         for (int i = 0; i < N; ++i)
         {
@@ -560,7 +565,7 @@ namespace nes
     }
 
     template <int N, FloatingPointType Type>
-    std::string SquareMatrix<N, Type>::ToString() const
+    std::string TSquareMatrix<N, Type>::ToString() const
     {
         std::string result;
         result.reserve(static_cast<size_t>(N * N));
@@ -584,7 +589,7 @@ namespace nes
     ///		@brief : Converts a 2x2 matrix, containing the Rotation and Scale, and a Translation into
     ///             a 3D representation.
     //----------------------------------------------------------------------------------------------------
-    constexpr Matrix4x4f To3DMatrix(const Matrix2x2f& matrix2D, const Vec2& translation)
+    constexpr Matrix4x4f To3DMatrix(const Matrix2x2f& matrix2D, const Vector2f& translation)
     {
         const float elements[16]
         {

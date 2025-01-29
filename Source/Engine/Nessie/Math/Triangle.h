@@ -9,44 +9,44 @@ namespace nes
     namespace math
     {
         template <FloatingPointType Type>
-        static constexpr Vector3<Type> CalculateBarycentricCoordinate(const Vector3<Type>& a, const Vector3<Type>& b, const Vector3<Type>& c, const Vector3<Type>& p);
+        static constexpr TVector3<Type> CalculateBarycentricCoordinate(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c, const TVector3<Type>& p);
 
         template <FloatingPointType Type>
-        static constexpr Vector3<Type> CalculateBarycentricCoordinate2D(const Vector2<Type>& a, const Vector2<Type>& b, const Vector2<Type>& c, const Vector2<Type>& p);
+        static constexpr TVector3<Type> CalculateBarycentricCoordinate2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c, const TVector2<Type>& p);
         
         template <FloatingPointType Type>
-        static constexpr float CalculateSignedAreaOfTriangle(const Vector3<Type>& a, const Vector3<Type>& b, const Vector3<Type>& c);
+        static constexpr float CalculateSignedAreaOfTriangle(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c);
         
         template <FloatingPointType Type>
-        static constexpr float CalculateSignedAreaOfTriangle2D(const Vector2<Type>& a, const Vector2<Type>& b, const Vector2<Type>& c);
+        static constexpr float CalculateSignedAreaOfTriangle2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c);
 
         template <FloatingPointType Type>
-        static constexpr bool TriangleContainsPoint(const Vector3<Type>& a, const Vector3<Type>& b, const Vector3<Type>& c, const Vector3<Type>& p);
+        static constexpr bool TriangleContainsPoint(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c, const TVector3<Type>& p);
 
         template <FloatingPointType Type>
-        static constexpr bool TriangleContainsPoint2D(const Vector2<Type>& a, const Vector2<Type>& b, const Vector2<Type>& c, const Vector2<Type>& p);
+        static constexpr bool TriangleContainsPoint2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c, const TVector2<Type>& p);
     }
     
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Triangle class that takes 2D points as vertices. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    struct Triangle2D
+    struct TTriangle2
     {
-        Vector2<Type> m_vertices[3]{};
+        TVector2<Type> m_vertices[3]{};
 
-        constexpr Triangle2D();
-        constexpr Triangle2D(const Vector2<Type>& v0, const Vector2<Type>& v1, const Vector2<Type>& v2);
-        explicit constexpr Triangle2D(const Vector2<Type> vertices[3]);
+        constexpr TTriangle2();
+        constexpr TTriangle2(const TVector2<Type>& v0, const TVector2<Type>& v1, const TVector2<Type>& v2);
+        explicit constexpr TTriangle2(const TVector2<Type> vertices[3]);
 
-        Vector2<Type>& operator[](const size_t index);
-        Vector2<Type> operator[](const size_t index) const;
+        TVector2<Type>& operator[](const size_t index);
+        TVector2<Type> operator[](const size_t index) const;
         
         constexpr float Area() const;
         constexpr float SignedArea() const;
-        constexpr bool ContainsPoint(const Vector2<Type>& point) const;
-        constexpr Vector2<Type> GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const;
-        void CalculateBarycentricCoordinate(const Vector2<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+        constexpr bool ContainsPoint(const TVector2<Type>& point) const;
+        constexpr TVector2<Type> GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const;
+        void CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
 
         std::string ToString() const;
     };
@@ -55,27 +55,32 @@ namespace nes
     ///		@brief : Triangle class that takes 3D points as vertices. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    struct Triangle
+    struct TTriangle3
     {
-        Vector3<Type> m_vertices[3]{};
+        TVector3<Type> m_vertices[3]{};
 
-        constexpr Triangle();
-        constexpr Triangle(const Vector3<Type>& v0, const Vector3<Type>& v1, const Vector3<Type>& v2);
-        explicit constexpr Triangle(const Vector3<Type> vertices[3]);
-        explicit constexpr Triangle(const Triangle2D<Type>& triangle);
+        constexpr TTriangle3();
+        constexpr TTriangle3(const TVector3<Type>& v0, const TVector3<Type>& v1, const TVector3<Type>& v2);
+        explicit constexpr TTriangle3(const TVector3<Type> vertices[3]);
+        explicit constexpr TTriangle3(const TTriangle2<Type>& triangle);
 
-        Vector3<Type>& operator[](const size_t index);
-        Vector3<Type> operator[](const size_t index) const;
+        TVector3<Type>& operator[](const size_t index);
+        TVector3<Type> operator[](const size_t index) const;
 
         constexpr float Area() const;
         constexpr float SignedArea() const;
-        constexpr bool ContainsPoint(const Vector3<Type>& point) const;
-        constexpr Vector3<Type> GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const;
-        void CalculateBarycentricCoordinate(const Vector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+        constexpr bool ContainsPoint(const TVector3<Type>& point) const;
+        constexpr TVector3<Type> GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const;
+        void CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
         
         std::string ToString() const;
     };
 }
+
+NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Triangle2)
+NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Triangle3)
+NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TTriangle2, Triangle2D);
+NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TTriangle3, Triangle);
 
 namespace nes
 {
@@ -87,26 +92,26 @@ namespace nes
         ///              by to get the point P. 
         //----------------------------------------------------------------------------------------------------
         template <FloatingPointType Type>
-        constexpr Vector3<Type> CalculateBarycentricCoordinate(const Vector3<Type>& a, const Vector3<Type>& b,
-            const Vector3<Type>& c, const Vector3<Type>& p)
+        constexpr TVector3<Type> CalculateBarycentricCoordinate(const TVector3<Type>& a, const TVector3<Type>& b,
+            const TVector3<Type>& c, const TVector3<Type>& p)
         {
 #if 1
             // Implementation derived from first defining a 2x2 system of linear equations, then
             // using Cramer's Rule and the Dot Product. Honestly a bit confusing to read through...
             // Barycentric Coordinates are on pg 47-48 of "Real-Time Collision Detection".
-            const Vector3<Type> v0 = b - a;
-            const Vector3<Type> v1 = c - a;
-            const Vector3<Type> v2 = p - a;
+            const TVector3<Type> v0 = b - a;
+            const TVector3<Type> v1 = c - a;
+            const TVector3<Type> v2 = p - a;
 
-            const Type dot00 = Vector3<Type>::Dot(v0, v0);
-            const Type dot01 = Vector3<Type>::Dot(v0, v1);
-            const Type dot11 = Vector3<Type>::Dot(v1, v1);
-            const Type dot20 = Vector3<Type>::Dot(v2, v0);
-            const Type dot21 = Vector3<Type>::Dot(v2, v1);
+            const Type dot00 = TVector3<Type>::Dot(v0, v0);
+            const Type dot01 = TVector3<Type>::Dot(v0, v1);
+            const Type dot11 = TVector3<Type>::Dot(v1, v1);
+            const Type dot20 = TVector3<Type>::Dot(v2, v0);
+            const Type dot21 = TVector3<Type>::Dot(v2, v1);
 
             const Type denominator = dot00 * dot11 - dot01 * dot01;
 
-            Vector3<Type> result{};
+            TVector3<Type> result{};
             result.y = (dot11 * dot20 - dot01 * dot21) / denominator;
             result.z = (dot00 * dot21 - dot01 * dot20) / denominator;
             result.x = static_cast<Type>(1.0) - result.y - result.z;
@@ -164,10 +169,10 @@ namespace nes
         ///              by to get the point P. 
         //----------------------------------------------------------------------------------------------------
         template <FloatingPointType Type>
-        constexpr Vector3<Type> CalculateBarycentricCoordinate2D(const Vector2<Type>& a, const Vector2<Type>& b,
-            const Vector2<Type>& c, const Vector2<Type>& p)
+        constexpr TVector3<Type> CalculateBarycentricCoordinate2D(const TVector2<Type>& a, const TVector2<Type>& b,
+            const TVector2<Type>& c, const TVector2<Type>& p)
         {
-            return CalculateBarycentricCoordinate(Vector3<Type>(a), Vector3<Type>(b), Vector3<Type>(c), Vector3<Type>(p));
+            return CalculateBarycentricCoordinate(TVector3<Type>(a), TVector3<Type>(b), TVector3<Type>(c), TVector3<Type>(p));
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -175,8 +180,8 @@ namespace nes
         ///             of the a, b, c vertices.
         //----------------------------------------------------------------------------------------------------
         template <FloatingPointType Type>
-        constexpr float CalculateSignedAreaOfTriangle(const Vector3<Type>& a, const Vector3<Type>& b,
-            const Vector3<Type>& c)
+        constexpr float CalculateSignedAreaOfTriangle(const TVector3<Type>& a, const TVector3<Type>& b,
+            const TVector3<Type>& c)
         {
             return (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
         }
@@ -185,8 +190,8 @@ namespace nes
         ///		@brief : Calculate the *signed* area of a 2D Triangle.
         //----------------------------------------------------------------------------------------------------
         template <FloatingPointType Type>
-        constexpr float CalculateSignedAreaOfTriangle2D(const Vector2<Type>& a, const Vector2<Type>& b,
-            const Vector2<Type>& c)
+        constexpr float CalculateSignedAreaOfTriangle2D(const TVector2<Type>& a, const TVector2<Type>& b,
+            const TVector2<Type>& c)
         {
             return (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
         }
@@ -199,10 +204,10 @@ namespace nes
         ///		@brief : Test whether a point "p" lies in or on the triangle "abc".
         //----------------------------------------------------------------------------------------------------
         template <FloatingPointType Type>
-        constexpr bool TriangleContainsPoint(const Vector3<Type>& a, const Vector3<Type>& b, const Vector3<Type>& c,
-            const Vector3<Type>& p)
+        constexpr bool TriangleContainsPoint(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c,
+            const TVector3<Type>& p)
         {
-            const Vector3<Type> baryCoord = CalculateBarycentricCoordinate(a, b, c, p);
+            const TVector3<Type> baryCoord = CalculateBarycentricCoordinate(a, b, c, p);
             return baryCoord.y >= 0.f && baryCoord.y >= 0.f && baryCoord.z + baryCoord.x <= 1.f;
         }
 
@@ -214,10 +219,10 @@ namespace nes
         ///		@brief : Test whether a point "p" lies in or on the triangle "abc".
         //----------------------------------------------------------------------------------------------------
         template <FloatingPointType Type>
-        constexpr bool TriangleContainsPoint2D(const Vector2<Type>& a, const Vector2<Type>& b, const Vector2<Type>& c,
-            const Vector2<Type>& p)
+        constexpr bool TriangleContainsPoint2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c,
+            const TVector2<Type>& p)
         {
-            const Vector3<Type> baryCoord = CalculateBarycentricCoordinate2D(a, b, c, p);
+            const TVector3<Type> baryCoord = CalculateBarycentricCoordinate2D(a, b, c, p);
             return baryCoord.y >= 0.f && baryCoord.z >= 0.f && (baryCoord.y + baryCoord.z) <= 1.f;
         }
     }
@@ -229,18 +234,18 @@ namespace nes
     ///              2 = (0.5, 0);
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle2D<Type>::Triangle2D()
+    constexpr TTriangle2<Type>::TTriangle2()
     {
-        m_vertices[0] = Vector2<Type>(-0.5f, 0.f);
-        m_vertices[1] = Vector2<Type>(0.f, 1.f);
-        m_vertices[2] = Vector2<Type>(0.5f, 0.f);
+        m_vertices[0] = TVector2<Type>(-0.5f, 0.f);
+        m_vertices[1] = TVector2<Type>(0.f, 1.f);
+        m_vertices[2] = TVector2<Type>(0.5f, 0.f);
     }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Constructor that takes in the 3 Vertices for the triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle2D<Type>::Triangle2D(const Vector2<Type>& v0, const Vector2<Type>& v1, const Vector2<Type>& v2)
+    constexpr TTriangle2<Type>::TTriangle2(const TVector2<Type>& v0, const TVector2<Type>& v1, const TVector2<Type>& v2)
     {
         m_vertices[0] = v0;
         m_vertices[1] = v1;
@@ -251,7 +256,7 @@ namespace nes
     ///		@brief : Constructor that takes in an array of Vertices. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle2D<Type>::Triangle2D(const Vector2<Type> vertices[3])
+    constexpr TTriangle2<Type>::TTriangle2(const TVector2<Type> vertices[3])
     {
         m_vertices[0] = vertices[0];
         m_vertices[1] = vertices[1];
@@ -262,7 +267,7 @@ namespace nes
     ///		@brief : Calculate the Area of the Triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr float Triangle2D<Type>::Area() const
+    constexpr float TTriangle2<Type>::Area() const
     {
         return math::Abs(SignedArea());
     }
@@ -271,7 +276,7 @@ namespace nes
     ///		@brief : Calculate the *signed* Area of the Triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr float Triangle2D<Type>::SignedArea() const
+    constexpr float TTriangle2<Type>::SignedArea() const
     {
         return math::CalculateSignedAreaOfTriangle2D(m_vertices[0], m_vertices[1], m_vertices[2]);
     }
@@ -280,7 +285,7 @@ namespace nes
     ///		@brief : Returns whether the point is in or on the border of the Triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr bool Triangle2D<Type>::ContainsPoint(const Vector2<Type>& point) const
+    constexpr bool TTriangle2<Type>::ContainsPoint(const TVector2<Type>& point) const
     {
         return math::TriangleContainsPoint2D(m_vertices[0], m_vertices[1], m_vertices[2], point);
     }
@@ -294,18 +299,18 @@ namespace nes
     ///              2 = (0.5, 0, 0); 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle<Type>::Triangle()
+    constexpr TTriangle3<Type>::TTriangle3()
     {
-        m_vertices[0] = Vector3<Type>(-0.5f, 0.f, 0.f);
-        m_vertices[1] = Vector3<Type>(0.f, 1.f, 0.f);
-        m_vertices[2] = Vector3<Type>(0.5f, 0.f, 0.f);
+        m_vertices[0] = TVector3<Type>(-0.5f, 0.f, 0.f);
+        m_vertices[1] = TVector3<Type>(0.f, 1.f, 0.f);
+        m_vertices[2] = TVector3<Type>(0.5f, 0.f, 0.f);
     }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Constructor that takes in the 3 Vertices for the triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle<Type>::Triangle(const Vector3<Type>& v0, const Vector3<Type>& v1, const Vector3<Type>& v2)
+    constexpr TTriangle3<Type>::TTriangle3(const TVector3<Type>& v0, const TVector3<Type>& v1, const TVector3<Type>& v2)
     {
         m_vertices[0] = v0;
         m_vertices[1] = v1;
@@ -316,7 +321,7 @@ namespace nes
     ///		@brief : Constructor that takes in an array of Vertices. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle<Type>::Triangle(const Vector3<Type> vertices[3])
+    constexpr TTriangle3<Type>::TTriangle3(const TVector3<Type> vertices[3])
     {
         m_vertices[0] = vertices[0];
         m_vertices[1] = vertices[1];
@@ -328,7 +333,7 @@ namespace nes
     ///             a triangle with 3D points.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Triangle<Type>::Triangle(const Triangle2D<Type>& triangle)
+    constexpr TTriangle3<Type>::TTriangle3(const TTriangle2<Type>& triangle)
     {
         m_vertices[0] = triangle.m_vertices[0];
         m_vertices[1] = triangle.m_vertices[1];
@@ -339,7 +344,7 @@ namespace nes
     ///		@brief : Calculate the Area of the Triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr float Triangle<Type>::Area() const
+    constexpr float TTriangle3<Type>::Area() const
     {
         return math::Abs(SignedArea());
     }
@@ -348,7 +353,7 @@ namespace nes
     ///		@brief : Calculate the *signed* Area of the Triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr float Triangle<Type>::SignedArea() const
+    constexpr float TTriangle3<Type>::SignedArea() const
     {
         return math::CalculateSignedAreaOfTriangle2D(m_vertices[0], m_vertices[1], m_vertices[2]);
     }
@@ -357,7 +362,7 @@ namespace nes
     ///		@brief : Returns whether the point is in or on the border of the Triangle. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr bool Triangle<Type>::ContainsPoint(const Vector3<Type>& point) const
+    constexpr bool TTriangle3<Type>::ContainsPoint(const TVector3<Type>& point) const
     {
         return math::TriangleContainsPoint(m_vertices[0], m_vertices[1], m_vertices[2], point);
     }
@@ -366,20 +371,20 @@ namespace nes
     ///		@brief : Get the point in or on the triangle that corresponds to the given barycentric coordinates.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Vector2<Type> Triangle2D<Type>::GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const
+    constexpr TVector2<Type> TTriangle2<Type>::GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const
     {
         return bary0 * m_vertices[0] + bary1 * m_vertices[1] + bary2 * m_vertices[2];
     }
 
     template <FloatingPointType Type>
-    Vector2<Type>& Triangle2D<Type>::operator[](const size_t index)
+    TVector2<Type>& TTriangle2<Type>::operator[](const size_t index)
     {
         NES_ASSERT(index < 3);
         return m_vertices[index];
     }
 
     template <FloatingPointType Type>
-    Vector2<Type> Triangle2D<Type>::operator[](const size_t index) const
+    TVector2<Type> TTriangle2<Type>::operator[](const size_t index) const
     {
         NES_ASSERT(index < 3);
         return m_vertices[index];
@@ -389,30 +394,30 @@ namespace nes
     ///		@brief : Calculate the Barycentric coordinate for the point p.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    void Triangle2D<Type>::CalculateBarycentricCoordinate(const Vector2<Type>& p, Type& bary0, Type& bary1,
+    void TTriangle2<Type>::CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1,
         Type& bary2) const
     {
-        const Vector3<Type> baryCoordinates = math::CalculateBarycentricCoordinate(m_vertices[0], m_vertices[1], m_vertices[2], p);
+        const TVector3<Type> baryCoordinates = math::CalculateBarycentricCoordinate(m_vertices[0], m_vertices[1], m_vertices[2], p);
         bary0 = baryCoordinates.x;
         bary1 = baryCoordinates.y;
         bary2 = baryCoordinates.z;
     }
 
     template <FloatingPointType Type>
-    std::string Triangle2D<Type>::ToString() const
+    std::string TTriangle2<Type>::ToString() const
     {
         return CombineIntoString("A: ", m_vertices[0], "\nB: ", m_vertices[1], ",\nC: ", m_vertices[2]);
     }
 
     template <FloatingPointType Type>
-    Vector3<Type>& Triangle<Type>::operator[](const size_t index)
+    TVector3<Type>& TTriangle3<Type>::operator[](const size_t index)
     {
         NES_ASSERT(index < 3);
         return m_vertices[index];
     }
 
     template <FloatingPointType Type>
-    Vector3<Type> Triangle<Type>::operator[](const size_t index) const
+    TVector3<Type> TTriangle3<Type>::operator[](const size_t index) const
     {
         NES_ASSERT(index < 3);
         return m_vertices[index];
@@ -422,7 +427,7 @@ namespace nes
     ///		@brief : Get the point in or on the triangle that corresponds to the given barycentric coordinates.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Vector3<Type> Triangle<Type>::GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const
+    constexpr TVector3<Type> TTriangle3<Type>::GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const
     {
         return bary0 * m_vertices[0] + bary1 * m_vertices[1] + bary2 * m_vertices[2];
     }
@@ -431,16 +436,16 @@ namespace nes
     ///		@brief : Calculate the Barycentric coordinates for point p. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    void Triangle<Type>::CalculateBarycentricCoordinate(const Vector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const
+    void TTriangle3<Type>::CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const
     {
-        const Vector3<Type> baryCoordinates = math::CalculateBarycentricCoordinate(m_vertices[0], m_vertices[1], m_vertices[2], p);
+        const TVector3<Type> baryCoordinates = math::CalculateBarycentricCoordinate(m_vertices[0], m_vertices[1], m_vertices[2], p);
         bary0 = baryCoordinates.x;
         bary1 = baryCoordinates.y;
         bary2 = baryCoordinates.z;
     }
 
     template <FloatingPointType Type>
-    std::string Triangle<Type>::ToString() const
+    std::string TTriangle3<Type>::ToString() const
     {
         return CombineIntoString("A: ", m_vertices[0], "\nB: ", m_vertices[1], "\nC: ", m_vertices[2]);
     }

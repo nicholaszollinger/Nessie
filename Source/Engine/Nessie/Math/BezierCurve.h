@@ -12,14 +12,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class BezierCurve
     {
-        Vec2 m_start;
-        Vec2 m_end;
-        Vec2 m_control1;
-        Vec2 m_control2;
+        Vector2f m_start;
+        Vector2f m_end;
+        Vector2f m_control1;
+        Vector2f m_control2;
 
     public:
         BezierCurve();
-        BezierCurve(const float start, const float end, const Vec2 control1, const Vec2 control2);
+        BezierCurve(const float start, const float end, const Vector2f control1, const Vector2f control2);
         float Evaluate(const float t) const;
     };
 }

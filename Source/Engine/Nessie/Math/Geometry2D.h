@@ -18,7 +18,7 @@ namespace nes
     ///              - When the result is equal to 0, then the three points are collinear.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    Type Orient2D(const Vector2<Type>& a, const Vector2<Type>& b, const Vector2<Type>& c)
+    Type Orient2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c)
     {
         const Type elements[4] =
             {
@@ -26,7 +26,7 @@ namespace nes
             b.x - c.x, b.y - c.y
         };
         
-        const SquareMatrix<2, Type> mat(elements);
+        const TSquareMatrix<2, Type> mat(elements);
         return mat.CalculateDeterminant();
     }
 
@@ -41,7 +41,7 @@ namespace nes
     ///             - If the result is >0, then point D is outside the Circle.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    Type InCircle2D(const Vector2<Type>& a, const Vector2<Type>& b, const Vector2<Type>& c, const Vector2<Type>& d)
+    Type InCircle2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c, const TVector2<Type>& d)
     {
         const auto aDiff = a - d;
         const auto bDiff = b - d;
@@ -54,7 +54,7 @@ namespace nes
                 cDiff.x, cDiff.y, cDiff.SquaredMagnitude(),
             };
 
-        const SquareMatrix<3, Type> mat(elements);
+        const TSquareMatrix<3, Type> mat(elements);
         const Type determinant = mat.CalculateDeterminant();
 
         // If the determinant is 0, then the four points are co-circular.
