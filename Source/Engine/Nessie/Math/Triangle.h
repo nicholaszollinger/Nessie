@@ -199,7 +199,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         //		NOTES:
         //      This uses Barycentric Coordinates to determine if the point is contained by the triangle. This is true
-        //      if the u, v, w coordinates are all 
+        //      if the u, v, w coordinates are all within the range [0, 1].
         //		
         ///		@brief : Test whether a point "p" lies in or on the triangle "abc".
         //----------------------------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         //		NOTES:
         //      This uses Barycentric Coordinates to determine if the point is contained by the triangle. This is true
-        //      if the u, v, w coordinates are all 
+        //      if the u, v, w coordinates are all within the range [0, 1].
         //		
         ///		@brief : Test whether a point "p" lies in or on the triangle "abc".
         //----------------------------------------------------------------------------------------------------

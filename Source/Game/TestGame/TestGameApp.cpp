@@ -2,6 +2,7 @@
 
 #include "TestGameApp.h"
 #include "imgui.h"
+#include "Math/Circle.h"
 #include "Math/Matrix.h"
 #include "Math/Triangle.h"
 
@@ -23,13 +24,24 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     const auto& renderer = GetRenderer();
     renderer.Clear(kClearColor);
 
-    constexpr nes::Vector2f kHalfWindowSize = {800.f, 450.f};
-
+    static constexpr Vector2 kHalfWindowSize = {800.f, 450.f};
+    static Circle circle(kHalfWindowSize, 400.f);
+    static Vector2 testPoint(kHalfWindowSize);
+    static bool isInside = true;
+    
     // Primitives...
-    renderer.DrawCircle(kHalfWindowSize, 400.f, nes::LinearColor::Blue());
-    renderer.DrawLine(kHalfWindowSize + nes::Vector2f{50.f, 50.f}, nes::Vector2f{5.f, 0.f}, nes::LinearColor::Green());
-    renderer.DrawRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 100.f, 100.f, 100.f), nes::LinearColor::White());
-    renderer.DrawFillRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 200.f, 100.f, 100.f), nes::LinearColor::Red());
+    // Test Circle
+    if (isInside)
+        renderer.DrawCircle(circle.m_center, circle.m_radius, nes::LinearColor::Green());
+    else
+        renderer.DrawCircle(circle.m_center, circle.m_radius, nes::LinearColor::Red());
+        
+    // Test Point
+    renderer.DrawCircle(testPoint, 2.f, nes::LinearColor::White());
+    
+    //renderer.DrawLine(kHalfWindowSize + nes::Vector2f{50.f, 50.f}, nes::Vector2f{5.f, 0.f}, nes::LinearColor::Green());
+    //renderer.DrawRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 100.f, 100.f, 100.f), nes::LinearColor::White());
+    //renderer.DrawFillRect(nes::Rectf(kHalfWindowSize.x, kHalfWindowSize.y + 200.f, 100.f, 100.f), nes::LinearColor::Red());
 
     auto& io = ImGui::GetIO();
     ImGui::Begin("App Stats");
@@ -37,14 +49,17 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     ImGui::End();
     
     // Matrix Tests
-    ImGui::Begin("Matrices");
-    static nes::Matrix2x2f aMatrix = nes::Matrix2x2f::Identity();
+    ImGui::Begin("Math Tests");
+    ImGui::DragFloat2("Test Point", &testPoint.x);
+
+#if 0
+    static Matrix2x2 aMatrix = Matrix2x2::Identity();
     ImGui::InputFloat4("A Matrix", aMatrix.m[0]);
     
-    static nes::Matrix2x2f bMatrix = nes::Matrix2x2f::Identity();
+    static Matrix2x2 bMatrix = Matrix2x2::Identity();
     ImGui::InputFloat4("B Matrix", bMatrix.m[0]);
     
-    nes::Matrix2x2f result = aMatrix + bMatrix;
+    Matrix2x2 result = aMatrix + bMatrix;
     ImGui::Text("A + B: %s", result.ToString().c_str());
 
     result = aMatrix - bMatrix;
@@ -68,12 +83,12 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     };
     
     // 3x3
-    static nes::Matrix3x3f aMatrix3 = nes::Matrix3x3f(kValues);
+    static Matrix3x3 aMatrix3 = Matrix3x3(kValues);
 
     ImGui::Text("3x3 Matrix: %s", aMatrix3.ToString().c_str());
     ImGui::Text("3x3 Determinant: %.2f", aMatrix3.CalculateDeterminant());
 
-    if (nes::Matrix3x3f inverseMatrix; aMatrix3.TryGetInverse(inverseMatrix))
+    if (Matrix3x3 inverseMatrix; aMatrix3.TryGetInverse(inverseMatrix))
     {
         ImGui::Text("3x3 Inverse: %s", inverseMatrix.ToString().c_str());
     }
@@ -82,15 +97,19 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
     {
         ImGui::Text("3x3 Inverse: None");
     }
-
-    static Vector2 position2D{};
     
-    ImGui::InputFloat2("Test Point", &position2D.x);
-    nes::TTriangle2<float> triangle{};
-    const bool isInside = triangle.ContainsPoint(position2D);
+    // Triangles
+    Triangle2D triangle{};
+    isInside = triangle.ContainsPoint(testPoint);
     ImGui::Text("Triangle2D: %s", triangle.ToString().c_str());
     ImGui::Text("Triangle Contains Test Point: %s", isInside? "true" : "false");
     ImGui::Text("Signed Area: %.2f", triangle.Area());
+#endif
+    
+    // Circles
+    ImGui::DragFloat("Circle Radius", &circle.m_radius);
+    isInside = circle.ContainsPoint(testPoint);
+    ImGui::Text("Circle Contains Test Point: %s", isInside? "true" : "false");
     
     ImGui::End();
 }
