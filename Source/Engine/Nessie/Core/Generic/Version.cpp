@@ -42,7 +42,7 @@ namespace nes
 
     uint32_t Version::Patch() const
     {
-        return (m_value >> kPatchOffset) & 0xFFF
+        return (m_value >> kPatchOffset) & 0xFFF;
     }
 
     std::string Version::ToString() const
