@@ -25,10 +25,11 @@ namespace nes
         
         bool ContainsPoint(const TVector3<Type>& point) const;
     };
-}
 
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Sphere);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TSphere, Sphere);
+    using Spheref = TSphere<float>;
+    using Sphered = TSphere<double>;
+    using Sphere = TSphere<NES_MATH_DEFAULT_REAL_TYPE>;
+}
 
 namespace nes
 {

@@ -67,13 +67,13 @@ namespace nes
     using Matrix3x3d = TSquareMatrix<3, double>;
     using Matrix4x4f = TSquareMatrix<4, float>;
     using Matrix4x4d = TSquareMatrix<4, double>;
+
+    using Matrix2x2 = TSquareMatrix<2, NES_MATH_DEFAULT_REAL_TYPE>;
+    using Matrix3x3 = TSquareMatrix<3, NES_MATH_DEFAULT_REAL_TYPE>;
+    using Matrix4x4 = TSquareMatrix<4, NES_MATH_DEFAULT_REAL_TYPE>;
     
     constexpr Matrix4x4f To3DMatrix(const Matrix2x2f& matrix2D, const Vector2f& translation);
 }
-
-using Matrix2x2 = nes::TSquareMatrix<2, NES_MATH_DEFAULT_REAL_TYPE>;
-using Matrix3x3 = nes::TSquareMatrix<3, NES_MATH_DEFAULT_REAL_TYPE>;
-using Matrix4x4 = nes::TSquareMatrix<4, NES_MATH_DEFAULT_REAL_TYPE>;
 
 namespace nes
 {

@@ -19,10 +19,12 @@ namespace nes
 
         bool ContainsPoint(const TVector2<Type>& point) const;
     };
-}
 
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Circle);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TCircle, Circle);
+    using Circlef = TCircle<float>;
+    using Circled = TCircle<double>;
+    using Circle = TCircle<NES_MATH_DEFAULT_REAL_TYPE>;
+    
+}
 
 namespace nes
 {

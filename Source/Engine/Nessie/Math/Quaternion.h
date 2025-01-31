@@ -63,10 +63,11 @@ namespace nes
         static constexpr TQuaternion MakeFromRotationVector(const TVector3<Type>& vector);
         static constexpr TQuaternion MakeFromAngleAxis(const Type angleRadians, const TVector3<Type>& axis);
     };
-}
 
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Quaternion);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TQuaternion, Quat);
+    using Quatf = TQuaternion<float>;
+    using Quatd = TQuaternion<double>;
+    using Quat = TQuaternion<NES_MATH_DEFAULT_REAL_TYPE>;
+}
 
 namespace nes
 {

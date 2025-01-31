@@ -1,7 +1,6 @@
 ﻿// Triangles.h
 #pragma once
-#include <StructuredQueryCondition.h>
-
+#include "Ray.h"
 #include "Vector3.h"
 
 namespace nes
@@ -75,12 +74,15 @@ namespace nes
         
         std::string ToString() const;
     };
-}
 
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Triangle2)
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Triangle3)
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TTriangle2, Triangle2D);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TTriangle3, Triangle);
+    using Triangle2f = TTriangle2<float>;
+    using Triangle2d = TTriangle2<double>;
+    using Triangle2D = TTriangle2<NES_MATH_DEFAULT_REAL_TYPE>;
+    
+    using Triangle3f = TTriangle3<float>;
+    using Triangle3d = TTriangle3<double>;
+    using Triangle = TRay3<NES_MATH_DEFAULT_REAL_TYPE>;
+}
 
 namespace nes
 {
@@ -108,7 +110,7 @@ namespace nes
             const Type dot11 = TVector3<Type>::Dot(v1, v1);
             const Type dot20 = TVector3<Type>::Dot(v2, v0);
             const Type dot21 = TVector3<Type>::Dot(v2, v1);
-
+            
             const Type denominator = dot00 * dot11 - dot01 * dot01;
 
             TVector3<Type> result{};
@@ -117,7 +119,7 @@ namespace nes
             result.x = static_cast<Type>(1.0) - result.y - result.z;
             return result;
 #else
-            // Barycentric Coordinates are on pg 50-51 of "Real-Time Collision Detection".
+            // Another implementation is on pg 50-51 of "Real-Time Collision Detection".
             
             // Unnormailzed triangle normal
             const Vector3<Type> normal = Vector3<Type>::Cross(b - a, c - a);
@@ -130,7 +132,7 @@ namespace nes
             float y = math::Abs(normal.y);
             float z = math::Abs(normal.z);
 
-            // Compute the ares in plane of largest projection.
+            // Compute the area on the plane of largest projection.
             if (x >= y && x >= z)
             {
                 // x is largest, project onto the yz plane

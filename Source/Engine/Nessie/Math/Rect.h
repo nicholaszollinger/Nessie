@@ -55,7 +55,8 @@ namespace nes
     };
 
     using Rectf = Rect<float>;
-    using Recti = Rect<int>;
+    using Rectd = Rect<double>;
+    using Recti = Rect<int>;         
     using Rectu = Rect<unsigned int>;
 }
 

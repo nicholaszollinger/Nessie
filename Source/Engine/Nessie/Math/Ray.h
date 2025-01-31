@@ -50,13 +50,15 @@ namespace nes
 
         std::string ToString() const;
     };
+
+    using Ray2f = TRay2<float>;
+    using Ray2d = TRay2<double>;
+    using Ray2D = TRay2<NES_MATH_DEFAULT_REAL_TYPE>;
+
+    using Ray3f = TRay3<float>;
+    using Ray3d = TRay3<double>;
+    using Ray = TRay3<NES_MATH_DEFAULT_REAL_TYPE>;
 }
-
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Ray2);
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Ray3);
-
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TRay2, Ray2D);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TRay3, Ray);
 
 namespace nes
 {

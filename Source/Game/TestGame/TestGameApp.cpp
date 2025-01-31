@@ -23,10 +23,11 @@ void TestGameApp::Update([[maybe_unused]] double deltaTime)
 
     const auto& renderer = GetRenderer();
     renderer.Clear(kClearColor);
-
-    static constexpr Vector2 kHalfWindowSize = {800.f, 450.f};
-    static Circle circle(kHalfWindowSize, 400.f);
-    static Vector2 testPoint(kHalfWindowSize);
+    
+    
+    static constexpr nes::Vector2 kHalfWindowSize = {800.f, 450.f};
+    static nes::Circle circle(kHalfWindowSize, 400.f);
+    static nes::Vector2 testPoint(kHalfWindowSize);
     static bool isInside = true;
     
     // Primitives...

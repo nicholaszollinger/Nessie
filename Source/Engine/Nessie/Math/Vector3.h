@@ -73,11 +73,13 @@ namespace nes
 
     template <FloatingPointType Type>
     Type ScalarTripleProduct(const TVector3<Type>& u, const TVector3<Type>& v, const TVector3<Type>& w);
-}
 
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Vector3)
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_I(Vector3)
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TVector3, Vector3);
+    using Vector3f = TVector3<float>;
+    using Vector3d = TVector3<double>;
+    using Vector3i = TVector3<int>;
+    using Vector3u = TVector3<unsigned int>;
+    using Vector3 = TVector3<NES_MATH_DEFAULT_REAL_TYPE>;
+}
                                                      
 namespace nes
 {

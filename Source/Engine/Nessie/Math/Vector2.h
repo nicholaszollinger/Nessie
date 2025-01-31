@@ -64,11 +64,13 @@ namespace nes
 
     template <ScalarType VecType>
     TVector2<VecType> operator*(const ScalarType auto scalar, const TVector2<VecType> vec);
-}
 
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Vector2);
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_I(Vector2);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TVector2, Vector2);
+    using Vector2f = TVector2<float>;
+    using Vector2d = TVector2<double>;
+    using Vector2i = TVector2<int>;
+    using Vector2u = TVector2<unsigned int>;
+    using Vector2 = TVector2<NES_MATH_DEFAULT_REAL_TYPE>;
+}
 
 namespace nes
 {

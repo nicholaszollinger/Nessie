@@ -73,17 +73,23 @@ namespace nes
         Type Length() const;
         Type SquaredLength() const;
     };
+    
+    using Line2f = TLine2<float>;
+    using Line2d = TLine2<double>;
+    using Line2D = TLine2<NES_MATH_DEFAULT_REAL_TYPE>;
+    
+    using LineSegment2f = TLineSegment2<float>;
+    using LineSegment2d = TLineSegment2<double>;
+    using LineSegment2D = TLineSegment2<NES_MATH_DEFAULT_REAL_TYPE>;
+    
+    using Line3f = TLine3<float>;
+    using Line3d = TLine3<double>;
+    using Line = TLine3<NES_MATH_DEFAULT_REAL_TYPE>;
+    
+    using LineSegment3f = TLineSegment3<float>;
+    using LineSegment3d = TLineSegment3<double>;
+    using LineSegment = TLine3<NES_MATH_DEFAULT_REAL_TYPE>;
 }
-
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Line2)
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(Line3)
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TLine2, Line2D);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TLine3, Line);
-
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(LineSegment2)
-NES_MATH_DECLARE_ALIASES_FOR_TEMPLATE_F(LineSegment3)
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TLineSegment2, LineSegment2D);
-NES_MATH_DECLARE_GLOBAL_TYPE_ALIAS_F(TLineSegment3, LineSegment);
 
 namespace nes
 {
