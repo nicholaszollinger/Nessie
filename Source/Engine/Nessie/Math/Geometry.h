@@ -27,7 +27,7 @@ namespace nes::math
         };
         
         const TSquareMatrix<2, Type> mat(elements);
-        return mat.CalculateDeterminant();
+        return mat.Determinant();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -52,7 +52,7 @@ namespace nes::math
     };
         
         const TSquareMatrix<3, Type> mat(elements);
-        return mat.CalculateDeterminant();
+        return mat.Determinant();
     }
     
     //----------------------------------------------------------------------------------------------------
@@ -80,7 +80,7 @@ namespace nes::math
             };
 
         const TSquareMatrix<3, Type> mat(elements);
-        const Type determinant = mat.CalculateDeterminant();
+        const Type determinant = mat.Determinant();
 
         // If the determinant is 0, then the four points are co-circular.
         if (math::CheckEqualFloats<Type>(determinant, 0))

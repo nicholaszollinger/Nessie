@@ -19,13 +19,13 @@ namespace nes
     }
 
     StringID::StringID(const char* str)
-        : m_pStrRef(GetStringPtr(str))
+        : m_pStrRef(MakeStringPtr(str))
     {
         //
     }
 
     StringID::StringID(const std::string& str)
-        : m_pStrRef(GetStringPtr(str))
+        : m_pStrRef(MakeStringPtr(str))
     {
         //
     }
@@ -50,7 +50,7 @@ namespace nes
     //-----------------------------------------------------------------------------------------------------------------------------
     ///		@brief : Get a copy of the internal string. If you just want a reference, use GetStringRef(). \n NOT THREAD SAFE.
     //-----------------------------------------------------------------------------------------------------------------------------
-    std::string StringID::GetStringCopy() const
+    std::string StringID::StringCopy() const
     {
         return *m_pStrRef;
     }
@@ -60,7 +60,7 @@ namespace nes
     //		
     ///		@brief : Get a const reference to the internal string. If you want a copy, use GetStringCopy(). \n NOT THREAD SAFE.
     //-----------------------------------------------------------------------------------------------------------------------------
-    const std::string& StringID::GetStringRef() const
+    const std::string& StringID::StringRef() const
     {
         return *m_pStrRef;
     }
@@ -70,12 +70,12 @@ namespace nes
         return *m_pStrRef;
     }
 
-    const std::string* StringID::GetConstPtr() const
+    const std::string* StringID::ConstPtr() const
     {
         return m_pStrRef;
     }
 
-    const char* StringID::GetCStr() const
+    const char* StringID::CStr() const
     {
         if (!IsValid())
             return nullptr;
@@ -83,7 +83,12 @@ namespace nes
         return m_pStrRef->c_str();
     }
 
-    std::string* StringID::GetStringPtr(const char* str)
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Either returns the address to an existing string in the static container, creates a
+    ///             new entry in the container for this string, or returns the invalid string address in the
+    ///             event that nullptr was passed in.
+    //----------------------------------------------------------------------------------------------------
+    std::string* StringID::MakeStringPtr(const char* str)
     {
         // If we are being set to nullptr, then return the address of the invalid string.
         if (!str)
@@ -104,12 +109,17 @@ namespace nes
         return &strings[hash];
     }
 
-    std::string* StringID::GetStringPtr(const std::string& str)
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Either returns the address to an existing string in the static container, creates a
+    ///             new entry in the container for this string, or returns the invalid string address in the
+    ///             event that an empty string was passed in.
+    //----------------------------------------------------------------------------------------------------
+    std::string* StringID::MakeStringPtr(const std::string& str)
     {
         if (str.empty())
             return GetInvalidStringAddress();
 
-        return GetStringPtr(str.c_str());
+        return MakeStringPtr(str.c_str());
     }
 
     StringID::StringContainer& StringID::GetContainer()
@@ -118,7 +128,7 @@ namespace nes
         return container;
     }
 
-    StringID StringID::GetInvalid()
+    StringID StringID::GetInvalidID()
     {
         static StringID invalid = "Invalid StringId";
         return invalid;
@@ -126,13 +136,13 @@ namespace nes
 
     std::string* StringID::GetInvalidStringAddress()
     {
-        return GetInvalid().m_pStrRef;
+        return GetInvalidID().m_pStrRef;
     }
 
     uint64_t StringIDHasher::operator()(const StringID id) const
     {
         static constexpr std::hash<const std::string*> kHash;
-        return kHash(id.GetConstPtr());
+        return kHash(id.ConstPtr());
     }
 
 }

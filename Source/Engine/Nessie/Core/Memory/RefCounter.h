@@ -36,10 +36,10 @@ namespace nes::internal
         void AddWeak()       { ++m_weakCount; }
         void RemoveWeak()    { --m_weakCount; }
 
-        template<typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template<typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         RefCounter<OtherType>& Cast();
 
-        template<typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template<typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         const RefCounter<OtherType>& Cast() const;
 
         [[nodiscard]] Type* Get() { return m_pObject; }
@@ -113,7 +113,7 @@ namespace nes::internal
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     RefCounter<OtherType>& RefCounter<Type>::Cast()
     {
 #if NES_LOGGING_ENABLED
@@ -126,7 +126,7 @@ namespace nes::internal
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     const RefCounter<OtherType>& RefCounter<Type>::Cast() const
     {
 #if NES_LOGGING_ENABLED

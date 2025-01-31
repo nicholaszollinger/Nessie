@@ -51,8 +51,8 @@ namespace nes
         bool TryInvert();
         bool TryGetInverse(TSquareMatrix& result) const;
         TSquareMatrix& Transpose();
-        TSquareMatrix GetTranspose() const;
-        float CalculateDeterminant() const;
+        TSquareMatrix Transposed() const;
+        float Determinant() const;
         bool IsIdentity() const;
         
         std::string ToString() const;
@@ -277,7 +277,7 @@ namespace nes
         if constexpr (N == 2)
         {
             // The Inverse of a Matrix is on page 168 of my Math Textbook:
-            const float determinant = CalculateDeterminant();
+            const float determinant = Determinant();
             if (determinant == 0.f)
             {
                 return false;
@@ -298,7 +298,7 @@ namespace nes
         else if constexpr (N == 3)
         {
             // The Inverse of a Matrix is on page 168 of my Math Textbook:
-            const float determinant = CalculateDeterminant();
+            const float determinant = Determinant();
             if (determinant == 0.f)
             {
                 return false;
@@ -433,15 +433,21 @@ namespace nes
         return result.TryInvert();
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Transpose this Matrix. If you want to preserve this Matrix, used Transposed(); 
+    //----------------------------------------------------------------------------------------------------
     template <int N, FloatingPointType Type>
     TSquareMatrix<N, Type>& TSquareMatrix<N, Type>::Transpose()
     {
-        *this = GetTranspose();
+        *this = Transpose();
         return *this;
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the transposed Matrix. 
+    //----------------------------------------------------------------------------------------------------
     template <int N, FloatingPointType Type>
-    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::GetTranspose() const
+    TSquareMatrix<N, Type> TSquareMatrix<N, Type>::Transposed() const
     {
         TSquareMatrix result;
 
@@ -457,7 +463,7 @@ namespace nes
     }
     
     template <int N, FloatingPointType Type>
-    float TSquareMatrix<N, Type>::CalculateDeterminant() const
+    float TSquareMatrix<N, Type>::Determinant() const
     {
         // Page 162 of my Math Textbook: "3D Math Primer for Graphics and Game Development".
 

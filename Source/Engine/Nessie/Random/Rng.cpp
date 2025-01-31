@@ -35,7 +35,7 @@ namespace nes
 	//----------------------------------------------------------------------------------------------------
     void Rng::SeedFromTime()
     {
-        const uint64_t seed = GetCurrentTime();
+        const uint64_t seed = Time::Now();
         InitState(seed);
     }
 

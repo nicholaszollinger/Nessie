@@ -44,7 +44,7 @@ namespace nes
         constexpr float Area() const;
         constexpr float SignedArea() const;
         constexpr bool ContainsPoint(const TVector2<Type>& point) const;
-        constexpr TVector2<Type> GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const;
+        constexpr TVector2<Type> PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const;
         void CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
 
         std::string ToString() const;
@@ -69,7 +69,7 @@ namespace nes
         constexpr float Area() const;
         constexpr float SignedArea() const;
         constexpr bool ContainsPoint(const TVector3<Type>& point) const;
-        constexpr TVector3<Type> GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const;
+        constexpr TVector3<Type> PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const;
         void CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
         
         std::string ToString() const;
@@ -373,7 +373,7 @@ namespace nes
     ///		@brief : Get the point in or on the triangle that corresponds to the given barycentric coordinates.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector2<Type> TTriangle2<Type>::GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const
+    constexpr TVector2<Type> TTriangle2<Type>::PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const
     {
         return bary0 * m_vertices[0] + bary1 * m_vertices[1] + bary2 * m_vertices[2];
     }
@@ -429,7 +429,7 @@ namespace nes
     ///		@brief : Get the point in or on the triangle that corresponds to the given barycentric coordinates.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TTriangle3<Type>::GetBarycentricPoint(Type bary0, Type bary1, Type bary2) const
+    constexpr TVector3<Type> TTriangle3<Type>::PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const
     {
         return bary0 * m_vertices[0] + bary1 * m_vertices[1] + bary2 * m_vertices[2];
     }

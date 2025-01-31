@@ -46,7 +46,7 @@ namespace nes
         constexpr Type Dot(const TVector3& right) const;
         constexpr TVector3 Cross(const TVector3& right) const;
         constexpr TVector3& Normalize();
-        constexpr TVector3 GetNormalized() const;
+        constexpr TVector3 Normalized() const;
         constexpr TVector2<Type> GetXY() const { return TVector2<Type>(this->x, this->y); }
         template <ScalarType To> TVector3<To> CastTo() const;
         
@@ -58,8 +58,8 @@ namespace nes
         static constexpr TVector3 Cross(const TVector3& a, const TVector3& b);
         static constexpr TVector3 Lerp(const TVector3 from, const TVector3 to, const float t);
         
-        static float GetAngleBetweenVectors(const TVector3& a, const TVector3& b);
-        static float GetAngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
+        static float AngleBetweenVectors(const TVector3& a, const TVector3& b);
+        static float AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
 
         static constexpr TVector3 GetUnitVector()    { return TVector3(static_cast<Type>(1), static_cast<Type>(1)), static_cast<Type>(1); }
         static constexpr TVector3 GetZeroVector()    { return TVector3(static_cast<Type>(0), static_cast<Type>(0)), static_cast<Type>(0); }
@@ -301,7 +301,7 @@ namespace nes
     ///		@brief : Returns a normalized Vector based on this Vector's components.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr TVector3<Type> TVector3<Type>::GetNormalized() const
+    constexpr TVector3<Type> TVector3<Type>::Normalized() const
     {
         static_assert(std::floating_point<Type>, "Type must be floating point");
         
@@ -391,9 +391,9 @@ namespace nes
     ///		@brief : Returns the angle (in radians) between two vectors. This assumes both vectors' origins are equal.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    float TVector3<Type>::GetAngleBetweenVectors(const TVector3& a, const TVector3& b)
+    float TVector3<Type>::AngleBetweenVectors(const TVector3& a, const TVector3& b)
     {
-        const auto dot = a.GetNormalized().Dot(b.GetNormalized());
+        const auto dot = a.Normalized().Dot(b.Normalized());
         return std::acos(dot);
     }
 
@@ -401,9 +401,9 @@ namespace nes
     ///		@brief : Returns the angle (in degrees) between two vectors. This assumes both vectors' origins are equal.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    float TVector3<Type>::GetAngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b)
+    float TVector3<Type>::AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b)
     {
-        const float angleRadians = GetAngleBetweenVectors(a, b);
+        const float angleRadians = AngleBetweenVectors(a, b);
         return math::ToDegrees(angleRadians);
     }
 

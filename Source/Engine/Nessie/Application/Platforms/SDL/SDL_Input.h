@@ -7,9 +7,9 @@
 
 namespace nes::SDL
 {
-    KeyCode ConvertToKeyCode(SDL_Scancode key);
-    MouseButton ConvertToMouseButton(int button);
-    Modifiers GetCurrentModifiers();
-    KeyAction GetKeyAction(const SDL_KeyboardEvent& keyEvent);
-    MouseAction GetMouseAction(const SDL_MouseButtonEvent& mouseEvent);
+    KeyCode ToKeyCode(SDL_Scancode key);
+    MouseButton ToMouseButton(int button);
+    Modifiers CurrentModifiers();
+    KeyAction ToKeyAction(const SDL_KeyboardEvent& keyEvent);
+    MouseAction ToMouseAction(const SDL_MouseButtonEvent& mouseEvent);
 }

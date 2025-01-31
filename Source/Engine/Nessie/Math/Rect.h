@@ -36,20 +36,20 @@ namespace nes
 
         constexpr TVector2<Type> GetPosition() const;
         constexpr TVector2<Type> GetSize() const;
-        constexpr TVector2<Type> GetCenter() const;
+        constexpr TVector2<Type> Center() const;
         constexpr TVector2<Type> Min() const;
         constexpr TVector2<Type> Max() const;
 
         constexpr bool HasValidDimensions() const;
-        constexpr Type GetArea() const;
+        constexpr Type Area() const;
         constexpr bool Intersects(const Rect other) const;
         constexpr bool Contains(const TVector2<Type> point) const;
         constexpr bool Contains(const Rect other) const;
-        constexpr Rect GetOverlap(const Rect<Type> other) const;
-        constexpr Type ComputeDistanceToPoint(const TVector2<Type> point) const;
-        constexpr Type ComputeSquaredDistanceToPoint(const TVector2<Type> point) const;
-        TVector2<Type> GetClosestPointTo(const TVector2<Type> point) const;
-        TVector2<Type> GetExtent() const;
+        constexpr Rect Overlap(const Rect<Type> other) const;
+        constexpr Type DistanceToPoint(const TVector2<Type> point) const;
+        constexpr Type SquaredDistanceToPoint(const TVector2<Type> point) const;
+        TVector2<Type> ClosestPointTo(const TVector2<Type> point) const;
+        TVector2<Type> Extent() const;
 
         std::string ToString() const;
     };
@@ -221,7 +221,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    constexpr TVector2<Type> Rect<Type>::GetCenter() const
+    constexpr TVector2<Type> Rect<Type>::Center() const
     {
         return TVector2<Type>(x + width / 2, y + height / 2);
     }
@@ -245,7 +245,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    constexpr Type Rect<Type>::GetArea() const
+    constexpr Type Rect<Type>::Area() const
     {
         return width * height;
     }
@@ -289,7 +289,7 @@ namespace nes
     ///             HasValidDimensions() on the resulting Rect to check if the intersection is valid.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Rect<Type> Rect<Type>::GetOverlap(const Rect other) const
+    constexpr Rect<Type> Rect<Type>::Overlap(const Rect other) const
     {
         Rect result;
         result.x = math::Max(x, other.x);
@@ -305,9 +305,9 @@ namespace nes
     ///             be zero.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Type Rect<Type>::ComputeDistanceToPoint(const TVector2<Type> point) const
+    constexpr Type Rect<Type>::DistanceToPoint(const TVector2<Type> point) const
     {
-        return std::sqrt(ComputeSquaredDistanceToPoint(point));
+        return std::sqrt(SquaredDistanceToPoint(point));
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -315,7 +315,7 @@ namespace nes
     ///              value would be zero.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Type Rect<Type>::ComputeSquaredDistanceToPoint(const TVector2<Type> point) const
+    constexpr Type Rect<Type>::SquaredDistanceToPoint(const TVector2<Type> point) const
     {
         Type distSquared = 0.f;
 
@@ -343,7 +343,7 @@ namespace nes
     ///		@returns : Closest point on the rect.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    TVector2<Type> Rect<Type>::GetClosestPointTo(const TVector2<Type> point) const
+    TVector2<Type> Rect<Type>::ClosestPointTo(const TVector2<Type> point) const
     {
         TVector2<Type> closestPoint = point;
 
@@ -365,7 +365,7 @@ namespace nes
     }
 
     template <ScalarType Type>
-    TVector2<Type> Rect<Type>::GetExtent() const
+    TVector2<Type> Rect<Type>::Extent() const
     {
         return GetSize() / static_cast<Type>(2); 
     }

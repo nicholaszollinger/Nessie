@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    enum class KeyCode : char
+    enum class KeyCode : int
     {
         Unknown,
         A,

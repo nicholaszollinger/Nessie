@@ -43,7 +43,7 @@ namespace nes
         [[nodiscard]] MouseButton GetButton() const     { return m_button; }
         [[nodiscard]] MouseAction GetAction() const     { return m_action; }
         [[nodiscard]] Modifiers GetModifiers() const    { return m_modifiers; }
-        [[nodiscard]] Vector2f GetPosition() const          { return m_position; }
+        [[nodiscard]] Vector2f GetPosition() const      { return m_position; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ namespace nes
         MouseMoveEvent(const float xPos, const float yPos, const float xDelta, const float yDelta);
 
         [[nodiscard]] Vector2f GetPosition() const { return m_position; }
-        [[nodiscard]] Vector2f GetDelta() const { return m_delta; }
+        [[nodiscard]] Vector2f GetDelta() const    { return m_delta; }
     };
 
 

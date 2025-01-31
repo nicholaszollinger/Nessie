@@ -33,14 +33,14 @@ namespace nes
         std::filesystem::create_directory(logDirPath);
 
         // Create the name for the Log file.
-        const auto newFilename = CombineIntoString(logOutputDir, GetTimeStampFilename(), ".txt");
+        const auto newFilename = CombineIntoString(logOutputDir, Time::ToString(Time::Format::Filename), ".txt");
         auto& outFile = GetOutFile();
         outFile.open(newFilename);
 
         if (!outFile.is_open())
             return false;
 
-        outFile << GetDateAsString() << " " << GetCurrentLocalTimeString() << "\n\n";
+        outFile << Time::ToString(Time::Format::Date) << " " << Time::ToString(Time::Format::LocalTime) << "\n\n";
 
         auto& categories = GetCategories();
 

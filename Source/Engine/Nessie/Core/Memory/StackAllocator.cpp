@@ -113,7 +113,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void StackAllocator::Free(std::byte*& pPtr, const size_t count)
     {
-        NES_ASSERTV(count > GetSize(), "Attempting to free more memory than what is currently allocated!");
+        NES_ASSERTV(count > Size(), "Attempting to free more memory than what is currently allocated!");
         m_pEnd -= count;
         pPtr = nullptr;
     }
@@ -124,7 +124,7 @@ namespace nes
     ///		@brief : Returns a position in the stack that we can free to. This is useful if you want to save
     ///              keep memory before the current position and free it later.
     //----------------------------------------------------------------------------------------------------
-    StackAllocator::Marker StackAllocator::GetMarker() const
+    StackAllocator::Marker StackAllocator::PlaceMarker() const
     {
         return m_pEnd - m_pBuffer;
     }
@@ -137,14 +137,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void StackAllocator::FreeToMarker(const Marker marker)
     {
-        NES_ASSERTV(!IsEmpty() && marker > GetSize(), "Failed to free to Marker! Either we attempted to free memory that "
+        NES_ASSERTV(!IsEmpty() && marker > Size(), "Failed to free to Marker! Either we attempted to free memory that "
                                                    "wasn't allocated, or the allocator is empty!");
         m_pEnd = m_pBuffer + marker;
     }
 
     ScopedStackAllocator::ScopedStackAllocator(StackAllocator& allocator)
         : m_allocator(allocator)
-        , m_marker(allocator.GetMarker())
+        , m_marker(allocator.PlaceMarker())
     {
         //
     }

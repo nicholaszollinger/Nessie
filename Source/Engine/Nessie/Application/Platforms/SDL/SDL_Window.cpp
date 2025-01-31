@@ -92,7 +92,7 @@ namespace nes
         NES_ASSERT(pContext->m_pNativeWindow);
 
         Application& app = pContext->m_application;
-        const Modifiers mods = SDL::GetCurrentModifiers();
+        const Modifiers mods = SDL::CurrentModifiers();
         
         SDL_Event event;
         while (SDL_PollEvent(&event))
@@ -145,7 +145,7 @@ namespace nes
             else if (event.type == SDL_KEYDOWN)
             {
                 const KeyAction action = event.key.repeat > 0? KeyAction::Repeat : KeyAction::Pressed;
-                const KeyCode key = SDL::ConvertToKeyCode(event.key.keysym.scancode);
+                const KeyCode key = SDL::ToKeyCode(event.key.keysym.scancode);
                 KeyEvent keyEvent(key, action, mods);
                 app.PushEvent(keyEvent);
             }
@@ -153,7 +153,7 @@ namespace nes
             // Key Up
             else if (event.type == SDL_KEYUP)
             {
-                const KeyCode key = SDL::ConvertToKeyCode(event.key.keysym.scancode);
+                const KeyCode key = SDL::ToKeyCode(event.key.keysym.scancode);
                 KeyEvent keyEvent(key, KeyAction::Released, mods);
                 app.PushEvent(keyEvent);
             }
@@ -162,7 +162,7 @@ namespace nes
             else if (event.type == SDL_MOUSEBUTTONDOWN)
             {
                 const SDL_MouseButtonEvent& mouseButton = event.button;
-                const MouseButton button = SDL::ConvertToMouseButton(mouseButton.button);
+                const MouseButton button = SDL::ToMouseButton(mouseButton.button);
                 MouseButtonEvent mouseEvent(button, MouseAction::Pressed, mods, static_cast<float>(mouseButton.x), static_cast<float>(mouseButton.y));
                 app.PushEvent(mouseEvent);
             }
@@ -171,7 +171,7 @@ namespace nes
             else if (event.type == SDL_MOUSEBUTTONUP)
             {
                 const SDL_MouseButtonEvent& mouseButton = event.button;
-                const MouseButton button = SDL::ConvertToMouseButton(mouseButton.button);
+                const MouseButton button = SDL::ToMouseButton(mouseButton.button);
                 MouseButtonEvent mouseEvent(button, MouseAction::Released, mods, static_cast<float>(mouseButton.x), static_cast<float>(mouseButton.y));
                 app.PushEvent(mouseEvent);
             }

@@ -41,8 +41,8 @@ namespace nes
         constexpr bool operator==(const GenerationalID& other) const = default;
 
         void IncrementGeneration();
-        constexpr Type GetID() const;
-        constexpr Type GetGeneration() const;
+        constexpr Type ID() const;
+        constexpr Type Generation() const;
         constexpr bool IsValid() const;
 
         std::string ToString() const;
@@ -76,14 +76,14 @@ namespace nes
     }
 
     template <UnsignedIntegralType Type>
-    constexpr Type GenerationalID<Type>::GetID() const
+    constexpr Type GenerationalID<Type>::ID() const
     {
         // Mask out the upper half of bits.
         return m_value & kGenerationMask;
     }
 
     template <UnsignedIntegralType Type>
-    constexpr Type GenerationalID<Type>::GetGeneration() const
+    constexpr Type GenerationalID<Type>::Generation() const
     {
         // Shift the value to the right by half of the total bits
         // to isolate the upper half bits.
@@ -96,7 +96,7 @@ namespace nes
     template <UnsignedIntegralType Type>
     constexpr bool GenerationalID<Type>::IsValid() const
     {
-        return GetGeneration() != 0;
+        return Generation() != 0;
     }
 
     template <UnsignedIntegralType Type>
@@ -105,7 +105,7 @@ namespace nes
         if (!IsValid())
             return "Invalid ID!";
 
-        return CombineIntoString("ID: ", GetID(), " | Generation: ", GetGeneration());
+        return CombineIntoString("ID: ", ID(), " | Generation: ", Generation());
     }
     
     template <UnsignedIntegralType Type>

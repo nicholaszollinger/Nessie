@@ -26,7 +26,7 @@ namespace nes
         LogCategory& operator=(LogCategory&&) noexcept = default;
         ~LogCategory() = default;
 
-        [[nodiscard]] const std::string& GetName() const { return m_name.GetStringRef(); }
+        [[nodiscard]] const std::string& GetName() const { return m_name.StringRef(); }
         [[nodiscard]] LogOutputLevel GetOutputLevel() const { return m_output; }
     };
 } 

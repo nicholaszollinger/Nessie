@@ -20,10 +20,10 @@ namespace nes
         constexpr bool operator==(const TRay2<Type>& other) const;
         constexpr bool operator!=(const TRay2<Type>& other) const { return !(*this == other); }
 
-        constexpr TVector2<Type> GetPositionAlongRay(const Type distance);
-        constexpr Type GetDistanceTo(const TVector2<Type>& point) const;
-        constexpr Type GetSquaredDistanceTo(const TVector2<Type>& point) const;
-        constexpr TVector2<Type> GetClosestPointTo(const TVector2<Type>& point) const;
+        constexpr TVector2<Type> PositionAlongRay(const Type distance);
+        constexpr Type DistanceTo(const TVector2<Type>& point) const;
+        constexpr Type SquaredDistanceTo(const TVector2<Type>& point) const;
+        constexpr TVector2<Type> ClosestPointTo(const TVector2<Type>& point) const;
 
         std::string ToString() const;
     };
@@ -43,10 +43,10 @@ namespace nes
         constexpr bool operator==(const TRay3& other) const;
         constexpr bool operator!=(const TRay3& other) const { return !(*this == other); }
 
-        constexpr TVector3<Type> GetPositionAlongRay(const Type distance);
-        constexpr Type GetDistanceTo(const TVector3<Type>& point) const;
-        constexpr Type GetSquaredDistanceTo(const TVector3<Type>& point) const;
-        constexpr TVector3<Type> GetClosestPointTo(const TVector3<Type>& point) const;
+        constexpr TVector3<Type> PositionAlongRay(const Type distance);
+        constexpr Type DistanceTo(const TVector3<Type>& point) const;
+        constexpr Type SquaredDistanceTo(const TVector3<Type>& point) const;
+        constexpr TVector3<Type> ClosestPointTo(const TVector3<Type>& point) const;
 
         std::string ToString() const;
     };
@@ -85,7 +85,7 @@ namespace nes
     ///		@param distance : Signed distance along the ray.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector2<Type> TRay2<Type>::GetPositionAlongRay(const Type distance)
+    constexpr TVector2<Type> TRay2<Type>::PositionAlongRay(const Type distance)
     {
         return m_origin + (m_direction * distance);
     }
@@ -94,16 +94,16 @@ namespace nes
     ///		@brief : Get the distance to the closest point along the Ray. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Type TRay2<Type>::GetDistanceTo(const TVector2<Type>& point) const
+    constexpr Type TRay2<Type>::DistanceTo(const TVector2<Type>& point) const
     {
-        return std::sqrt(GetSquaredDistanceTo(point));
+        return std::sqrt(SquaredDistanceTo(point));
     }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the squared distance to the closest point along the Ray.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Type TRay2<Type>::GetSquaredDistanceTo(const TVector2<Type>& point) const
+    constexpr Type TRay2<Type>::SquaredDistanceTo(const TVector2<Type>& point) const
     {
         const Type projectedDistance = TVector2<Type>::Dot(m_direction, point - m_origin);
 
@@ -124,7 +124,7 @@ namespace nes
     ///		@brief : Get the closest point along the Ray to the query point.  
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector2<Type> TRay2<Type>::GetClosestPointTo(const TVector2<Type>& point) const
+    constexpr TVector2<Type> TRay2<Type>::ClosestPointTo(const TVector2<Type>& point) const
     {
         const Type projectedDistance = TVector2<Type>::Dot(m_direction, point - m_origin);
 
@@ -165,7 +165,7 @@ namespace nes
     ///		@param distance : Signed distance along the ray.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TRay3<Type>::GetPositionAlongRay(const Type distance)
+    constexpr TVector3<Type> TRay3<Type>::PositionAlongRay(const Type distance)
     {
         return m_origin + (m_direction * distance);
     }
@@ -174,16 +174,16 @@ namespace nes
     ///		@brief : Get the distance to the closest point along the Ray. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Type TRay3<Type>::GetDistanceTo(const TVector3<Type>& point) const
+    constexpr Type TRay3<Type>::DistanceTo(const TVector3<Type>& point) const
     {
-        return std::sqrt(GetSquaredDistanceTo(point));
+        return std::sqrt(SquaredDistanceTo(point));
     }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the squared distance to the closest point along the Ray.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Type TRay3<Type>::GetSquaredDistanceTo(const TVector3<Type>& point) const
+    constexpr Type TRay3<Type>::SquaredDistanceTo(const TVector3<Type>& point) const
     {
         const Type projectedDistance = TVector3<Type>::Dot(m_direction, point - m_origin);
 
@@ -204,7 +204,7 @@ namespace nes
     ///		@brief : Get the closest point along the Ray to the query point.  
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TRay3<Type>::GetClosestPointTo(const TVector3<Type>& point) const
+    constexpr TVector3<Type> TRay3<Type>::ClosestPointTo(const TVector3<Type>& point) const
     {
         const Type projectedDistance = TVector3<Type>::Dot(m_direction, point - m_origin);
 

@@ -32,16 +32,16 @@ namespace nes
         StrongPtr& operator=(StrongPtr&& other) noexcept;
         ~StrongPtr();
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr(const StrongPtr<OtherType>& other);
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr(StrongPtr<OtherType>&& other);
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr& operator=(const StrongPtr<OtherType>& other);
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr& operator=(StrongPtr<OtherType>&& other) noexcept;
 
         [[nodiscard]] Type* operator->()             { return Get(); }
@@ -59,7 +59,7 @@ namespace nes
         [[nodiscard]] uint32_t GetWeakCount() const { return m_pRefCounter ? m_pRefCounter->GetWeakCount() : 0; }
         [[nodiscard]] bool IsValid() const { return m_pRefCounter != nullptr; }
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr<OtherType> Cast() const;
 
         template <typename...Params> requires nes::ValidConstructorForType<Type, Params...>
@@ -109,22 +109,22 @@ namespace nes
         WeakPtr& operator=(WeakPtr&& other) noexcept;
         ~WeakPtr();
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr(const WeakPtr<OtherType>& other);
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr(const StrongPtr<OtherType>& other);
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr(StrongPtr<OtherType>&& other) noexcept;
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr& operator=(const WeakPtr<OtherType>& other);
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr& operator=(WeakPtr<OtherType>&& other) noexcept;
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr& operator=(const StrongPtr<OtherType>& other);
 
         [[nodiscard]] StrongPtr<Type> Lock() const;
@@ -134,7 +134,7 @@ namespace nes
         [[nodiscard]] explicit operator bool() const { return IsValid(); }
         [[nodiscard]] bool IsValid() const;
 
-        template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+        template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         WeakPtr<OtherType> Cast() const;
 
     private:
@@ -275,7 +275,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     StrongPtr<Type>::StrongPtr(const StrongPtr<OtherType>& other)
     {
         if (other.m_pRefCounter != nullptr)
@@ -286,7 +286,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     StrongPtr<Type>::StrongPtr(StrongPtr<OtherType>&& other)
     {
         // Steal the pointer, don't add a reference.
@@ -295,7 +295,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     StrongPtr<Type>& StrongPtr<Type>::operator=(const StrongPtr<OtherType>& other)
     {
         if (*this != other)
@@ -316,7 +316,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     StrongPtr<Type>& StrongPtr<Type>::operator=(StrongPtr<OtherType>&& other) noexcept
     {
         if (*this != other)
@@ -335,7 +335,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename To> requires nes::IsBaseOrDerived<Type, To>
+    template <typename To> requires nes::TypeIsBaseOrDerived<Type, To>
     StrongPtr<To> StrongPtr<Type>::Cast() const
     {
         return StrongPtr<To>(*this);
@@ -465,7 +465,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<Type>& WeakPtr<Type>::operator=(const StrongPtr<OtherType>& other)
     {
         if (m_pRefCounter != nullptr)
@@ -483,7 +483,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<Type>::WeakPtr(const WeakPtr<OtherType>& other)
     {
         if (other.m_pRefCounter != nullptr)
@@ -494,7 +494,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<Type>::WeakPtr(const StrongPtr<OtherType>& other)
     {
         if (other.m_pRefCounter != nullptr)
@@ -505,7 +505,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<Type>::WeakPtr(StrongPtr<OtherType>&& other) noexcept
     {
         if (other.m_pRefCounter != nullptr)
@@ -516,7 +516,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<Type>& WeakPtr<Type>::operator=(const WeakPtr<OtherType>& other)
     {
         if (*this != other)
@@ -537,7 +537,7 @@ namespace nes
     }
 
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<Type>& WeakPtr<Type>::operator=(WeakPtr<OtherType>&& other) noexcept
     {
         if (*this != other)
@@ -592,7 +592,7 @@ namespace nes
     ///		@returns : 
     //----------------------------------------------------------------------------------------------------
     template <typename Type>
-    template <typename OtherType> requires nes::IsBaseOrDerived<Type, OtherType>
+    template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     WeakPtr<OtherType> WeakPtr<Type>::Cast() const
     {
         return WeakPtr<OtherType>(*this);

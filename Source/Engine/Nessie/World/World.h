@@ -22,7 +22,6 @@ namespace nes
         friend class WorldManager;
 
         // [TODO]: System Arrays.
-
         EntityRegistry* m_pRegistry = nullptr;
         StringID m_name;
 

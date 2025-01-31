@@ -79,7 +79,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     bool WorldManager::IsTransitionQueued() const
     {
-        return m_worldToTransitionTo != StringID::GetInvalid();
+        return m_worldToTransitionTo != StringID::GetInvalidID();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -92,6 +92,6 @@ namespace nes
         // [TODO]: 
 
         // Clear the World to Transition to.
-        m_worldToTransitionTo = StringID::GetInvalid();
+        m_worldToTransitionTo = StringID::GetInvalidID();
     }
 }

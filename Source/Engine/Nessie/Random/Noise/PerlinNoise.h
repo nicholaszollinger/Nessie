@@ -36,9 +36,9 @@ namespace nes
         void Seed();
         void Seed(const uint64_t seed);
         uint64_t GetSeed() const;
-        float GetNoise(float x, float y, uint32_t noiseInputRange, int octaves = 1, float persistence = 0.5f) const;
+        float CalculateNoise(float x, float y, uint32_t noiseInputRange, int octaves = 1, float persistence = 0.5f) const;
 
     private:
-        float GetNoise(float noiseX, float noiseY) const;
+        float CalculateNoise(float noiseX, float noiseY) const;
     };
 }

@@ -21,6 +21,10 @@ namespace nes
         bool operator==(const Version& other) const { return m_value == other.m_value; }
         bool operator!=(const Version& other) const { return m_value != other.m_value; }
 
+        uint32_t Major() const;
+        uint32_t Minor() const;
+        uint32_t Patch() const;
+
         std::string ToString() const;
         bool Deserialize(const YAML::Node& node);
         bool Serialize(YAML::Node& node) const;

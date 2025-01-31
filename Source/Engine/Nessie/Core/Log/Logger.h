@@ -90,7 +90,7 @@ namespace nes
             return;
 
         // Format the log:
-        const auto msg = FormatLog(LogSeverity::kLog, categoryName.GetCStr(), args...);
+        const auto msg = FormatLog(LogSeverity::kLog, categoryName.CStr(), args...);
 
         // Post to the target if we are displaying it.
         if (output == LogOutputLevel::kDisplay || output == LogOutputLevel::kAll)
@@ -111,7 +111,7 @@ namespace nes
     //-----------------------------------------------------------------------------------------------------------------------------
     void Logger::VitalLog(const StringID categoryName, const LogSeverity type, AddableOrToStringType auto&&... args)
     {
-        const std::string msg = FormatLog(type, categoryName.GetCStr(), args...);
+        const std::string msg = FormatLog(type, categoryName.CStr(), args...);
         PostToLogTarget(type, msg);
         WriteToFile(msg);
     }
@@ -126,25 +126,25 @@ namespace nes
             case LogSeverity::kLog:
             {
                 // Format: [CurrentTime] - [CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - ", args..., "\n");
             }
 
             case LogSeverity::kWarning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [WARNING] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [WARNING] ", args..., "\n");
             }
 
             case LogSeverity::kError:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [ERROR] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [ERROR] ", args..., "\n");
             }
 
             case LogSeverity::kCritical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [CRITICAL] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [CRITICAL] ", args..., "\n");
             }
         }
 
@@ -161,25 +161,25 @@ namespace nes
             case LogSeverity::kLog:
             {
                 // Format: [CurrentTime] - [CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [", pCategory, "] ", args..., "\n");
             }
 
             case LogSeverity::kWarning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [WARNING:", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [WARNING:", pCategory, "] ", args..., "\n");
             }
 
             case LogSeverity::kError:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [ERROR:", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [ERROR:", pCategory, "] ", args..., "\n");
             }
 
             case LogSeverity::kCritical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
-                return CombineIntoString("[", GetCurrentTimeAsString(), "] - [CRITICAL:", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [CRITICAL:", pCategory, "] ", args..., "\n");
             }
         }
 

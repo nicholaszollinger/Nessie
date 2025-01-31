@@ -38,10 +38,10 @@ namespace nes
         void FreeToMarker(const Marker marker);
         void FreeAll() { m_pEnd = m_pBuffer; }
 
-        [[nodiscard]] Marker GetMarker() const;
-        [[nodiscard]] size_t GetSize() const { return m_pEnd - m_pBuffer; }
-        [[nodiscard]] size_t GetCapacity() const { return m_pCapacity - m_pBuffer; }
-        [[nodiscard]] size_t GetFree() const { return m_pCapacity - m_pEnd; }
+        [[nodiscard]] Marker PlaceMarker() const;
+        [[nodiscard]] size_t Size() const { return m_pEnd - m_pBuffer; }
+        [[nodiscard]] size_t Capacity() const { return m_pCapacity - m_pBuffer; }
+        [[nodiscard]] size_t RemainingCapacity() const { return m_pCapacity - m_pEnd; }
         [[nodiscard]] bool IsEmpty() const { return m_pBuffer == m_pEnd; }
         [[nodiscard]] bool IsFull() const { return m_pEnd == m_pCapacity; }
     };

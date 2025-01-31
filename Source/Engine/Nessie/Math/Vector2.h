@@ -41,7 +41,7 @@ namespace nes
         constexpr Type SquaredMagnitude() const;
         constexpr Type Dot(const TVector2& right) const;
         constexpr TVector2& Normalize();
-        constexpr TVector2 GetNormalized() const;
+        constexpr TVector2 Normalized() const;
         void SwapAxes();
         float ToAngle() const;
         float ToAngleDegrees() const;
@@ -246,7 +246,7 @@ namespace nes
     ///		@brief : Returns a normalized Vector based on this vector's components, without changing this Vector.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr TVector2<Type> TVector2<Type>::GetNormalized() const
+    constexpr TVector2<Type> TVector2<Type>::Normalized() const
     {
         static_assert(std::is_floating_point_v<Type>, "Vector2 must have floating point components to be Normalized!");
 

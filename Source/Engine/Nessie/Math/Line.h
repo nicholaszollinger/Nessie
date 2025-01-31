@@ -100,7 +100,7 @@ namespace nes
     constexpr TLine2<Type>::TLine2(const TVector2<Type>& origin, const TVector2<Type>& direction)
         : m_origin(origin)
     {
-        m_direction = direction.GetNormalized();
+        m_direction = direction.Normalized();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -148,7 +148,7 @@ namespace nes
     constexpr TLine3<Type>::TLine3(const TVector3<Type>& origin, const TVector3<Type>& direction)
         : m_origin(origin)
     {
-        m_direction = direction.GetNormalized();
+        m_direction = direction.Normalized();
     }
 
     //----------------------------------------------------------------------------------------------------

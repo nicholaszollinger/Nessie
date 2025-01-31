@@ -38,7 +38,7 @@ namespace nes
         double Tick();
 
         template <typename Period = Seconds>
-        double GetElapsedTime() const;
+        double ElapsedTime() const;
 
         bool IsRunning() const { return m_isRunning; }
     };
@@ -67,8 +67,6 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
     ///		@brief : Calculates the time since the last time that Tick() was called.
     ///		@tparam Period : Period type to return the time in. Seconds, Milliseconds, Microseconds, Nanoseconds.
     //----------------------------------------------------------------------------------------------------
@@ -82,14 +80,11 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
     ///		@brief : Calculates the time difference between the current time and when the timer was started.
-    ///		@tparam Period : 
-    ///		@returns : 
+    ///		@tparam Period : Period type to return the time in. Seconds, Milliseconds, Microseconds, Nanoseconds.
     //----------------------------------------------------------------------------------------------------
     template <typename Period>
-    double Timer::GetElapsedTime() const
+    double Timer::ElapsedTime() const
     {
         if (!m_isRunning)
             return 0.0;

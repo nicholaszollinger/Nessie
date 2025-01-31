@@ -37,16 +37,16 @@ namespace nes
         constexpr bool operator!=(const StringID& right) const { return !(*this == right); }
 
     public:
-        [[nodiscard]] static StringID GetInvalid();
-        [[nodiscard]] std::string GetStringCopy() const;
-        [[nodiscard]] const std::string& GetStringRef() const;
-        [[nodiscard]] const std::string* GetConstPtr() const;
-        [[nodiscard]] const char* GetCStr() const;
+        [[nodiscard]] static StringID GetInvalidID();
+        [[nodiscard]] std::string StringCopy() const;
+        [[nodiscard]] const std::string& StringRef() const;
+        [[nodiscard]] const std::string* ConstPtr() const;
+        [[nodiscard]] const char* CStr() const;
         [[nodiscard]] bool IsValid() const { return m_pStrRef != GetInvalidStringAddress(); }
 
     private:
-        static std::string* GetStringPtr(const char* str);
-        static std::string* GetStringPtr(const std::string& str);
+        static std::string* MakeStringPtr(const char* str);
+        static std::string* MakeStringPtr(const std::string& str);
 
         static StringContainer& GetContainer();
         static std::string* GetInvalidStringAddress();

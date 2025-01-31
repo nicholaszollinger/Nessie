@@ -111,7 +111,7 @@ namespace nes
     ///             Default value is 0.5f, meaning that each layer contributes evenly to the next.
     ///		@returns : Noise value in the range [0, 1].
     //----------------------------------------------------------------------------------------------------
-    float PerlinNoise2D::GetNoise(float x, float y, uint32_t noiseInputRange, int octaves, float persistence) const
+    float PerlinNoise2D::CalculateNoise(float x, float y, uint32_t noiseInputRange, int octaves, float persistence) const
     {
         float totalNoise = 0.f;
         float currentAmplitude = 1.f;
@@ -123,7 +123,7 @@ namespace nes
             const float noiseGridX = x * static_cast<float>(noiseInputRange);
             const float noiseGridY = y * static_cast<float>(noiseInputRange);
 
-            const float localNoise = GetNoise(noiseGridX, noiseGridY);
+            const float localNoise = CalculateNoise(noiseGridX, noiseGridY);
 
             totalNoise += localNoise * currentAmplitude;
             currentAmplitude *= persistence;
@@ -134,7 +134,7 @@ namespace nes
         return totalNoise;
     }
 
-    float PerlinNoise2D::GetNoise(float noiseX, float noiseY) const
+    float PerlinNoise2D::CalculateNoise(float noiseX, float noiseY) const
     {
         int xi0 = math::FloorTo<int>(noiseX);
         int yi0 = math::FloorTo<int>(noiseY);

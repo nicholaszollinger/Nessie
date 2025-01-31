@@ -40,12 +40,12 @@ namespace nes
     };
 
     template <typename Type, typename OtherType>
-    concept IsBaseOrDerived = (std::is_base_of_v<Type, OtherType> || std::is_base_of_v<OtherType, Type>);
+    concept TypeIsBaseOrDerived = (std::is_base_of_v<Type, OtherType> || std::is_base_of_v<OtherType, Type>);
 
     template <typename Type>
-    concept ArrayOrVector = std::same_as<Type, std::array<typename Type::value_type, Type::size()>> || std::same_as<Type, std::vector<typename Type::value_type>>
+    concept ArrayOrVectorType = std::same_as<Type, std::array<typename Type::value_type, Type::size()>> || std::same_as<Type, std::vector<typename Type::value_type>>
                             || std::same_as<Type, std::vector<typename Type::value_type>>;
 
     template <typename Type, typename ValueType>
-    concept ArrayOrVectorOfType = ArrayOrVector<Type> && std::same_as<typename Type::value_type, ValueType>;
+    concept ArrayOrVectorOfType = ArrayOrVectorType<Type> && std::same_as<typename Type::value_type, ValueType>;
 }

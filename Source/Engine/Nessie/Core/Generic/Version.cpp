@@ -30,12 +30,27 @@ namespace nes
         //
     }
 
+    uint32_t Version::Major() const
+    {
+        return (m_value >> kMajorOffset) & 0x3FF;
+    }
+
+    uint32_t Version::Minor() const
+    {
+        return (m_value >> kMinorOffset) & 0x3FF;
+    }
+
+    uint32_t Version::Patch() const
+    {
+        return (m_value >> kPatchOffset) & 0xFFF
+    }
+
     std::string Version::ToString() const
     {
         std::string versionString = 
-            std::to_string((m_value >> kMajorOffset) & 0x3FF) + "." + // Major
-            std::to_string((m_value >> kMinorOffset) & 0x3FF) + "." + // Minor
-            std::to_string((m_value >> kPatchOffset) & 0xFFF);        // Patch   
+            std::to_string(Major()) + "." + 
+            std::to_string(Minor()) + "." +
+            std::to_string(Patch());           
 
         return versionString;
     }

@@ -4,56 +4,42 @@
 #include <chrono>
 #include <format>
 
+#include "Debug/Assert.h"
+
 namespace nes
 {
-    uint64_t GetCurrentTime()
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the current time as the number of ticks since epoch.
+    //----------------------------------------------------------------------------------------------------
+    uint64_t Time::Now()
     {
         auto time = std::chrono::high_resolution_clock::now();
         return time.time_since_epoch().count();
     }
 
-    //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //
-    ///		@brief : Returns the current time as a string with the format: "HH:MM:SS {TimeOfDay}". Example: "04:15:00 PM"
-    //-----------------------------------------------------------------------------------------------------------------------------
-    std::string GetCurrentLocalTimeString()
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Get the Current Time as a readable string. 
+    ///		@param format : Type of format you want the string in.  
+    //----------------------------------------------------------------------------------------------------
+    std::string Time::ToString(const Format format)
     {
         const auto time = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
-        return std::format("{:%r}", time);
-    }
+        
+        switch (format)
+        {
+            case Format::LocalTime:
+                return std::format("{:%r}", time);
+            
+            case Format::Date:
+                return std::format("{:%d-%b-%y}",time);
+            
+            case Format::Filename:
+                return std::format("{:%d-%b-%y %H.%M.%OS}", time);
+        }
 
-    //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //
-    ///		@brief : Returns the current date as a string with the format: "DD-MMM-YY". Example: "27-Dec-23"
-    //-----------------------------------------------------------------------------------------------------------------------------
-    std::string GetDateAsString()
-    {
-        const auto time = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
-        return std::format("{:%d-%b-%y}",time);
-    }
-
-    std::string GetTimeStampFilename()
-    {
-        const auto time = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
-        return std::format("{:%d-%b-%y %H.%M.%OS}", time);
-    }
-
-    std::string GetCurrentTimeAsString()
-    {
-        const auto time = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
+        // This shouldn't happen.
+        NES_ASSERT(false);
+        // I am returning a default format.
         return std::format("{:%X}", time);
-    }
-
-    //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Get a string of the current time using a format string.
-    //-----------------------------------------------------------------------------------------------------------------------------
-    std::string FormatCurrentTime()
-    {
-        //const auto time = std::chrono::current_zone()->to_local(std::chrono::system_clock::now());
-        return GetCurrentTimeAsString();
     }
 }

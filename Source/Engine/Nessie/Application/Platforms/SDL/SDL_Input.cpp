@@ -8,7 +8,7 @@
 
 namespace nes::SDL
 {
-    KeyCode ConvertToKeyCode(SDL_Scancode key)
+    KeyCode ToKeyCode(SDL_Scancode key)
     {
         switch (key)
         {
@@ -79,7 +79,7 @@ namespace nes::SDL
         }
     }
     
-    MouseButton ConvertToMouseButton(int button)
+    MouseButton ToMouseButton(int button)
     {
         switch (button)
         {
@@ -91,7 +91,7 @@ namespace nes::SDL
         }
     }
     
-    Modifiers GetCurrentModifiers()
+    Modifiers CurrentModifiers()
     {
         const auto modState = SDL_GetModState();
         Modifiers result{};
@@ -105,7 +105,7 @@ namespace nes::SDL
         return result;
     }
     
-    KeyAction GetKeyAction(const SDL_KeyboardEvent& keyEvent)
+    KeyAction ToKeyAction(const SDL_KeyboardEvent& keyEvent)
     {
         if (keyEvent.type == SDL_KEYDOWN)
         {
@@ -115,7 +115,7 @@ namespace nes::SDL
         return KeyAction::Released;
     }
     
-    MouseAction GetMouseAction(const SDL_MouseButtonEvent& mouseEvent)
+    MouseAction ToMouseAction(const SDL_MouseButtonEvent& mouseEvent)
     {
         if (mouseEvent.type == SDL_MOUSEBUTTONDOWN)
         {
