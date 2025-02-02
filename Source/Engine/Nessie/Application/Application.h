@@ -108,6 +108,16 @@ namespace nes
 
     private:
         //----------------------------------------------------------------------------------------------------
+        //		NOTES:
+        //      [Consider]: I'd like a better name difference between the Init() function and this. I'd want to
+        //                  to change the Main init to something else and call this function Init().
+        //		
+        ///		@brief : Initialization function that can be overridden by derived classes. This is called at the end of
+        ///             the public Init() function during startup.
+        //----------------------------------------------------------------------------------------------------
+        virtual bool PostInit() { return true; }
+        
+        //----------------------------------------------------------------------------------------------------
         ///		@brief : Runs a single frame of the Application.
         ///		@param deltaTime : Delta time since the last frame.
         //----------------------------------------------------------------------------------------------------

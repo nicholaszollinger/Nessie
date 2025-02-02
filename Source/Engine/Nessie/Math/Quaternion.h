@@ -442,7 +442,7 @@ namespace nes
 
         // Interpolate
         const float w = start.w * k0 + end.w * k1;
-        const Vec3 axis = start.RotationAxis() * k0 + end.RotationAxis() * k1;
+        const TVector3<Type> axis = start.RotationAxis() * k0 + end.RotationAxis() * k1;
         return TQuaternion(axis.x, axis.y, axis.z, w);
     }
 
@@ -525,9 +525,9 @@ namespace nes
         // According to the article, this is a computationally faster way to rotate a vector.
         // Potentially by 30%.
         // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-        Vec3 quatAxis = RotationAxis();
-        const Vec3 uv = Vec3::Cross(quatAxis, vector);
-        const Vec3 uuv = Vec3::Cross(quatAxis, uv);
+        TVector3<Type> quatAxis = RotationAxis();
+        const TVector3<Type> uv = TVector3<Type>::Cross(quatAxis, vector);
+        const TVector3<Type> uuv = TVector3<Type>::Cross(quatAxis, uv);
 
         vector = vector + ((uv * w) + uuv) * 2.f;
     }
@@ -682,7 +682,7 @@ namespace nes
     template <std::floating_point Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::MakeFromAngleAxis(const Type angleRadians, const TVector3<Type>& axis)
     {
-        const Type halfAngle = angle * 0.5;
+        const Type halfAngle = angleRadians * 0.5;
         const float sinHalfAngle = std::sin(halfAngle);
         const TVector3<Type> resultAxis = axis * sinHalfAngle);
 

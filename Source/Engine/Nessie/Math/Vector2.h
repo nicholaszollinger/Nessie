@@ -42,6 +42,8 @@ namespace nes
         constexpr Type Dot(const TVector2& right) const;
         constexpr TVector2& Normalize();
         constexpr TVector2 Normalized() const;
+        TVector2& Rotate(const float angleDegrees);
+        TVector2 Rotated(const float angleDegrees) const;
         void SwapAxes();
         float ToAngle() const;
         float ToAngleDegrees() const;
@@ -51,11 +53,12 @@ namespace nes
 
         static TVector2 FromAngle(const float radians);
         static TVector2 FromAngleDegrees(const float degrees);
-        
+
         static constexpr Type Dot(const TVector2& a, const TVector2& b);
         static constexpr Type Distance(const TVector2& a, const TVector2& b);
         static constexpr Type DistanceSquared(const TVector2& a, const TVector2& b);
 
+        
         static constexpr TVector2 GetUnitVector()   { return TVector2(static_cast<Type>(1), static_cast<Type>(1)); }
         static constexpr TVector2 GetZeroVector()   { return TVector2(static_cast<Type>(0), static_cast<Type>(0)); }
         static constexpr TVector2 GetUpVector()     { return TVector2(static_cast<Type>(0), static_cast<Type>(1)); }
@@ -253,6 +256,29 @@ namespace nes
         TVector2 output = *this;
         output.Normalize();
         return output;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Rotate this vector by an angle in degrees. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector2<Type>& TVector2<Type>::Rotate(const float angleDegrees)
+    {
+        *this = Rotated(angleDegrees);
+        return *this;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the result of rotating this vector by an angle in degrees. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector2<Type> TVector2<Type>::Rotated(const float angleDegrees) const
+    {
+        const float radians = math::ToRadians(angleDegrees);
+        const float cos = std::cos(radians); 
+        const float sin = std::sin(radians);
+
+        return TVector2(cos * x - sin * y, sin * x + cos * y);
     }
 
     template <ScalarType Type>

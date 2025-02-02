@@ -108,8 +108,14 @@ namespace nes
             return ExitCode::FatalError;
         }
 
-        NES_LOGV("Application", "Initialized App: \"", m_properties.m_appName, "\" Version: ", m_properties.m_appVersion.ToString());
+        // Run the Post Init for any derived class initialization. 
+        if (!PostInit())
+        {
+            NES_ERRORV("Application", "Failed to initialize the Application!");
+            return ExitCode::FatalError;
+        }
         
+        NES_LOGV("Application", "Initialized App: \"", m_properties.m_appName, "\" Version: ", m_properties.m_appVersion.ToString());
         return ExitCode::Success;
     }
 

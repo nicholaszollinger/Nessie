@@ -110,15 +110,6 @@ namespace nes::math
         return degrees * DegreesToRadians<Type>();
     }
 
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the square root of the value, clamping the value to 0 if it is negative.
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type = float>
-    Type SafeSqrt(Type value)
-    {
-        return std::sqrt(Max(value, static_cast<Type>(0.0)));
-    }
-
     template <FloatingPointType Type = float>
     Type Log2(Type value)
     {
@@ -199,6 +190,15 @@ namespace nes::math
     constexpr Type Abs(const Type value)
     {
         return value < 0 ? -value : value;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the square root of the value, clamping the value to 0 if it is negative.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type = float>
+    Type SafeSqrt(Type value)
+    {
+        return std::sqrt(Max(value, static_cast<Type>(0.0)));
     }
 
     template <ScalarType Type>
