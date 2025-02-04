@@ -465,7 +465,8 @@ namespace nes
     template <int N, FloatingPointType Type>
     float TSquareMatrix<N, Type>::Determinant() const
     {
-        // Page 162 of my Math Textbook: "3D Math Primer for Graphics and Game Development".
+        // Page 162 of "3D Math Primer for Graphics and Game Development".
+        // Page 27 of "Real-Time Collision Detection".
 
         // 2x2
         if constexpr (N == 2)

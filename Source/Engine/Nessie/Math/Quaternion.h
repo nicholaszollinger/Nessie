@@ -4,7 +4,7 @@
 
 namespace nes
 {
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     struct TQuaternion
     {
         Type x = static_cast<Type>(0);    
@@ -72,13 +72,13 @@ namespace nes
 
 namespace nes
 {
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr bool TQuaternion<Type>::operator==(const TQuaternion<Type>& other) const
     {
         return x == other.x && y == other.y && z == other.z && w == other.w;
     }
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type>& TQuaternion<Type>::operator-()
     {
         x = -x;
@@ -88,7 +88,7 @@ namespace nes
         return *this;
     }
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::operator-() const
     {
         return TQuaternion(-x, -y, -z, -w);
@@ -105,7 +105,7 @@ namespace nes
     ///             - This is also known as the "Hamilton Product".
     ///		@param other : The Quaternion that would rotate first by.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::operator*(const TQuaternion& other)
     {
         TQuaternion p(*this);
@@ -130,14 +130,14 @@ namespace nes
     ///             - This is also known as the "Hamilton Product".
     ///		@param other : The Quaternion that would rotate first by.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type>& TQuaternion<Type>::operator*=(const TQuaternion& other)
     {
         *this = *this * other;
         return *this;
     }
     
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::operator-(const TQuaternion& other)
     {
         TQuaternion result(*this);
@@ -145,7 +145,7 @@ namespace nes
         return result;
     }
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type>& TQuaternion<Type>::operator-=(const TQuaternion& other)
     {
         *this = *this - other;
@@ -156,7 +156,7 @@ namespace nes
     ///		@brief : Get the result of adding a Quaternion to this. This is component-wise addition; composing
     ///            quaternions should be done via multiplication.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::operator+(const TQuaternion& other)
     {
         return TQuaternion(x + other.x, y + other.y, z + other.z, w + other.w);
@@ -166,7 +166,7 @@ namespace nes
     ///		@brief : Add a Quaternion to this. This is component-wise addition; composing
     ///            quaternions should be done via multiplication.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type>& TQuaternion<Type>::operator+=(const TQuaternion& other)
     {
         *this = *this + other;
@@ -177,7 +177,7 @@ namespace nes
     ///		@brief : Get the result of multiplying a scalar with this Quaternion.
     ///         Multiplication by a scalar is the same as multiplying each component by that scalar. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::operator*(const ScalarType auto scalar) const
     {
         TQuaternion result(*this);
@@ -192,7 +192,7 @@ namespace nes
     ///		@brief : Multiply this Quaternion by a scalar.
     ///         Multiplication by a scalar is the same as multiplying each component by that scalar. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type>& TQuaternion<Type>::operator*=(const ScalarType auto scalar)
     {
         *this = *this * scalar;
@@ -202,20 +202,20 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Angle represented by this Quaternion. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     Type TQuaternion<Type>::ToAngle() const
     {
         return static_cast<Type>(2.0) * math::SafeACos(w);
     }
 
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     Type TQuaternion<Type>::Magnitude() const
     {
         return std::sqrt((x * x) + (y * y) + (z * z) + (w * w));
     }
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr Type TQuaternion<Type>::SquaredMagnitude() const
     {
         return (x * x) + (y * y) + (z * z) + (w * w);
@@ -228,13 +228,13 @@ namespace nes
     ///            the same direction. For unit quaternions, the dot product is equal to 1 if they are
     ///            the same, and -1 if they are opposite.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr Type TQuaternion<Type>::Dot(const TQuaternion& other) const
     {
         return (x * other.x) + (y * other.y) + (z * other.z) + (w * other.w);
     }
 
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr bool TQuaternion<Type>::IsIdentity() const
     {
         return *this == TQuaternion::Identity();
@@ -243,7 +243,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Normalize the Quaternion, ensuring that this represents a valid orientation.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type>& TQuaternion<Type>::Normalize()
     {
         const Type magnitude = Magnitude();
@@ -262,7 +262,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the normalized version of this Quaternion.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::Normalized() const
     {
         TQuaternion result(*this);
@@ -274,7 +274,7 @@ namespace nes
     ///		@brief : Invert this Quaternion. The inverse represents the opposite angular displacement
     ///              of this Quaternion. It is achieved by negating the axis of rotation. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type>& TQuaternion<Type>::Invert()
     {
         x = -x;
@@ -287,7 +287,7 @@ namespace nes
     ///		@brief : Get the Inverse of this Quaternion. The inverse represents the opposite angular displacement
     ///              of this Quaternion. It is achieved by negating the axis of rotation. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::Inverse() const
     {
         const TQuaternion conjugate = Conjugate();
@@ -299,7 +299,7 @@ namespace nes
     ///              the "w" component, meaning that this represents the opposite angular displacement of the
     ///              Quaternion. If this is a normalized Quaternion, this is synonymous with the inverse. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::Conjugate() const
     {
         return TQuaternion(-x, -y, -z, w);
@@ -316,7 +316,7 @@ namespace nes
     ///                if the Quaternion of a rotation of 30 degrees is raised to the power of 8, it won't
     ///                rotate 240 degrees clockwise, but rather 120 degrees in the counter-clockwise direction.    
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::Pow(const TQuaternion& q, const float exponent)
     {
         // If we are raising to a power of 0, or we are trying to raise an Identity Quaternion
@@ -340,7 +340,7 @@ namespace nes
     //		
     ///		@brief : Calculate the Log of a Quaternion. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::Log(const TQuaternion& q)
     {
         // This is taken from glm.
@@ -376,7 +376,7 @@ namespace nes
     //		
     ///		@brief : Exponential function for a quaternion. This always results in a normalized Quaternion. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::Exp(const TQuaternion& q)
     {
         const TVector3<Type> axis = q.RotationAxis();
@@ -401,7 +401,7 @@ namespace nes
     ///		@param t : The value between [0, 1] that represents how far to interpolate between. 0 == the Start,
     ///               1 == the End.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::Slerp(const TQuaternion& start, const TQuaternion& end, const float t)
     {
         // Compute the cosine of the angle between the two Quaternions, using the dot product.
@@ -452,7 +452,7 @@ namespace nes
     //		
     ///		@brief : Get the Euler Angles of this Quaternion. The Angles will be in degrees.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::EulerAngles() const
     {
         TVector3<Type> result{}; // Pitch, Yaw, Roll = (0, 0, 0)
@@ -488,7 +488,7 @@ namespace nes
     ///		@brief : Get the Axis of rotation for this Quaternion. 
     ///		@returns : 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::RotationAxis() const
     {
         auto axis = TVector3<Type>(x, y, z);
@@ -503,7 +503,7 @@ namespace nes
     ///		@param axis : Axis of rotation.
     ///		@param angle : Angle, in radians. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     void TQuaternion<Type>::ToAxisAngle(TVector3<Type>& axis, Type& angle) const
     {
         angle = ToAngle();
@@ -514,7 +514,7 @@ namespace nes
     ///		@brief : Rotate a vector by this Quaternion.
     ///		@param vector : Vector that is being rotated.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     void TQuaternion<Type>::RotateVector(TVector3<Type>& vector) const
     {
         // Formula : v' = q * v * q^-1
@@ -535,7 +535,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the result of rotating the vector by this Quaternion.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::RotatedVector(const TVector3<Type>& vector) const
     {
         TVector3<Type> result = vector;
@@ -546,7 +546,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Forward Vector after it has been rotated by this Quaternion. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::ForwardVector() const
     {
         return RotatedVector(TVector3<Type>::ForwardVector());
@@ -555,7 +555,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Right Vector after it has been rotated by this Quaternion. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::RightVector() const
     {
         return RotatedVector(TVector3<Type>::GetRightVector());
@@ -564,7 +564,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Up Vector after it has been rotated by this Quaternion. 
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::UpVector() const
     {
         return RotatedVector(TVector3<Type>::UpVector());
@@ -573,7 +573,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Rotation about the X (right) axis.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     Type TQuaternion<Type>::Pitch() const
     {
         const float sinePitch = 2.f + (y * z + w * x);
@@ -591,7 +591,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Rotation about the Y (up) axis.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     Type TQuaternion<Type>::Yaw() const
     {
         return math::SafeASin(math::ClampSignedNormalized(-2.f * (x * z - w * y)));
@@ -600,7 +600,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Rotation about the Z (forward) axis.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     Type TQuaternion<Type>::Roll() const
     {
         const float sineRoll = 2 * (x * y + w * z);
@@ -618,7 +618,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the Axis and Angle representation of the Quaternion.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     std::string TQuaternion<Type>::ToString() const
     {
         return CombineIntoString("Axis: ", RotationAxis().ToString(), ", Angle: ", math::RadiansToDegrees<Type>() * ToAngle());
@@ -631,7 +631,7 @@ namespace nes
     ///            the same direction. For unit quaternions, the dot product is equal to 1 if they are
     ///            the same, and -1 if they are opposite.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr Type TQuaternion<Type>::Dot(const TQuaternion& a, const TQuaternion& b)
     {
         return a.Dot(b);
@@ -641,7 +641,7 @@ namespace nes
     ///		@brief : Create a Quaternion from Euler Angles. The Angles are expected to be in degrees. 
     ///		@param euler : Euler Angles in degrees. x (right axis) = Pitch, y (up axis) = Yaw, z (forward axis) = Roll.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::MakeFromEuler(const TVector3<Type>& euler)
     {
         const auto eulerRadians = euler * math::DegreesToRadians();
@@ -667,7 +667,7 @@ namespace nes
     ///		@brief : Create a Quaternion from a vector whose direction is equal to the Axis of rotation and
     ///             whose magnitude is the angle in radians.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::MakeFromRotationVector(const TVector3<Type>& vector)
     {
         const TQuaternion result(vector.x * 0.5f, vector.y * 0.5f, vector.z * 0.5f, 0.0f);
@@ -679,12 +679,12 @@ namespace nes
     ///		@param angleRadians : The angle of rotation, in radians. 
     ///		@param axis : The axis that is rotated around.
     //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
+    template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::MakeFromAngleAxis(const Type angleRadians, const TVector3<Type>& axis)
     {
         const Type halfAngle = angleRadians * 0.5;
         const float sinHalfAngle = std::sin(halfAngle);
-        const TVector3<Type> resultAxis = axis * sinHalfAngle);
+        const TVector3<Type> resultAxis = axis * sinHalfAngle;
 
         return TQuaternion(resultAxis.x, resultAxis.y, resultAxis.z, std::cos(halfAngle));
     }

@@ -21,13 +21,14 @@ namespace nes::math
     Type Orient2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c)
     {
         const Type elements[4] =
-            {
+        {
             a.x - c.x, a.y - c.y,
             b.x - c.x, b.y - c.y
         };
         
         const TSquareMatrix<2, Type> mat(elements);
-        return mat.Determinant();
+        const Type det = mat.Determinant();
+        return det;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -45,11 +46,11 @@ namespace nes::math
     Type Orient3D(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c, const TVector3<Type>& d)
     {
         const Type elements[9] =
-            {
+        {
             a.x - d.x, a.y - d.y, a.z - d.z,
             b.x - d.x, b.y - d.y, b.z - d.z,
             c.x - d.x, c.y - d.y, c.z - d.z
-    };
+        };
         
         const TSquareMatrix<3, Type> mat(elements);
         return mat.Determinant();
@@ -73,11 +74,11 @@ namespace nes::math
         const auto cDiff = c - d;
         
         const Type elements[9] =
-            {
-                aDiff.x, aDiff.y, aDiff.SquaredMagnitude(),
-                bDiff.x, bDiff.y, bDiff.SquaredMagnitude(),
-                cDiff.x, cDiff.y, cDiff.SquaredMagnitude(),
-            };
+        {
+            aDiff.x, aDiff.y, aDiff.SquaredMagnitude(),
+            bDiff.x, bDiff.y, bDiff.SquaredMagnitude(),
+            cDiff.x, cDiff.y, cDiff.SquaredMagnitude(),
+        };
 
         const TSquareMatrix<3, Type> mat(elements);
         const Type determinant = mat.Determinant();
