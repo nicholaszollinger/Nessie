@@ -26,11 +26,14 @@ namespace nes
         
         constexpr bool operator!=(const Color& other) const { return !(*this == other); }
 
-        static constexpr Color White()  { return {}; }
-        static constexpr Color Black()  { return {0, 0, 0 }; }
-        static constexpr Color Red()    { return { 255, 0, 0 }; }
-        static constexpr Color Green()  { return { 0, 255, 0 }; }
-        static constexpr Color Blue()   { return { 0, 0, 255 }; }
+        static constexpr Color White()      { return {}; }
+        static constexpr Color Black()      { return {0, 0, 0 }; }
+        static constexpr Color Red()        { return { 255, 0, 0 }; }
+        static constexpr Color Green()      { return { 0, 255, 0 }; }
+        static constexpr Color Blue()       { return { 0, 0, 255 }; }
+        static constexpr Color Yellow()     { return { 255, 255, 0 }; }
+        static constexpr Color Cyan()       { return { 0, 255, 255 }; }
+        static constexpr Color Magenta()    { return { 255, 0, 255 }; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -53,9 +56,13 @@ namespace nes
 
         static constexpr LinearColor White()    { return {}; }
         static constexpr LinearColor Black()    { return { 0.0f, 0.0f, 0.0f }; }
+        static constexpr LinearColor Gray()     { return { 0.5f, 0.5f, 0.5f }; }
         static constexpr LinearColor Red()      { return { 1.0f, 0.0f, 0.0f }; }
         static constexpr LinearColor Green()    { return { 0.0f, 1.0f, 0.0f }; }
         static constexpr LinearColor Blue()     { return { 0.0f, 0.0f, 1.0f }; }
+        static constexpr LinearColor Yellow()   { return { 1.0f, 1.0f, 0.0f }; }
+        static constexpr LinearColor Cyan()     { return { 0.0f, 1.0f, 1.0f }; }
+        static constexpr LinearColor Magenta()  { return { 1.0f, 0.0f, 1.0f }; }
     };
 
     constexpr Color ToColor(const LinearColor& linearColor)
