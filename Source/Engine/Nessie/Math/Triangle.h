@@ -1,7 +1,7 @@
 ﻿// Triangles.h
 #pragma once
+#include "Matrix.h"
 #include "Ray.h"
-#include "Vector3.h"
 
 namespace nes
 {
@@ -46,6 +46,8 @@ namespace nes
         constexpr bool ContainsPoint(const TVector2<Type>& point) const;
         constexpr TVector2<Type> PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const;
         void CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+        
+        TTriangle2 Transformed(const TMatrix3x3<Type>& m) const;
 
         std::string ToString() const;
     };
@@ -81,7 +83,7 @@ namespace nes
     
     using Triangle3f = TTriangle3<float>;
     using Triangle3d = TTriangle3<double>;
-    using Triangle = TRay3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Triangle = TTriangle3<NES_MATH_DEFAULT_REAL_TYPE>;
 }
 
 namespace nes
@@ -231,16 +233,16 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Default constructor creates a Triangle with the vertices:
-    ///              0 = (-0.5, 0);
-    ///              1 = (0, 1);
-    ///              2 = (0.5, 0);
+    ///              0 = (-0.5, -0.5);
+    ///              1 = (0, 0.5);
+    ///              2 = (0.5, -0.5);
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
     constexpr TTriangle2<Type>::TTriangle2()
     {
-        m_vertices[0] = TVector2<Type>(-0.5f, 0.f);
-        m_vertices[1] = TVector2<Type>(0.f, 1.f);
-        m_vertices[2] = TVector2<Type>(0.5f, 0.f);
+        m_vertices[0] = TVector2<Type>(-0.5f, -0.5f);
+        m_vertices[1] = TVector2<Type>(0.f, 0.5f);
+        m_vertices[2] = TVector2<Type>(0.5f, -0.5f);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -403,6 +405,19 @@ namespace nes
         bary0 = baryCoordinates.x;
         bary1 = baryCoordinates.y;
         bary2 = baryCoordinates.z;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return a Triangle2 transformed by the matrix, including translation. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TTriangle2<Type> TTriangle2<Type>::Transformed(const TMatrix3x3<Type>& m) const
+    {
+        TTriangle2 result;
+        result.m_vertices[0] = m.TransformPoint(m_vertices[0]);
+        result.m_vertices[1] = m.TransformPoint(m_vertices[1]);
+        result.m_vertices[2] = m.TransformPoint(m_vertices[2]);
+        return result;
     }
 
     template <FloatingPointType Type>

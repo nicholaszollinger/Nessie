@@ -15,7 +15,7 @@ class VectorDemo final : public Demo
     
 public:
     virtual void Reset() override;
-    virtual void Render(const nes::Renderer& renderer, const nes::Rectf& worldViewport) override;
+    virtual void Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix) override;
     virtual void RenderImGui() override;
     virtual const char* GetName() const override { return "Vectors"; }
 

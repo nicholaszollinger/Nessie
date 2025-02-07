@@ -129,7 +129,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Draw a line connecting 'from' and 'to'.
     //----------------------------------------------------------------------------------------------------
-    void Renderer::DrawLine(Vector2f from, Vector2f to, const LinearColor& color) const
+    void Renderer::DrawLine(const Vector2& from, const Vector2& to, const LinearColor& color) const
     {
         SetDrawColor(color);
         SDL_RenderDrawLineF(s_pRenderer, from.x, from.y, to.x, to.y);
@@ -162,7 +162,7 @@ namespace nes
     //
     ///		@brief : Draw a wire circle.
     //----------------------------------------------------------------------------------------------------
-    void Renderer::DrawCircle(Vector2f position, float radius, const LinearColor& color) const
+    void Renderer::DrawCircle(const Vector2& position, float radius, const LinearColor& color) const
     {
         SetDrawColor(color);
 
@@ -206,9 +206,29 @@ namespace nes
     //		
     ///		@brief : NOT SUPPORTED CURRENTLY. This will just draw the wire circle.
     //----------------------------------------------------------------------------------------------------
-    void Renderer::DrawFillCircle(Vector2f position, float radius, const LinearColor& color) const
+    void Renderer::DrawFillCircle(const Vector2& position, float radius, const LinearColor& color) const
     {
         DrawCircle(position, radius, color);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Draw a Triangle outline.
+    ///		@param triangle : Triangle vertices.
+    ///		@param color : Color you want the lines to be.
+    //----------------------------------------------------------------------------------------------------
+    void Renderer::DrawTriangle(const Triangle2D& triangle, const LinearColor& color) const
+    {
+        SetDrawColor(color);
+        
+        const SDL_FPoint points[] =
+        {
+            { triangle.m_vertices[0].x, triangle.m_vertices[0].y},
+            { triangle.m_vertices[1].x, triangle.m_vertices[1].y},
+            { triangle.m_vertices[2].x, triangle.m_vertices[2].y},
+            { triangle.m_vertices[0].x, triangle.m_vertices[0].y},
+        };
+        
+        SDL_RenderDrawLinesF(s_pRenderer, points, 4);
     }
 
     void SetDrawColor(const LinearColor& linearColor)

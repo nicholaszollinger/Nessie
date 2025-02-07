@@ -26,7 +26,7 @@ namespace nes::math
             b.x - c.x, b.y - c.y
         };
         
-        const TSquareMatrix<2, Type> mat(elements);
+        const TMatrix2x2<Type> mat(elements);
         const Type det = mat.Determinant();
         return det;
     }
@@ -52,7 +52,7 @@ namespace nes::math
             c.x - d.x, c.y - d.y, c.z - d.z
         };
         
-        const TSquareMatrix<3, Type> mat(elements);
+        const TMatrix3x3<Type> mat(elements);
         return mat.Determinant();
     }
     
@@ -80,7 +80,7 @@ namespace nes::math
             cDiff.x, cDiff.y, cDiff.SquaredMagnitude(),
         };
 
-        const TSquareMatrix<3, Type> mat(elements);
+        const TMatrix3x3<Type> mat(elements);
         const Type determinant = mat.Determinant();
 
         // If the determinant is 0, then the four points are co-circular.
@@ -92,33 +92,6 @@ namespace nes::math
         const Type isCounterClockwise = Orient2D(a, b, c);
         return determinant * isCounterClockwise;
     }
-
-    // //----------------------------------------------------------------------------------------------------
-    // //		NOTES:
-    // //       I put this on pause, because it needs a 5x4 matrix which I currently don't support...  
-    // //		
-    // ///		@brief : 
-    // ///		@returns : 
-    // //----------------------------------------------------------------------------------------------------
-    // template <FloatingPointType Type>
-    // Type InSphere3D(const Vector3<Type>& a, const Vector3<Type>& b, const Vector3<Type>& c, const Vector3<Type>& d,
-    //     const Vector3<Type>& e)
-    // {
-    //     const auto aDiff = a - e;
-    //     const auto bDiff = b - e;
-    //     const auto cDiff = c - e;
-    //     const auto dDiff = d - e;
-    //     
-    //     const Type elements[9] =
-    //         {
-    //         aDiff.x, aDiff.y, aDiff.SquaredMagnitude(),
-    //         bDiff.x, bDiff.y, bDiff.SquaredMagnitude(),
-    //         cDiff.x, cDiff.y, cDiff.SquaredMagnitude(),
-    //     };
-    //
-    //     const SquareMatrix<3, Type> mat(elements);
-    //     const Type determinant = mat.CalculateDeterminant();
-    // }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns whether the 3 points a, b, and c are all collinear. 

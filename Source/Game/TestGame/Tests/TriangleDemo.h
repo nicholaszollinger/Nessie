@@ -1,19 +1,18 @@
-﻿// MatrixTest.h
+﻿// TriangleDemo.h
 #pragma once
+
 #include "../Demo.h"
-#include "Math/Circle.h"
 #include "Math/Transform.h"
 
-class CircleDemo final : public Demo
+class TriangleDemo final : public Demo
 {
+    nes::Triangle2D m_triangle{};
     nes::Transform2D m_transform{};
-    nes::Circle m_circle{};
-    nes::Vector2 m_testPoint;
-    bool m_pointInside = false;
-    
+    nes::Vector2 m_testPoint{};
+
 public:
     virtual void Reset() override;
     virtual void Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix) override;
     virtual void RenderImGui() override;
-    virtual const char* GetName() const override { return "Circle"; }
+    [[nodiscard]] virtual const char* GetName() const override { return "Triangles"; }
 };

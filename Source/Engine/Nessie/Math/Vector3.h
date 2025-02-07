@@ -61,8 +61,8 @@ namespace nes
         static float AngleBetweenVectors(const TVector3& a, const TVector3& b);
         static float AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
 
-        static constexpr TVector3 GetUnitVector()    { return TVector3(static_cast<Type>(1), static_cast<Type>(1)), static_cast<Type>(1); }
-        static constexpr TVector3 GetZeroVector()    { return TVector3(static_cast<Type>(0), static_cast<Type>(0)), static_cast<Type>(0); }
+        static constexpr TVector3 GetUnitVector()    { return TVector3(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
+        static constexpr TVector3 GetZeroVector()    { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
         static constexpr TVector3 GetUpVector()      { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
         static constexpr TVector3 GetRightVector()   { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
         static constexpr TVector3 GetForwardVector() { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }

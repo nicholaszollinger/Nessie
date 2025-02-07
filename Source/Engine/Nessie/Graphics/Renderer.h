@@ -2,7 +2,9 @@
 #pragma once
 #include "Application/Window.h"
 #include "Core/Generic/Color.h"
+#include "Math/Matrix.h"
 #include "Math/Rect.h"
+#include "Math/Triangle.h"
 
 namespace nes
 {
@@ -26,11 +28,12 @@ namespace nes
         void Clear(const LinearColor& color) const;
 
         // 2D
-        void DrawLine(Vector2f from, Vector2f to, const LinearColor& color) const;
+        void DrawLine(const Vector2& from, const Vector2& to, const LinearColor& color) const;
         void DrawRect(const Rectf& rect, const LinearColor& color) const;
         void DrawFillRect(const Rectf& rect, const LinearColor& color) const;
-        void DrawCircle(Vector2f position, float radius, const LinearColor& color) const;
-        void DrawFillCircle(Vector2f position, float radius, const LinearColor& color) const;
+        void DrawCircle(const Vector2& position, float radius, const LinearColor& color) const;
+        void DrawFillCircle(const Vector2& position, float radius, const LinearColor& color) const;
+        void DrawTriangle(const Triangle2D& triangle, const LinearColor& color) const;
         
     protected:
         bool Init(Window* pWindow);

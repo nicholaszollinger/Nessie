@@ -19,9 +19,9 @@ void VectorDemo::Reset()
     m_rotateAngleRadians = nes::math::DegreesToRadians() * 45.f;
 }
 
-void VectorDemo::Render(const nes::Renderer& renderer, const nes::Rectf& worldViewport)
+void VectorDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix)
 {
-    const nes::Vector2 worldCenter = worldViewport.Center();
+    const nes::Vector2 worldCenter = viewMatrix.TransformPoint(nes::Vector2::GetZeroVector());
 
     // Vector A
     DrawArrow(renderer, worldCenter, m_vectorA, nes::LinearColor::Red());
@@ -43,9 +43,15 @@ void VectorDemo::RenderImGui()
 
     ImGui::SeparatorText("Draw Settings");
     ImGui::DragFloat("Draw Scale", &m_vectorDrawScale, 1.f, 0.f);
-    ImGui::DragFloat("Draw Width", &m_vectorWidth, 1.f, 0.f);
+
+     // [TODO]: I want to be able to do this.
+    //ImGui::DragFloat("Draw Width", &m_vectorWidth, 1.f, 0.f);
 }
 
+//----------------------------------------------------------------------------------------------------
+//      [TODO]: Move this to the Renderer? 
+///		@brief : Draw an arrow starting from the origin to the origin + vec. 
+//----------------------------------------------------------------------------------------------------
 void VectorDemo::DrawArrow(const nes::Renderer& renderer, const nes::Vector2& origin, const nes::Vector2& vec, const nes::LinearColor& color, [[maybe_unused]] float thickness) const
 {
     const nes::Vector2 flippedY(vec.x, -vec.y);

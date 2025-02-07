@@ -7,6 +7,7 @@
 #include "Math/Matrix.h"
 #include "Math/Triangle.h"
 #include "Tests/CircleDemo.h"
+#include "Tests/TriangleDemo.h"
 #include "Tests/VectorDemo.h"
 
 static constexpr float kMinimumControlPanelWidth = 300.f;
@@ -21,6 +22,7 @@ TestGameApp::TestGameApp(const nes::CommandLineArgs& args)
 {
     m_demos.emplace_back(new VectorDemo());
     m_demos.emplace_back(new CircleDemo());
+    m_demos.emplace_back(new TriangleDemo());
 }
 
 bool TestGameApp::PostInit()
@@ -119,8 +121,18 @@ void TestGameApp::RenderMenuBar()
 void TestGameApp::RenderCurrentDemo(const nes::Renderer& renderer, const nes::Rectf& worldViewport) const
 {
     auto* pDemo = m_demos[m_currentDemo];
-    pDemo->Render(renderer, worldViewport);
-    
+
+    // [TODO]: Add a formal 2D Camera.
+    const nes::Vector2 worldCenter = worldViewport.Center();
+    nes::Matrix3x3 viewMatrix = nes::Matrix3x3::Identity();
+    viewMatrix.m[1][1] = -1.f; // Flip the Y Axis value.
+    viewMatrix.m[2][0] = worldCenter.x; 
+    viewMatrix.m[2][1] = worldCenter.y;
+
+    // Render the Scene:
+    pDemo->Render(renderer, viewMatrix);
+
+    // Render the standard UI:
     ImGui::BeginChild(pDemo->GetName());
     ImGui::SeparatorText(pDemo->GetName());
     if (ImGui::Button("Reset"))
@@ -128,7 +140,8 @@ void TestGameApp::RenderCurrentDemo(const nes::Renderer& renderer, const nes::Re
         pDemo->Reset();
     }
     ImGui::Separator();
-    
+
+    // Render the Demo UI:
     pDemo->RenderImGui();
     ImGui::EndChild();
 }
