@@ -16,6 +16,7 @@ namespace nes
         constexpr TVector2() = default;
         constexpr TVector2(const Type x, const Type y) : x(x) , y(y) {}
         constexpr TVector2(const ScalarType auto x, const ScalarType auto y) : x(static_cast<Type>(x)), y(static_cast<Type>(y)) {}
+        explicit constexpr TVector2(const Type uniformValue) : x(uniformValue), y(uniformValue) {}
 
         constexpr bool operator==(const TVector2 right) const;
         constexpr bool operator!=(const TVector2 right) const { return !(*this == right); }

@@ -23,6 +23,7 @@ function m.GenerateSolution()
 
     local cleanOption = utility.GetOptionValueOrDefault("cleanTempFiles");
     if (cleanOption ~= nil) then
+        m.PrintInfo("Cleaning Temp Files...");
         cleaner.CleanTempFiles();
     end
 

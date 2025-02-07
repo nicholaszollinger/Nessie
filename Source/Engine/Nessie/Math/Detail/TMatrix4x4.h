@@ -197,103 +197,63 @@ namespace nes
     template <FloatingPointType Type>
     bool TMatrix4x4<Type>::TryInvert()
     {
-        static_assert(false, "Invert for 4x4 not working yet...");
+        // This was written by following along from pbrt, then following along from the pdf linked below.
+        
+        // Via: https://github.com/google/ion/blob/master/ion/math/matrixutils.cc,
+        // (c) Google, Apache license.
+
+        // For 4x4 do not compute the adjugate as the transpose of the cofactor
+        // matrix, because this results in extra work. Several calculations can be
+        // shared across the sub-determinants.
+        //
+        // *This approach is explained in David Eberly's Geometric Tools book,
+        // excerpted here:
+        //   http://www.geometrictools.com/Documentation/LaplaceExpansionTheorem.pdf
+        
+        float s0 = math::DifferenceOfProducts(m[0][0], m[1][1], m[1][0], m[0][1]);
+        float s1 = math::DifferenceOfProducts(m[0][0], m[1][2], m[1][0], m[0][2]);
+        float s2 = math::DifferenceOfProducts(m[0][0], m[1][3], m[1][0], m[0][3]);
+
+        float s3 = math::DifferenceOfProducts(m[0][1], m[1][2], m[1][1], m[0][2]);
+        float s4 = math::DifferenceOfProducts(m[0][1], m[1][3], m[1][1], m[0][3]);
+        float s5 = math::DifferenceOfProducts(m[0][2], m[1][3], m[1][2], m[0][3]);
+
+        float c0 = math::DifferenceOfProducts(m[2][0], m[3][1], m[3][0], m[2][1]);
+        float c1 = math::DifferenceOfProducts(m[2][0], m[3][2], m[3][0], m[2][2]);
+        float c2 = math::DifferenceOfProducts(m[2][0], m[3][3], m[3][0], m[2][3]);
+        
+        float c3 = math::DifferenceOfProducts(m[2][1], m[3][2], m[3][1], m[2][2]);
+        float c4 = math::DifferenceOfProducts(m[2][1], m[3][3], m[3][1], m[2][3]);
+        float c5 = math::DifferenceOfProducts(m[2][2], m[3][3], m[3][2], m[2][3]);
+
+        const float determinant = (s0 * c5) - (s1 * c4) + (s2 * c3) + (s3 * c2) + (s5 * c0) - (s4 * c1);
+        if (math::CheckEqualFloats(determinant, 0.f))
+            return false;
         
         const TMatrix4x4 copy = *this;
+        float inverseDeterminant = 1.f / determinant;
 
-        // [TODO]: THIS IS BROKEN.
-        // Calculate the Determinant of the 4 2x2 matrices.
-        // I am looking at Unreal's implementation, because in my research, it seems that a lot of implementations try to avoid
-        // calculating part of the determinant more than once. Honestly, it is a bit above my head, but I need to get things in
-        // to move on for now.
-        // File: UnrealMath.cpp, Line: 834
-        // float determinants[4]{};
-        // float tmp[4][4];
-        //
-        // tmp[0][0] = copy.m[2][2] * copy.m[3][3] - copy.m[3][2] * copy.m[2][3];
-        // tmp[0][1] = copy.m[2][1] * copy.m[3][3] - copy.m[3][1] * copy.m[2][3];
-        // tmp[0][2] = copy.m[2][1] * copy.m[3][2] - copy.m[3][1] * copy.m[2][2];
-        //
-        // tmp[1][0] = copy.m[2][2] * copy.m[3][3] - copy.m[3][2] * copy.m[2][3];
-        // tmp[1][1] = copy.m[2][0] * copy.m[3][3] - copy.m[3][0] * copy.m[2][3];
-        // tmp[1][2] = copy.m[2][0] * copy.m[3][2] - copy.m[3][0] * copy.m[2][2];
-        //
-        // tmp[2][0] = copy.m[2][1] * copy.m[3][3] - copy.m[3][1] * copy.m[2][3];
-        // tmp[2][1] = copy.m[2][0] * copy.m[3][3] - copy.m[3][0] * copy.m[2][3];
-        // tmp[2][2] = copy.m[2][0] * copy.m[3][1] - copy.m[3][0] * copy.m[2][1];
-        //
-        // tmp[3][0] = copy.m[2][1] * copy.m[3][2] - copy.m[3][1] * copy.m[2][2];
-        // tmp[3][1] = copy.m[2][0] * copy.m[3][2] - copy.m[3][0] * copy.m[2][2];
-        // tmp[3][2] = copy.m[2][0] * copy.m[3][1] - copy.m[3][0] * copy.m[2][1];
-        //
-        // determinants[0] = copy.m[1][1] * tmp[0][0] - copy.m[1][2] * tmp[1][0] + copy.m[1][3] * tmp[2][0];
-        // determinants[1] = copy.m[1][0] * tmp[0][1] - copy.m[1][2] * tmp[1][1] + copy.m[1][3] * tmp[2][1];
-        // determinants[2] = copy.m[1][0] * tmp[0][2] - copy.m[1][1] * tmp[1][2] + copy.m[1][3] * tmp[2][2];
-        // determinants[3] = copy.m[1][0] * tmp[0][3] - copy.m[1][1] * tmp[1][3] + copy.m[1][2] * tmp[2][3];
-        //
-        // const float determinant = copy.m[0][0] * determinants[0] - copy.m[0][1] * determinants[1] + copy.m[0][2] * determinants[2] + copy.m[0][3] * determinants[3];
-        // if (determinant == 0.f)
-        // {
-        //     return false;
-        // }
-        //
-        // const float invDeterminant = 1.f / determinant;
-        // m[0][0] =  invDeterminant * determinants[0];
-        // m[0][1] = -invDeterminant * determinants[1];
-        // m[0][2] =  invDeterminant * determinants[2];
-        // m[0][3] = -invDeterminant * determinants[3];
-        //
-        // //
-        // m[1][0] = -invDeterminant * (copy.m[0][1] * tmp[0][0] - copy.m[0][2] * tmp[1][0] + copy.m[0][3] * tmp[2][0]);
-        // m[1][1] =  invDeterminant * (copy.m[0][0] * tmp[0][1] - copy.m[0][2] * tmp[1][1] + copy.m[0][3] * tmp[2][1]);
-        // m[1][2] = -invDeterminant * (copy.m[0][0] * tmp[0][2] - copy.m[0][2] * tmp[1][2] + copy.m[0][3] * tmp[2][2]);
-        // m[1][3] =  invDeterminant * (copy.m[0][0] * tmp[0][3] - copy.m[0][2] * tmp[1][3] + copy.m[0][3] * tmp[2][3]);
-        //
-        // m[2][0] =  invDeterminant * (
-        //     copy.m[0][1] * (copy.m[1][2] * copy.m[3][3] - copy.m[3][2] * copy.m[1][3]) -
-        //     copy.m[0][2] * (copy.m[1][1] * copy.m[3][3] - copy.m[3][1] * copy.m[1][3]) +
-        //     copy.m[0][3] * (copy.m[1][1] * copy.m[3][2] - copy.m[3][1] * copy.m[1][2])
-        //     );
-        // m[2][1] = -invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][2] * copy.m[3][3] - copy.m[3][1] * copy.m[1][3]) -
-        //     copy.m[0][2] * (copy.m[1][0] * copy.m[3][3] - copy.m[3][0] * copy.m[1][3]) +
-        //     copy.m[0][3] * (copy.m[1][0] * copy.m[3][2] - copy.m[3][0] * copy.m[1][2])
-        //     );
-        // m[2][2] =  invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][1] * copy.m[3][3] - copy.m[3][1] * copy.m[1][3]) -
-        //     copy.m[0][1] * (copy.m[1][0] * copy.m[3][3] - copy.m[3][0] * copy.m[1][3]) +
-        //     copy.m[0][3] * (copy.m[1][0] * copy.m[3][1] - copy.m[3][0] * copy.m[1][1])
-        //     );
-        // m[2][3] = -invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][1] * copy.m[3][2] - copy.m[3][1] * copy.m[1][2]) -
-        //     copy.m[0][1] * (copy.m[1][0] * copy.m[3][2] - copy.m[3][0] * copy.m[1][2]) +
-        //     copy.m[0][2] * (copy.m[1][0] * copy.m[3][1] - copy.m[3][0] * copy.m[1][1])
-        //     );
-        //
-        // m[3][0] = -invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][2] * copy.m[2][3] - copy.m[2][2] * copy.m[1][3]) -
-        //     copy.m[0][1] * (copy.m[1][1] * copy.m[2][3] - copy.m[2][1] * copy.m[1][3]) +
-        //     copy.m[0][3] * (copy.m[1][1] * copy.m[2][2] - copy.m[2][1] * copy.m[1][2])
-        //     );
-        // m[3][1] =  invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][2] * copy.m[2][3] - copy.m[2][2] * copy.m[1][3]) -
-        //     copy.m[0][2] * (copy.m[1][0] * copy.m[2][3] - copy.m[2][0] * copy.m[1][3]) +
-        //     copy.m[0][3] * (copy.m[1][0] * copy.m[2][2] - copy.m[2][0] * copy.m[1][2])
-        //     );
-        // m[3][2] = -invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][1] * copy.m[2][3] - copy.m[2][1] * copy.m[1][3]) -
-        //     copy.m[0][1] * (copy.m[1][0] * copy.m[2][3] - copy.m[2][0] * copy.m[1][3]) +
-        //     copy.m[0][3] * (copy.m[1][0] * copy.m[2][1] - copy.m[2][0] * copy.m[1][1])
-        //     );
-        // m[3][3] =  invDeterminant * (
-        //     copy.m[0][0] * (copy.m[1][1] * copy.m[2][2] - copy.m[2][1] * copy.m[1][2]) -
-        //     copy.m[0][1] * (copy.m[1][0] * copy.m[2][2] - copy.m[2][0] * copy.m[1][2]) +
-        //     copy.m[0][2] * (copy.m[1][0] * copy.m[2][1] - copy.m[2][0] * copy.m[1][1])
-        //     );
-        //
-        // return true;
+        m[0][0] = inverseDeterminant * ((copy.m[1][1] * c5)  + (copy.m[1][3] * c3) + (-copy.m[1][2] * c4));
+        m[0][1] = inverseDeterminant * ((-copy.m[0][1] * c5) + (copy.m[0][2] * c4) + (-copy.m[0][3] * c3));
+        m[0][2] = inverseDeterminant * ((copy.m[3][1] * s5)  + (copy.m[3][3] * s3) + (-copy.m[3][2] * s4));
+        m[0][3] = inverseDeterminant * ((-copy.m[2][1] * s5) + (copy.m[2][2] * s4) + (-copy.m[2][3] * s3));
 
-        return false;
+        m[1][0] = inverseDeterminant * ((-copy.m[1][0] * c5) + (copy.m[1][2] * c2) + (-copy.m[1][3] * c1));
+        m[1][1] = inverseDeterminant * ((copy.m[0][0] * c5)  + (copy.m[0][3] * c1) + (-copy.m[0][2] * c2));
+        m[1][2] = inverseDeterminant * ((-copy.m[3][0] * s5) + (copy.m[3][2] * s2) + (-copy.m[3][3] * s1));
+        m[1][3] = inverseDeterminant * ((copy.m[2][0] * s5)  + (copy.m[2][3] * s1) + (-copy.m[2][2] * s2));
+
+        m[2][0] = inverseDeterminant * ((copy.m[1][0] * c4)  + (copy.m[1][3] * c0) + (-copy.m[1][1] * c2));
+        m[2][1] = inverseDeterminant * ((-copy.m[0][0] * c4) + (copy.m[0][1] * c2) + (-copy.m[0][3] * c0));
+        m[2][2] = inverseDeterminant * ((copy.m[3][0] * s4)  + (copy.m[3][3] * s0) + (-copy.m[3][1] * s2));
+        m[2][3] = inverseDeterminant * ((-copy.m[2][0] * s4) + (copy.m[2][1] * s2) + (-copy.m[2][3] * s0));
+
+        m[3][0] = inverseDeterminant * ((-copy.m[1][0] * c3) + (copy.m[1][1] * c1) + (-copy.m[1][2] * c0));
+        m[3][1] = inverseDeterminant * ((copy.m[0][0] * c3)  + (copy.m[0][2] * c0) + (-copy.m[0][1] * c1));
+        m[3][2] = inverseDeterminant * ((-copy.m[3][0] * s3) + (copy.m[3][1] * s1) + (-copy.m[3][2] * s0));
+        m[3][3] = inverseDeterminant * ((copy.m[2][0] * s3)  + (copy.m[2][2] * s0) + (-copy.m[2][1] * s1));
+
+        return true;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -349,6 +309,9 @@ namespace nes
     template <FloatingPointType Type>
     float TMatrix4x4<Type>::Determinant() const
     {
+        // This implementation is from pbrt.
+        
+        // Resources:
         // Page 162 of "3D Math Primer for Graphics and Game Development".
         // Page 27 of "Real-Time Collision Detection".
         const float s0 = math::DifferenceOfProducts(m[0][0], m[1][1], m[1][0], m[0][1]);

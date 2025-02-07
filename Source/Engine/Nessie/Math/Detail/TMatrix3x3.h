@@ -77,15 +77,6 @@ namespace nes
 
 namespace nes
 {
-    // //----------------------------------------------------------------------------------------------------
-    // ///		@brief : Default constructor sets equal to the Identity Matrix. 
-    // //----------------------------------------------------------------------------------------------------
-    // template <FloatingPointType Type>
-    // constexpr TMatrix3x3<Type>::TMatrix3x3()
-    // {
-    //     *this = kIdentity;
-    // }
-
     template <FloatingPointType Type>
     constexpr TMatrix3x3<Type>::TMatrix3x3(const Type values[N * N])
     {

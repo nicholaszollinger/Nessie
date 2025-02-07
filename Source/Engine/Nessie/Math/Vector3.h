@@ -17,6 +17,7 @@ namespace nes
         constexpr TVector3(const Type x, const Type y, const Type z) : x(x) , y(y), z(z) {}
         constexpr TVector3(const ScalarType auto x, const ScalarType auto y, const ScalarType auto z) : x(static_cast<Type>(x)), y(static_cast<Type>(y)), z(static_cast<Type>(z)) {}
         constexpr TVector3(const TVector2<Type>& vector2, const Type z = 0) : x(vector2.x), y(vector2.y), z(z) {}
+        explicit constexpr TVector3(const Type uniformValue) : x(uniformValue), y(uniformValue), z(uniformValue) {}
         
         TVector3& operator=(const TVector2<Type>& vector2);
 
