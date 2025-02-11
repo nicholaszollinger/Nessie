@@ -9,6 +9,7 @@ class CircleDemo final : public Demo
     nes::Transform2D m_transform{};
     nes::Circle m_circle{};
     nes::Vector2 m_testPoint;
+    nes::Vector2 m_testPoints[3]{};
     bool m_pointInside = false;
     
 public:

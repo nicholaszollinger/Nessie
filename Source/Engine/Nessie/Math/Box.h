@@ -12,6 +12,12 @@ namespace nes
 
         template <FloatingPointType Type>
         void ExtremePointsAlongDirection3(const TVector3<Type>& direction, const TVector3<Type>* points, const size_t count, size_t& iMin, size_t& iMax);
+
+        template <FloatingPointType Type>
+        void MostSeparatedPointsOnAABB2(const TVector2<Type>* points, const size_t count, size_t &iMin, size_t& iMax);
+
+        template <FloatingPointType Type>
+        void MostSeparatedPointsOnAABB3(const TVector2<Type>* points, const size_t count, size_t &iMin, size_t& iMax);
     }
     
     //----------------------------------------------------------------------------------------------------
@@ -170,7 +176,109 @@ namespace nes
             }
         }
     }
-    
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //      pg 89 of "Real-Time Collision Detection".
+    //		
+    ///		@brief : Compute indices to the two most separated points of the (up to) four points defining
+    ///             the AABB encompassing the point set. Results stored in iMin and iMax.
+    ///		@param points : The point set that the AABB encompasses.
+    ///		@param count : Number of points in the array.
+    ///		@param iMin : Result index of the minimal point.
+    ///		@param iMax : Result index of the maximal point.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void math::MostSeparatedPointsOnAABB2(const TVector2<Type>* points, const size_t count, size_t& iMin, size_t& iMax)
+    {
+        // Find the indices of the minimum and maximum points of the AABB
+        size_t minIndices[2] { 0, 0 };
+        size_t maxIndices[2] { 0, 0 };
+
+        for (size_t i = 0; i < count; ++i)
+        {
+            for (size_t axis = 0; axis < 2; ++axis)
+            {
+                if (points[minIndices[axis]][axis] > points[i][axis])
+                    minIndices[axis] = i;
+
+                if (points[maxIndices[axis]][axis] < points[i][axis])
+                    maxIndices[axis] = i;
+            }
+        }
+
+        // Compute the distances along the axes to find which one spans the largest distance:
+        const Type sqrDistX = TVector2<Type>::DistanceSquared(points[minIndices[0]], points[maxIndices[0]]);
+        const Type sqrDistY = TVector2<Type>::DistanceSquared(points[minIndices[1]], points[maxIndices[1]]);
+        
+        // X-Axis is the largest:
+        if (sqrDistX > sqrDistY)
+        {
+            iMin = minIndices[0];
+            iMax = maxIndices[0];
+            return;
+        }
+        
+        // Y-Axis is largest
+        iMin = minIndices[1];
+        iMax = maxIndices[1];
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //      pg 89 of "Real-Time Collision Detection".
+    //		
+    ///		@brief : Compute indices to the two most separated points of the (up to) six points defining
+    ///             the AABB encompassing the point set. Results stored in iMin and iMax.
+    ///		@param points : The point set that the AABB encompasses.
+    ///		@param count : Number of points in the array.
+    ///		@param iMin : Result index of the minimal point.
+    ///		@param iMax : Result index of the maximal point.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void math::MostSeparatedPointsOnAABB3(const TVector2<Type>* points, const size_t count, size_t& iMin, size_t& iMax)
+    {
+        // Find the indices of the minimum and maximum points of the AABB
+        size_t minIndices[3] { 0, 0, 0 };
+        size_t maxIndices[3] { 0, 0, 0 };
+
+        for (size_t i = 0; i < count; ++i)
+        {
+            for (size_t axis = 0; axis < 3; ++axis)
+            {
+                if (points[minIndices[axis]][axis] > points[i][axis])
+                    minIndices[axis] = i;
+
+                if (points[maxIndices[axis]][axis] < points[i][axis])
+                    maxIndices[axis] = i;
+            }
+        }
+
+        // Compute the distances along the axes to find which one spans the largest distance:
+        const Type sqrDistX = TVector3<Type>::DistanceSquared(points[minIndices[0]], points[maxIndices[0]]);
+        const Type sqrDistY = TVector3<Type>::DistanceSquared(points[minIndices[1]], points[maxIndices[1]]);
+        const Type sqrDistZ = TVector3<Type>::DistanceSquared(points[minIndices[2]], points[maxIndices[2]]);
+
+        // Assume X-Axis is largest
+        iMin = minIndices[0];
+        iMax = maxIndices[0];
+        
+        // Y-Axis is the largest:
+        if (sqrDistY > sqrDistX && sqrDistY > sqrDistZ)
+        {
+            iMin = minIndices[1];
+            iMax = maxIndices[1];
+            return;
+        }
+
+        // Z-Axis is the largest:
+        if (sqrDistZ > sqrDistX)
+        {
+            iMin = minIndices[2];
+            iMax = maxIndices[2];
+        }
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Constructs a 2D AABB from a center and half-extents. 
     ///		@param center : Center position of the Box.

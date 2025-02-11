@@ -5,8 +5,16 @@
 
 void CircleDemo::Reset()
 {
-    m_circle = nes::Circle(nes::Vector2::GetZeroVector(), 100.f);
     m_testPoint = nes::Vector2::GetZeroVector();
+
+    // Triangle of points.
+    m_testPoints[0] = nes::Vector2(-0.5f, -0.5f) * 100.f;
+    m_testPoints[1] = nes::Vector2(0.f, 0.5f) * 100.f;
+    m_testPoints[2] = nes::Vector2(0.5f, -0.5f) * 100.f;
+
+    // Create bounding Circle triangle of points
+    m_circle = nes::Circle(m_testPoints, 3);
+    
     m_pointInside = false;
 }
 
@@ -23,15 +31,24 @@ void CircleDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& vie
     else
         renderer.DrawCircle(circlePos, m_circle.m_radius, nes::LinearColor::Red());
 
-    // Point
-    renderer.DrawCircle(testPos, 2.f, nes::LinearColor::White());
+    // Points within the Circle
+    renderer.DrawCircle(transform.TransformPoint(m_testPoints[0]), 2.f, nes::LinearColor::White());
+    renderer.DrawCircle(transform.TransformPoint(m_testPoints[1]), 2.f, nes::LinearColor::White());
+    renderer.DrawCircle(transform.TransformPoint(m_testPoints[2]), 2.f, nes::LinearColor::White());
+
+    // Test Points
+    renderer.DrawCircle(testPos, 2.f, nes::LinearColor::Yellow());
 }
 
 void CircleDemo::RenderImGui()
 {
+    ImGui::SeparatorText("Description:");
+    ImGui::TextWrapped("The circle is created as a bounding box around the 3 (white) points. The circle will be green if the test point (yellow) is contained by the circle.");
+
+    ImGui::SeparatorText("Controls:");
     ImGui::DragFloat2("Test Point", &m_testPoint[0]);
     ImGui::Separator();
     
-    ImGui::DragFloat2("Circle Center", &m_circle.m_center[0]);
-    ImGui::DragFloat("Circle Radius", &m_circle.m_radius);
+    //ImGui::DragFloat2("Circle Center", &m_circle.m_center[0]);
+    //ImGui::DragFloat("Circle Radius", &m_circle.m_radius);
 }
