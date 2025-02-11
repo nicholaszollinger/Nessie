@@ -1,9 +1,9 @@
 ﻿// Renderer.h
 #pragma once
+#include "Rect.h"
 #include "Application/Window.h"
 #include "Core/Generic/Color.h"
 #include "Math/Matrix.h"
-#include "Math/Rect.h"
 #include "Math/Triangle.h"
 
 namespace nes
