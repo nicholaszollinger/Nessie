@@ -55,56 +55,14 @@ namespace nes
 
         static constexpr TLine3 MakeFromTwoPoints(const TVector3<Type>& a, const TVector3<Type>& b);
     };
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : A Line Segment between a start and end point, expressed in 2D coordinates. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    struct TLineSegment2
-    {
-        TVector2<Type> m_start{};
-        TVector2<Type> m_end{};
-
-        constexpr TLineSegment2() = default;
-        constexpr TLineSegment2(const TVector2<Type>& start, const TVector2<Type>& end);
-
-        Type Length() const;
-        Type SquaredLength() const;
-        constexpr TVector2<Type> ClosestPoint(const TVector2<Type>& queryPoint);
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : A Line Segment between a start and end point, expressed in 2D coordinates. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    struct TLineSegment3
-    {
-        TVector3<Type> m_start{};
-        TVector3<Type> m_end{};
-
-        constexpr TLineSegment3() = default;
-        constexpr TLineSegment3(const TVector3<Type>& start, const TVector3<Type>& end);
-        
-        Type Length() const;
-        Type SquaredLength() const;
-        constexpr TVector3<Type> ClosestPoint(const TVector3<Type>& queryPoint);
-    };
     
     using Line2f = TLine2<float>;
     using Line2d = TLine2<double>;
     using Line2D = TLine2<NES_MATH_DEFAULT_REAL_TYPE>;
     
-    using LineSegment2f = TLineSegment2<float>;
-    using LineSegment2d = TLineSegment2<double>;
-    using LineSegment2D = TLineSegment2<NES_MATH_DEFAULT_REAL_TYPE>;
-    
     using Line3f = TLine3<float>;
     using Line3d = TLine3<double>;
     using Line = TLine3<NES_MATH_DEFAULT_REAL_TYPE>;
-    
-    using LineSegment3f = TLineSegment3<float>;
-    using LineSegment3d = TLineSegment3<double>;
-    using LineSegment = TLine3<NES_MATH_DEFAULT_REAL_TYPE>;
 }
 
 namespace nes
@@ -227,54 +185,6 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Constructs a Line Segment between the start and end points. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    constexpr TLineSegment2<Type>::TLineSegment2(const TVector2<Type>& start, const TVector2<Type>& end)
-        : m_start(start)
-        , m_end(end)
-    {
-        //
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the Length of the line segment. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    Type TLineSegment2<Type>::Length() const
-    {
-        return (m_end - m_start).Magnitude();
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the Squared Length of the line segment.
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    Type TLineSegment2<Type>::SquaredLength() const
-    {
-        return (m_end - m_start).SquaredMagnitude();
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Return the closest point on the Segment to the query point. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    constexpr TVector2<Type> TLineSegment2<Type>::ClosestPoint(const TVector2<Type>& queryPoint)
-    {
-        TVector2<Type> toEnd = (m_end - m_start);
-        Type distanceSqr = toEnd.SquaredMagnitude();
-
-        Type projectedDistance = TVector2<Type>::Dot(queryPoint - m_start, toEnd);
-        if (projectedDistance < 0)
-            return m_start;
-
-        if (math::Squared(projectedDistance) > distanceSqr)
-            return m_end;
-
-        return m_start + projectedDistance * toEnd;
-    }
-
-    //----------------------------------------------------------------------------------------------------
     ///		@brief : Construct a line from an Origin and Direction 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
@@ -291,53 +201,5 @@ namespace nes
     constexpr TLine3<Type> TLine3<Type>::MakeFromTwoPoints(const TVector3<Type>& a, const TVector3<Type>& b)
     {
         return TLine3(a, (b - a).Normalize());
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Constructs a line segment between the start and end points. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    constexpr TLineSegment3<Type>::TLineSegment3(const TVector3<Type>& start, const TVector3<Type>& end)
-        : m_start(start)
-        , m_end(end)
-    {
-        //
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the length of the line segment. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    Type TLineSegment3<Type>::Length() const
-    {
-        return (m_end - m_start).Magnitude();
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the squared length of the line segement. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    Type TLineSegment3<Type>::SquaredLength() const
-    {
-        return (m_end - m_start).SquaredMagnitude();
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Return the closest point on the Segment to the query point. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    constexpr TVector3<Type> TLineSegment3<Type>::ClosestPoint(const TVector3<Type>& queryPoint)
-    {
-        TVector3<Type> toEnd = (m_end - m_start);
-        Type distanceSqr = toEnd.SquaredMagnitude();
-
-        Type projectedDistance = TVector3<Type>::Dot(queryPoint - m_start, toEnd);
-        if (projectedDistance < 0)
-            return m_start;
-
-        if (math::Squared(projectedDistance) > distanceSqr)
-            return m_end;
-
-        return m_start + projectedDistance * toEnd;
     }
 }

@@ -1,7 +1,7 @@
 ﻿// MatrixTest.h
 #pragma once
 #include "../Demo.h"
-#include "Math/Circle.h"
+#include "Math/Sphere.h"
 #include "Math/Transform.h"
 
 class CircleDemo final : public Demo
