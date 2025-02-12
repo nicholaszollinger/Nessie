@@ -70,6 +70,5 @@ namespace nes
         [[nodiscard]] bool IsResizable() const              { return m_properties.m_isResizable; }
         [[nodiscard]] bool IsVsyncEnabled() const           { return m_properties.m_vsyncEnabled; }
         [[nodiscard]] bool IsMinimized() const              { return m_properties.m_isMinimized; }
-
     };
 }

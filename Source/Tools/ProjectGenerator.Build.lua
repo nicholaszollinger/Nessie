@@ -17,9 +17,10 @@ function p.ConfigureProject(projectDir, dependencyInjector)
         projectDir .. "Modules/**.lua"
     }
 
-    local premakeDir = projectDir .. "Premake/"
-    local absoluteSolutionDir = path.getabsolute(projectCore.SolutionDir) .. "/";    
-    buildcommands { 'call ' .. premakeDir .. 'premake5.exe --file="' .. projectDir .. 'premake5.lua" --cleanTempFiles=true %{_ACTION} ' .. absoluteSolutionDir}
+    local premakeDir = projectDir .. "Premake/";
+    -- The final Solution Dir argument at the end does not contain an ending quote because when reading the _ARGS[1], it was inserting a quote into the path.
+    -- The quotes are added because of folder paths that contain spaces.
+    buildcommands { 'call \"' .. premakeDir .. 'premake5.exe\" --file="' .. projectDir .. 'premake5.lua" --cleanTempFiles=true %{_ACTION} ' .. "\"" .. projectCore.SolutionDir};
 
 end
 

@@ -27,6 +27,7 @@ function m.Init()
     m.BuildFileExtension = ".Build.lua";
     m.ProjectFileExtension = ".Project.json";
     m.SolutionDir = utility.GetArgOrDefault(1, DefaultProjectDirectory);
+    m.ThirdPartyDir = m.SolutionDir .. "\\Source\\ThirdParty\\";
     m.SourceFolder = m.SolutionDir .. "Source\\";
     m.ProjectFilesLocation = m.SolutionDir .. "Intermediate\\ProjectFiles\\";
     m.ProjectIntermediateLibsLocation = m.SolutionDir .. "Intermediate\\Libs\\";

@@ -221,6 +221,25 @@ function m.PrintError(module, ...)
 end
 
 -----------------------------------------------------------------------------------
+---Print a prompt for the user to respond with "y" or "n". Returns true
+---for "y" and false for "n".
+---@param prompt string Question for the User before " (y/n)"
+-----------------------------------------------------------------------------------
+function m.YesOrNoPrompt(prompt)
+    term.setTextColor(term.white);
+    print(prompt .. " (y/n): ")
+    while true do
+        local response = io.stdin();
+        if (response == "y" or response == "Y") then
+            return true;
+
+        elseif (response == "n" or response == "N") then
+            return false;
+        end
+    end
+end
+
+-----------------------------------------------------------------------------------
 --- Returns the file as a raw set of data.
 ---@param filename string : Name of the file we are trying to read.
 -----------------------------------------------------------------------------------
