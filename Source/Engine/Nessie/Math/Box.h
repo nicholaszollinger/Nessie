@@ -309,6 +309,7 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TBox2<Type>::TBox2(const TVector2<Type>* points, const size_t count)
     {
+        NES_ASSERT(points != nullptr);
         size_t iMin = std::numeric_limits<size_t>::max();        
         size_t iMax = std::numeric_limits<size_t>::max();
         

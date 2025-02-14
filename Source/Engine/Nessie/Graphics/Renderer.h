@@ -34,6 +34,8 @@ namespace nes
         void DrawCircle(const Vector2& position, float radius, const LinearColor& color) const;
         void DrawFillCircle(const Vector2& position, float radius, const LinearColor& color) const;
         void DrawTriangle(const Triangle2D& triangle, const LinearColor& color) const;
+        void DrawPolygon2D(const Vector2* vertices, size_t count, const LinearColor& color) const;
+        void DrawPolygon2D(const std::vector<Vector2>& vertices, const std::vector<size_t>& indices, const LinearColor& color) const;
         
     protected:
         bool Init(Window* pWindow);

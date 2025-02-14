@@ -99,7 +99,7 @@ namespace nes::math
     template <FloatingPointType Type>
     bool PointsAreCollinear(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c)
     {
-        return math::CheckEqualFloats(Orient2D(a, b, c),0);
+        return math::CheckEqualFloats(Orient2D(a, b, c),static_cast<Type>(0));
     }
 
     //----------------------------------------------------------------------------------------------------

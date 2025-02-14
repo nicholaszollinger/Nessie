@@ -231,6 +231,45 @@ namespace nes
         SDL_RenderDrawLinesF(s_pRenderer, points, 4);
     }
 
+    void Renderer::DrawPolygon2D(const Vector2* vertices, const size_t count, const LinearColor& color) const
+    {
+        if (count == 0)
+            return;
+        
+        SetDrawColor(color);
+
+        std::vector<SDL_FPoint> points;
+        points.reserve(count + 1);
+
+        // Add the points, then add the last one to close the shape.
+        for (size_t i = 0; i < count; ++i)
+        {
+            points.emplace_back(vertices[i].x, vertices[i].y);
+        }
+        points.emplace_back(points[0].x, points[0].y);
+        
+        SDL_RenderDrawLinesF(s_pRenderer, points.data(), static_cast<int>(points.size()));
+    }
+
+    void Renderer::DrawPolygon2D(const std::vector<Vector2>& vertices, const std::vector<size_t>& indices, const LinearColor& color) const
+    {
+        if (vertices.empty() || indices.empty())
+            return;
+        
+        SetDrawColor(color);
+
+        std::vector<SDL_FPoint> points;
+        points.reserve(indices.size());
+        for (const size_t index : indices)
+        {
+            points.emplace_back(vertices[index].x, vertices[index].y);
+        }
+        points.emplace_back(vertices[indices[0]].x, vertices[indices[0]].y);
+        
+        SDL_RenderDrawLinesF(s_pRenderer, points.data(), static_cast<int>(points.size()));
+    }
+
+
     void SetDrawColor(const LinearColor& linearColor)
     {
         NES_ASSERT(s_pRenderer);

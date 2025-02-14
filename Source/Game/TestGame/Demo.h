@@ -6,7 +6,8 @@ class Demo
 {
 public:
     virtual ~Demo() = default;
-    
+
+    virtual bool Init() { return true; }
     virtual void Reset() = 0;
     virtual void Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix) = 0;
     virtual void RenderImGui() = 0;

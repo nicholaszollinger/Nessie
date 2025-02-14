@@ -43,6 +43,7 @@ namespace nes
         constexpr Type Dot(const TVector2& right) const;
         constexpr TVector2& Normalize();
         constexpr TVector2 Normalized() const;
+        TVector2 Perpendicular() const;
         TVector2& Rotate(const float angleDegrees);
         TVector2 Rotated(const float angleDegrees) const;
         void SwapAxes();
@@ -54,11 +55,11 @@ namespace nes
 
         static TVector2 FromAngle(const float radians);
         static TVector2 FromAngleDegrees(const float degrees);
+        static TVector2 PerpendicularTo(const TVector2 vec);
 
         static constexpr Type Dot(const TVector2& a, const TVector2& b);
         static constexpr Type Distance(const TVector2& a, const TVector2& b);
         static constexpr Type DistanceSquared(const TVector2& a, const TVector2& b);
-
         
         static constexpr TVector2 GetUnitVector()   { return TVector2(static_cast<Type>(1), static_cast<Type>(1)); }
         static constexpr TVector2 GetZeroVector()   { return TVector2(static_cast<Type>(0), static_cast<Type>(0)); }
@@ -260,6 +261,15 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a perpendicular vector to this. (Rotating by 90 degrees counterclockwise) 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector2<Type> TVector2<Type>::Perpendicular() const
+    {
+        return TVector2(-y, x);
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Rotate this vector by an angle in degrees. 
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
@@ -362,6 +372,16 @@ namespace nes
     TVector2<Type> TVector2<Type>::FromAngleDegrees(const float degrees)
     {
         return FromAngle(math::ToRadians(degrees));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a perpendicular vector to the passed in vector (same as rotating the
+    ///             vector by 90 degrees counterclockwise).
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector2<Type> TVector2<Type>::PerpendicularTo(const TVector2 vec)
+    {
+        return TVector2(-vec.y, vec.x);
     }
 
     template <ScalarType VecType>

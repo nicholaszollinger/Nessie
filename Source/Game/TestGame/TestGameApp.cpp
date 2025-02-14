@@ -4,6 +4,7 @@
 #include "imgui.h"
 #include "imgui_internal.h"
 #include "Math/Matrix.h"
+#include "Tests/BoundingVolumesDemo.h"
 #include "Tests/CircleDemo.h"
 #include "Tests/TriangleDemo.h"
 #include "Tests/VectorDemo.h"
@@ -21,12 +22,18 @@ TestGameApp::TestGameApp(const nes::CommandLineArgs& args)
     m_demos.emplace_back(new VectorDemo());
     m_demos.emplace_back(new CircleDemo());
     m_demos.emplace_back(new TriangleDemo());
+    m_demos.emplace_back(new BoundingVolumesDemo());
 }
 
 bool TestGameApp::PostInit()
 {
     for (auto* pDemo : m_demos)
     {
+        if (!pDemo->Init())
+        {
+            NES_LOG("Failed to initialize Demo: ", pDemo->GetName(), "!");
+            return false;
+        }
         pDemo->Reset();
     }
     
