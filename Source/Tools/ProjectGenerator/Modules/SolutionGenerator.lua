@@ -45,7 +45,7 @@ function m.CreateSolution()
         location(core.SolutionDir)
         platforms {"x64"}
         startproject(core.ProjectSettings["StartupProject"]);
-        staticruntime "Default"
+        staticruntime "Off"
         flags { "MultiProcessorCompile" }
 
         filter "platforms:x64"

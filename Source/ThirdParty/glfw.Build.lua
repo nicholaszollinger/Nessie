@@ -74,11 +74,11 @@ function d.ConfigureProject(projectDir)
 
     filter "configurations:Release"
         runtime "Release"
-        optimize "speed"
+        optimize "Speed"
 
     filter "configurations:Test"
 		runtime "Release"
-		optimize "speed"
+		optimize "Speed"
         symbols "on"
     
 end
