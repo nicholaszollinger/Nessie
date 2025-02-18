@@ -59,8 +59,8 @@ namespace nes
         TMatrix3x3& Transpose();
         TMatrix3x3 Transposed() const;
         float Determinant() const;
-        TVector3<Type> GetAxis(const Axis axis) const;
-        TVector3<Type> GetAxis(const int index) const;
+        constexpr TVector3<Type> GetAxis(const Axis axis) const;
+        constexpr TVector3<Type> GetAxis(const int index) const;
         
         TVector2<Type> TransformPoint(const TVector2<Type>& point) const;
         TVector2<Type> TransformVector(const TVector2<Type>& vector) const;
@@ -321,7 +321,7 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TVector3<Type> TMatrix3x3<Type>::GetAxis(const Axis axis) const
+    constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const Axis axis) const
     {
         switch (axis)
         {
@@ -339,7 +339,7 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TVector3<Type> TMatrix3x3<Type>::GetAxis(const int index) const
+    constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const int index) const
     {
         NES_ASSERT(index >= 0 && index < 3);
         return TVector3<Type>(m[index][0], m[index][1], m[index][2]);

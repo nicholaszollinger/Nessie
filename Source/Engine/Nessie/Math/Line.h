@@ -24,8 +24,10 @@ namespace nes
         constexpr TLine2(const TVector2<Type>& origin, const TVector2<Type>& direction);
 
         TVector2<Type> PointAlongLine(const Type distance);
-        TVector2<Type> ClosestPoint(const TVector2<Type>& queryPoint);
-        Type ProjectedDistance(const TVector2<Type>& point);
+        TVector2<Type> ClosestPointToPoint(const TVector2<Type>& queryPoint);
+        Type ProjectedDistance(const TVector2<Type>& queryPoint);
+        Type DistanceToPoint(const TVector2<Type>& queryPoint);
+        constexpr Type SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const;
         int WhichSide(const TVector2<Type>& queryPoint, const Type tolerance = math::PrecisionDelta<Type>());
 
         static constexpr TLine2 PerpendicularBisector(const TVector2<Type>& a, const TVector2<Type>& b);
@@ -50,8 +52,10 @@ namespace nes
         constexpr TLine3(const TVector3<Type>& origin, const TVector3<Type>& direction);
 
         TVector3<Type> PointAlongLine(const Type distance);
-        TVector3<Type> ClosestPoint(const TVector3<Type>& queryPoint);
+        TVector3<Type> ClosestPointToPoint(const TVector3<Type>& queryPoint);
         Type ProjectedDistance(const TVector3<Type>& point);
+        Type DistanceToPoint(const TVector3<Type>& queryPoint);
+        constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
 
         static constexpr TLine3 MakeFromTwoPoints(const TVector3<Type>& a, const TVector3<Type>& b);
     };
@@ -110,7 +114,7 @@ namespace nes
     ///		@brief : Returns the point on the line that is the closest to the query point. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TVector2<Type> TLine2<Type>::ClosestPoint(const TVector2<Type>& queryPoint)
+    TVector2<Type> TLine2<Type>::ClosestPointToPoint(const TVector2<Type>& queryPoint)
     {
         // Get the signed distance (dot product) of the query point and the origin, then
         // return the point that is that distance along the line.
@@ -123,9 +127,28 @@ namespace nes
     ///             dot product of the direction of the line and the vector spanning from the origin to the point.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    Type TLine2<Type>::ProjectedDistance(const TVector2<Type>& point)
+    Type TLine2<Type>::ProjectedDistance(const TVector2<Type>& queryPoint)
     {
-        return TVector2<Type>::Dot(point - m_origin, m_direction);
+        return TVector2<Type>::Dot(queryPoint - m_origin, m_direction);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the distance from the query point to the closest point on the line.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TLine2<Type>::DistanceToPoint(const TVector2<Type>& queryPoint)
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the Squared Distance from the query point to the closest point on the line.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TLine2<Type>::SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        TVector2<Type> closestPoint = ClosestPointToPoint(queryPoint);
+        return (closestPoint - m_origin).SquaredMagnitude();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -166,7 +189,7 @@ namespace nes
     ///		@brief : Returns the point on the line that is the closest to the query point. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TVector3<Type> TLine3<Type>::ClosestPoint(const TVector3<Type>& queryPoint)
+    TVector3<Type> TLine3<Type>::ClosestPointToPoint(const TVector3<Type>& queryPoint)
     {
         // Get the signed distance (dot product) of the query point and the origin, then
         // return the point that is that distance along the line.
@@ -182,6 +205,25 @@ namespace nes
     Type TLine3<Type>::ProjectedDistance(const TVector3<Type>& point)
     {
         return TVector3<Type>::Dot(point - m_origin, m_direction);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the Distance from the query point to the closest point on the line.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TLine3<Type>::DistanceToPoint(const TVector3<Type>& queryPoint)
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the Squared Distance from the query point to the closest point on the line.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TLine3<Type>::SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        const TVector3<Type> closestPoint = ClosestPointToPoint(queryPoint);
+        return (closestPoint - m_origin).SquaredMagnitude();
     }
 
     //----------------------------------------------------------------------------------------------------

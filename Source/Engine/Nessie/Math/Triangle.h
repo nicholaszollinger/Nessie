@@ -1,5 +1,6 @@
 ﻿// Triangles.h
 #pragma once
+#include "imgui_internal.h"
 #include "Matrix.h"
 #include "Ray.h"
 
@@ -45,7 +46,11 @@ namespace nes
         constexpr float SignedArea() const;
         constexpr bool ContainsPoint(const TVector2<Type>& point) const;
         constexpr TVector2<Type> PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const;
-        void CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+        constexpr void CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+        
+        constexpr TVector2<Type> ClosestPointToPoint(const TVector2<Type>& queryPoint) const;
+        Type DistanceToPoint(const TVector2<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const;
         
         TTriangle2 Transformed(const TMatrix3x3<Type>& m) const;
 
@@ -72,7 +77,11 @@ namespace nes
         constexpr float SignedArea() const;
         constexpr bool ContainsPoint(const TVector3<Type>& point) const;
         constexpr TVector3<Type> PointFromBaryCoordinates(Type bary0, Type bary1, Type bary2) const;
-        void CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+        constexpr void CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const;
+
+        constexpr TVector3<Type> ClosestPointToPoint(const TVector3<Type>& queryPoint) const;
+        Type DistanceToPoint(const TVector3<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
         
         std::string ToString() const;
     };
@@ -398,13 +407,120 @@ namespace nes
     ///		@brief : Calculate the Barycentric coordinate for the point p.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    void TTriangle2<Type>::CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1,
+    constexpr void TTriangle2<Type>::CalculateBarycentricCoordinate(const TVector2<Type>& p, Type& bary0, Type& bary1,
         Type& bary2) const
     {
         const TVector3<Type> baryCoordinates = math::CalculateBarycentricCoordinate(m_vertices[0], m_vertices[1], m_vertices[2], p);
         bary0 = baryCoordinates.x;
         bary1 = baryCoordinates.y;
         bary2 = baryCoordinates.z;
+    }
+    
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //      pg 142-143 of "Real-Time Collision Detection".
+    //      The basic idea is to find the voronoi region (vertex, edge, or face) that the query point
+    //      is in, and then utilize the barycentric coordinates to find the position on or in the triangle.
+    //      - This uses the Langrange Identity to remove the need for the cross products.
+    //		
+    ///		@brief : Returns the closest point that is in or on the triangle from the query point.  
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector2<Type> TTriangle2<Type>::ClosestPointToPoint(const TVector2<Type>& queryPoint) const
+    {
+        // ABC = m_vertices[0..2]
+        // P = queryPoint
+        // AB = "A to B"
+        // U,V,W = Barycentric coordinates
+        const TVector2<Type> ab = m_vertices[1] - m_vertices[0];
+        const TVector2<Type> ac = m_vertices[2] - m_vertices[0];
+        const TVector2<Type> ap = queryPoint - m_vertices[0];
+
+        // Check if the point lies in the vertex region outside vertex A.
+        const Type d1 = TVector2<Type>::Dot(ab, ap);
+        const Type d2 = TVector2<Type>::Dot(ac, ap);
+        if (d1 <= static_cast<Type>(0.f) && d2 <= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (1, 0, 0)
+            return m_vertices[0];
+        }
+
+        // Check if the point lies in the vertex region outside vertex B.
+        const TVector2<Type> bp = queryPoint - m_vertices[1];
+        const Type d3 = TVector2<Type>::Dot(ab, bp);
+        const Type d4 = TVector2<Type>::Dot(ac, bp);
+        if (d3 >= static_cast<Type>(0.f) && d4 <= d3)
+        {
+            // Barycentric Coordinates (0, 1, 0)
+            return m_vertices[1];
+        }
+
+        // Check if the point is in the edge region of AB, if so return the projection
+        // of the query point onto the edge AB
+        const Type vc = d1 * d4 - d3 * d2;
+        if (vc <= static_cast<Type>(0.f) && d1 >= static_cast<Type>(0.f) && d3 <= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (1 - v, v, 1)
+            const Type v = d1 / (d1 - d3);
+            return m_vertices[0] + v * ab;
+        }
+        
+        // Check if the point lies in the vertex region outside vertex c
+        const TVector2<Type> cp = queryPoint - m_vertices[2];
+        const Type d5 = TVector2<Type>::Dot(ab, cp);
+        const Type d6 = TVector2<Type>::Dot(ac, cp);
+        if (d6 >= static_cast<Type>(0.f) && d5 <= d6)
+        {
+            // Barycentric Coordinates (0, 0, 1)
+            return m_vertices[2];
+        }
+
+        // Check if the point is in the edge region of AC, if so return the projection
+        // of the query point onto the edge AC.
+        const Type vb = d5 * d2 - d1 * d6;
+        if (vb <= static_cast<Type>(0.f) && d2 >= static_cast<Type>(0.f) && d6 <= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (1-w, 0, w). 
+            const Type w = d2 / (d2 - d6);
+            return m_vertices[0] + w * ac;
+        }
+
+        // Check if the point is in the edge region of BC, if so return the projection
+        // of the query point onto BC
+        const Type va = d3 * d6 - d5 * d4;
+        if (va <= static_cast<Type>(0.f) && (d4 - d3) >= static_cast<Type>(0.f) && (d5 - d6) >= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (0, 1-w, w)
+            const Type w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+            return m_vertices[1] + w * (m_vertices[2] - m_vertices[1]);
+        }
+
+        // The Query point is inside the Face region. Compute the resulting point by
+        // its barycentric coordinates (u, v, w).
+        const Type denom = static_cast<Type>(1.f) / (va + vb + vc);
+        const Type v = vb * denom;
+        const Type w = vc * denom;
+        // u * a + v * b + w * c:
+        return m_vertices[0] + ab * v + ac * w;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance from the query point to the closest point on the triangle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TTriangle2<Type>::DistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the squared distance from the query point to the closest point on the triangle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TTriangle2<Type>::SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        const TVector2<Type> closestPoint = ClosestPointToPoint(queryPoint);
+        return (queryPoint - closestPoint).SquaredMagnitude();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -453,12 +569,119 @@ namespace nes
     ///		@brief : Calculate the Barycentric coordinates for point p. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    void TTriangle3<Type>::CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const
+    constexpr void TTriangle3<Type>::CalculateBarycentricCoordinate(const TVector3<Type>& p, Type& bary0, Type& bary1, Type& bary2) const
     {
         const TVector3<Type> baryCoordinates = math::CalculateBarycentricCoordinate(m_vertices[0], m_vertices[1], m_vertices[2], p);
         bary0 = baryCoordinates.x;
         bary1 = baryCoordinates.y;
         bary2 = baryCoordinates.z;
+    }
+    
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //      pg 142-143 of "Real-Time Collision Detection".
+    //      The basic idea is to find the voronoi region (vertex, edge, or face) that the query point
+    //      is in, and then utilize the barycentric coordinates to find the position on or in the triangle.
+    //      - This uses the Langrange Identity to remove the need for the cross products.
+    //		
+    ///		@brief : Returns the closest point that is in or on the triangle from the query point.  
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TTriangle3<Type>::ClosestPointToPoint(const TVector3<Type>& queryPoint) const
+    {
+        // ABC = m_vertices[0..2]
+        // P = queryPoint
+        // AB = "A to B"
+        // U,V,W = Barycentric coordinates
+        const TVector3<Type> ab = m_vertices[1] - m_vertices[0];
+        const TVector3<Type> ac = m_vertices[2] - m_vertices[0];
+        const TVector3<Type> ap = queryPoint - m_vertices[0];
+
+        // Check if the point lies in the vertex region outside vertex A.
+        const Type d1 = TVector3<Type>::Dot(ab, ap);
+        const Type d2 = TVector3<Type>::Dot(ac, ap);
+        if (d1 <= static_cast<Type>(0.f) && d2 <= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (1, 0, 0)
+            return m_vertices[0];
+        }
+
+        // Check if the point lies in the vertex region outside vertex B.
+        const TVector3<Type> bp = queryPoint - m_vertices[1];
+        const Type d3 = TVector3<Type>::Dot(ab, bp);
+        const Type d4 = TVector3<Type>::Dot(ac, bp);
+        if (d3 >= static_cast<Type>(0.f) && d4 <= d3)
+        {
+            // Barycentric Coordinates (0, 1, 0)
+            return m_vertices[1];
+        }
+
+        // Check if the point is in the edge region of AB, if so return the projection
+        // of the query point onto the edge AB
+        const Type vc = d1 * d4 - d3 * d2;
+        if (vc <= static_cast<Type>(0.f) && d1 >= static_cast<Type>(0.f) && d3 <= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (1 - v, v, 1)
+            const Type v = d1 / (d1 - d3);
+            return m_vertices[0] + v * ab;
+        }
+        
+        // Check if the point lies in the vertex region outside vertex c
+        const TVector3<Type> cp = queryPoint - m_vertices[2];
+        const Type d5 = TVector3<Type>::Dot(ab, cp);
+        const Type d6 = TVector3<Type>::Dot(ac, cp);
+        if (d6 >= static_cast<Type>(0.f) && d5 <= d6)
+        {
+            // Barycentric Coordinates (0, 0, 1)
+            return m_vertices[2];
+        }
+
+        // Check if the point is in the edge region of AC, if so return the projection
+        // of the query point onto the edge AC.
+        const Type vb = d5 * d2 - d1 * d6;
+        if (vb <= static_cast<Type>(0.f) && d2 >= static_cast<Type>(0.f) && d6 <= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (1-w, 0, w). 
+            const Type w = d2 / (d2 - d6);
+            return m_vertices[0] + w * ac;
+        }
+
+        // Check if the point is in the edge region of BC, if so return the projection
+        // of the query point onto BC
+        const Type va = d3 * d6 - d5 * d4;
+        if (va <= static_cast<Type>(0.f) && (d4 - d3) >= static_cast<Type>(0.f) && (d5 - d6) >= static_cast<Type>(0.f))
+        {
+            // Barycentric Coordinates (0, 1-w, w)
+            const Type w = (d4 - d3) / ((d4 - d3) + (d5 - d6));
+            return m_vertices[1] + w * (m_vertices[2] - m_vertices[1]);
+        }
+
+        // The Query point is inside the Face region. Compute the resulting point by
+        // its barycentric coordinates (u, v, w).
+        const Type denom = static_cast<Type>(1.f) / (va + vb + vc);
+        const Type v = vb * denom;
+        const Type w = vc * denom;
+        // u * a + v * b + w * c:
+        return m_vertices[0] + ab * v + ac * w;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance from the query point to the closest point on the triangle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TTriangle3<Type>::DistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the squared distance from the query point to the closest point on the triangle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TTriangle3<Type>::SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        const TVector3<Type> closestPoint = ClosestPointToPoint(queryPoint);
+        return (queryPoint - closestPoint).SquaredMagnitude();
     }
 
     template <FloatingPointType Type>

@@ -30,6 +30,10 @@ namespace nes
         // [TODO]: 
         //TOrientedBox2(const std::vector<TVector2<Type>>& vertices, const std::vector<size_t>& hullVertices);
 
+        constexpr TVector2<Type> ClosestPointToPoint(const TVector2<Type>& queryPoint) const;
+        Type DistanceToPoint(const TVector2<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const;
+
         bool Intersects(const TOrientedBox2& other) const;
     };
 
@@ -55,6 +59,10 @@ namespace nes
         constexpr TOrientedBox3();
         constexpr TOrientedBox3(const TMatrix3x3<Type>& orientation, const TVector3<Type>& center, const TVector3<Type>& extents);
 
+        constexpr TVector3<Type> ClosestPointToPoint(const TVector3<Type>& queryPoint) const;
+        Type DistanceToPoint(const TVector3<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
+        
         bool Intersects(const TOrientedBox3& other) const;
     };
 
@@ -164,6 +172,54 @@ namespace nes
     // }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the closest point on or in the oriented box to the query point. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector2<Type> TOrientedBox2<Type>::ClosestPointToPoint(const TVector2<Type>& queryPoint) const
+    {
+        const TVector2<Type> toPoint = (queryPoint - m_center);
+
+        // Start with the center, and make steps to the border from there.
+        TVector2<Type> result = m_center;
+
+        // For each Oriented Axis...
+        for (int i = 0; i < 2; ++i)
+        {
+            // ...project the toPoint vector onto that axis to get the
+            // distance along the axis of toPoint from the center.
+            const TVector2<Type> axis = m_localOrientation.GetAxis(i);
+            Type distance = TVector2<Type>::Dot(toPoint, axis); 
+
+            // Clamp the distance to the extents
+            distance = math::Clamp(distance, -m_extents[i], m_extents[i]);
+
+            // Move the distance on that axis to get the final coordinate.  
+            result += distance * axis; 
+        }
+
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance from the query point to the closest point on the oriented box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TOrientedBox2<Type>::DistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the squared distance from the query point to the closest point on the oriented box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TOrientedBox2<Type>::SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        const TVector2<Type> closestPoint = ClosestPointToPoint(queryPoint);
+        return (queryPoint - closestPoint).SquaredMagnitude();
+    }
+
+    //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //      This is a "separating axis test". Two OBBs are separated if, with respect to some axis L, the sum
     //      of their projected radii is less than the distance between the projection of their center points.
@@ -252,6 +308,55 @@ namespace nes
         , m_center(center)
         , m_extents(extents)
     {
+        //
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the closest point in or on the oriented box to the query point.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TOrientedBox3<Type>::ClosestPointToPoint(const TVector3<Type>& queryPoint) const
+    {
+        const TVector3<Type> toPoint = (queryPoint - m_center);
+
+        // Start with the center, and make steps to the border from there.
+        TVector3<Type> result = m_center;
+
+        // For each Oriented Axis...
+        for (int i = 0; i < 3; ++i)
+        {
+            // ...project the toPoint vector onto that axis to get the
+            // distance along the axis of toPoint from the center.
+            const TVector3<Type> axis = m_localOrientation.GetAxis(i);
+            Type distance = TVector3<Type>::Dot(toPoint, axis); 
+
+            // Clamp the distance to the extents
+            distance = math::Clamp(distance, -m_extents[i], m_extents[i]);
+
+            // Move the distance on that axis to get the final coordinate.  
+            result += distance * axis; 
+        }
+
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance from the query point to the closest point on the oriented box.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TOrientedBox3<Type>::DistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the squared distance from the query point to the closest point on the oriented box.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TOrientedBox3<Type>::SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        const TVector3<Type> closestPoint = ClosestPointToPoint(queryPoint);
+        return (queryPoint - closestPoint).SquaredMagnitude();
     }
 
     //----------------------------------------------------------------------------------------------------

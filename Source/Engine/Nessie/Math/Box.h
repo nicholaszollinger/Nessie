@@ -48,6 +48,9 @@ namespace nes
 
         constexpr bool HasValidDimensions() const;
         constexpr bool Intersects(const TBox2& other) const;
+        constexpr TVector2<Type> ClosestPointToPoint(const TVector2<Type>& queryPoint) const;
+        Type DistanceToPoint(const TVector2<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const;
         
         static void Transform(const TBox2& original, const TMatrix3x3<Type>& transform, TBox2& result);
 
@@ -82,6 +85,9 @@ namespace nes
 
         constexpr bool HasValidDimensions() const;
         constexpr bool Intersects(const TBox3<Type>& other) const;
+        constexpr TVector3<Type> ClosestPointToPoint(const TVector3<Type>& queryPoint) const;
+        Type DistanceToPoint(const TVector3<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
 
         static void Transform(const TBox3& original, const TMatrix4x4<Type>& transform, TBox3& result);
 
@@ -388,6 +394,63 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the closest point on or in the Box from the query point.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector2<Type> TBox2<Type>::ClosestPointToPoint(const TVector2<Type>& queryPoint) const
+    {
+        TVector2<Type> result{};
+        const TVector2<Type> min = Min();
+        const TVector2<Type> max = Max();
+        
+        // For each coordinate axis, if the point coordinate value is outside the box,
+        // clamp to the box, otherwise keep as is.
+        for (int axis = 0; axis < 2; ++axis)
+        {
+            result[axis] = math::Clamp(queryPoint[axis], min[axis], max[axis]);
+        }
+
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance from the query point to the closest point on the box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TBox2<Type>::DistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the squared distance from the query point to the closest point on the box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TBox2<Type>::SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        Type sqrDist{};
+        const TVector2<Type> min = Min();
+        const TVector2<Type> max = Max();
+
+        // For each axis, add any excess distance outside the extents. 
+        for (int axis = 0; axis < 2; ++axis)
+        {
+            const float value = queryPoint[axis];
+            if (value < min[axis])
+            {
+                sqrDist += math::Squared(min[axis] - value);
+            }
+
+            if (value > max[axis])
+            {
+                sqrDist += math::Squared(value - max[axis]);
+            }
+        }
+
+        return sqrDist;
+    }
+
+    //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //      pg 87 of Real-Time Collision Detection.
     //		
@@ -521,6 +584,63 @@ namespace nes
             return false;
 
         return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the closest point on or in the Box from the query point.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TBox3<Type>::ClosestPointToPoint(const TVector3<Type>& queryPoint) const
+    {
+        TVector3<Type> result{};
+        const TVector3<Type> min = Min();
+        const TVector3<Type> max = Max();
+        
+        // For each coordinate axis, if the point coordinate value is outside the box,
+        // clamp to the box, otherwise keep as is.
+        for (int axis = 0; axis < 3; ++axis)
+        {
+            result[axis] = math::Clamp(queryPoint[axis], min[axis], max[axis]);
+        }
+
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the distance from the query point to the closest point on the box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TBox3<Type>::DistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the squared distance from the query point to the closest point on the box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TBox3<Type>::SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        Type sqrDist{};
+        const TVector3<Type> min = Min();
+        const TVector3<Type> max = Max();
+
+        // For each axis, add any excess distance outside the extents. 
+        for (int axis = 0; axis < 3; ++axis)
+        {
+            const float value = queryPoint[axis];
+            if (value < min[axis])
+            {
+                sqrDist += math::Squared(min[axis] - value);
+            }
+
+            if (value > max[axis])
+            {
+                sqrDist += math::Squared(value - max[axis]);
+            }
+        }
+
+        return sqrDist;
     }
 
     //----------------------------------------------------------------------------------------------------

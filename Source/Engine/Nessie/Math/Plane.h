@@ -25,6 +25,7 @@ namespace nes
         constexpr bool operator!=(const TPlane& other) const { return !(*this == other); }
 
         TVector3<Type> Origin() const;
+        TVector3<Type> ClosestPointToPoint(const TVector3<Type>& point) const;
         Type SignedDistanceToPoint(const TVector3<Type>& point) const;
         bool IsOnPlane(const TVector3<Type>& point) const;
     };
@@ -86,6 +87,16 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the closest point on the Plane to the query point. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TPlane<Type>::ClosestPointToPoint(const TVector3<Type>& point) const
+    {
+        const Type distance = TVector3<Type>::Dot(m_normal, point) - m_distance;
+        return point - (m_normal * distance);
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the distance of a point to the plane. If the result is negative, then the point is
     ///             behind the plane. If positive, the point is in front. If equal to zero, then the point is on
     ///             the plane & considered coplanar.
@@ -94,7 +105,7 @@ namespace nes
     template <FloatingPointType Type>
     Type TPlane<Type>::SignedDistanceToPoint(const TVector3<Type>& point) const
     {
-        return TVector3<Type>::Dot(m_normal, point);
+        return TVector3<Type>::Dot(m_normal, point) - m_distance;
     }
 
     //----------------------------------------------------------------------------------------------------

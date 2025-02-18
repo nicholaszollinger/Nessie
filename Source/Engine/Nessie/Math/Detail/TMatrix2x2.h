@@ -40,8 +40,8 @@ namespace nes
         bool IsIdentity() const;
         TMatrix2x2& Transpose();
         TMatrix2x2 Transposed() const;
-        TVector2<Type> GetAxis(const Axis axis) const;
-        TVector2<Type> GetAxis(const int axis) const;
+        constexpr TVector2<Type> GetAxis(const Axis axis) const;
+        constexpr TVector2<Type> GetAxis(const int axis) const;
         float Determinant() const;
         
         std::string ToString() const;
@@ -262,7 +262,7 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TVector2<Type> TMatrix2x2<Type>::GetAxis(const Axis axis) const
+    constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const Axis axis) const
     {
         switch (axis)
         {
@@ -279,7 +279,7 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TVector2<Type> TMatrix2x2<Type>::GetAxis(const int axis) const
+    constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const int axis) const
     {
         NES_ASSERT(axis >= 0 && axis < 2);
         return TVector2<Type>(m[axis][0], m[axis][1]);

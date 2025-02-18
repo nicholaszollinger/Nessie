@@ -22,7 +22,9 @@ namespace nes
         Type Length() const;
         constexpr Type SquaredLength() const;
         constexpr TVector2<Type> Center() const;
-        constexpr TVector2<Type> ClosestPoint(const TVector2<Type>& queryPoint);
+        constexpr TVector2<Type> ClosestPointToPoint(const TVector2<Type>& queryPoint);
+        Type DistanceToPoint(const TVector2<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const;
     };
     
     //----------------------------------------------------------------------------------------------------
@@ -40,7 +42,9 @@ namespace nes
         Type Length() const;
         constexpr Type SquaredLength() const;
         constexpr TVector3<Type> Center() const;
-        constexpr TVector3<Type> ClosestPoint(const TVector3<Type>& queryPoint);
+        constexpr TVector3<Type> ClosestPointToPoint(const TVector3<Type>& queryPoint);
+        Type DistanceToPoint(const TVector3<Type>& queryPoint) const;
+        constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
     };
     
     using Segment2f = TSegment2<float>;
@@ -96,21 +100,63 @@ namespace nes
     ///		@brief : Return the closest point on the Segment to the query point. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector2<Type> TSegment2<Type>::ClosestPoint(const TVector2<Type>& queryPoint)
+    constexpr TVector2<Type> TSegment2<Type>::ClosestPointToPoint(const TVector2<Type>& queryPoint)
     {
-        TVector2<Type> toEnd = (m_end - m_start);
-        Type distanceSqr = toEnd.SquaredMagnitude();
+        const TVector2<Type> toEnd = (m_end - m_start);
 
-        Type projectedDistance = TVector2<Type>::Dot(queryPoint - m_start, toEnd);
+        // If the projection of the point onto the line from start to end is negative, then
+        // the closest point is the start.
+        const Type projectedDistance = TVector2<Type>::Dot(queryPoint - m_start, toEnd);
         if (projectedDistance < 0)
             return m_start;
 
+        // If the squared projected distance is greater than the squared length of the segment,
+        // then the closest point is the end.
+        const Type distanceSqr = toEnd.SquaredMagnitude();
         if (math::Squared(projectedDistance) > distanceSqr)
             return m_end;
 
-        return m_start + projectedDistance * toEnd;
+        // Otherwise, lerp to the closest point on the segment.
+        return m_start + (projectedDistance / distanceSqr) * toEnd;
     }
-    
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Return the Distance from the query point to the nearest point on the line segment.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TSegment2<Type>::DistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the Squared Distance of the query points to the closest point on the Segment. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TSegment2<Type>::SquaredDistanceToPoint(const TVector2<Type>& queryPoint) const
+    {
+        TVector2<Type> startToEnd = (m_end - m_start);
+        TVector2<Type> startToQuery = (queryPoint - m_start);
+        TVector2<Type> endToQuery = (queryPoint - m_end);
+
+        // Case if the query point projects "behind" the start point. 
+        const Type projectedDist = TVector2<Type>::Dot(startToQuery, startToEnd);
+        if (projectedDist <= 0.f)
+        {
+            return startToQuery.SquaredMagnitude();
+        }
+
+        // Case if the query point projects "past" the end point.
+        const Type segmentLengthSqr = startToEnd.SquaredMagnitude();
+        if (projectedDist >= segmentLengthSqr)
+        {
+            return endToQuery.SquaredMagnitude();
+        }
+
+        // Returns the distance from the projected point on the segment to the Query point.
+        return startToQuery.SquaredMagnitude() - (math::Squared(projectedDist) / segmentLengthSqr);
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Constructs a line segment between the start and end points. 
     //----------------------------------------------------------------------------------------------------
@@ -150,21 +196,63 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the Distance from the query point to the closest point on the segment. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type TSegment3<Type>::DistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        return std::sqrt(SquaredDistanceToPoint(queryPoint));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the Squared Distance from the query point to the closest point on the segment. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr Type TSegment3<Type>::SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const
+    {
+        TVector3<Type> startToEnd = (m_end - m_start);
+        TVector3<Type> startToQuery = (queryPoint - m_start);
+        TVector3<Type> endToQuery = (queryPoint - m_end);
+
+        // Case if the query point projects "behind" the start point. 
+        const Type projectedDist = TVector3<Type>::Dot(startToQuery, startToEnd);
+        if (projectedDist <= 0.f)
+        {
+            return startToQuery.SquaredMagnitude();
+        }
+
+        // Case if the query point projects "past" the end point.
+        const Type segmentLengthSqr = startToEnd.SquaredMagnitude();
+        if (projectedDist >= segmentLengthSqr)
+        {
+            return endToQuery.SquaredMagnitude();
+        }
+
+        // Returns the distance from the projected point on the segment to the Query point.
+        return startToQuery.SquaredMagnitude() - (math::Squared(projectedDist) / segmentLengthSqr);
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Return the closest point on the Segment to the query point. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TSegment3<Type>::ClosestPoint(const TVector3<Type>& queryPoint)
+    constexpr TVector3<Type> TSegment3<Type>::ClosestPointToPoint(const TVector3<Type>& queryPoint)
     {
-        TVector3<Type> toEnd = (m_end - m_start);
-        Type distanceSqr = toEnd.SquaredMagnitude();
+        const TVector3<Type> toEnd = (m_end - m_start);
 
-        Type projectedDistance = TVector3<Type>::Dot(queryPoint - m_start, toEnd);
+        // If the projection of the point onto the line from start to end is negative, then
+        // the closest point is the start.
+        const Type projectedDistance = TVector3<Type>::Dot(queryPoint - m_start, toEnd);
         if (projectedDistance < 0)
             return m_start;
 
+        // If the squared projected distance is greater than the squared length of the segment,
+        // then the closest point is the end.
+        const Type distanceSqr = toEnd.SquaredMagnitude();
         if (math::Squared(projectedDistance) > distanceSqr)
             return m_end;
 
-        return m_start + projectedDistance * toEnd;
+        // Otherwise, lerp to the closest point on the segment.
+        return m_start + (projectedDistance / distanceSqr) * toEnd;
     }
 }
