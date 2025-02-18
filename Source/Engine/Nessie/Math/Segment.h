@@ -26,7 +26,7 @@ namespace nes
     };
     
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : A Line Segment between a start and end point, expressed in 2D coordinates. 
+    ///		@brief : A Line Segment between a start and end point, expressed in 3D coordinates. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
     struct TSegment3
