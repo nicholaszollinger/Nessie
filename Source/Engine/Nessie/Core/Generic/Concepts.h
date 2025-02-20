@@ -10,16 +10,19 @@ namespace nes
     concept FloatingPointType = std::floating_point<Type>;
 
     template <typename Type>
-    concept IntergralType = std::integral<Type>;
+    concept IntegralType = std::integral<Type>;
     
-    template <typename Type>
-    concept ScalarType = std::floating_point<Type> || std::integral<Type>;
-
     template <typename Type>
     concept UnsignedIntegralType = std::is_unsigned_v<Type>;
 
     template <typename Type>
     concept SignedIntergralType = std::integral<Type> && !std::is_unsigned_v<Type>;
+    
+    template <typename Type>
+    concept ScalarType = std::floating_point<Type> || std::integral<Type>;
+
+    template <typename Type>
+    concept SignedScalarType = FloatingPointType<Type> || (IntegralType<Type> && !UnsignedIntegralType<Type>);
 
     template <typename Type>
     concept PointerType = std::is_pointer_v<Type>;

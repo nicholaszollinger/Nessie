@@ -20,15 +20,8 @@ namespace nes::math
     template <FloatingPointType Type>
     Type Orient2D(const TVector2<Type>& a, const TVector2<Type>& b, const TVector2<Type>& c)
     {
-        const Type elements[4] =
-        {
-            a.x - c.x, a.y - c.y,
-            b.x - c.x, b.y - c.y
-        };
-        
-        const TMatrix2x2<Type> mat(elements);
-        const Type det = mat.Determinant();
-        return det;
+        // This is the same as the 2x2 determinant calculation:
+        return (a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x);
     }
 
     //----------------------------------------------------------------------------------------------------

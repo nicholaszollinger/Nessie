@@ -82,6 +82,7 @@ namespace nes
         constexpr TVector3<Type> ClosestPointToPoint(const TVector3<Type>& queryPoint) const;
         Type DistanceToPoint(const TVector3<Type>& queryPoint) const;
         constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
+        TVector3<Type> Normal() const;
         
         std::string ToString() const;
     };
@@ -196,7 +197,7 @@ namespace nes
         constexpr float CalculateSignedAreaOfTriangle(const TVector3<Type>& a, const TVector3<Type>& b,
             const TVector3<Type>& c)
         {
-            return (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
+            return static_cast<Type>(0.5) * ((a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x));
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -206,7 +207,7 @@ namespace nes
         constexpr float CalculateSignedAreaOfTriangle2D(const TVector2<Type>& a, const TVector2<Type>& b,
             const TVector2<Type>& c)
         {
-            return (a.x - b.x) * (b.y - c.y) - (b.x - c.x) * (a.y - b.y);
+            return static_cast<Type>(0.5) * ((a.x - c.x) * (b.y - c.y) - (a.y - c.y) * (b.x - c.x));
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -682,6 +683,17 @@ namespace nes
     {
         const TVector3<Type> closestPoint = ClosestPointToPoint(queryPoint);
         return (queryPoint - closestPoint).SquaredMagnitude();
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Calculates the plane Normal of this Triangle. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TTriangle3<Type>::Normal() const
+    {
+        TVector3<Type> edge0 = m_vertices[1] - m_vertices[0];
+        TVector3<Type> edge1 = m_vertices[2] - m_vertices[0];
+        return TVector3<Type>::Cross(edge0, edge1).Normalized();
     }
 
     template <FloatingPointType Type>

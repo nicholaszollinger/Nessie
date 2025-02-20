@@ -369,6 +369,28 @@ namespace nes::math
         return std::isinf(value);
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns true if both a and B are the same sign. In the case where either or both a & b are
+    ///             zero, this will return true. Zero is both positive and negative.
+    //----------------------------------------------------------------------------------------------------
+    template <SignedScalarType Type>
+    bool SameSign(const Type a, const Type b)
+    {
+        static constexpr Type kZero = static_cast<Type>(0);
+        
+        if constexpr (FloatingPointType<Type>)
+        {
+            return !(!CheckEqualFloats(a, kZero)
+                && !CheckEqualFloats(b, kZero)
+                && a * b < kZero);
+        }
+
+        else
+        {
+            return !((a | b) != kZero && (a ^ b) < kZero);
+        }
+    }
+
     /// Array of the first 1000 prime numbers.
     constexpr int kPrimes[1000] = 
     {

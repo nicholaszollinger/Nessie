@@ -47,6 +47,12 @@ namespace nes
         constexpr Type SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
     };
     
+    template <FloatingPointType Type>
+    Type ClosestPointsBetweenSegments(const TSegment2<Type>& a, const TSegment2<Type>& b, TVector2<Type>& closestOnA, TVector2<Type>& closestOnB, Type& tA, Type& tB); 
+
+    template <FloatingPointType Type>
+    Type ClosestPointsBetweenSegments(const TSegment3<Type>& a, const TSegment3<Type>& b, TVector3<Type>& closestOnA, TVector3<Type>& closestOnB, Type& tA, Type& tB);
+    
     using Segment2f = TSegment2<float>;
     using Segment2d = TSegment2<double>;
     using Segment2D = TSegment2<NES_MATH_DEFAULT_REAL_TYPE>;
@@ -254,5 +260,205 @@ namespace nes
 
         // Otherwise, lerp to the closest point on the segment.
         return m_start + (projectedDistance / distanceSqr) * toEnd;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Computes the closest points "closestOnA" & "closestOnB" between the segments, the normalized
+    ///         parameters "tA" & "tB" that represent the position of the closest point to the respective segment where
+    ///         0 == the start point and 1 == the end point. The return value is the squared distance between the
+    ///         two closest points.
+    ///             
+    ///		@param a : Segment A.
+    ///		@param b : Segment B.
+    ///		@param closestOnA : The closest point on Segment A to the Segment B.
+    ///		@param closestOnB : The closest point on Segment B to the Segment A.
+    ///     @param tA : t value along Segment A that represents the position of the closest point from the
+    ///                     start point (0) to the end (1) of segment A.  
+    ///     @param tB : t value along Segment B that represents the position of the closest point from the
+    ///                     start point (0) to the end (1) of segment B.  
+    ///		@returns : The Squared Distance between the two closest points.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type ClosestPointsBetweenSegments(const TSegment2<Type>& a, const TSegment2<Type>& b, TVector2<Type>& closestOnA,
+        TVector2<Type>& closestOnB, Type& tA, Type& tB)
+    {
+        TVector2<Type> aDir = (a.m_end - a.m_start);
+        TVector2<Type> bDir = (b.m_end - b.m_start);
+        TVector2<Type> betweenStarts = a.m_start - b.m_start;
+        const Type aLengthSqr = a.SquaredLength();
+        const Type bLengthSqr = b.SquaredLength();
+        const Type projBStart = TVector2<Type>::Dot(bDir, betweenStarts);
+
+        static constexpr Type kTolerance = math::PrecisionDelta();
+
+        // Both Segments degenerate into points:
+        if (aLengthSqr <= kTolerance && bLengthSqr <= kTolerance)
+        {
+            tA = static_cast<Type>(0.f);
+            tB = static_cast<Type>(0.f);
+            closestOnA = a.m_start;
+            closestOnB = b.m_start;
+            return TVector2<Type>::Dot(closestOnA - closestOnB, closestOnA - closestOnB);
+        }
+
+        // First Segment degenerates into a point:
+        if (aLengthSqr <= kTolerance)
+        {
+            tA = static_cast<Type>(0.f);
+            tB = math::ClampNormalized(projBStart / bLengthSqr);
+        }
+
+        else
+        {
+            const Type projAStart = TVector2<Type>::Dot(aDir, betweenStarts);
+            
+            // Second Segment Degenerates into a point:
+            if (bLengthSqr <= kTolerance)
+            {
+                tB = 0.f;
+                tA = math::ClampNormalized(-projAStart / aLengthSqr);
+            }
+
+            // Both Segments are valid:
+            else
+            {
+                const Type projDir = TVector2<Type>::Dot(aDir, bDir);
+                const Type denom = aLengthSqr * bLengthSqr - math::Squared(projDir);
+
+                // If the segments are not parallel, compute the closest point on LineA and LineB and
+                // clamp to the segment A. Else pick an arbitrary tA (here will be 0)
+                if (!math::CheckEqualFloats(denom, static_cast<Type>(0.f)))
+                    tA = math::ClampNormalized((projDir * projBStart - projAStart * bLengthSqr) / denom);
+                else
+                    tA = static_cast<Type>(0.f);
+                
+                const Type tBNom = (b * tA + projBStart);
+
+                // If tBNom is within [0, bLengthSqr], then we can divide by bLengthSqr to get tB.
+                // Else, we have to clamp tB and recompute tA for the new value of tB.
+                if (tBNom < static_cast<Type>(0.f))
+                {
+                    tB = static_cast<Type>(0.f);
+                    tA = math::ClampNormalized(-projAStart / aLengthSqr);
+                }
+
+                else if (tB > bLengthSqr)
+                {
+                    tB = static_cast<Type>(1.f);
+                    tA = math::ClampNormalized((projDir - projAStart) / aLengthSqr);
+                }
+
+                else
+                {
+                    tB = tBNom / bLengthSqr;
+                }
+            }
+        }
+
+        closestOnA = a.m_start + (aDir * tA);
+        closestOnB = b.m_start + (bDir * tB);
+        return TVector2<Type>::Dot(closestOnA - closestOnB, closestOnA - closestOnB);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Computes the closest points "closestOnA" & "closestOnB" between the segments, the normalized
+    ///         parameters "tA" & "tB" that represent the position of the closest point to the respective segment where
+    ///         0 == the start point and 1 == the end point. The return value is the squared distance between the
+    ///         two closest points.
+    ///             
+    ///		@param a : Segment A.
+    ///		@param b : Segment B.
+    ///		@param closestOnA : The closest point on Segment A to the Segment B.
+    ///		@param closestOnB : The closest point on Segment B to the Segment A.
+    ///     @param tA : t value along Segment A that represents the position of the closest point from the
+    ///                     start point (0) to the end (1) of segment A.  
+    ///     @param tB : t value along Segment B that represents the position of the closest point from the
+    ///                     start point (0) to the end (1) of segment B.  
+    ///		@returns : The Squared Distance between the two closest points.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    Type ClosestPointsBetweenSegments(const TSegment3<Type>& a, const TSegment3<Type>& b, TVector3<Type>& closestOnA,
+        TVector3<Type>& closestOnB, Type& tA, Type& tB)
+    {
+        TVector3<Type> aDir = (a.m_end - a.m_start);
+        TVector3<Type> bDir = (b.m_end - b.m_start);
+        TVector3<Type> betweenStarts = a.m_start - b.m_start;
+        const Type aLengthSqr = a.SquaredLength();
+        const Type bLengthSqr = b.SquaredLength();
+        const Type projBStart = TVector3<Type>::Dot(bDir, betweenStarts);
+
+        static constexpr Type kTolerance = math::PrecisionDelta();
+
+        // Both Segments degenerate into points:
+        if (aLengthSqr <= kTolerance && bLengthSqr <= kTolerance)
+        {
+            tA = static_cast<Type>(0.f);
+            tB = static_cast<Type>(0.f);
+            closestOnA = a.m_start;
+            closestOnB = b.m_start;
+            return TVector3<Type>::Dot(closestOnA - closestOnB, closestOnA - closestOnB);
+        }
+
+        // First Segment degenerates into a point:
+        if (aLengthSqr <= kTolerance)
+        {
+            tA = static_cast<Type>(0.f);
+            tB = math::ClampNormalized(projBStart / bLengthSqr);
+        }
+
+        else
+        {
+            const Type projAStart = TVector3<Type>::Dot(aDir, betweenStarts);
+            
+            // Second Segment Degenerates into a point:
+            if (bLengthSqr <= kTolerance)
+            {
+                tB = 0.f;
+                tA = math::ClampNormalized(-projAStart / aLengthSqr);
+            }
+
+            // Both Segments are valid:
+            else
+            {
+                const Type projDir = TVector3<Type>::Dot(aDir, bDir);
+                const Type denom = aLengthSqr * bLengthSqr - math::Squared(projDir);
+
+                // If the segments are not parallel, compute the closest point on LineA and LineB and
+                // clamp to the segment A. Else pick an arbitrary tA (here will be 0)
+                if (!math::CheckEqualFloats(denom, static_cast<Type>(0.f)))
+                    tA = math::ClampNormalized((projDir * projBStart - projAStart * bLengthSqr) / denom);
+                else
+                    tA = static_cast<Type>(0.f);
+
+                const Type tBNom = (b * tA + projBStart);
+
+                // If tBNom is within [0, bLengthSqr], then we can divide by bLengthSqr to get tB.
+                // Else, we have to clamp tB and recompute tA for the new value of tB.
+                if (tBNom < static_cast<Type>(0.f))
+                {
+                    tB = static_cast<Type>(0.f);
+                    tA = math::ClampNormalized(-projAStart / aLengthSqr);
+                }
+
+                else if (tB > bLengthSqr)
+                {
+                    tB = static_cast<Type>(1.f);
+                    tA = math::ClampNormalized((projDir - projAStart) / aLengthSqr);
+                }
+
+                else
+                {
+                    tB = tBNom / bLengthSqr;
+                }
+            }
+        }
+
+        closestOnA = a.m_start + (aDir * tA);
+        closestOnB = b.m_start + (bDir * tB);
+        return TVector3<Type>::Dot(closestOnA - closestOnB, closestOnA - closestOnB);
     }
 }
