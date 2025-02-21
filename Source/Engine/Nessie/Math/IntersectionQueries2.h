@@ -1,17 +1,38 @@
 ﻿// IntersectionQueries2.h
 #pragma once
 
+#include "Math/Box.h"
 #include "Math/Geometry.h"
+#include "Math/OrientedBox.h"
 #include "Math/Segment.h"
+#include "Math/Sphere.h"
 #include "Math/Triangle.h"
 
 namespace nes::geo
 {
     template <FloatingPointType Type>
-    [[nodiscard]] bool IntersectsSegmentSegment2(const TSegment2<Type>& a, const TSegment2<Type>& b, Type& t, TVector2<Type>& intersectionPoint);
+    [[nodiscard]] bool SegmentIntersectsSegment2(const TSegment2<Type>& a, const TSegment2<Type>& b, Type& t, TVector2<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool IntersectsSegmentTriangle2(const TSegment2<Type>& segment, const TTriangle2<Type>& triangle, TVector2<Type>& intersectionPoint);
+    [[nodiscard]] bool SegmentIntersectsTriangle2(const TSegment2<Type>& segment, const TTriangle2<Type>& triangle, TVector2<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box);
+    
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box, TVector2<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SphereIntersectsOBB2(const TSphere2<Type>& sphere, const TOrientedBox2<Type>& obb);
+    
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SphereIntersectsOBB2(const TSphere2<Type>& sphere, const TOrientedBox2<Type>& obb, TVector2<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SphereIntersectsTriangle2(const TSphere2<Type>& sphere, const TTriangle2<Type>& triangle);
+    
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SphereIntersectsTriangle2(const TSphere2<Type>& sphere, const TTriangle2<Type>& triangle, TVector2<Type>& intersectionPoint);
 }
 
 namespace nes::geo
@@ -29,7 +50,7 @@ namespace nes::geo
     ///                 this returns false.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool IntersectsSegmentSegment2(const TSegment2<Type>& a, const TSegment2<Type>& b, Type& t,
+    bool SegmentIntersectsSegment2(const TSegment2<Type>& a, const TSegment2<Type>& b, Type& t,
         TVector2<Type>& intersectionPoint)
     {
         // Sign of areas correspond to which side of segment A the points b.Start and b.End are.
@@ -69,7 +90,7 @@ namespace nes::geo
     ///             will not be valid.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool IntersectsSegmentTriangle2(const TSegment2<Type>& segment, const TTriangle2<Type>& triangle, TVector2<Type>& intersectionPoint)
+    bool SegmentIntersectsTriangle2(const TSegment2<Type>& segment, const TTriangle2<Type>& triangle, TVector2<Type>& intersectionPoint)
     {
         // 3 Triangle Edges with vertices "ABC"
         const TVector2<Type> ab = triangle[1] - triangle[0];
@@ -80,7 +101,7 @@ namespace nes::geo
         Type smallestT = std::numeric_limits<Type>::max();
         TVector2<Type> closestPoint = TVector2<Type>::GetZeroVector();
         
-        if (IntersectsSegmentSegment2(segment, ab, t, closestPoint))
+        if (SegmentIntersectsSegment2(segment, ab, t, closestPoint))
         {
             if (t < smallestT)
             {
@@ -89,7 +110,7 @@ namespace nes::geo
             }
         }
         
-        if (IntersectsSegmentSegment2(segment, bc, t, closestPoint))
+        if (SegmentIntersectsSegment2(segment, bc, t, closestPoint))
         {
             if (t < smallestT)
             {
@@ -98,7 +119,7 @@ namespace nes::geo
             }
         }
 
-        if (IntersectsSegmentSegment2(segment, ca, t, closestPoint))
+        if (SegmentIntersectsSegment2(segment, ca, t, closestPoint))
         {
             if (t < smallestT)
             {
@@ -108,5 +129,73 @@ namespace nes::geo
         }
         
         return smallestT < std::numeric_limits<Type>::max(); 
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if a Circle intersects an AABB.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box)
+    {
+        const Type sqrDist = box.SquaredDistanceToPoint(sphere.m_center);
+        return sqrDist <= math::Squared(sphere.m_center);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if a Circle intersects an AABB. If this returns false, the intersection
+    ///         point will still represent the closest point on the AABB to the circle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box, TVector2<Type>& intersectionPoint)
+    {
+        intersectionPoint = box.ClosestPointToPoint(sphere.m_center);
+        const Type sqrDist = (intersectionPoint - sphere.m_center).SquaredMagnitude();
+        return sqrDist <= math::Squared(sphere.m_radius);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if a Circle intersects an OBB.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SphereIntersectsOBB2(const TSphere2<Type>& sphere, const TOrientedBox2<Type>& obb)
+    {
+        const Type sqrDist = obb.SquaredDistanceToPoint(sphere.m_center);
+        return sqrDist <= math::Squared(sphere.m_center);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if a Circle intersects an OBB. If this returns false, the intersection
+    ///         point will still represent the closest point on the OBB to the circle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SphereIntersectsOBB2(const TSphere2<Type>& sphere, const TOrientedBox2<Type>& obb,
+        TVector2<Type>& intersectionPoint)
+    {
+        intersectionPoint = obb.ClosestPointToPoint(sphere.m_center);
+        const Type sqrDist = (intersectionPoint - sphere.m_center).SquaredMagnitude();
+        return sqrDist <= math::Squared(sphere.m_radius);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if a Circle intersects a Triangle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SphereIntersectsTriangle2(const TSphere2<Type>& sphere, const TTriangle2<Type>& triangle)
+    {
+        const Type sqrDist = triangle.SquaredDistanceToPoint(sphere.m_center);
+        return sqrDist <= math::Squared(sphere.m_radius);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if a Circle intersects a Triangle. If this returns false, the intersection
+    ///         point will still represent the closest point on the Triangle to the circle.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SphereIntersectsTriangle2(const TSphere2<Type>& sphere, const TTriangle2<Type>& triangle,
+        TVector2<Type>& intersectionPoint)
+    {
+        intersectionPoint = triangle.ClosestPointToPoint(sphere.m_center);
+        const Type sqrDist = (intersectionPoint - sphere.m_center).SquaredMagnitude();
+        return sqrDist <= math::Squared(sphere.m_radius);
     }
 }

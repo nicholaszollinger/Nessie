@@ -181,9 +181,41 @@ namespace nes::math
     }
 
     template <ScalarType Type>
+    constexpr Type Min(const Type a, const Type b, const Type c)
+    {
+        return Min(a, Min(b, c));
+    }
+
+    template <ScalarType Type>
     constexpr Type Max(const Type a, const Type b)
     {
         return a > b ? a : b;
+    }
+
+    template <ScalarType Type>
+    constexpr Type Max(const Type a, const Type b, const Type c)
+    {
+        return Max(a, Max(b, c));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Get the min and max between two scalar values a and b. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr void MinMax(const Type a, const Type b, Type& min, Type& max)
+    {
+        min = Min(a, b);
+        max = Max(a, b);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Get the min and max between the three scalar values a, b, and c. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr void MinMax(const Type a, const Type b, const Type c, Type& min, Type& max)
+    {
+        min = Min(a, b, c);
+        max = Max(a, b, c);
     }
 
     template <ScalarType Type>
