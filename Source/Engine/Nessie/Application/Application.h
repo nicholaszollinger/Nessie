@@ -5,6 +5,7 @@
 #include "Core/Time/Timer.h"
 #include "Debug/Assert.h"
 #include "Graphics/Renderer.h"
+#include "Input/InputManager.h"
 
 namespace nes
 {
@@ -76,6 +77,7 @@ namespace nes
         ApplicationProperties m_properties;
         Window m_window{};
         Renderer m_renderer{};
+        InputManager m_inputManager{};
         Timer m_timer{};
         double m_timeSinceStartup = 0.f;
         bool m_closeRequested = false;

@@ -259,5 +259,12 @@ namespace nes
         else
             SDL_RestoreWindow(pContext->m_pNativeWindow);
     }
+
+    void* Window::GetNativeWindowHandle() const
+    {
+        SDL_WindowContext* pContext = checked_cast<SDL_WindowContext*>(m_pWindowContext);
+        NES_ASSERT(pContext);
+        return pContext->m_pNativeWindow;
+    }
 }
 #endif

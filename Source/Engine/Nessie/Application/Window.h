@@ -62,7 +62,8 @@ namespace nes
         void SetVsync(const bool enabled);
         WindowExtent Resize(const WindowExtent& extent);
         WindowExtent Resize(const uint32_t width, const uint32_t height);
-        
+
+        [[nodiscard]] void* GetNativeWindowHandle() const;
         [[nodiscard]] void* GetWindowContext() const         { return m_pWindowContext; }
         [[nodiscard]] const WindowExtent& GetExtent() const { return m_properties.m_extent; }
         [[nodiscard]] WindowMode GetWindowMode() const      { return m_properties.m_windowMode; }

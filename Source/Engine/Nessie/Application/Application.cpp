@@ -97,14 +97,21 @@ namespace nes
         // Create the Window:
         if (!m_window.Init(*this, windowProperties))
         {
-            NES_ERRORV("Application", "Failed to intiailize the Application! Failed to Initialize the Window!");
+            NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize the Window!");
+            return ExitCode::FatalError;
+        }
+
+        // Initialize the InputManager
+        if (!m_inputManager.Init(&m_window))
+        {
+            NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize InputManager!");
             return ExitCode::FatalError;
         }
 
         // Create the Renderer
         if (!m_renderer.Init(&m_window))
         {
-            NES_ERRORV("Application", "Failed to intiailize the Application! Failed to initialize the Renderer!");
+            NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the Renderer!");
             return ExitCode::FatalError;
         }
 
@@ -127,6 +134,8 @@ namespace nes
         {
             const double deltaTime = m_timer.Tick();
             m_timeSinceStartup += deltaTime;
+            
+            m_inputManager.Update(deltaTime);
             
             // [TODO]: Sync with the Render Thread.
             // [TODO]: Sync with the Resource Thread.
@@ -158,6 +167,7 @@ namespace nes
         NES_ASSERTV(IsMainThread());
         
         m_renderer.Close();
+        m_inputManager.Shutdown();
         m_window.Close();
         Logger::Close();
         BLEACH_DUMP_AND_DESTROY_LEAK_DETECTOR();
