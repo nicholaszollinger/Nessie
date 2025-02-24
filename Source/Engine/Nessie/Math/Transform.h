@@ -51,18 +51,17 @@ namespace nes
     {
         const float sin = std::sin(m_rotation);
         const float cos = std::cos(m_rotation);
-
-        // [TODO]: Look at Unreal's Scale + Rotation Matrix class.
+        
         TMatrix2x2<Type> scaleMatrix{};
         scaleMatrix.m[0][0] = m_scale.x;
         scaleMatrix.m[1][1] = m_scale.y;
-
+        
         TMatrix2x2<Type> rotationMatrix{};
         rotationMatrix.m[0][0] = cos;
         rotationMatrix.m[1][0] = -sin;
         rotationMatrix.m[0][1] = sin;
         rotationMatrix.m[1][1] = cos;
-        const TMatrix2x2<Type> scaleRotation = rotationMatrix * scaleMatrix;
+        const TMatrix2x2<Type> scaleRotation = scaleMatrix * rotationMatrix;
         
         TMatrix3x3<Type> result{};
         result.m[0][0] = scaleRotation.m[0][0];
