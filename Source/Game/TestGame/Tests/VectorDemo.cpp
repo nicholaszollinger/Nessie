@@ -23,7 +23,7 @@ void VectorDemo::Reset()
 void VectorDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix)
 {
     const nes::Transform2D transform(nes::Vector2::GetZeroVector(), nes::Vector2(m_vectorDrawScale, m_vectorDrawScale), 0.f);
-    const auto matrix = transform.ToMatrix() * viewMatrix;
+    const auto matrix = viewMatrix * transform.ToMatrix();
     const nes::Vector2 center = matrix.TransformPoint(nes::Vector2::GetZeroVector());
     
     switch (m_testType)

@@ -16,7 +16,7 @@ void TriangleDemo::Reset()
 
 void TriangleDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix)
 {
-    const auto transform = m_transform.ToMatrix() * viewMatrix;
+    const auto transform = nes::Matrix3x3::Concatenate(m_transform.ToMatrix(), viewMatrix);
     
     const nes::Triangle2D drawTriangle = m_triangle.Transformed(transform);
     const nes::Vector2 testPos = viewMatrix.TransformPoint(m_testPoint);

@@ -66,6 +66,9 @@ namespace nes
         TVector2<Type> TransformVector(const TVector2<Type>& vector) const;
         
         std::string ToString() const;
+
+        TMatrix3x3& Concatenate(const TMatrix3x3& other);
+        static TMatrix3x3 Concatenate(const TMatrix3x3& a, const TMatrix3x3& b);
         
         static constexpr TMatrix3x3 Zero();
         static constexpr TMatrix3x3 Identity() { return {}; }
@@ -384,13 +387,39 @@ namespace nes
         return result;
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Sets this matrix to the result of applying this matrix, and then the "other". This
+    ///         returns a reference to the combined matrix, so they can be stringed together.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix3x3<Type>& TMatrix3x3<Type>::Concatenate(const TMatrix3x3& other)
+    {
+        *this = TMatrix3x3::Concatenate(*this, other);
+        return *this;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Apply the matrix "a", then the matrix "b".
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix3x3<Type> TMatrix3x3<Type>::Concatenate(const TMatrix3x3& a, const TMatrix3x3& b)
+    {
+        return b * a;
+    }
+
     template <FloatingPointType Type>
     TVector3<Type> operator*(const TMatrix3x3<Type>& matrix, const TVector3<Type>& vector)
     {
         TVector3<Type> result;
-        result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0];
-        result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1];
-        result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2];
+        // Column Orientation:
+        result[0] = (matrix.m[0][0] * vector[0]) + (matrix.m[0][1] * vector[1]) + (matrix.m[0][2] * vector[2]);
+        result[1] = (matrix.m[1][0] * vector[0]) + (matrix.m[1][1] * vector[1]) + (matrix.m[1][2] * vector[2]);
+        result[2] = (matrix.m[2][0] * vector[0]) + (matrix.m[2][1] * vector[1]) + (matrix.m[2][2] * vector[2]);
+
+        // Row Orientation:
+        //result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0];
+        //result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1];
+        //result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2];
         return result;
     }
 

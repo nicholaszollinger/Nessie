@@ -58,11 +58,12 @@ namespace nes
         
         TMatrix2x2<Type> rotationMatrix{};
         rotationMatrix.m[0][0] = cos;
-        rotationMatrix.m[1][0] = -sin;
-        rotationMatrix.m[0][1] = sin;
+        rotationMatrix.m[0][1] = -sin;
+        rotationMatrix.m[1][0] = sin;
         rotationMatrix.m[1][1] = cos;
-        const TMatrix2x2<Type> scaleRotation = scaleMatrix * rotationMatrix;
-        
+        const TMatrix2x2<Type> scaleRotation = TMatrix2x2<Type>::Concatenate(scaleMatrix, rotationMatrix);
+
+        // Z Axis rotation:
         TMatrix3x3<Type> result{};
         result.m[0][0] = scaleRotation.m[0][0];
         result.m[1][0] = scaleRotation.m[1][0];
@@ -70,8 +71,8 @@ namespace nes
         result.m[1][1] = scaleRotation.m[1][1];
 
         // Apply Translation
-        result.m[2][0] = m_position.x;
-        result.m[2][1] = m_position.y;
+        result.m[0][2] = m_position.x;
+        result.m[1][2] = m_position.y;
 
         return result;
     }

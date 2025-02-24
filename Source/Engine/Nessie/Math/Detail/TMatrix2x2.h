@@ -43,8 +43,11 @@ namespace nes
         constexpr TVector2<Type> GetAxis(const Axis axis) const;
         constexpr TVector2<Type> GetAxis(const int axis) const;
         float Determinant() const;
-        
+
         std::string ToString() const;
+
+        TMatrix2x2& Concatenate(const TMatrix2x2& other);
+        static TMatrix2x2 Concatenate(const TMatrix2x2& a, const TMatrix2x2& b);
         
         static constexpr TMatrix2x2 Zero();
         static constexpr TMatrix2x2 Identity() { return TMatrix2x2(); }
@@ -124,7 +127,7 @@ namespace nes
     template <FloatingPointType Type>
     TMatrix2x2<Type> TMatrix2x2<Type>::operator*(const TMatrix2x2& other) const
     {
-        TMatrix2x2 result(*this);
+        TMatrix2x2 result;
         
         // 1st Row * 1-2 Columns
         result.m[0][0] = (m[0][0] * other.m[0][0]) + (m[0][1] * other.m[1][0]);
@@ -313,12 +316,37 @@ namespace nes
         return result;
     }
 
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Sets this matrix to the result of applying this matrix, and then the "other". This
+    ///         returns a reference to the combined matrix, so they can be stringed together.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix2x2<Type>& TMatrix2x2<Type>::Concatenate(const TMatrix2x2& other)
+    {
+        *this = TMatrix2x2::Concatenate(*this, other);
+        return *this;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Apply the matrix "a", then the matrix "b".
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix2x2<Type> TMatrix2x2<Type>::Concatenate(const TMatrix2x2& a, const TMatrix2x2& b)
+    {
+        return b * a;
+    }
+
     template <FloatingPointType Type>
     TVector2<Type> operator*(const TMatrix2x2<Type>& matrix, const TVector2<Type>& vector)
     {
         TVector2<Type> result;
-        result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0];
-        result.y = vector.y * matrix.m[0][1] + vector.y * matrix.m[1][1];
+        // Column Orientation
+        result.x = matrix.m[0][0] * vector.x + matrix.m[0][1] * vector.y;
+        result.y = matrix.m[1][0] * vector.x + matrix.m[1][1] * vector.y;
+
+        // Row Orientation
+        //result.x = matrix.m[0][0] * vector.x + matrix.m[1][0] * vector.y;
+        //result.y = matrix.m[0][1] * vector.x + matrix.m[1][1] * vector.y;
         return result;
     }
 

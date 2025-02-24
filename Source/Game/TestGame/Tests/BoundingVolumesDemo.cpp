@@ -85,7 +85,7 @@ void BoundingVolumesDemo::Reset()
 void BoundingVolumesDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix)
 {
     // Transform A's Vertices and Draw the Polygon
-    const nes::Matrix3x3 transformA = m_transformA.ToMatrix() * viewMatrix;
+    const nes::Matrix3x3 transformA = nes::Matrix3x3::Concatenate(m_transformA.ToMatrix(), viewMatrix);
     std::vector<nes::Vector2> translatedVerticesA{};
     translatedVerticesA.reserve(m_polyA.GetVertices().size());
     for (const auto vertexValue : m_polyA.GetVertices())
@@ -95,7 +95,7 @@ void BoundingVolumesDemo::Render(const nes::Renderer& renderer, const nes::Matri
     renderer.DrawPolygon2D(translatedVerticesA.data(), translatedVerticesA.size(), nes::LinearColor::Cyan());
 
     // Transform B's Vertices and Draw the Polygon
-    const nes::Matrix3x3 transformB = m_transformB.ToMatrix() * viewMatrix;
+    const nes::Matrix3x3 transformB = nes::Matrix3x3::Concatenate(m_transformB.ToMatrix(), viewMatrix);
     std::vector<nes::Vector2> translatedVerticesB{};
     translatedVerticesB.reserve(m_polyB.GetVertices().size());
     for (const auto vertexValue : m_polyB.GetVertices())

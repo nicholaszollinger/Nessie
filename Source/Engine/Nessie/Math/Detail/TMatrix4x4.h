@@ -5,6 +5,9 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
+    //      NOTES:
+    //      Add TransformPoint() and TransformVector() when you make the Vector4 class.
+    //
     ///		@brief : 4x4 Matrix. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
@@ -42,6 +45,9 @@ namespace nes
         TMatrix4x4& Transpose();
         TMatrix4x4 Transposed() const;
         float Determinant() const;
+
+        TMatrix4x4& Concatenate(const TMatrix4x4& other);
+        static TMatrix4x4 Concatenate(const TMatrix4x4& a, const TMatrix4x4& b);
         
         std::string ToString() const;
         
@@ -333,6 +339,26 @@ namespace nes
         return (math::DifferenceOfProducts(s0, c5, s1, c4)
             + math::DifferenceOfProducts(s2, c3, -s3, c2)
             + math::DifferenceOfProducts(s5, c0, s4, c1));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Sets this matrix to the result of applying this matrix, and then the "other". This
+    ///         returns a reference to the combined matrix, so they can be stringed together.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix4x4<Type>& TMatrix4x4<Type>::Concatenate(const TMatrix4x4& other)
+    {
+        *this = TMatrix4x4::Concatenate(*this, other);
+        return *this;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Apply the matrix "a", then the matrix "b".
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> TMatrix4x4<Type>::Concatenate(const TMatrix4x4& a, const TMatrix4x4& b)
+    {
+        return b * a;
     }
 
     template <FloatingPointType Type>

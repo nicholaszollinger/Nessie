@@ -20,7 +20,7 @@ void CircleDemo::Reset()
 
 void CircleDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& viewMatrix)
 {
-    const auto transform = m_transform.ToMatrix() * viewMatrix;
+    const auto transform = nes::Matrix3x3::Concatenate(m_transform.ToMatrix(), viewMatrix);
     
     // Circle, colored based on the test point intersection
     const nes::Vector2 circlePos = transform.TransformPoint(m_circle.m_center);

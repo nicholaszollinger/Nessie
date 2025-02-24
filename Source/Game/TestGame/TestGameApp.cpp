@@ -131,8 +131,8 @@ void TestGameApp::RenderCurrentDemo(const nes::Renderer& renderer, const nes::Re
     const nes::Vector2 worldCenter = worldViewport.Center();
     nes::Matrix3x3 viewMatrix = nes::Matrix3x3::Identity();
     viewMatrix.m[1][1] = -1.f; // Flip the Y Axis value.
-    viewMatrix.m[2][0] = worldCenter.x; 
-    viewMatrix.m[2][1] = worldCenter.y;
+    viewMatrix.m[0][2] = worldCenter.x; 
+    viewMatrix.m[1][2] = worldCenter.y;
 
     // Render the Scene:
     pDemo->Render(renderer, viewMatrix);
