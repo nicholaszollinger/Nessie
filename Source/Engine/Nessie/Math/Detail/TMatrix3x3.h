@@ -60,7 +60,7 @@ namespace nes
         TMatrix3x3 Transposed() const;
         float Determinant() const;
         constexpr TVector3<Type> GetAxis(const Axis axis) const;
-        constexpr TVector3<Type> GetAxis(const int index) const;
+        constexpr TVector3<Type> GetAxis(const int axis) const;
         
         TVector2<Type> TransformPoint(const TVector2<Type>& point) const;
         TVector2<Type> TransformVector(const TVector2<Type>& vector) const;
@@ -328,9 +328,9 @@ namespace nes
     {
         switch (axis)
         {
-            case Axis::X: return TVector3<Type>(m[0][0], m[0][1], m[0][2]);
-            case Axis::Y: return TVector3<Type>(m[1][0], m[1][1], m[1][2]);
-            case Axis::Z: return TVector3<Type>(m[2][0], m[2][1], m[2][2]);
+            case Axis::X: return TVector3<Type>(m[0][0], m[1][0], m[2][0]);
+            case Axis::Y: return TVector3<Type>(m[0][1], m[1][1], m[2][1]);
+            case Axis::Z: return TVector3<Type>(m[0][2], m[1][2], m[2][2]);
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
@@ -342,10 +342,10 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const int index) const
+    constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const int axis) const
     {
-        NES_ASSERT(index >= 0 && index < 3);
-        return TVector3<Type>(m[index][0], m[index][1], m[index][2]);
+        NES_ASSERT(axis >= 0 && axis < 3);
+        return TVector3<Type>(m[0][axis], m[1][axis], m[2][axis]);
     }
 
     //----------------------------------------------------------------------------------------------------

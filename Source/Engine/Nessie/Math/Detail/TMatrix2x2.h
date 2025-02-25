@@ -269,8 +269,8 @@ namespace nes
     {
         switch (axis)
         {
-            case Axis::X: return TVector2<Type>(m[0][0], m[0][1]);
-            case Axis::Y: return TVector2<Type>(m[1][0], m[1][1]);
+            case Axis::X: return TVector2<Type>(m[0][0], m[1][0]);
+            case Axis::Y: return TVector2<Type>(m[0][1], m[1][1]);
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
@@ -285,7 +285,7 @@ namespace nes
     constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const int axis) const
     {
         NES_ASSERT(axis >= 0 && axis < 2);
-        return TVector2<Type>(m[axis][0], m[axis][1]);
+        return TVector2<Type>(m[0][axis], m[1][axis]);
     }
 
     template <FloatingPointType Type>
