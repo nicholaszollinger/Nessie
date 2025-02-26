@@ -6,7 +6,8 @@ namespace nes
 {
     //----------------------------------------------------------------------------------------------------
     //      NOTES:
-    //      Add TransformPoint() and TransformVector() when you make the Vector4 class.
+    //      Add TransformPoint(), TransformVector(), GetAxis(), GetRow/Column()
+    //      when you make the Vector4 class.
     //
     ///		@brief : 4x4 Matrix. 
     //----------------------------------------------------------------------------------------------------

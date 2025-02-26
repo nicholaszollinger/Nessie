@@ -20,15 +20,12 @@ namespace nes
     template <FloatingPointType Type>
     struct TOrientedBox2
     {
-        TMatrix2x2<Type> m_axes[2];  // Describes the orientation of the Box. 
-        TVector2<Type>   m_center;   // Box's Center.
-        TVector2<Type>   m_extents;  // Positive half-width extents of the OBB along each axis.
+        TMatrix2x2<Type> m_orientation;  // Describes the orientation of the Box. 
+        TVector2<Type>   m_center;       // Box's Center.
+        TVector2<Type>   m_extents;      // Positive half-width extents of the OBB along each axis.
 
         constexpr TOrientedBox2();
         constexpr TOrientedBox2(const TMatrix2x2<Type>& orientation, const TVector2<Type>& center, const TVector2<Type>& extents);
-
-        // [TODO]: 
-        //TOrientedBox2(const std::vector<TVector2<Type>>& vertices, const std::vector<size_t>& hullVertices);
 
         constexpr TVector2<Type> ClosestPointToPoint(const TVector2<Type>& queryPoint) const;
         Type DistanceToPoint(const TVector2<Type>& queryPoint) const;
@@ -52,9 +49,9 @@ namespace nes
     template <FloatingPointType Type>
     struct TOrientedBox3
     {
-        TVector2<Type>   m_axes[3]; // Describes the orientation of the Box. 
-        TVector3<Type>   m_center;  // Box's Center.
-        TVector3<Type>   m_extents; // Positive half-width extents of the OBB along each axis.
+        TMatrix3x3<Type> m_orientation; // Describes the orientation of the Box. 
+        TVector3<Type>   m_center;      // Box's Center.
+        TVector3<Type>   m_extents;     // Positive half-width extents of the OBB along each axis.
 
         constexpr TOrientedBox3();
         constexpr TOrientedBox3(const TMatrix3x3<Type>& orientation, const TVector3<Type>& center, const TVector3<Type>& extents);
@@ -144,33 +141,22 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
     constexpr TOrientedBox2<Type>::TOrientedBox2()
-        : m_axes()
+        : m_orientation()
         , m_center()
         , m_extents(TVector2<Type>::GetUnitVector())
     {
-        m_axes[0] = TVector2<Type>::GetRightVector();
-        m_axes[1] = TVector2<Type>::GetUpVector();
+        //
     }
     
     template <FloatingPointType Type>
     constexpr TOrientedBox2<Type>::TOrientedBox2(const TMatrix2x2<Type>& orientation, const TVector2<Type>& center,
         const TVector2<Type>& extents)
-        : m_center(center)
+        : m_orientation(orientation)
+        , m_center(center)
         , m_extents(extents)
     {
-        m_axes[0] = orientation.GetAxis(0);
-        m_axes[1] = orientation.GetAxis(1);
+        //
     }
-    
-    // //----------------------------------------------------------------------------------------------------
-    // ///		@brief : Construct an OBB the encompasses a convex hull.
-    // //----------------------------------------------------------------------------------------------------
-    // template <FloatingPointType Type>
-    // TOrientedBox2<Type>::TOrientedBox2(const std::vector<TVector2<Type>>& vertices,
-    //     const std::vector<size_t>& hullVertices)
-    // {
-    //     // [TODO]: 
-    // }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the closest point on or in the oriented box to the query point. 
@@ -188,7 +174,7 @@ namespace nes
         {
             // ...project the toPoint vector onto that axis to get the
             // distance along the axis of toPoint from the center.
-            const TVector2<Type> axis = m_axes[i];
+            const TVector2<Type> axis = m_orientation.GetAxis(i);
             Type distance = TVector2<Type>::Dot(toPoint, axis); 
 
             // Clamp the distance to the extents
@@ -238,7 +224,7 @@ namespace nes
         {
             for (int j = 0; j < 2; ++j)
             {
-                orientation.m[i][j] = TVector2<Type>::Dot(m_axes[i], other.m_axes[j]);
+                orientation.m[i][j] = TVector2<Type>::Dot(m_orientation.GetRow(i), other.m_orientation.GetColumn(j));
 
                 // Compute common subexpressions. Add in an epsilon term to counteract arithmetic errors when two edges are
                 // parallel and their cross product is (near) null.
@@ -251,8 +237,8 @@ namespace nes
 
         // Bring the translation into this coordinate frame:
         translation = TVector2<Type>(
-            TVector2<Type>::Dot(translation, m_axes[0]),
-            TVector2<Type>::Dot(translation, m_axes[1]));
+            TVector2<Type>::Dot(translation, m_orientation.GetRow(0)),
+            TVector2<Type>::Dot(translation, m_orientation.GetRow(1)));
 
         float radiusA;
         float radiusB;
@@ -295,23 +281,21 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
     constexpr TOrientedBox3<Type>::TOrientedBox3()
-        : m_center()
+        : m_orientation()
+        , m_center()
         , m_extents(TVector3<Type>::GetUnitVector())
     {
-        m_axes[0] = TVector3<Type>::GetRightVector();
-        m_axes[1] = TVector3<Type>::GetUpVector();
-        m_axes[2] = TVector3<Type>::GetZeroVector();
+        //
     }
 
     template <FloatingPointType Type>
     constexpr TOrientedBox3<Type>::TOrientedBox3(const TMatrix3x3<Type>& orientation, const TVector3<Type>& center,
         const TVector3<Type>& extents)
-        : m_center(center)
+        : m_orientation(orientation)
+        , m_center(center)
         , m_extents(extents)
     {
-        m_axes[0] = orientation.GetAxis(0);
-        m_axes[1] = orientation.GetAxis(1);
-        m_axes[2] = orientation.GetAxis(2);
+        //
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -330,7 +314,7 @@ namespace nes
         {
             // ...project the toPoint vector onto that axis to get the
             // distance along the axis of toPoint from the center.
-            const TVector3<Type> axis = m_axes[i];
+            const TVector3<Type> axis = m_orientation.GetAxis(i);
             Type distance = TVector3<Type>::Dot(toPoint, axis); 
 
             // Clamp the distance to the extents
@@ -380,7 +364,7 @@ namespace nes
         {
             for (int j = 0; j < 3; ++j)
             {
-                orientation.m[i][j] = TVector3<Type>::Dot(m_axes[i], other.m_axes[j]);
+                orientation.m[i][j] = TVector3<Type>::Dot(m_orientation.GetRow(i), other.m_orientation.GetColumn(j));
 
                 // Compute common subexpressions. Add in an epsilon term to counteract arithmetic errors when two edges are
                 // parallel and their cross product is (near) null.
@@ -393,9 +377,9 @@ namespace nes
 
         // Bring the translation into this coordinate frame:
         translation = TVector3<Type>(
-            TVector3<Type>::Dot(translation, m_axes[0]),
-            TVector3<Type>::Dot(translation, m_axes[1]),
-            TVector3<Type>::Dot(translation, m_axes[2]));
+            TVector3<Type>::Dot(translation, m_orientation.GetRow(0)),
+            TVector3<Type>::Dot(translation, m_orientation.GetRow(1)),
+            TVector3<Type>::Dot(translation, m_orientation.GetRow(2)));
 
         float radiusA;
         float radiusB;

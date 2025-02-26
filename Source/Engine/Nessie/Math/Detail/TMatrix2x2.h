@@ -42,6 +42,8 @@ namespace nes
         TMatrix2x2 Transposed() const;
         constexpr TVector2<Type> GetAxis(const Axis axis) const;
         constexpr TVector2<Type> GetAxis(const int axis) const;
+        constexpr TVector2<Type> GetColumn(const int column) const;
+        constexpr TVector2<Type> GetRow(const int row) const;
         float Determinant() const;
 
         std::string ToString() const;
@@ -284,8 +286,28 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const int axis) const
     {
-        NES_ASSERT(axis >= 0 && axis < 2);
+        NES_ASSERT(axis >= 0 && axis < N);
         return TVector2<Type>(m[0][axis], m[1][axis]);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a column of this matrix as a vector.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector2<Type> TMatrix2x2<Type>::GetColumn(const int column) const
+    {
+        NES_ASSERT(column >= 0 && column < N);
+        return TVector2<Type>(m[0][column], m[1][column]);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a row of this matrix as a vector.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector2<Type> TMatrix2x2<Type>::GetRow(const int row) const
+    {
+        NES_ASSERT(row >= 0 && row < N);
+        return TVector2<Type>(m[row][0], m[row][1]);
     }
 
     template <FloatingPointType Type>

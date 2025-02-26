@@ -1,6 +1,6 @@
 ﻿// IntersectionQueries3.h
 #pragma once
-
+#include "Line.h"
 #include "OrientedBox.h"
 #include "Plane.h"
 #include "Segment.h"
@@ -65,6 +65,46 @@ namespace nes::geo
 
     template <FloatingPointType Type>
     [[nodiscard]] bool OBBIntersectsTriangle(const TOrientedBox3<Type>& obb, const TTriangle3<Type>& triangle);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SegmentIntersectsPlane(const TSegment3<Type>& segment, const TPlane<Type>& plane, TVector3<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SegmentIntersectsSphere(const TSegment3<Type>& segment, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool SegmentIntersectsAABB(const TSegment3<Type>& segment, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+
+    //template <FloatingPointType Type>
+    //[[nodiscard]] bool SegmentIntersectsOBB(const TSegment3<Type>& segment, const TOrientedBox2<Type>& obb, TVector3<Type>& intersectionPoint);
+    
+    template <FloatingPointType Type>
+    [[nodiscard]] bool LineIntersectsPlane(const TLine3<Type>& line, const TPlane<Type>& plane, TVector3<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool LineIntersectsSphere(const TLine3<Type>& line, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool LineIntersectsAABB(const TLine3<Type>& line, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+
+    //template <FloatingPointType Type>
+    //[[nodiscard]] bool LineIntersectsOBB(const TLine3<Type>& line, const TOrientedBox3<Type>& obb, TVector3<Type>& intersectionPoint);
+    
+    template <FloatingPointType Type>
+    [[nodiscard]] bool RayIntersectsPlane(const TRay3<Type>& ray, const TPlane<Type>& plane, TVector3<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool RayIntersectsSphere(const TRay3<Type>& ray, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool RayIntersectsSphere(const TRay3<Type>& ray, const TSphere3<Type>& sphere);
+
+    template <FloatingPointType Type>
+    [[nodiscard]] bool RayIntersectsAABB(const TRay3<Type>& ray, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+
+    //template <FloatingPointType Type>
+    //[[nodiscard]] bool RayIntersectsOBB(const TRay3<Type>& ray, const TOrientedBox3<Type>& obb, TVector3<Type>& intersectionPoint);
+    
 }
 
 // Inline implementation:
@@ -698,4 +738,403 @@ namespace nes::geo
         plane.m_distance = TVector3<Type>::Dot(plane.m_normal, vertices[0]);
         return OBBIntersectsPlane(obb, plane);
     }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the segment intersects the plane and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SegmentIntersectsPlane(const TSegment3<Type>& segment, const TPlane<Type>& plane,
+        TVector3<Type>& intersectionPoint)
+    {
+        // Compute the t value for the directed line ab intersecting the plane.
+        const TVector3<Type> ab = segment.m_end - segment.m_start;
+        const Type t = (plane.m_distance - segment.m_start.Dot(plane.m_normal)) / ab.Dot(plane.m_normal);
+
+        // If t is within [0, 1] then there is an intersection:
+        if (t >= 0 && t <= 1)
+        {
+            intersectionPoint = segment.m_start + (t * ab);
+            return true;
+        }
+
+        return false;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the segment intersects the plane and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SegmentIntersectsSphere(const TSegment3<Type>& segment, const TSphere3<Type>& sphere,
+        TVector3<Type>& intersectionPoint)
+    {
+        TVector3<Type> sphereCenterToStart = segment.m_start - sphere.m_center;
+        TVector3<Type> direction = segment.m_end - segment.m_start;
+        const Type sqrSegmentLength = direction.SquaredMagnitude();
+        direction.Normalize();
+        
+        const Type projection = TVector3<Type>::Dot(sphereCenterToStart, direction);
+        const Type distSqrDif = sphereCenterToStart.SquaredMagnitude() - math::Squared(sphere.m_radius);
+
+        // Exit if the segment's origin is outside the sphere and the segment points away from the sphere.
+        if (distSqrDif > static_cast<Type>(0.f) && projection > static_cast<Type>(0.f))
+            return false;
+
+        // A negative discriminant means that the segment misses the sphere.
+        const Type discriminant = math::Squared(projection) - distSqrDif;
+        if (discriminant < static_cast<Type>(0.f))
+            return false;
+        
+        Type t = -projection - std::sqrt(discriminant);
+
+        // If t is past our end point, then return false.
+        if (t > std::sqrt(sqrSegmentLength))
+            return false;
+
+        // If t is negative, then the segment started outside the sphere, so clamp it to zero.
+        if (t <= static_cast<Type>(0.f))
+            t = static_cast<Type>(0.f);
+
+        intersectionPoint = segment.m_start + (t * direction);
+
+        return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the segment intersects the AABB and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool SegmentIntersectsAABB(const TSegment3<Type>& segment, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    {
+        Type tMin = static_cast<Type>(0.f);
+        Type tMax = segment.SquaredLength();
+        const TVector3<Type> direction = segment.Direction();
+
+        const auto bMin = box.Min();
+        const auto bMax = box.Max();
+
+        // For each slab (pair of 2 planes that make up opposing faces of the box)
+        for (int i = 0; i < 3; ++i)
+        {
+            // Segment is parallel to the slab. There will be no hit if the origin is not
+            // within the slab:
+            if (math::Abs(direction[i]) < math::PrecisionDelta())
+            {
+                if (segment.m_start[i] < bMin[i] || segment.m_start[i] > bMax[i])
+                {
+                    return false;
+                }
+            }
+
+            else
+            {
+                // Compute the intersection t value of segment with
+                // the near and far plane of the slab
+                const Type ood = static_cast<Type>(1.f) / direction[i];
+                Type t1 = (bMin[i] - segment.m_start[i]) * ood;
+                Type t2 = (bMax[i] - segment.m_start[i]) * ood;
+
+                // Make t1 be the intersection with the near plane, t2 the far plane.
+                if (t1 > t2)
+                    std::swap(t1, t2);
+
+                // Compute the intersection of slab intersection intervals
+                tMin = math::Max(tMin, t1);
+                tMax = math::Min(tMax, t2);
+
+                // Exit with no collision as soon as slab intersection becomes empty:
+                if (tMin > tMax)
+                    return false;
+            }
+        }
+
+        intersectionPoint = segment.m_start + (direction * tMin);
+        return true;
+    }
+
+    // //----------------------------------------------------------------------------------------------------
+    // ///		@brief : Determines if the segment intersects the OBB and calculates the point of intersection
+    // ///             if valid.
+    // //----------------------------------------------------------------------------------------------------
+    // template <FloatingPointType Type>
+    // bool SegmentIntersectsOBB(const TSegment3<Type>& segment, const TOrientedBox2<Type>& obb,
+    //     TVector3<Type>& intersectionPoint)
+    // {
+    //     // [TODO]:
+    //     return false;
+    // }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the line intersects the plane and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool LineIntersectsPlane(const TLine3<Type>& line, const TPlane<Type>& plane, TVector3<Type>& intersectionPoint)
+    {
+        // A line intersects a plane if they are not parallel.
+        const Type dot = TVector3<Type>::Dot(line.m_direction, plane.m_normal);
+        if (math::Abs(dot) <= math::PrecisionDelta())
+        {
+            return false;
+        }
+
+        // Compute the t value along the line that hits the plane.
+        const Type t = -(TVector3<Type>::Dot(plane.m_normal, line.m_origin) + plane.m_distance) / dot;
+        intersectionPoint = line.m_origin + t * plane.m_normal;
+        return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the line intersects the plane and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool LineIntersectsSphere(const TLine3<Type>& line, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint)
+    {
+        TVector3<Type> sphereCenterToOrigin = line.m_origin - sphere.m_center;
+        
+        const Type b = TVector3<Type>::Dot(sphereCenterToOrigin, line.m_direction);
+        const Type c = sphereCenterToOrigin.SquaredMagnitude() - math::Squared(sphere.m_radius);
+
+        // A negative discriminant means that the line misses the sphere.
+        const Type discriminant = math::Squared(b) - c;
+        if (discriminant < static_cast<Type>(0.f))
+            return false;
+        
+        Type t = -b - std::sqrt(discriminant);
+        intersectionPoint = line.m_origin + (t * line.m_direction);
+
+        return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //      NOTES:
+    //      If the line is being intersected against a number of boxes, the three divisions involved can be
+    //      precomputed (one-over-direction-value, "ood") beforehand and reused for all tests.
+    //
+    ///		@brief : Determines if the line intersects the AABB and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool LineIntersectsAABB(const TLine3<Type>& line, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    {
+        Type tMin = std::numeric_limits<Type>::min();
+        Type tMax = std::numeric_limits<Type>::max();
+
+        const auto bMin = box.Min();
+        const auto bMax = box.Max();
+
+        // For each slab (pair of 2 planes that make up opposing faces of the box)
+        for (int i = 0; i < 3; ++i)
+        {
+            // Line is parallel to the slab. There will be no hit if the origin is not
+            // within the slab:
+            if (math::Abs(line.m_direction[i]) < math::PrecisionDelta())
+            {
+                if (line.m_origin[i] < bMin[i] || line.m_origin[i] > bMax[i])
+                {
+                    return false;
+                }
+            }
+
+            else
+            {
+                // Compute the intersection t value of line with
+                // the near and far plane of the slab
+                const Type ood = static_cast<Type>(1.f) / line.m_direction[i];
+                Type t1 = (bMin[i] - line.m_origin[i]) * ood;
+                Type t2 = (bMax[i] - line.m_origin[i]) * ood;
+
+                // Make t1 be the intersection with the near plane, t2 the far plane.
+                if (t1 > t2)
+                    std::swap(t1, t2);
+
+                // Compute the intersection of slab intersection intervals
+                tMin = math::Min(tMin, t1);
+                tMax = math::Min(tMax, t2);
+
+                // Exit with no collision as soon as slab intersection becomes empty:
+                if (tMin > tMax)
+                    return false;
+            }
+        }
+
+        intersectionPoint = line.m_origin + (line.m_direction * tMin);
+        return true;
+    }
+
+    // //----------------------------------------------------------------------------------------------------
+    // ///		@brief : Determines if the line intersects the OBB and calculates the point of intersection
+    // ///             if valid.
+    // //----------------------------------------------------------------------------------------------------
+    // template <FloatingPointType Type>
+    // bool LineIntersectsOBB(const TLine3<Type>& line, const TOrientedBox3<Type>& obb, TVector3<Type>& intersectionPoint)
+    // {
+    //     return false;
+    // }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the ray intersects the plane and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool RayIntersectsPlane(const TRay3<Type>& ray, const TPlane<Type>& plane, TVector3<Type>& intersectionPoint)
+    {
+        const Type denom = plane.m_normal.Dot(ray.m_direction);
+        
+        // Prevent division by 0 (parallel ray deemed to not intersect).
+        // - Should I check for the origin point being on the plane?
+        if (math::Abs(denom) <= math::PrecisionDelta())
+        {
+            return false;
+        }
+        
+        // Compute the t value along the ray to hit the plane.
+        const Type t = -(TVector3<Type>::Dot(plane.m_normal, ray.m_origin) + plane.m_distance) / denom;
+
+        // If t is negative, (opposite direction of the ray) then there is no intersection.
+        if (t <= static_cast<Type>(0.f))
+            return false;
+
+        intersectionPoint = ray.m_origin + t * ray.m_direction;
+        return true;
+    }
+
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the ray intersects the plane and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool RayIntersectsSphere(const TRay3<Type>& ray, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint)
+    {
+        TVector3<Type> sphereCenterToRay = ray.m_origin - sphere.m_center;
+        const Type projection = TVector3<Type>::Dot(sphereCenterToRay, ray.m_direction);
+        const Type distSqrDif = sphereCenterToRay.SquaredMagnitude() - math::Squared(sphere.m_radius);
+
+        // Exit if the ray's origin is outside the sphere and the ray points away from the sphere
+        if (distSqrDif > static_cast<Type>(0.f) && projection > static_cast<Type>(0.f))
+        {
+            return false;
+        }
+
+        // A negative discriminant means that the ray misses the sphere.
+        const Type discriminant = math::Squared(projection) - distSqrDif;
+        if (discriminant < static_cast<Type>(0.f))
+        {
+            return false;
+        }
+
+        // Ray is now found to intersect the sphere. Compute the *smallest* t value of intersection.
+        // - We want the first intersection point along the ray in the case of piercing through.
+        Type t = -projection - std::sqrt(discriminant);
+
+        // If t is negative, then the ray started outside the sphere, so clamp it to zero.
+        if (t <= static_cast<Type>(0.f))
+            t = static_cast<Type>(0.f);
+
+        intersectionPoint = ray.m_origin + (t * ray.m_direction);
+
+        return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Determines if the ray intersects the plane.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool RayIntersectsSphere(const TRay3<Type>& ray, const TSphere3<Type>& sphere)
+    {
+        TVector3<Type> sphereCenterToRay = ray.m_origin - sphere.m_center;
+        const Type distSqrDif = sphereCenterToRay.SquaredMagnitude() - math::Squared(sphere.m_radius);
+
+        // If there is definitely at least one real root, then there must be an intersection.
+        if (distSqrDif <= static_cast<Type>(0.f))
+            return true;
+
+        const Type projection = TVector3<Type>::Dot(sphereCenterToRay, ray.m_direction);
+        // Early exit if the ray's origin is outside the sphere and ray is pointing away from the
+        // sphere.
+        if (projection > static_cast<Type>(0.f))
+            return false;
+
+        const Type discriminant = math::Squared(projection) - distSqrDif;
+        
+        // A negative discriminant means that the ray misses the sphere.
+        if (discriminant < static_cast<Type>(0.f))
+            return false;
+
+        return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //      NOTES:
+    //      If the ray is being intersected against a number of boxes, the three divisions involved can be
+    //      precomputed (one-over-direction-value, "ood") beforehand and reused for all tests.
+    //
+    ///		@brief : Determines if the ray intersects the AABB and calculates the point of intersection
+    ///             if valid.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    bool RayIntersectsAABB(const TRay3<Type>& ray, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    {
+        Type tMin = static_cast<Type>(0.f);
+        Type tMax = std::numeric_limits<Type>::max();
+
+        const auto bMin = box.Min();
+        const auto bMax = box.Max();
+
+        // For each slab (pair of 2 planes that make up opposing faces of the box)
+        for (int i = 0; i < 3; ++i)
+        {
+            // Ray is parallel to the slab. There will be no hit if the origin is not
+            // within the slab:
+            if (math::Abs(ray.m_direction[i]) < math::PrecisionDelta())
+            {
+                if (ray.m_origin[i] < bMin[i] || ray.m_origin[i] > bMax[i])
+                {
+                    return false;
+                }
+            }
+
+            else
+            {
+                // Compute the intersection t value of ray with
+                // the near and far plane of the slab
+                const Type ood = static_cast<Type>(1.f) / ray.m_direction[i];
+                Type t1 = (bMin[i] - ray.m_origin[i]) * ood;
+                Type t2 = (bMax[i] - ray.m_origin[i]) * ood;
+
+                // Make t1 be the intersection with the near plane, t2 the far plane.
+                if (t1 > t2)
+                    std::swap(t1, t2);
+
+                // Compute the intersection of slab intersection intervals
+                tMin = math::Min(tMin, t1);
+                tMax = math::Min(tMax, t2);
+
+                // Exit with no collision as soon as slab intersection becomes empty:
+                if (tMin > tMax)
+                    return false;
+            }
+        }
+
+        intersectionPoint = ray.m_origin + (ray.m_direction * tMin);
+        return true;
+    }
+
+    // //----------------------------------------------------------------------------------------------------
+    // ///		@brief : Determines if the ray intersects the OBB and calculates the point of intersection
+    // ///             if valid.
+    // //----------------------------------------------------------------------------------------------------
+    // template <FloatingPointType Type>
+    // bool RayIntersectsOBB(const TRay3<Type>& ray, const TOrientedBox3<Type>& obb, TVector3<Type>& intersectionPoint)
+    // {
+    //     // [TODO]:
+    //     // - Convert the Ray to obb coordinates, then both back to the world coordinates.
+    //     // - Then pass the transformed ray and the obb as an AABB to the RayIntersectsAABB()
+    //
+    //     return false;
+    // }
 }

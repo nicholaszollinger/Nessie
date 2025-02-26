@@ -61,6 +61,8 @@ namespace nes
         float Determinant() const;
         constexpr TVector3<Type> GetAxis(const Axis axis) const;
         constexpr TVector3<Type> GetAxis(const int axis) const;
+        constexpr TVector3<Type> GetColumn(const int column) const;
+        constexpr TVector3<Type> GetRow(const int row) const;
         
         TVector2<Type> TransformPoint(const TVector2<Type>& point) const;
         TVector2<Type> TransformVector(const TVector2<Type>& vector) const;
@@ -346,6 +348,26 @@ namespace nes
     {
         NES_ASSERT(axis >= 0 && axis < 3);
         return TVector3<Type>(m[0][axis], m[1][axis], m[2][axis]);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a column of this matrix as a vector.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TMatrix3x3<Type>::GetColumn(const int column) const
+    {
+        NES_ASSERT(column >= 0 && column < N);
+        return TVector3<Type>(m[0][column], m[1][column], m[2][column]);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a row of this matrix as a vector.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TMatrix3x3<Type>::GetRow(const int row) const
+    {
+        NES_ASSERT(row >= 0 && row < N);
+        return TVector3<Type>(m[row][0], m[row][1], m[row][2]);
     }
 
     //----------------------------------------------------------------------------------------------------

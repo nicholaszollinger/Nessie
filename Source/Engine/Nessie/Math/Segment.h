@@ -19,6 +19,8 @@ namespace nes
         constexpr TSegment2() = default;
         constexpr TSegment2(const TVector2<Type>& start, const TVector2<Type>& end);
 
+        TVector2<Type> Direction() const;
+        constexpr TVector2<Type> Vector() const; 
         Type Length() const;
         constexpr Type SquaredLength() const;
         constexpr TVector2<Type> Center() const;
@@ -39,6 +41,8 @@ namespace nes
         constexpr TSegment3() = default;
         constexpr TSegment3(const TVector3<Type>& start, const TVector3<Type>& end);
         
+        TVector3<Type> Direction() const;
+        constexpr TVector3<Type> Vector() const; 
         Type Length() const;
         constexpr Type SquaredLength() const;
         constexpr TVector3<Type> Center() const;
@@ -73,6 +77,24 @@ namespace nes
         , m_end(end)
     {
         //
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the vector displacement from the segment's start to the end. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector2<Type> TSegment2<Type>::Vector() const
+    {
+        return m_end - m_start;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the normalized direction from the start to the end. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector2<Type> TSegment2<Type>::Direction() const
+    {
+        return TVector2<Type>(m_end - m_start).Normalized();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -172,6 +194,24 @@ namespace nes
         , m_end(end)
     {
         //
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the normalized direction from the start to the end. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TSegment3<Type>::Direction() const
+    {
+        return Vector().Normalized();
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the vector from the start to the end. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TSegment3<Type>::Vector() const
+    {
+        return m_end - m_start;
     }
 
     //----------------------------------------------------------------------------------------------------
