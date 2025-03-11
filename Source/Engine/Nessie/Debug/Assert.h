@@ -11,7 +11,7 @@ do                                                                              
 {                                                                                                                                    \
     if (!(condition))                                                                                                                \
     {                                                                                                                                \
-        NES_ERRORV("Assertion Failed! ", (#condition), "\n\t", GET_CURRENT_FILENAME, " - ", __FUNCTION__, "() - Line: ", __LINE__);       \
+        NES_ERRORV("Assertion Failed!", (#condition), "\n\t", GET_CURRENT_FILENAME, " - ", __FUNCTION__, "() - Line: ", __LINE__);       \
         __debugbreak();                                                                                                              \
     }                                                                                                                                \
 } while(0)
@@ -25,7 +25,7 @@ do                                                                              
 {                                                                                                                                           \
     if (!(condition))                                                                                                                       \
     {                                                                                                                                       \
-        NES_ERRORV("Assertion Failed! ", (#condition), __VA_ARGS__, "\n\t", GET_CURRENT_FILENAME, " - ", __FUNCTION__, "() - Line: ", __LINE__); \
+        NES_ERRORV("Assertion Failed!", (#condition), " ", __VA_ARGS__, "\n\t", GET_CURRENT_FILENAME, " - ", __FUNCTION__, "() - Line: ", __LINE__); \
         __debugbreak();                                                                                                                     \
     }                                                                                                                                       \
 } while(0)

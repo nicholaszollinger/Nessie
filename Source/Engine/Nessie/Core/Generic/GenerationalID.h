@@ -21,7 +21,7 @@ namespace nes
     ///
     ///		@tparam Type : Unsigned integral Type to use for the Generational ID.
     //----------------------------------------------------------------------------------------------------
-    template <UnsignedIntegralType Type = uint64_t>
+    template <UnsignedIntegralType Type>
     class GenerationalID
     {
     public:
@@ -48,18 +48,17 @@ namespace nes
         std::string ToString() const;
     };
 
+    using GenerationalIndex = GenerationalID<uint64_t>;
+    
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Hash struct for GenerationalIDs to use for std containers.
     //----------------------------------------------------------------------------------------------------
-    template <UnsignedIntegralType Type = uint64_t>
+    template <UnsignedIntegralType Type>
     struct GenerationalIDHasher
     {
         uint64_t operator()(const GenerationalID<Type> id) const;
     };
-
-    using GenerationalIndex = GenerationalID<uint64_t>;
-
-
+    
     template <UnsignedIntegralType Type>
     constexpr GenerationalID<Type>::GenerationalID(const std::integral auto id)
     {

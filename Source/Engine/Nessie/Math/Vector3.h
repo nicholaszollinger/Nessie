@@ -291,8 +291,8 @@ namespace nes
         if (!math::CheckEqualFloats(magnitude, 0.f, 0.0001f))
         {
             x = x / magnitude;
-            x = y / magnitude;
-            x = z / magnitude;
+            y = y / magnitude;
+            z = z / magnitude;
         }
 
         return *this;

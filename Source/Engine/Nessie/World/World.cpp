@@ -1,123 +1,168 @@
-// World.cpp
-
+﻿// World.cpp
 #include "World.h"
-#include "Components/HierarchyComponent.h"
-#include "Components/NameComponent.h"
-#include "Debug/Assert.h"
+#include <yaml-cpp/yaml.h>
+#include "Actor.h"
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Create a new Entity with an IDComponent and a TagComponent.
-    ///		@param name : Name of the Entity.
-    ///		@returns : The newly created Entity.
-    //----------------------------------------------------------------------------------------------------
-    Entity World::CreateEntity(const std::string& name)
+    World::World(Scene* pScene)
+        : EntityLayer(pScene)
+        , m_actorPool(this)
     {
-        NES_ASSERT(m_pRegistry);
-
-        Entity entity = m_pRegistry->CreateEntity();
-        entity.AddComponent<IDComponent>(); // Generates a new ID for the Entity.
-
-        if (!name.empty())
-        {
-            entity.AddComponent<NameComponent>();
-        }
-
-        return entity;
+        //
     }
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Create an Entity with a specified ID and name.
-    ///		@param id : ID to give the new Entity.
-    ///		@param name : Name of the Entity.
-    ///		@returns : The new Entity.
-    //----------------------------------------------------------------------------------------------------
-    Entity World::CreateEntityWithID(const EntityID id, const std::string& name)
+    StrongPtr<Actor> World::CreateActor(const EntityID id, const StringID& name)
     {
-        NES_ASSERT(m_pRegistry);
-
-        Entity entity = m_pRegistry->CreateEntity();
-
-        // Add a IDComponent with the given ID.
-        entity.AddComponent<IDComponent>(id);
-
-        if (!name.empty())
-        {
-            entity.AddComponent<NameComponent>();
-        }
-
-        return entity;
+        StrongPtr<Actor> pActor = m_actorPool.CreateEntity(id, name);
+        return pActor;
     }
 
-    void World::Update(const double deltaRealTime)
+    void World::DestroyEntity(const LayerHandle& handle)
     {
-        if (UpdateTime(deltaRealTime))
+        m_actorPool.QueueDestroyEntity(handle);
+    }
+
+    bool World::IsValidEntity(const LayerHandle& handle) const
+    {
+        return m_actorPool.IsValidEntity(handle);
+    }
+
+    bool World::InitializeLayer()
+    {
+        for (auto& actor : m_actorPool)
         {
-            // Fixed Update
-            /*for (auto& system : m_systems)
+            if (!actor.Init())
             {
-                system->FixedUpdate();
-            }*/
+                NES_ERRORV("World", "Failed to initialize World! Failed to initialize Actor: ", actor.GetName().CStr());
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    void World::OnSceneBegin()
+    {
+        // [TODO]:
+    }
+
+    void World::DestroyLayer()
+    {
+        m_actorPool.ClearPool();
+    }
+
+    void World::OnEvent([[maybe_unused]] Event& event)
+    {
+        // [TODO]: 
+    }
+    
+    void World::RenderEditorEntityHierarchy()
+    {
+        // [TODO]: 
+    }
+
+    void World::Render([[maybe_unused]] const Camera& worldCamera)
+    {
+        // [TODO]: 
+        // Push the Camera uniforms for the Mesh Rendering.
+    }
+
+    void World::Tick([[maybe_unused]] const double deltaTime)
+    {
+        // [TODO]:
+        // Tick the Collision System...
+        m_actorPool.ProcessDestroyedEntities();
+    }
+
+    bool World::LoadLayer(YAML::Node& layerNode)
+    {
+        auto actors = layerNode["Actors"];
+        if (!actors)
+        {
+            NES_ERROR("Failed to load World Layer! No Actors node found!");
+            return false;
         }
 
-        // Update
-        /*for (auto& system : m_systems)
+        for (auto actorNode : actors)
         {
-            system->Update();
-        }*/
-    }
+            const uint64_t actorID = actorNode["Actor"].as<uint64_t>(); 
+            const StringID actorName = actorNode["Name"].as<std::string>();
+            StrongPtr<Actor> pActor = CreateActor(actorID, actorName);
+            
+            auto componentsNode = actorNode["Components"];
+            for (auto componentNode : componentsNode)
+            {
+                const StringID componentName = componentNode.first.as<std::string>();
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Updates the World Delta Time & Real Time, and checks if it's time for a Fixed Update.
-    ///		@param deltaRealTime : Real Time elapsed since the last frame.
-    ///		@returns : True if it's time for a Fixed Update, False otherwise.
-    //----------------------------------------------------------------------------------------------------
-    bool World::UpdateTime(const double deltaRealTime)
-    {
-        m_realTimeElapsed += deltaRealTime;
-        m_worldDeltaTime = static_cast<float>(deltaRealTime) * m_worldTimeScale;
-        m_timeLeftForFixed -= deltaRealTime;
+                // [HACK]: Just checking for specific components for now. 
+                // [TODO]: Loading Components should be done systematically, through
+                // some Factory or Serialize function.
+                if (componentName == WorldComponent::GetStaticTypename())
+                {
+                    auto worldComponentNode = componentNode.second; 
+                    const StringID name = worldComponentNode["Name"].as<std::string>();
+                    auto* pWorldComponent = pActor->AddComponent<WorldComponent>(name);
+                    LoadWorldComponentData(*pWorldComponent, worldComponentNode);
 
-        if (m_timeLeftForFixed < 0.0)
-        {
-            m_timeLeftForFixed = m_fixedTimeStep;
-            return true;
+                    // [HACK]: Just auto setting the root if necessary.
+                    // Entity should probably have something like OnComponentAdded(Component*);
+                    if (pActor->GetRootComponent() == nullptr)
+                        pActor->SetRootComponent(pWorldComponent);
+                }
+            }
         }
 
-        return false;
+        return true;
     }
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Destroy the World, clearing all Entities that are not marked as Persistent and
-    ///              destroying all Systems.
-    //----------------------------------------------------------------------------------------------------
-    void World::Destroy()
+    void World::LoadWorldComponentData(WorldComponent& worldComponent, YAML::Node& componentNode) const
     {
-        // [TODO]: Destroy all Entities not marked as Persistent.
-        // [TODO]: Destroy all Systems.
-    }
+        // IsEnabled:
+        const bool isEnabled = componentNode["IsEnabled"].as<bool>();
+        worldComponent.SetEnabled(isEnabled);
+        
+        // Parent:
+        auto parentNode = componentNode["Parent"];
+        if (!parentNode.IsNull())
+        {
+            // [TODO]: 
+        }
+        
+        // If the node has no parent, then set the World Root as the parent.
+        // else
+        // {
+        //     worldComponent.SetParent(m_pWorldRoot);            
+        // }
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //				
-    ///		@brief : Set the global timescale of the World.
-    ///		@param timeScale : Timescale to set. 1.0f is no scaling, 0.5f is half speed, 2.0f is double speed.
-    ///     @note : A timescale of 0 will make DeltaTime always equal to 0.
-    ///     @note : However, Fixed Updates are not effected by the timescale. If you want a fixed
-    ///     @note : system to be effected by the timescale, you must manually scale the fixed time step
-    ///     @note : in the system.
-    //----------------------------------------------------------------------------------------------------
-    void World::SetGlobalTimeScale(const float timeScale)
-    {
-        m_worldTimeScale = timeScale;
+        // Location
+        Vector3 location;
+        const auto locationNode = componentNode["Location"];
+        {
+            location.x = locationNode[0].as<float>();
+            location.y = locationNode[1].as<float>();
+            location.z = locationNode[2].as<float>();
+        }
+
+        // Orientation
+        Quat orientation;
+        const auto orientationNode = componentNode["Orientation"];
+        {
+            Vector3 eulerAngles;
+            eulerAngles.x = orientationNode[0].as<float>();
+            eulerAngles.y = orientationNode[1].as<float>();
+            eulerAngles.z = orientationNode[2].as<float>();
+            orientation = Quat::MakeFromEuler(eulerAngles);
+        }
+
+        // Scale
+        Vector3 scale;
+        const auto scaleNode = componentNode["Scale"];
+        {
+            scale.x = scaleNode[0].as<float>();
+            scale.y = scaleNode[1].as<float>();
+            scale.z = scaleNode[2].as<float>();
+        }
+        worldComponent.SetLocalTransform(location, orientation, scale);
     }
 }

@@ -1,80 +1,81 @@
 ﻿// Transform.h
 #pragma once
-#include "Matrix.h"
-
-// [TODO]: I need to make the TTransform3 for 3D.
+#include "MatrixConversions.h"
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-    //      [TODO]: More constructors, including a Matrix as a parameter. This will require me to implement
-    //              a way to extract Scale and Rotation from a transform matrix.
-    //              
-    ///		@brief : A 2D Transform holds a position, scale and rotation. It can be converted to a 3x3 matrix.
-    //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    struct TTransform2
+    struct TTransform3
     {
-        TVector2<Type> m_position{};
-        TVector2<Type> m_scale = Vector2::GetUnitVector();
-        Type m_rotation = {}; // Angle, in Radians.
+        TQuaternion<Type> m_orientation = TQuaternion<Type>::Identity();
+        TVector3<Type> m_location{};
+        TVector3<Type> m_scale = Vector3::GetUnitVector();
         
-        constexpr TTransform2() = default;
-        constexpr TTransform2(const TVector2<Type>& position, const TVector2<Type>& scale, Type rotation);
+        constexpr TTransform3() = default;
+        constexpr TTransform3(const TVector3<Type>& location, const TQuaternion<Type>& orientation, const TVector3<Type>& scale);
+
+        void Rotate(const Type angle, const TVector3<Type>& axis);
+        void Rotate(const TQuaternion<Type>& deltaRotation);
+        void Translate(const TVector3<Type>& deltaTranslation);
+        void Scale(const TVector3<Type>& scale);
+        void Scale(const Type uniformScale);
         
-        [[nodiscard]] TMatrix3x3<Type> ToMatrix() const;
+        [[nodiscard]] TMatrix4x4<Type> ToMatrix() const;
     };
-    
-    using Transform2D = TTransform2<NES_MATH_DEFAULT_REAL_TYPE>;
+
+    using Transform = TTransform3<NES_MATH_DEFAULT_REAL_TYPE>;
 }
 
 namespace nes
 {
     template <FloatingPointType Type>
-    constexpr TTransform2<Type>::TTransform2(const TVector2<Type>& position, const TVector2<Type>& scale, Type rotation)
-        : m_position(position)
+    constexpr TTransform3<Type>::TTransform3(const TVector3<Type>& location, const TQuaternion<Type>& orientation,
+       const TVector3<Type>& scale)
+        : m_orientation(orientation)
+        , m_location(location)
         , m_scale(scale)
-        , m_rotation(rotation)
     {
         //
     }
 
-    //----------------------------------------------------------------------------------------------------
-    //      [TODO]: This was written with my basic understanding of how to mathematically combine the matrix
-    //              into the Homogenous 3D space for 2D coordinates. There are definitely more optimized ways
-    //              to calculate this.
-    //
-    ///		@brief : Creates the Matrix representation of the Transform. 
-    //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix3x3<Type> TTransform2<Type>::ToMatrix() const
+    void TTransform3<Type>::Rotate(const Type angle, const TVector3<Type>& axis)
     {
-        const float sin = std::sin(m_rotation);
-        const float cos = std::cos(m_rotation);
-        
-        TMatrix2x2<Type> scaleMatrix{};
-        scaleMatrix.m[0][0] = m_scale.x;
-        scaleMatrix.m[1][1] = m_scale.y;
-        
-        TMatrix2x2<Type> rotationMatrix{};
-        rotationMatrix.m[0][0] = cos;
-        rotationMatrix.m[0][1] = -sin;
-        rotationMatrix.m[1][0] = sin;
-        rotationMatrix.m[1][1] = cos;
-        const TMatrix2x2<Type> scaleRotation = TMatrix2x2<Type>::Concatenate(scaleMatrix, rotationMatrix);
+        TQuaternion<Type> rotation = TQuaternion<Type>::MakeFromAngleAxis(angle, axis);
+        m_orientation = rotation * m_orientation;
+    }
 
-        // Z Axis rotation:
-        TMatrix3x3<Type> result{};
-        result.m[0][0] = scaleRotation.m[0][0];
-        result.m[1][0] = scaleRotation.m[1][0];
-        result.m[0][1] = scaleRotation.m[0][1];
-        result.m[1][1] = scaleRotation.m[1][1];
+    template <FloatingPointType Type>
+    void TTransform3<Type>::Rotate(const TQuaternion<Type>& deltaRotation)
+    {
+        m_orientation = deltaRotation * m_orientation;
+    }
 
-        // Apply Translation
-        result.m[0][2] = m_position.x;
-        result.m[1][2] = m_position.y;
+    template <FloatingPointType Type>
+    void TTransform3<Type>::Translate(const TVector3<Type>& deltaTranslation)
+    {
+        m_location += deltaTranslation;
+    }
 
-        return result;
+    template <FloatingPointType Type>
+    void TTransform3<Type>::Scale(const TVector3<Type>& scale)
+    {
+        m_scale *= scale;
+    }
+
+    template <FloatingPointType Type>
+    void TTransform3<Type>::Scale(const Type uniformScale)
+    {
+        m_scale *= uniformScale;
+    }
+    
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> TTransform3<Type>::ToMatrix() const
+    {
+        const TMatrix4x4<Type> scale = math::MakeScaleMatrix(m_scale);
+        const TMatrix4x4<Type> rotation = math::ToMat4(m_orientation);
+        const TMatrix4x4<Type> translation = math::MakeTranslationMatrix(m_location);
+        return translation * rotation * scale;
     }
 }
 

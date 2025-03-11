@@ -1,5 +1,4 @@
 #pragma once
-
 #include "RefCounter.h"
 
 namespace nes
@@ -14,7 +13,7 @@ namespace nes
     ///             more references to the object, it will be deleted.
     ///		@tparam Type : Type of object that is pointed to.
     //----------------------------------------------------------------------------------------------------
-    template<typename Type>
+    template <typename Type>
     class StrongPtr
     {
         internal::RefCounter<Type>* m_pRefCounter = nullptr;
@@ -53,11 +52,12 @@ namespace nes
         [[nodiscard]] bool operator==(const StrongPtr<Type>& other) const { return m_pRefCounter == other.m_pRefCounter; };
         [[nodiscard]] bool operator!=(const StrongPtr<Type>& other) const { return !(*this == other); }
 
-        [[nodiscard]] Type* Get()             { return m_pRefCounter->Get(); }
-        [[nodiscard]] const Type* Get() const { return m_pRefCounter->Get(); }
-        [[nodiscard]] uint32_t GetRefCount() const { return m_pRefCounter ? m_pRefCounter->GetRefCount() : 0; }
-        [[nodiscard]] uint32_t GetWeakCount() const { return m_pRefCounter ? m_pRefCounter->GetWeakCount() : 0; }
-        [[nodiscard]] bool IsValid() const { return m_pRefCounter != nullptr; }
+        void Reset();
+        [[nodiscard]] Type*         Get()             { return m_pRefCounter->Get(); }
+        [[nodiscard]] const Type*   Get() const { return m_pRefCounter->Get(); }
+        [[nodiscard]] uint32_t      GetRefCount() const { return m_pRefCounter ? m_pRefCounter->GetRefCount() : 0; }
+        [[nodiscard]] uint32_t      GetWeakCount() const { return m_pRefCounter ? m_pRefCounter->GetWeakCount() : 0; }
+        [[nodiscard]] bool          IsValid() const { return m_pRefCounter != nullptr; }
 
         template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr<OtherType> Cast() const;
@@ -79,6 +79,12 @@ namespace nes
         template <typename OtherType>
         friend class WeakPtr; 
     };
+
+    template <typename Type, typename...Params>
+    StrongPtr<Type> MakeStrong(Params&&...params)
+    {
+        return StrongPtr<Type>::Create(std::forward<Params>(params)...);
+    }
 
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
@@ -332,6 +338,22 @@ namespace nes
         }
 
         return *this;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Reset this pointer to null. 
+    //----------------------------------------------------------------------------------------------------
+    template <typename Type>
+    void StrongPtr<Type>::Reset()
+    {
+        if (m_pRefCounter != nullptr)
+        {
+            RemoveRef();
+        }
+
+        m_pRefCounter = nullptr;
     }
 
     template <typename Type>

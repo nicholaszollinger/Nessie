@@ -10,19 +10,19 @@ namespace nes
     concept FloatingPointType = std::floating_point<Type>;
 
     template <typename Type>
-    concept IntegralType = std::integral<Type>;
-    
-    template <typename Type>
-    concept UnsignedIntegralType = std::is_unsigned_v<Type>;
-
-    template <typename Type>
-    concept SignedIntergralType = std::integral<Type> && !std::is_unsigned_v<Type>;
+    concept IntergralType = std::integral<Type>;
     
     template <typename Type>
     concept ScalarType = std::floating_point<Type> || std::integral<Type>;
 
     template <typename Type>
-    concept SignedScalarType = FloatingPointType<Type> || (IntegralType<Type> && !UnsignedIntegralType<Type>);
+    concept SignedScalarType = std::floating_point<Type> || (std::integral<Type> && !std::is_unsigned_v<Type>);
+
+    template <typename Type>
+    concept UnsignedIntegralType = std::is_unsigned_v<Type>;
+
+    template <typename Type>
+    concept SignedIntergralType = std::integral<Type> && !std::is_unsigned_v<Type>;
 
     template <typename Type>
     concept PointerType = std::is_pointer_v<Type>;
@@ -45,6 +45,12 @@ namespace nes
     template <typename Type, typename OtherType>
     concept TypeIsBaseOrDerived = (std::is_base_of_v<Type, OtherType> || std::is_base_of_v<OtherType, Type>);
 
+    template <typename Type, typename BaseType>
+    concept TypeIsDerivedFrom = std::is_base_of_v<BaseType, Type>;
+
+    template <typename Type, typename BaseType>
+    concept TypeIsSameOrDerived = TypeIsDerivedFrom<Type, BaseType> || std::same_as<Type, BaseType>;
+    
     template <typename Type>
     concept ArrayOrVectorType = std::same_as<Type, std::array<typename Type::value_type, Type::size()>> || std::same_as<Type, std::vector<typename Type::value_type>>
                             || std::same_as<Type, std::vector<typename Type::value_type>>;

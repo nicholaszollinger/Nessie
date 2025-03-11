@@ -8,17 +8,16 @@ int main(int argc, char** argv)                                                 
 {                                                                                   \
     nes::CommandLineArgs args = {static_cast<size_t>(argc), argv };                 \
                                                                                     \
-    nes::Application* pApp = CreateApplication(args);                               \
-    auto code = pApp->Init();                                                       \
+    nes::Application app(args);                                                     \
+    auto code = app.Init();                                                         \
                                                                                     \
     if (code == nes::Application::ExitCode::Success)                                \
     {                                                                               \
-        code = pApp->RunMainLoop();                                                 \
+        code = app.RunMainLoop();                                                   \
     }                                                                               \
                                                                                     \
-    pApp->Close(code);                                                              \
+    app.Close(code);                                                                \
                                                                                     \
-    delete (pApp);                                                                  \
     return static_cast<int>(code);                                                  \
 }                                                                                   
 #endif

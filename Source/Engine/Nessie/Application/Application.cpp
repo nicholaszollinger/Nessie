@@ -115,10 +115,10 @@ namespace nes
             return ExitCode::FatalError;
         }
 
-        // Run the Post Init for any derived class initialization. 
-        if (!PostInit())
+        // Scene Manager
+        if (!m_sceneManager.Init(settingsFile))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application!");
+            NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the SceneManager!");
             return ExitCode::FatalError;
         }
         
@@ -141,12 +141,13 @@ namespace nes
             // [TODO]: Sync with the Resource Thread.
             
             m_renderer.BeginFrame();
-            
-            // App Update:
-            ProcessAppEvents();
-            Update(deltaTime);
-            
-            m_renderer.SubmitFrame();
+            {
+                // App Update:
+                ProcessAppEvents();
+                m_sceneManager.Update(deltaTime);
+                
+                m_renderer.SubmitFrame();
+            }
             
             m_window.ProcessEvents();
         }
@@ -165,10 +166,13 @@ namespace nes
     void Application::Close([[maybe_unused]] ExitCode exitCode)
     {
         NES_ASSERTV(IsMainThread());
-        
+
+        m_sceneManager.Close();
         m_renderer.Close();
         m_inputManager.Shutdown();
         m_window.Close();
+
+        NES_LOGV("Application", "Application Closed");
         Logger::Close();
         BLEACH_DUMP_AND_DESTROY_LEAK_DETECTOR();
 
@@ -187,7 +191,7 @@ namespace nes
 
     void Application::PushEvent([[maybe_unused]] Event& e)
     {
-        // [TODO]: Push the Event to the Event Queue.
+        m_sceneManager.OnEvent(e);
     }
 
     void Application::ProcessAppEvents()

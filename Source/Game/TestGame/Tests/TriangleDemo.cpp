@@ -8,7 +8,7 @@ void TriangleDemo::Reset()
 {
     m_triangle = {};
     
-    m_transform.m_position = {};
+    m_transform.m_location = {};
     m_transform.m_rotation = {};
     m_transform.m_scale = {100.f, 100.f};
     m_testPoint = {0.f, 0.f};
@@ -31,7 +31,7 @@ void TriangleDemo::Render(const nes::Renderer& renderer, const nes::Matrix3x3& v
 
 void TriangleDemo::RenderImGui()
 {
-    ImGui::DragFloat2("Position", &m_transform.m_position.x);
+    ImGui::DragFloat2("Position", &m_transform.m_location.x);
     ImGui::SliderAngle("Rotation", &m_transform.m_rotation);
     ImGui::DragFloat2("Scale", &m_transform.m_scale.x);
 

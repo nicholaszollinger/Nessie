@@ -14,15 +14,15 @@
 ///     @note : This macro finishes with private access, so for structs, make sure to add public after
 ///             this macro.
 //----------------------------------------------------------------------------------------------------
-#define NES_DEFINE_TYPE_INFO(_type)                                                                    \
-private:                                                                                               \
-    static_assert(std::is_class_v<_type>, "NES_DEFINE_TYPE_ID(): _type must be a class or a struct");  \
-    static constexpr nes::TypeID kTypeID = HashString64(#_type);                                       \
-public:                                                                                                \
-    [[nodiscard]] static nes::TypeID GetStaticTypeID() { return kTypeID; }                             \
-    [[nodiscard]] virtual nes::TypeID GetTypeID() const override { return kTypeID; }                   \
-    [[nodiscard]] static const char* GetStaticTypename() { return #_type; }                            \
-    [[nodiscard]] virtual const char* GetTypename() const override { return #_type; }                  \
+#define NES_DEFINE_TYPE_INFO(_type)                                                                      \
+private:                                                                                                 \
+    static_assert(std::is_class_v<_type>, "NES_DEFINE_TYPE_INFO(): _type must be a class or a struct");  \
+    static constexpr nes::TypeID kTypeID = HashString64(#_type);                                         \
+public:                                                                                                  \
+    [[nodiscard]] static nes::TypeID GetStaticTypeID() { return kTypeID; }                               \
+    [[nodiscard]] virtual nes::TypeID GetTypeID() const override { return kTypeID; }                     \
+    [[nodiscard]] static const char* GetStaticTypename() { return #_type; }                              \
+    [[nodiscard]] virtual const char* GetTypename() const override { return #_type; }                    \
 private:
 
 namespace nes

@@ -9,3 +9,11 @@ Window:
     Mode: 0
     IsResizable: true
     VsyncEnabled: false
+
+SceneManager:
+  StartScene:
+    Runtime: "Test"
+    Editor: "Test"
+  SceneMap:
+    - Name: "Test"
+      Path: "TestScene.yaml"
