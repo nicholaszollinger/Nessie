@@ -47,11 +47,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void Scene::Destroy()
     {
-        // [TODO]: Destroy all Entities not marked as Persistent.
-        // Destroy all Entities:
-        //m_pRootEntity->DestroyAndAllChildren();
-        //ProcessDestroyedEntities();
-        
         m_tickFunctions.clear();
 
         for (auto& pLayer : m_layerStack)

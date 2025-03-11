@@ -4,6 +4,7 @@ Scene:
   Layers:
     World:
       Actors:
+
       - Actor: 0
         LayerIndex: 0
         Name: "Camera"

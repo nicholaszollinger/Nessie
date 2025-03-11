@@ -33,9 +33,6 @@ namespace nes
         friend class SceneManager;
 
         std::vector<StrongPtr<EntityLayer>> m_layerStack;
-        //std::vector<StrongPtr<Entity>>      m_entities{};
-        //std::vector<LayerHandle>      m_entitiesMarkedForDestroy{};
-        //std::vector<LayerHandle>      m_entityFreeList{};
         std::vector<TickFunction>           m_tickFunctions{};
         std::vector<EventHandler>           m_eventHandlers{};
         const Camera*                       m_pActiveCamera = nullptr;
@@ -54,13 +51,6 @@ namespace nes
         Scene& operator=(const Scene&) = delete;
         Scene(Scene&&) noexcept = delete;
         Scene& operator=(Scene&&) noexcept = delete;
-        
-        // Entities:
-        //[[nodiscard]] StrongPtr<Entity> CreateEntity(const std::string& name, const WorldDomain domain);
-        //[[nodiscard]] StrongPtr<Entity> CreateEntityWithID(const EntityID id, const std::string& name, const WorldDomain domain);
-        //[[nodiscard]] StrongPtr<Entity> GetEntity(const LayerHandle& handle) const;
-        //[[nodiscard]] bool              IsValidEntity(const LayerHandle& handle) const;
-        //void                            DestroyEntity(const LayerHandle& handle);
 
         void RegisterTickFunction(const TickFunction& function);
         void RegisterEventHandler(const EventHandler& handler);
@@ -85,7 +75,6 @@ namespace nes
         void Destroy();
         
         bool Load(const std::filesystem::path& scenePath);
-        //void ProcessDestroyedEntities();
     };
 
     //----------------------------------------------------------------------------------------------------
