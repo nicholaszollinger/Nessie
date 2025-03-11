@@ -55,6 +55,9 @@ namespace nes
         void RegisterTickFunction(const TickFunction& function);
         void RegisterEventHandler(const EventHandler& handler);
 
+        void SetActiveCamera(const Camera* camera);
+        [[nodiscard]] const Camera* GetActiveCamera() const { return m_pActiveCamera; }
+
         template <EntityLayerType Type>
         StrongPtr<Type> GetLayer() const;
 

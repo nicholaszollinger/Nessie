@@ -1,7 +1,9 @@
 ﻿// MatrixTransform.h
 #pragma once
-#include "Matrix.h"
-#include "Quaternion.h"
+#include "TMatrix2x2.h"
+#include "TMatrix3x3.h"
+#include "TMatrix4x4.h"
+#include "Math/Quaternion.h"
 
 namespace nes::math
 {
@@ -13,15 +15,6 @@ namespace nes::math
     
     template <FloatingPointType Type>
     TMatrix4x4<Type> ToMat4(const TQuaternion<Type>& q);
-    
-    template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeTranslationMatrix(const TVector3<Type>& translation);
-
-    template <FloatingPointType Type>
-    TMatrix3x3<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation);
-    
-    template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation);
 
     template <FloatingPointType Type>
     TQuaternion<Type> ToQuat(const TMatrix3x3<Type>& matrix);
@@ -36,13 +29,13 @@ namespace nes::math
     TMatrix4x4<Type> MakeOrientationFromEuler(const Type pitch, const Type yaw, const Type roll);
 
     template <FloatingPointType Type>
-    TQuaternion<Type> ExtractOrientation(const TMatrix4x4<Type>& matrix);
+    TQuaternion<Type> ExtractOrientationQuat(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeScaleMatrix(const TVector3<Type>& scale);
+    TMatrix3x3<Type> ExtractMatrixOrientation3x3(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeScaleMatrix(const Type uniformScale);
+    TMatrix4x4<Type> ExtractMatrixOrientation4x4(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
     void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TQuaternion<Type>& orientation, TVector3<Type>& scale);
@@ -116,37 +109,6 @@ namespace nes::math
     TMatrix4x4<Type> ToMat4(const TQuaternion<Type>& q)
     {
         return TMatrix4x4<Type>(ToMat3<Type>(q));
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Create a Translation Matrix from a 3D Translation. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeTranslationMatrix(const TVector3<Type>& translation)
-    {
-        TMatrix4x4<Type> result = TMatrix4x4<Type>::Identity();
-        result.m[0][3] = translation.x;
-        result.m[1][3] = translation.y;
-        result.m[2][3] = translation.z;
-        return result;
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Create an Orientation Matrix from a quaternion.
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    TMatrix3x3<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation)
-    {
-        return ToMat3<Type>(orientation);
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Create an Orientation Matrix from a Quaternion Orientation. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation)
-    {
-        return ToMat4<Type>(orientation);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -272,10 +234,10 @@ namespace nes::math
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the unscaled orientation defined by the matrix.
+    ///		@brief : Returns the unscaled orientation of the matrix as a Quaternion.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TQuaternion<Type> ExtractOrientation(const TMatrix4x4<Type>& matrix)
+    TQuaternion<Type> ExtractOrientationQuat(const TMatrix4x4<Type>& matrix)
     {
         TMatrix4x4<Type> copy(matrix);
         copy.RemoveScaling();
@@ -283,29 +245,33 @@ namespace nes::math
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Make a Scale Matrix from a 3D Scale factor.
+    ///		@brief : Returns the unscaled orientation of the matrix as a 3x3 Matrix. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeScaleMatrix(const TVector3<Type>& scale)
+    TMatrix3x3<Type> ExtractMatrixOrientation3x3(const TMatrix4x4<Type>& matrix)
     {
-        TMatrix4x4<Type> matrix = TMatrix4x4<Type>::Identity();
-        matrix.m[0][0] = scale.x;
-        matrix.m[1][1] = scale.y;
-        matrix.m[2][2] = scale.z;
-        return matrix;
+        TMatrix4x4<Type> copy(matrix);
+        copy.RemoveScaling();
+        return ToMat3(copy);
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Make a Scale Matrix from a uniform scale value.
+    ///		@brief : Returns the unscaled orientation of the matrix as a 4x4 matrix. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeScaleMatrix(const Type uniformScale)
+    TMatrix4x4<Type> ExtractMatrixOrientation4x4(const TMatrix4x4<Type>& matrix)
     {
-        TMatrix4x4<Type> matrix = TMatrix4x4<Type>::Identity();
-        matrix.m[0][0] = uniformScale;
-        matrix.m[1][1] = uniformScale;
-        matrix.m[2][2] = uniformScale;
-        return matrix;
+        TMatrix4x4<Type> copy(matrix);
+        copy.RemoveScaling();
+        copy.m[0][3] = static_cast<Type>(0);
+        copy.m[1][3] = static_cast<Type>(0);
+        copy.m[2][3] = static_cast<Type>(0);
+        copy.m[3][3] = static_cast<Type>(1);
+        
+        copy.m[3][0] = static_cast<Type>(0);
+        copy.m[3][1] = static_cast<Type>(0);
+        copy.m[3][2] = static_cast<Type>(0);
+        return copy;
     }
 
     //----------------------------------------------------------------------------------------------------

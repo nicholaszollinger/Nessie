@@ -1,0 +1,82 @@
+﻿// Camera.cpp
+#include "CameraComponent.h"
+#include "Application/Application.h"
+#include "Math/VectorConversions.h"
+#include "Scene/Scene.h"
+
+namespace nes
+{
+    bool CameraComponent::Init()
+    {
+        if (!WorldComponent::Init())
+            return false;
+
+        const auto windowExtent = Application::Get().GetWindow().GetExtent();
+        
+        m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
+        // [TODO]: Subscribe to WindowResize events...
+        return true;
+    }
+
+    void CameraComponent::SetAsActiveCamera() const
+    {
+        Scene* pScene = GetScene();
+        NES_ASSERT(pScene);
+        pScene->SetActiveCamera(&m_camera);
+    }
+
+    void CameraComponent::SetActiveOnEnabled(const bool setActiveOnEnable)
+    {
+        m_setActiveOnEnable = setActiveOnEnable;
+    }
+
+    Camera& CameraComponent::GetCamera()
+    {
+        return m_camera;
+    }
+
+    const Camera& CameraComponent::GetCamera() const
+    {
+        return m_camera;
+    }
+    
+    bool CameraComponent::IsActiveCamera() const
+    {
+        Scene* pScene = GetScene();
+        NES_ASSERT(pScene);
+        return pScene->GetActiveCamera() == &m_camera;
+    }
+
+    void CameraComponent::OnWorldTransformUpdated()
+    {
+        // Set the ViewMatrix of the Camera to look toward the position in front of the camera.
+        const auto& worldTransformMatrix = GetWorldTransformMatrix();
+        const Mat4 orientationMatrix = math::ExtractMatrixOrientation4x4(worldTransformMatrix);
+        
+        const auto cameraForward = math::XYZ(orientationMatrix * Vector4(0.f, 0.f, 1.f, 0.f));
+        const auto cameraUp = math::XYZ(orientationMatrix * Vector4(0.f, 1.f, 0.f, 0.f));
+        const Vector3 cameraPosition = math::XYZ(worldTransformMatrix.GetColumn(3)); 
+        m_camera.LookAt(cameraPosition, cameraPosition + cameraForward, cameraUp);
+    }
+
+    void CameraComponent::OnEnabled()
+    {
+        if (!m_setActiveOnEnable)
+            return;
+
+        SetAsActiveCamera();
+    }
+
+    void CameraComponent::OnDisabled()
+    {
+        // [Consider] Should this just be an error, and or assert?
+        // If this is currently the Active Camera, we need to disable it.
+        if (IsActiveCamera())
+        {
+            NES_WARN("Disabling active Camera in World!!!");
+            Scene* pScene = GetScene();
+            NES_ASSERT(pScene);
+            pScene->SetActiveCamera(nullptr);
+        }
+    }
+}

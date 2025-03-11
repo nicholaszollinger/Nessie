@@ -61,6 +61,9 @@ namespace nes
         TVector3<Type> GetScale() const;
         TMatrix4x4 GetWithoutScale() const;
 
+        TVector3<Type> TransformPoint(const TVector3<Type>& point) const;
+        TVector3<Type> TransformVector(const TVector3<Type>& vector) const;
+
         TMatrix4x4& Concatenate(const TMatrix4x4& other);
         static TMatrix4x4 Concatenate(const TMatrix4x4& a, const TMatrix4x4& b);
         
@@ -69,6 +72,12 @@ namespace nes
         static constexpr TMatrix4x4 Zero();
         static constexpr TMatrix4x4 Identity() { return TMatrix4x4(); }
     };
+
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TMatrix4x4<Type>& matrix, const TVector4<Type>& vector);
+    
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TVector4<Type>& vector, const TMatrix4x4<Type>& matrix);
 }
 
 namespace nes
@@ -502,6 +511,28 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Transform a 3D point by this Matrix. This will include the Translation defined by this
+    ///              matrix.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TMatrix4x4<Type>::TransformPoint(const TVector3<Type>& point) const
+    {
+        const Vector4 transformed = (*this * Vector4(point, static_cast<Type>(1)));
+        return Vector3(transformed.x, transformed.y, transformed.z);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Transform a 3D vector by this Matrix. This will NOT include the translation defined by
+    ///             this matrix.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TMatrix4x4<Type>::TransformVector(const TVector3<Type>& vector) const
+    {
+        const Vector4 transformed = (*this * Vector4(vector, static_cast<Type>(0)));
+        return Vector3(transformed.x, transformed.y, transformed.z);
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Sets this matrix to the result of applying this matrix, and then the "other". This
     ///         returns a reference to the combined matrix, so they can be stringed together.
     //----------------------------------------------------------------------------------------------------
@@ -538,5 +569,25 @@ namespace nes
         }
 
         return result;
+    }
+
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TMatrix4x4<Type>& matrix, const TVector4<Type>& vector)
+    {
+        TVector3<Type> result;
+        
+        // Column Orientation:
+        result[0] = (matrix.m[0][0] * vector[0]) + (matrix.m[0][1] * vector[1]) + (matrix.m[0][2] * vector[2]) + (matrix.m[0][3] * vector[3]);
+        result[1] = (matrix.m[1][0] * vector[0]) + (matrix.m[1][1] * vector[1]) + (matrix.m[1][2] * vector[2]) + (matrix.m[1][3] * vector[3]);
+        result[2] = (matrix.m[2][0] * vector[0]) + (matrix.m[2][1] * vector[1]) + (matrix.m[2][2] * vector[2]) + (matrix.m[2][3] * vector[3]);
+        result[3] = (matrix.m[3][0] * vector[0]) + (matrix.m[3][1] * vector[1]) + (matrix.m[3][2] * vector[2]) + (matrix.m[3][3] * vector[3]);
+        
+        return result;
+    }
+
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TVector4<Type>& vector, const TMatrix4x4<Type>& matrix)
+    {
+        return matrix * vector;
     }
 }

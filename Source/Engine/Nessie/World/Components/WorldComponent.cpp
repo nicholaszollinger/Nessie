@@ -416,7 +416,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     Quat WorldComponent::GetOrientation() const
     {
-        return math::ExtractOrientation(m_worldTransformMatrix);
+        return math::ExtractOrientationQuat(m_worldTransformMatrix);
     }
 
     //----------------------------------------------------------------------------------------------------

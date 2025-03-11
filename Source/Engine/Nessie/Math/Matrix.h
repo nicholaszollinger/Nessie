@@ -1,7 +1,7 @@
 ﻿// Matrix.h
 #pragma once
-#include "Vector3.h"
-#include "Detail/TMatrix4x4.h"
+#include "Detail/MatrixClipSpace.h"
+#include "Detail/MatrixTransform.h"
 
 namespace nes
 {

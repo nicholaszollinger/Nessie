@@ -1,6 +1,6 @@
 ﻿// Transform.h
 #pragma once
-#include "MatrixConversions.h"
+#include "Matrix.h"
 
 namespace nes
 {
