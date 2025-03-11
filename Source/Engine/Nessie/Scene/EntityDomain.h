@@ -33,12 +33,13 @@ static constexpr const char* GetWorldDomainName(const EntityDomain value)
 }
 
 //----------------------------------------------------------------------------------------------------
-///		@brief : Two World Domains are compatible only if they are equal, or if either are the Abstract
-///         Domain.
+///		@brief : An Entity's Domain is compatible with a Component's Domain if they are equal or
+///         if the Component Domain is Abstract. Components in the Abstract Domain can be added to
+///         Entities in any Domain. 
 //----------------------------------------------------------------------------------------------------
-static constexpr bool DomainsAreCompatible(const EntityDomain a, const EntityDomain b)
+static constexpr bool ComponentDomainIsCompatibleForEntity(const EntityDomain entityDomain, const EntityDomain componentDomain)
 {
-    if (a == b || a == EntityDomain::Abstract || b == EntityDomain::Abstract)
+    if (entityDomain == componentDomain || componentDomain == EntityDomain::Abstract)
         return true;
 
     return false;

@@ -118,7 +118,7 @@ namespace nes
         
         // Ensure that the Component is valid for this Entity's Domain
         // - It would be nice if this was a compile time check.
-        NES_ASSERT(DomainsAreCompatible(GetDomain(), pComponent->GetDomain()));
+        NES_ASSERT(ComponentDomainIsCompatibleForEntity(GetDomain(), pComponent->GetDomain()));
         
         // If the Entity has already been initialized, run through the initialization
         // of the Component.
