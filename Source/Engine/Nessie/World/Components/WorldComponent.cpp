@@ -1,8 +1,7 @@
 ﻿// WorldComponent.cpp
-
 #include "WorldComponent.h"
+
 #include "Math/VectorConversions.h"
-#include "Scene/Entity.h"
 #include "World/World.h"
 
 namespace nes
@@ -114,6 +113,11 @@ namespace nes
     {
         return m_children;
     }
+
+    // Actor* WorldComponent::GetActor() const
+    // {
+    //     return checked_cast<Actor*>(GetOwner());
+    // }
 
     void WorldComponent::SetEnabled(const bool enabled)
     {
@@ -470,11 +474,6 @@ namespace nes
         return m_worldTransformMatrix;
     }
     
-    EntityDomain WorldComponent::GetDomain() const
-    {
-        return EntityDomain::Physical3D;
-    }
-
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Called when this Component has a new parent set.
     ///		@param pParent : The new parent.

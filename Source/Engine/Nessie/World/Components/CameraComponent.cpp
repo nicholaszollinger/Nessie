@@ -3,6 +3,7 @@
 #include "Application/Application.h"
 #include "Math/VectorConversions.h"
 #include "Scene/Scene.h"
+#include "World/Actor.h"
 
 namespace nes
 {
@@ -20,7 +21,7 @@ namespace nes
 
     void CameraComponent::SetAsActiveCamera() const
     {
-        Scene* pScene = GetScene();
+        Scene* pScene = GetOwner()->GetScene();
         NES_ASSERT(pScene);
         pScene->SetActiveCamera(&m_camera);
     }
@@ -42,7 +43,7 @@ namespace nes
     
     bool CameraComponent::IsActiveCamera() const
     {
-        Scene* pScene = GetScene();
+        Scene* pScene = GetOwner()->GetScene();
         NES_ASSERT(pScene);
         return pScene->GetActiveCamera() == &m_camera;
     }
@@ -69,12 +70,12 @@ namespace nes
 
     void CameraComponent::OnDisabled()
     {
-        // [Consider] Should this just be an error, and or assert?
+        // [Consider] Should this just be an error, and/or assert?
         // If this is currently the Active Camera, we need to disable it.
         if (IsActiveCamera())
         {
             NES_WARN("Disabling active Camera in World!!!");
-            Scene* pScene = GetScene();
+            Scene* pScene = GetOwner()->GetScene();
             NES_ASSERT(pScene);
             pScene->SetActiveCamera(nullptr);
         }

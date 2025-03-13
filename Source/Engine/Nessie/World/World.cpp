@@ -2,30 +2,34 @@
 #include "World.h"
 #include <yaml-cpp/yaml.h>
 #include "Actor.h"
+#include "Components/CameraComponent.h"
+#include "Components/FreeCamMovementComponent.h"
 
 namespace nes
 {
     World::World(Scene* pScene)
-        : EntityLayer(pScene)
+        : SceneLayer(pScene)
         , m_actorPool(this)
     {
         //
     }
 
-    StrongPtr<Actor> World::CreateActor(const EntityID id, const StringID& name)
+    StrongPtr<Actor> World::CreateActor(const NodeID& id, const StringID& name)
     {
-        StrongPtr<Actor> pActor = m_actorPool.CreateEntity(id, name);
+        StrongPtr<Actor> pActor = m_actorPool.CreateNode(id, name);
         return pActor;
     }
 
-    void World::DestroyEntity(const LayerHandle& handle)
+    // [TODO]: Can these be pushed up to the base layer?
+    void World::DestroyNode(const LayerHandle& handle)
     {
-        m_actorPool.QueueDestroyEntity(handle);
+        m_actorPool.QueueDestroyNode(handle);
     }
 
-    bool World::IsValidEntity(const LayerHandle& handle) const
+    // [TODO]: Can these be pushed up to the base layer? 
+    bool World::IsValidNode(const LayerHandle& handle) const
     {
-        return m_actorPool.IsValidEntity(handle);
+        return m_actorPool.IsValidNode(handle);
     }
 
     bool World::InitializeLayer()
@@ -47,7 +51,7 @@ namespace nes
         // [TODO]:
     }
 
-    void World::DestroyLayer()
+    void World::OnLayerDestroyed()
     {
         m_actorPool.ClearPool();
     }
@@ -57,7 +61,7 @@ namespace nes
         // [TODO]: 
     }
     
-    void World::RenderEditorEntityHierarchy()
+    void World::EditorRenderNodeHierarchy()
     {
         // [TODO]: 
     }
@@ -72,7 +76,7 @@ namespace nes
     {
         // [TODO]:
         // Tick the Collision System...
-        m_actorPool.ProcessDestroyedEntities();
+        //m_actorPool.ProcessDestroyedEntities();
     }
 
     bool World::LoadLayer(YAML::Node& layerNode)
@@ -98,17 +102,72 @@ namespace nes
                 // [HACK]: Just checking for specific components for now. 
                 // [TODO]: Loading Components should be done systematically, through
                 // some Factory or Serialize function.
+                // World Component
                 if (componentName == WorldComponent::GetStaticTypename())
                 {
                     auto worldComponentNode = componentNode.second; 
                     const StringID name = worldComponentNode["Name"].as<std::string>();
-                    auto* pWorldComponent = pActor->AddComponent<WorldComponent>(name);
+                    StrongPtr<WorldComponent> pWorldComponent = pActor->AddComponent<WorldComponent>(name);
                     LoadWorldComponentData(*pWorldComponent, worldComponentNode);
+                }
 
-                    // [HACK]: Just auto setting the root if necessary.
-                    // Entity should probably have something like OnComponentAdded(Component*);
-                    if (pActor->GetRootComponent() == nullptr)
-                        pActor->SetRootComponent(pWorldComponent);
+                // Camera
+                if (componentName == CameraComponent::GetStaticTypename())
+                {
+                    auto cameraNode = componentNode.second;
+                    const StringID name = cameraNode["Name"].as<std::string>();
+                    StrongPtr<CameraComponent> pCamera = pActor->AddComponent<CameraComponent>(name);
+                    LoadWorldComponentData(*pCamera, cameraNode);
+
+                    const bool setActiveOnEnable = cameraNode["SetActiveOnEnabled"].as<bool>(true);
+                    pCamera->SetActiveOnEnabled(setActiveOnEnable);
+
+                    // Camera Data:
+                    auto& camera = pCamera->GetCamera();
+                    
+                    // Perspective Params
+                    float value = cameraNode["PerspectiveFOV"].as<float>();
+                    camera.SetPerspectiveFOV(value);
+
+                    value = cameraNode["PerspectiveNear"].as<float>();
+                    camera.SetPerspectiveNearPlane(value);
+
+                    value = cameraNode["PerspectiveFar"].as<float>();
+                    camera.SetPerspectiveFarPlane(value);
+
+                    // Orthographic Params
+                    value = cameraNode["OrthographicSize"].as<float>();
+                    camera.SetOrthographicSize(value);
+                    
+                    value = cameraNode["OrthographicNear"].as<float>();
+                    camera.SetOrthographicNearPlane(value);
+
+                    value = cameraNode["OrthographicFar"].as<float>();
+                    camera.SetOrthographicFarPlane(value);
+
+                    // ProjectionType
+                    const auto projectionType = static_cast<Camera::ProjectionType>(cameraNode["ProjectionType"].as<uint8_t>());
+                    camera.SetProjectionType(projectionType);
+                }
+
+                // Free Cam
+                if (componentName == FreeCamMovementComponent::GetStaticTypename())
+                {
+                    auto freeCamNode = componentNode.second;
+                    const StringID name = freeCamNode["Name"].as<std::string>();
+                    StrongPtr<FreeCamMovementComponent> pFreeCam = pActor->AddComponent<FreeCamMovementComponent>(name);
+
+                    float value = freeCamNode["MoveSpeed"].as<float>();
+                    pFreeCam->SetMoveSpeed(value);
+
+                    value = freeCamNode["TurnSpeedYaw"].as<float>();
+                    pFreeCam->SetTurnSpeedYaw(value);
+
+                    value = freeCamNode["TurnSpeedPitch"].as<float>();
+                    pFreeCam->SetTurnSpeedPitch(value);
+
+                    const bool isEnabled = freeCamNode["IsEnabled"].as<bool>(true);
+                    pFreeCam->SetEnabled(isEnabled);
                 }
             }
         }
@@ -129,12 +188,6 @@ namespace nes
             // [TODO]: 
         }
         
-        // If the node has no parent, then set the World Root as the parent.
-        // else
-        // {
-        //     worldComponent.SetParent(m_pWorldRoot);            
-        // }
-
         // Location
         Vector3 location;
         const auto locationNode = componentNode["Location"];

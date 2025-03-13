@@ -2,8 +2,9 @@
 #pragma once
 #include <filesystem>
 #include <functional>
-#include "EntityLayer.h"
+#include "SceneLayer.h"
 #include "Core/Events/Event.h"
+#include "Core/Memory/StrongPtr.h"
 
 namespace nes
 {
@@ -22,9 +23,10 @@ namespace nes
     };
     
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      
-    ///		@brief : A World represents a collection of Entities.
+    ///		@brief : A Scene manages a stack of NodeLayers and processed in the following order:
+    ///         - Ticked from bottom to top.
+    ///         - Renderer from bottom to top.
+    ///         - Propagate Events from top to bottom.
     //----------------------------------------------------------------------------------------------------
     class Scene
     {
@@ -32,7 +34,7 @@ namespace nes
 
         friend class SceneManager;
 
-        std::vector<StrongPtr<EntityLayer>> m_layerStack;
+        std::vector<StrongPtr<SceneLayer>>   m_layerStack{};
         std::vector<TickFunction>           m_tickFunctions{};
         std::vector<EventHandler>           m_eventHandlers{};
         const Camera*                       m_pActiveCamera = nullptr;
@@ -58,7 +60,7 @@ namespace nes
         void SetActiveCamera(const Camera* camera);
         [[nodiscard]] const Camera* GetActiveCamera() const { return m_pActiveCamera; }
 
-        template <EntityLayerType Type>
+        template <NodeLayerType Type>
         StrongPtr<Type> GetLayer() const;
 
         // Time:
@@ -68,7 +70,7 @@ namespace nes
         [[nodiscard]] float GetFixedTimeStep() const    { return m_fixedTimeStep; }
 
     private:
-        void PushLayer(const StrongPtr<EntityLayer>& pLayer);
+        void PushLayer(const StrongPtr<SceneLayer>& pLayer);
         bool Init();
         bool Begin();
         void OnEvent(Event& event);
@@ -84,7 +86,7 @@ namespace nes
     ///		@brief : Returns the first EntityLayer matching the Type. If no Layer exists, then this returns
     ///         nullptr.
     //----------------------------------------------------------------------------------------------------
-    template <EntityLayerType Type>
+    template <NodeLayerType Type>
     StrongPtr<Type> Scene::GetLayer() const
     {
         for (auto& layer : m_layerStack)

@@ -1,7 +1,6 @@
 // Scene.cpp
 #include "Scene.h"
 #include <yaml-cpp/yaml.h>
-#include "BleachNew.h"
 #include "Debug/Assert.h"
 #include "World/World.h"
 
@@ -134,7 +133,12 @@ namespace nes
         m_eventHandlers.emplace_back(eventHandler);
     }
 
-    void Scene::PushLayer(const StrongPtr<EntityLayer>& pLayer)
+    void Scene::SetActiveCamera(const Camera* camera)
+    {
+        m_pActiveCamera = camera;
+    }
+
+    void Scene::PushLayer(const StrongPtr<SceneLayer>& pLayer)
     {
         m_layerStack.push_back(pLayer);
     }
@@ -204,7 +208,7 @@ namespace nes
             // A EntityLayerFactory should handle creating the EntityLayer.
             StrongPtr<World> pWorld = StrongPtr<World>::Create(this);
             
-            StrongPtr<EntityLayer> pLayer = pWorld.Cast<EntityLayer>();
+            StrongPtr<SceneLayer> pLayer = pWorld.Cast<SceneLayer>();
             pLayer->LoadLayer(worldNode);
             PushLayer(pLayer);
         }

@@ -1,4 +1,4 @@
-// WorldManager.cpp
+// SceneManager.cpp
 #include "SceneManager.h"
 #include "Application/Application.h"
 

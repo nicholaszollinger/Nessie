@@ -65,7 +65,7 @@ namespace nes
         template <typename...Params> requires nes::ValidConstructorForType<Type, Params...>
         static StrongPtr Create(Params&&...params);
         static StrongPtr Create(Type* ptr) { return StrongPtr(ptr); }
-
+    
     private:
         void AddRef();
         void RemoveRef();
@@ -84,6 +84,12 @@ namespace nes
     StrongPtr<Type> MakeStrong(Params&&...params)
     {
         return StrongPtr<Type>::Create(std::forward<Params>(params)...);
+    }
+
+    template <typename To, typename From> requires nes::TypeIsBaseOrDerived<To, From>
+    StrongPtr<To> Cast(const StrongPtr<From>& ptr)
+    {
+        return StrongPtr<To>(ptr);
     }
 
     //----------------------------------------------------------------------------------------------------

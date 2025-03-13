@@ -1,15 +1,18 @@
 ﻿// WorldComponent.h
 #pragma once
+#include "ActorComponent.h"
+#include "Core/Memory/StrongPtr.h"
 #include "Math/Transform.h"
-#include "Scene/Component.h"
 
 namespace nes
 {
+    class Actor;
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : A Physical Component places an Entity in the physical World Space. All Entities that
-    ///         in the Physical Layer must have a Physical Component.
+    ///		@brief : A World Component defines the 3D Transform for Actors in the Scene. WorldComponents
+    ///         can be parented to one another - useful as a 'dummy' component in the hierarchy to offset child
+    ///         components.
     //----------------------------------------------------------------------------------------------------
-    class WorldComponent : public Component
+    class WorldComponent : public ActorComponent
     {
         NES_DEFINE_COMPONENT_TYPE(WorldComponent)
 
@@ -59,8 +62,6 @@ namespace nes
         [[nodiscard]] const Vector3&    GetLocalScale() const;
         [[nodiscard]] Mat4              GetLocalTransformMatrix() const;
         [[nodiscard]] const Mat4&       GetWorldTransformMatrix() const;
-
-        [[nodiscard]] virtual EntityDomain GetDomain() const override final;
 
     private:
         virtual void OnParentChanged(WorldComponent* pParent);

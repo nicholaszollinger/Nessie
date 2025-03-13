@@ -574,7 +574,7 @@ namespace nes
     template <FloatingPointType Type>
     TVector4<Type> operator*(const TMatrix4x4<Type>& matrix, const TVector4<Type>& vector)
     {
-        TVector3<Type> result;
+        TVector4<Type> result;
         
         // Column Orientation:
         result[0] = (matrix.m[0][0] * vector[0]) + (matrix.m[0][1] * vector[1]) + (matrix.m[0][2] * vector[2]) + (matrix.m[0][3] * vector[3]);
