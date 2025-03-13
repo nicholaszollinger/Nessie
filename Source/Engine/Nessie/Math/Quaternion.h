@@ -2,6 +2,8 @@
 #pragma once
 #include "Vector3.h"
 
+// Great GDC Talk on Quaternions: https://www.youtube.com/watch?v=en2QcehKJd8
+
 namespace nes
 {
     template <FloatingPointType Type>
@@ -22,6 +24,8 @@ namespace nes
         constexpr TQuaternion operator-() const;
         TQuaternion  operator*(const TQuaternion& other) const;
         TQuaternion& operator*=(const TQuaternion& other);
+        TQuaternion  operator/(const TQuaternion& other) const;
+        TQuaternion& operator/=(const TQuaternion& other);
         TQuaternion  operator-(const TQuaternion& other) const;
         TQuaternion& operator-=(const TQuaternion& other);
         TQuaternion  operator+(const TQuaternion& other) const;
@@ -56,6 +60,7 @@ namespace nes
         static TQuaternion Pow(const TQuaternion& q, const float exponent);
         static TQuaternion Log(const TQuaternion& q);
         static TQuaternion Exp(const TQuaternion& q);
+        static TQuaternion Lerp(const TQuaternion& start, const TQuaternion& end, const float t);
         static TQuaternion Slerp(const TQuaternion& start, const TQuaternion& end, const float t);
         
         static constexpr Type Dot(const TQuaternion& a, const TQuaternion& b);
@@ -136,7 +141,36 @@ namespace nes
         *this = *this * other;
         return *this;
     }
-    
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Get the result of dividing this Quaternion by the "other". Dividing Quaternion "A"
+    ///         by Quaternion "B" means "rotate by B, but by the opposite of A first". Or, "Get me to where
+    ///         B takes me, but starting from where A's inverse would take me".
+    ///		@param other : The Quaternion to apply after rotating by the inverse of this Quaternion.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TQuaternion<Type> TQuaternion<Type>::operator/(const TQuaternion& other) const
+    {
+        return Inverse() * other;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Divide this quaternion by the "other". Dividing Quaternion "A"
+    ///         by Quaternion "B" means "rotate by B, but by the opposite of A first". Or, "Get me to where
+    ///         B takes me, but starting from where A's inverse would take me".
+    ///		@param other : The Quaternion to apply after rotating by the inverse of this Quaternion.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TQuaternion<Type>& TQuaternion<Type>::operator/=(const TQuaternion& other)
+    {
+        *this = *this / other;
+        return *this;
+    }
+
     template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::operator-(const TQuaternion& other) const
     {
@@ -386,6 +420,22 @@ namespace nes
 
         const TVector3<Type> normalizedAxis = axis / magnitude;
         return MakeFromAngleAxis(std::cos(magnitude), std::sin(magnitude) * normalizedAxis);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : Linearly Interpolate between two Quaternion rotations.
+    ///		@param start : The starting rotation.
+    ///		@param end : The ending rotation.
+    ///		@param t : The value between [0, 1] that represents how far to interpolate between. 0 == the Start,
+    ///               1 == the End.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TQuaternion<Type> TQuaternion<Type>::Lerp(const TQuaternion& start, const TQuaternion& end, const float t)
+    {
+        const float clamped = math::ClampNormalized(t);
+        return start + (clamped * (end - start));
     }
 
     //----------------------------------------------------------------------------------------------------
