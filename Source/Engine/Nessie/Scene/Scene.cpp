@@ -138,7 +138,7 @@ namespace nes
         m_pActiveCamera = camera;
     }
 
-    void Scene::PushLayer(const StrongPtr<SceneLayer>& pLayer)
+    void Scene::PushLayer(const StrongPtr<EntityLayer>& pLayer)
     {
         m_layerStack.push_back(pLayer);
     }
@@ -208,7 +208,7 @@ namespace nes
             // A EntityLayerFactory should handle creating the EntityLayer.
             StrongPtr<World> pWorld = StrongPtr<World>::Create(this);
             
-            StrongPtr<SceneLayer> pLayer = pWorld.Cast<SceneLayer>();
+            StrongPtr<EntityLayer> pLayer = pWorld.Cast<EntityLayer>();
             pLayer->LoadLayer(worldNode);
             PushLayer(pLayer);
         }

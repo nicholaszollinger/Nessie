@@ -4,22 +4,12 @@
 #include "Input/InputManager.h"
 #include "Math/Quaternion.h"
 #include "Scene/Scene.h"
-#include "World/Actor.h"
+#include "World/Entity3D.h"
 
 namespace nes
 {
-    void FreeCamMovementComponent::SetUpdatedComponent(const StrongPtr<WorldComponent>& pUpdatedComponent)
-    {
-        m_pUpdatedComponent = pUpdatedComponent;
-    }
-
     bool FreeCamMovementComponent::Init()
     {
-        if (!m_pUpdatedComponent)
-        {
-            m_pUpdatedComponent = GetOwner()->GetRootComponent();
-        }
-
         return true;
     }
 
@@ -111,9 +101,6 @@ namespace nes
 
     void FreeCamMovementComponent::ProcessCameraMovement(const float deltaTime)
     {
-        if (!m_pUpdatedComponent)
-            return;
-        
         ProcessInput();
         const Vector3 deltaPitchYawRoll = Vector3(m_inputRotation.x * m_turnSpeedPitch, m_inputRotation.y * m_turnSpeedYaw, 0.f) * deltaTime;
         const Vector3 deltaMovement = m_inputMovement * (m_moveSpeed * deltaTime);
@@ -121,19 +108,21 @@ namespace nes
         // If input was detected:
         if (deltaPitchYawRoll.SquaredMagnitude() > 0.f && deltaMovement.SquaredMagnitude() > 0.f)
         {
+            Entity3D* pOwner = GetOwner();
+            
             // Apply Rotation:
-            Quat localOrientation = m_pUpdatedComponent->GetLocalOrientation();
+            Quat localOrientation = pOwner->GetLocalOrientation();
             localOrientation = Quat::MakeFromEuler(deltaPitchYawRoll) * localOrientation;
 
             // Translation:
             // - Add the Delta XZ movement in our local orientation.
             // - Add the Delta Y movement on the world Y axis.
-            Vector3 localLocation = m_pUpdatedComponent->GetLocalLocation();
+            Vector3 localLocation = pOwner->GetLocalLocation();
             localLocation += localOrientation.RotatedVector(Vector3(deltaMovement.x, 0.f, deltaMovement.z));
             localLocation.y += deltaMovement.y;
 
             // Set the new Transform
-            m_pUpdatedComponent->SetLocalTransform(localLocation, localOrientation, Vector3::GetUnitVector());
+            pOwner->SetLocalTransform(localLocation, localOrientation, Vector3::GetUnitVector());
         }
     }
 }

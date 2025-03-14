@@ -3,17 +3,13 @@
 #include "Application/Application.h"
 #include "Math/VectorConversions.h"
 #include "Scene/Scene.h"
-#include "World/Actor.h"
+#include "World/Entity3D.h"
 
 namespace nes
 {
     bool CameraComponent::Init()
     {
-        if (!WorldComponent::Init())
-            return false;
-
         const auto windowExtent = Application::Get().GetWindow().GetExtent();
-        
         m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
         // [TODO]: Subscribe to WindowResize events...
         return true;
@@ -48,10 +44,10 @@ namespace nes
         return pScene->GetActiveCamera() == &m_camera;
     }
 
-    void CameraComponent::OnWorldTransformUpdated()
+    void CameraComponent::UpdateCameraViewBasedOnActorTransform()
     {
         // Set the ViewMatrix of the Camera to look toward the position in front of the camera.
-        const auto& worldTransformMatrix = GetWorldTransformMatrix();
+        const auto& worldTransformMatrix = GetOwner()->GetWorldTransformMatrix();
         const Mat4 orientationMatrix = math::ExtractMatrixOrientation4x4(worldTransformMatrix);
         
         const auto cameraForward = math::XYZ(orientationMatrix * Vector4(0.f, 0.f, 1.f, 0.f));
@@ -62,10 +58,17 @@ namespace nes
 
     void CameraComponent::OnEnabled()
     {
-        if (!m_setActiveOnEnable)
-            return;
+        if (m_setActiveOnEnable)
+            SetAsActiveCamera();
 
-        SetAsActiveCamera();
+        // Perform initial view update.
+        UpdateCameraViewBasedOnActorTransform();
+
+        // Listen for Actor Transform updates:
+        GetOwner()->OnWorldTransformUpdated().AddListener(this, [this]()
+        {
+            UpdateCameraViewBasedOnActorTransform();
+        });
     }
 
     void CameraComponent::OnDisabled()
@@ -79,5 +82,8 @@ namespace nes
             NES_ASSERT(pScene);
             pScene->SetActiveCamera(nullptr);
         }
+
+        // Stop listening to Actor transform updates.
+        GetOwner()->OnWorldTransformUpdated().RemoveListener(this);
     }
 }

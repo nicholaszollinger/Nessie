@@ -4,10 +4,10 @@
 
 namespace nes
 {
-    class Actor;
+    class Entity3D;
     
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Components that can be attached to an Actor. 
+    ///		@brief : Components that can be attached to an Entity that exist in 3D space. 
     //----------------------------------------------------------------------------------------------------
-    using ActorComponent = TComponent<Actor>;
+    using Entity3DComponent = TComponent<Entity3D>;
 }

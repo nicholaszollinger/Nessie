@@ -1,11 +1,11 @@
-﻿// SceneLayer.h
+﻿// EntityLayer.h
 #pragma once
-#include "SceneNode.h"
+#include "Entity.h"
 
-#define NES_DEFINE_NODE_LAYER(layerTypename, nodeTypename)        \
+#define NES_DEFINE_ENTITY_LAYER(layerTypename, entityTypename)    \
 NES_DEFINE_TYPE_INFO(layerTypename)                               \
 public:                                                           \
-    using NodeType = nodeTypename;                                \
+    using EntityType = entityTypename;                            \
 private:
 
 namespace YAML { class Node; }
@@ -18,10 +18,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
-    ///		@brief : A SceneLayer manages a type of SceneNode in the Scene. For example,
-    ///         the World is a SceneLayer that manages Actor Nodes, which exist in 3D space.
+    ///		@brief : A EntityLayer manages a type of SceneNode in the Scene. For example,
+    ///         the World is a EntityLayer that manages Actor Nodes, which exist in 3D space.
     //----------------------------------------------------------------------------------------------------
-    class SceneLayer
+    class EntityLayer
     {
         friend class Scene;
         
@@ -30,14 +30,14 @@ namespace nes
         bool m_isBeingDestroyed = false;
         
     public:
-        explicit SceneLayer(Scene* pScene) : m_pScene(pScene) {}
-        virtual ~SceneLayer() = default;
-        SceneLayer(const SceneLayer&) = delete;
-        SceneLayer& operator=(const SceneLayer&) = delete;
-        SceneLayer(SceneLayer&&) noexcept = delete;
-        SceneLayer& operator=(SceneLayer&&) noexcept = delete;
+        explicit EntityLayer(Scene* pScene) : m_pScene(pScene) {}
+        virtual ~EntityLayer() = default;
+        EntityLayer(const EntityLayer&) = delete;
+        EntityLayer& operator=(const EntityLayer&) = delete;
+        EntityLayer(EntityLayer&&) noexcept = delete;
+        EntityLayer& operator=(EntityLayer&&) noexcept = delete;
 
-        virtual void DestroyNode(const LayerHandle& handle) = 0;
+        virtual void DestroyEntity(const LayerHandle& handle) = 0;
 
         [[nodiscard]] virtual TypeID        GetTypeID() const = 0;
         [[nodiscard]] virtual const char*   GetTypename() const = 0;
@@ -56,13 +56,13 @@ namespace nes
         virtual void OnLayerDestroyed() = 0;
 
         virtual bool LoadLayer(YAML::Node& layerNode) = 0;
-        virtual void EditorRenderNodeHierarchy() = 0;
+        virtual void EditorRenderEntityHierarchy() = 0;
     };
 
     template <typename Type>
-    concept NodeLayerType = !std::is_abstract_v<Type> && requires(Type layer)
+    concept EntityLayerType = !std::is_abstract_v<Type> && requires(Type layer)
     {
-        TypeIsDerivedFrom<Type, SceneLayer>;
-        ValidNodeType<typename Type::NodeType>;
+        TypeIsDerivedFrom<Type, EntityLayer>;
+        ValidEntityType<typename Type::EntityType>;
     };
 }

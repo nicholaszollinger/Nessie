@@ -2,7 +2,7 @@
 #pragma once
 #include <filesystem>
 #include <functional>
-#include "SceneLayer.h"
+#include "EntityLayer.h"
 #include "Core/Events/Event.h"
 #include "Core/Memory/StrongPtr.h"
 
@@ -34,7 +34,7 @@ namespace nes
 
         friend class SceneManager;
 
-        std::vector<StrongPtr<SceneLayer>>   m_layerStack{};
+        std::vector<StrongPtr<EntityLayer>>   m_layerStack{};
         std::vector<TickFunction>           m_tickFunctions{};
         std::vector<EventHandler>           m_eventHandlers{};
         const Camera*                       m_pActiveCamera = nullptr;
@@ -60,7 +60,7 @@ namespace nes
         void SetActiveCamera(const Camera* camera);
         [[nodiscard]] const Camera* GetActiveCamera() const { return m_pActiveCamera; }
 
-        template <NodeLayerType Type>
+        template <EntityLayerType Type>
         StrongPtr<Type> GetLayer() const;
 
         // Time:
@@ -70,7 +70,7 @@ namespace nes
         [[nodiscard]] float GetFixedTimeStep() const    { return m_fixedTimeStep; }
 
     private:
-        void PushLayer(const StrongPtr<SceneLayer>& pLayer);
+        void PushLayer(const StrongPtr<EntityLayer>& pLayer);
         bool Init();
         bool Begin();
         void OnEvent(Event& event);
@@ -86,7 +86,7 @@ namespace nes
     ///		@brief : Returns the first EntityLayer matching the Type. If no Layer exists, then this returns
     ///         nullptr.
     //----------------------------------------------------------------------------------------------------
-    template <NodeLayerType Type>
+    template <EntityLayerType Type>
     StrongPtr<Type> Scene::GetLayer() const
     {
         for (auto& layer : m_layerStack)

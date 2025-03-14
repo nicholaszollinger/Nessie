@@ -1,40 +1,27 @@
-﻿// WorldComponent.h
+﻿// Actor.h
 #pragma once
-#include "ActorComponent.h"
-#include "Core/Memory/StrongPtr.h"
+#include "Core/Events/MulticastDelegate.h"
 #include "Math/Transform.h"
+#include "Scene/Entity.h"
 
 namespace nes
 {
-    class Actor;
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : A World Component defines the 3D Transform for Actors in the Scene. WorldComponents
-    ///         can be parented to one another - useful as a 'dummy' component in the hierarchy to offset child
-    ///         components.
+    ///		@brief : An Actor is an Entity that exists in 3D space. 
     //----------------------------------------------------------------------------------------------------
-    class WorldComponent : public ActorComponent
+    class Entity3D final : public TEntity<Entity3D>
     {
-        NES_DEFINE_COMPONENT_TYPE(WorldComponent)
+        friend class World;
 
-        WorldComponent* m_pParent = nullptr;
-        std::vector<WorldComponent*> m_children{};
+    public:
+        using WorldTransformUpdatedEvent = MulticastDelegate<>;
+        
         Transform m_localTransform{};
+        WorldTransformUpdatedEvent m_onWorldTransformUpdated{};
         Mat4 m_worldTransformMatrix{};
         bool m_worldTransformNeedsUpdate = false;
-        
+
     public:
-        WorldComponent() = default;
-        
-        void SetParent(WorldComponent* pParent);
-        void AddChild(WorldComponent* pChild);
-        void RemoveChild(WorldComponent* pChild);
-        [[nodiscard]] WorldComponent*                       GetParent() const;
-        [[nodiscard]] std::vector<WorldComponent*>          GetChildren() const;
-        [[nodiscard]] const std::vector<WorldComponent*>&   GetAllChildren() const;
-
-        virtual void SetEnabled(const bool enabled) override;
-        [[nodiscard]] virtual bool IsEnabled() const override;
-
         void Rotate(const float angle, const Vector3& axis);
         void Rotate(const Quat& rotation);
         void Translate(const Vector3& translation);
@@ -62,16 +49,18 @@ namespace nes
         [[nodiscard]] const Vector3&    GetLocalScale() const;
         [[nodiscard]] Mat4              GetLocalTransformMatrix() const;
         [[nodiscard]] const Mat4&       GetWorldTransformMatrix() const;
+        [[nodiscard]] WorldTransformUpdatedEvent& OnWorldTransformUpdated() { return m_onWorldTransformUpdated; }
 
-    private:
-        virtual void OnParentChanged(WorldComponent* pParent);
-        virtual void OnChildAdded([[maybe_unused]] WorldComponent* pChild) {}
-        virtual void OnChildRemoved([[maybe_unused]] WorldComponent* pChild) {}
-        virtual void OnWorldTransformUpdated() {}
+        [[nodiscard]] World* GetWorld() const;
+        [[nodiscard]] Scene* GetScene() const;
+        [[nodiscard]] bool WorldTransformNeedsUpdate() const;
+
+    protected:
+        virtual bool Init() override;
+        virtual void OnParentSet(Entity3D* pParent) override;
         
         void MarkWorldTransformDirty();
-        void UpdateWorldTransform(WorldComponent* pParent, const Matrix4x4& localTransform);
+        void UpdateWorldTransform(Entity3D* pParent, const Matrix4x4& localTransform);
         void PropagateTransformUpdateToChildren();
-        [[nodiscard]] bool WorldTransformNeedsUpdate() const;
     };
 }

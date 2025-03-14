@@ -1,44 +1,44 @@
 ﻿// World.cpp
 #include "World.h"
 #include <yaml-cpp/yaml.h>
-#include "Actor.h"
+#include "Entity3D.h"
 #include "Components/CameraComponent.h"
 #include "Components/FreeCamMovementComponent.h"
 
 namespace nes
 {
     World::World(Scene* pScene)
-        : SceneLayer(pScene)
-        , m_actorPool(this)
+        : EntityLayer(pScene)
+        , m_entityPool(this)
     {
         //
     }
 
-    StrongPtr<Actor> World::CreateActor(const NodeID& id, const StringID& name)
+    StrongPtr<Entity3D> World::CreateEntity(const EntityID& id, const StringID& name)
     {
-        StrongPtr<Actor> pActor = m_actorPool.CreateNode(id, name);
+        StrongPtr<Entity3D> pActor = m_entityPool.CreateEntity(id, name);
         return pActor;
     }
 
     // [TODO]: Can these be pushed up to the base layer?
-    void World::DestroyNode(const LayerHandle& handle)
+    void World::DestroyEntity(const LayerHandle& handle)
     {
-        m_actorPool.QueueDestroyNode(handle);
+        m_entityPool.QueueDestroyEntity(handle);
     }
 
     // [TODO]: Can these be pushed up to the base layer? 
     bool World::IsValidNode(const LayerHandle& handle) const
     {
-        return m_actorPool.IsValidNode(handle);
+        return m_entityPool.IsValidEntity(handle);
     }
 
     bool World::InitializeLayer()
     {
-        for (auto& actor : m_actorPool)
+        for (auto& entity : m_entityPool)
         {
-            if (!actor.Init())
+            if (!entity.Init())
             {
-                NES_ERRORV("World", "Failed to initialize World! Failed to initialize Actor: ", actor.GetName().CStr());
+                NES_ERRORV("World", "Failed to initialize World! Failed to initialize Entity: ", entity.GetName().CStr());
                 return false;
             }
         }
@@ -53,7 +53,7 @@ namespace nes
 
     void World::OnLayerDestroyed()
     {
-        m_actorPool.ClearPool();
+        m_entityPool.ClearPool();
     }
 
     void World::OnEvent([[maybe_unused]] Event& event)
@@ -61,7 +61,7 @@ namespace nes
         // [TODO]: 
     }
     
-    void World::EditorRenderNodeHierarchy()
+    void World::EditorRenderEntityHierarchy()
     {
         // [TODO]: 
     }
@@ -92,7 +92,52 @@ namespace nes
         {
             const uint64_t actorID = actorNode["Actor"].as<uint64_t>(); 
             const StringID actorName = actorNode["Name"].as<std::string>();
-            StrongPtr<Actor> pActor = CreateActor(actorID, actorName);
+            StrongPtr<Entity3D> pActor = CreateEntity(actorID, actorName);
+
+            // Load Actor Data:
+            {
+                // IsEnabled:
+                const bool isEnabled = actorNode["IsEnabled"].as<bool>();
+                pActor->SetEnabled(isEnabled);
+                
+                // Parent:
+                auto parentNode = actorNode["Parent"];
+                if (!parentNode.IsNull())
+                {
+                    // [TODO]: Save the EntityID of the parent, and
+                    // perform a parenting step at the end.
+                }
+                
+                // Location
+                Vector3 location;
+                const auto locationNode = actorNode["Location"];
+                {
+                    location.x = locationNode[0].as<float>();
+                    location.y = locationNode[1].as<float>();
+                    location.z = locationNode[2].as<float>();
+                }
+                
+                // Orientation
+                Quat orientation;
+                const auto orientationNode = actorNode["Orientation"];
+                {
+                    Vector3 eulerAngles;
+                    eulerAngles.x = orientationNode[0].as<float>();
+                    eulerAngles.y = orientationNode[1].as<float>();
+                    eulerAngles.z = orientationNode[2].as<float>();
+                    orientation = Quat::MakeFromEuler(eulerAngles);
+                }
+                
+                // Scale
+                Vector3 scale;
+                const auto scaleNode = actorNode["Scale"];
+                {
+                    scale.x = scaleNode[0].as<float>();
+                    scale.y = scaleNode[1].as<float>();
+                    scale.z = scaleNode[2].as<float>();
+                }
+                pActor->SetLocalTransform(location, orientation, scale);
+            }
             
             auto componentsNode = actorNode["Components"];
             for (auto componentNode : componentsNode)
@@ -102,14 +147,6 @@ namespace nes
                 // [HACK]: Just checking for specific components for now. 
                 // [TODO]: Loading Components should be done systematically, through
                 // some Factory or Serialize function.
-                // World Component
-                if (componentName == WorldComponent::GetStaticTypename())
-                {
-                    auto worldComponentNode = componentNode.second; 
-                    const StringID name = worldComponentNode["Name"].as<std::string>();
-                    StrongPtr<WorldComponent> pWorldComponent = pActor->AddComponent<WorldComponent>(name);
-                    LoadWorldComponentData(*pWorldComponent, worldComponentNode);
-                }
 
                 // Camera
                 if (componentName == CameraComponent::GetStaticTypename())
@@ -117,7 +154,7 @@ namespace nes
                     auto cameraNode = componentNode.second;
                     const StringID name = cameraNode["Name"].as<std::string>();
                     StrongPtr<CameraComponent> pCamera = pActor->AddComponent<CameraComponent>(name);
-                    LoadWorldComponentData(*pCamera, cameraNode);
+                    //LoadWorldComponentData(*pCamera, cameraNode);
 
                     const bool setActiveOnEnable = cameraNode["SetActiveOnEnabled"].as<bool>(true);
                     pCamera->SetActiveOnEnabled(setActiveOnEnable);
@@ -173,49 +210,5 @@ namespace nes
         }
 
         return true;
-    }
-
-    void World::LoadWorldComponentData(WorldComponent& worldComponent, YAML::Node& componentNode) const
-    {
-        // IsEnabled:
-        const bool isEnabled = componentNode["IsEnabled"].as<bool>();
-        worldComponent.SetEnabled(isEnabled);
-        
-        // Parent:
-        auto parentNode = componentNode["Parent"];
-        if (!parentNode.IsNull())
-        {
-            // [TODO]: 
-        }
-        
-        // Location
-        Vector3 location;
-        const auto locationNode = componentNode["Location"];
-        {
-            location.x = locationNode[0].as<float>();
-            location.y = locationNode[1].as<float>();
-            location.z = locationNode[2].as<float>();
-        }
-
-        // Orientation
-        Quat orientation;
-        const auto orientationNode = componentNode["Orientation"];
-        {
-            Vector3 eulerAngles;
-            eulerAngles.x = orientationNode[0].as<float>();
-            eulerAngles.y = orientationNode[1].as<float>();
-            eulerAngles.z = orientationNode[2].as<float>();
-            orientation = Quat::MakeFromEuler(eulerAngles);
-        }
-
-        // Scale
-        Vector3 scale;
-        const auto scaleNode = componentNode["Scale"];
-        {
-            scale.x = scaleNode[0].as<float>();
-            scale.y = scaleNode[1].as<float>();
-            scale.z = scaleNode[2].as<float>();
-        }
-        worldComponent.SetLocalTransform(location, orientation, scale);
     }
 }

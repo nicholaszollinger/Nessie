@@ -7,8 +7,7 @@
 
 //----------------------------------------------------------------------------------------------------
 //		NOTES:
-//		static_assert(nes::TypeIsSameOrDerived<validEntityType, nes::Entity>, "NES_DEFINE_COMPONENT_TYPE(): validEntityType must be or derive from Entity!");\
-///		@brief : Defines the TypeID and Typename propeties for a Component. This must be used at the 
+///		@brief : Defines the TypeID and Typename properties for a Component. This must be used at the 
 //             top of the body of the derived Component class.
 ///		@param componentType : Typename of the Component, not in quotes.
 //----------------------------------------------------------------------------------------------------
@@ -18,6 +17,7 @@
 namespace nes
 {
     class Scene;
+    template <typename Type> class TEntity;
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : A Component is defined by the SceneNode Type that it can attach to. It is Components that
@@ -29,9 +29,12 @@ namespace nes
     {
     public:
         using OwnerType = NodeType;
+        using OwnerNodeType = TEntity<NodeType>;
         
     private:
         friend OwnerType;
+        friend OwnerNodeType;
+        
         OwnerType* m_pOwner = nullptr;
         StringID m_name;
 
@@ -58,9 +61,9 @@ namespace nes
 
     protected:
         virtual bool Init();
-        virtual void OnEntityParentSet([[maybe_unused]] OwnerType* pParent)    {}
-        virtual void OnEntityChildAdded([[maybe_unused]] OwnerType* pChild)    {}
-        virtual void OnEntityChildRemoved([[maybe_unused]] OwnerType* pChild)  {}
+        virtual void OnOwnerParentSet([[maybe_unused]] OwnerType* pParent)    {}
+        virtual void OnOwnerChildAdded([[maybe_unused]] OwnerType* pChild)    {}
+        virtual void OnOwnerChildRemoved([[maybe_unused]] OwnerType* pChild)  {}
         virtual void OnDestroy()  {}
         virtual void OnEnabled()  {}
         virtual void OnDisabled() {}

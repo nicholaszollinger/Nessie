@@ -1,6 +1,6 @@
 ﻿// CameraComponent.h
 #pragma once
-#include "WorldComponent.h"
+#include "Entity3DComponent.h"
 #include "Graphics/Camera.h"
 
 namespace nes
@@ -8,7 +8,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : A Camera that exists in 3D space. 
     //----------------------------------------------------------------------------------------------------
-    class CameraComponent final : public WorldComponent
+    class CameraComponent final : public Entity3DComponent
     {
         NES_DEFINE_COMPONENT_TYPE(CameraComponent)
         
@@ -25,7 +25,7 @@ namespace nes
         [[nodiscard]] bool IsActiveCamera() const;
         
     protected:
-        virtual void OnWorldTransformUpdated() override;
+        void UpdateCameraViewBasedOnActorTransform();
         virtual void OnEnabled() override;
         virtual void OnDisabled() override;
     };

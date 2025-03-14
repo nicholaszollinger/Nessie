@@ -8,15 +8,14 @@ Scene:
         LayerIndex: 0
         Name: "Camera"
         Parent: null
+        Location: [0, 0, 0]
+        Orientation: [0, 0, 0]
+        Scale: [1, 1, 1]
         IsEnabled: true
         Components:
           CameraComponent:
             Name: "Camera"
             IsEnabled: true
-            Parent: null
-            Location: [0, 0, 0]
-            Orientation: [0, 0, 0]
-            Scale: [1, 1, 1]
             SetActiveOnEnabled: true
             PerspectiveFOV: 60.0
             PerspectiveNear: 0.1
@@ -38,11 +37,6 @@ Scene:
         Name: "Cube"
         Parent: null
         IsEnabled: true
-        Components:
-          WorldComponent:
-            Name: "Root"
-            IsEnabled: true
-            Parent: null
-            Location: [50.0, 0, 0]
-            Orientation: [0, 0, 0]
-            Scale: [1, 1, 1]
+        Location: [50.0, 0, 0]
+        Orientation: [0, 0, 0]
+        Scale: [1, 1, 1]

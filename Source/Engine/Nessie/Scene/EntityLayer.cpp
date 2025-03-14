@@ -1,12 +1,12 @@
-﻿// SceneLayer.cpp
-#include "SceneLayer.h"
+﻿// EntityLayer.cpp
+#include "EntityLayer.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Begin destroying this Layer. 
     //----------------------------------------------------------------------------------------------------
-    void SceneLayer::DestroyLayer()
+    void EntityLayer::DestroyLayer()
     {
         m_isBeingDestroyed = true;
         OnLayerDestroyed();
