@@ -81,27 +81,27 @@ namespace nes
 
     bool World::LoadLayer(YAML::Node& layerNode)
     {
-        auto actors = layerNode["Actors"];
-        if (!actors)
+        auto entities = layerNode["Entities"];
+        if (!entities)
         {
-            NES_ERROR("Failed to load World Layer! No Actors node found!");
+            NES_ERROR("Failed to load World Layer! No Entities node found!");
             return false;
         }
 
-        for (auto actorNode : actors)
+        for (auto entityNode : entities)
         {
-            const uint64_t actorID = actorNode["Actor"].as<uint64_t>(); 
-            const StringID actorName = actorNode["Name"].as<std::string>();
-            StrongPtr<Entity3D> pActor = CreateEntity(actorID, actorName);
+            const uint64_t entityID = entityNode["Entity"].as<uint64_t>(); 
+            const StringID entityName = entityNode["Name"].as<std::string>();
+            StrongPtr<Entity3D> pEntity = CreateEntity(entityID, entityName);
 
             // Load Actor Data:
             {
                 // IsEnabled:
-                const bool isEnabled = actorNode["IsEnabled"].as<bool>();
-                pActor->SetEnabled(isEnabled);
+                const bool isEnabled = entityNode["IsEnabled"].as<bool>();
+                pEntity->SetEnabled(isEnabled);
                 
                 // Parent:
-                auto parentNode = actorNode["Parent"];
+                auto parentNode = entityNode["Parent"];
                 if (!parentNode.IsNull())
                 {
                     // [TODO]: Save the EntityID of the parent, and
@@ -110,7 +110,7 @@ namespace nes
                 
                 // Location
                 Vector3 location;
-                const auto locationNode = actorNode["Location"];
+                const auto locationNode = entityNode["Location"];
                 {
                     location.x = locationNode[0].as<float>();
                     location.y = locationNode[1].as<float>();
@@ -119,7 +119,7 @@ namespace nes
                 
                 // Orientation
                 Quat orientation;
-                const auto orientationNode = actorNode["Orientation"];
+                const auto orientationNode = entityNode["Orientation"];
                 {
                     Vector3 eulerAngles;
                     eulerAngles.x = orientationNode[0].as<float>();
@@ -130,16 +130,16 @@ namespace nes
                 
                 // Scale
                 Vector3 scale;
-                const auto scaleNode = actorNode["Scale"];
+                const auto scaleNode = entityNode["Scale"];
                 {
                     scale.x = scaleNode[0].as<float>();
                     scale.y = scaleNode[1].as<float>();
                     scale.z = scaleNode[2].as<float>();
                 }
-                pActor->SetLocalTransform(location, orientation, scale);
+                pEntity->SetLocalTransform(location, orientation, scale);
             }
             
-            auto componentsNode = actorNode["Components"];
+            auto componentsNode = entityNode["Components"];
             for (auto componentNode : componentsNode)
             {
                 const StringID componentName = componentNode.first.as<std::string>();
@@ -153,8 +153,7 @@ namespace nes
                 {
                     auto cameraNode = componentNode.second;
                     const StringID name = cameraNode["Name"].as<std::string>();
-                    StrongPtr<CameraComponent> pCamera = pActor->AddComponent<CameraComponent>(name);
-                    //LoadWorldComponentData(*pCamera, cameraNode);
+                    StrongPtr<CameraComponent> pCamera = pEntity->AddComponent<CameraComponent>(name);
 
                     const bool setActiveOnEnable = cameraNode["SetActiveOnEnabled"].as<bool>(true);
                     pCamera->SetActiveOnEnabled(setActiveOnEnable);
@@ -192,7 +191,7 @@ namespace nes
                 {
                     auto freeCamNode = componentNode.second;
                     const StringID name = freeCamNode["Name"].as<std::string>();
-                    StrongPtr<FreeCamMovementComponent> pFreeCam = pActor->AddComponent<FreeCamMovementComponent>(name);
+                    StrongPtr<FreeCamMovementComponent> pFreeCam = pEntity->AddComponent<FreeCamMovementComponent>(name);
 
                     float value = freeCamNode["MoveSpeed"].as<float>();
                     pFreeCam->SetMoveSpeed(value);

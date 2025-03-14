@@ -3,8 +3,8 @@ Scene:
   Name: "Test"
   Layers:
     World:
-      Actors:
-      - Actor: 0
+      Entities:
+      - Entity: 0
         LayerIndex: 0
         Name: "Camera"
         Parent: null
@@ -32,7 +32,7 @@ Scene:
             TurnSpeedYaw: 30.0
             TurnSpeedPitch: 20.0
             
-      - Actor: 1
+      - Entity: 1
         LayerIndex: 0
         Name: "Cube"
         Parent: null
