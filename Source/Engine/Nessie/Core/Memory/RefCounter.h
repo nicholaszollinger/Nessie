@@ -87,7 +87,7 @@ namespace nes::internal
         // Ensure that the Object and references were handled correctly.
         NES_ASSERT(m_refCount == 0);
         NES_ASSERT(m_weakCount == 0);
-        MY_ASSERT(m_pObject == nullptr);
+        NES_ASSERT(m_pObject == nullptr);
     }
 
     //----------------------------------------------------------------------------------------------------

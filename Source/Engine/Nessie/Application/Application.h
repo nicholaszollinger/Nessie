@@ -6,6 +6,7 @@
 #include "Debug/Assert.h"
 #include "Graphics/Renderer.h"
 #include "Input/InputManager.h"
+#include "Scene/SceneManager.h"
 
 namespace nes
 {
@@ -47,16 +48,6 @@ namespace nes
     };
 }
 
-//----------------------------------------------------------------------------------------------------
-//		NOTES:
-//		
-///		@brief : Create an Application instance. This is defined by the Client to create the Application
-///              Type that they want. There can only be 1 Application instance at time.
-///		@param args : Command Line Arguments passed into the executable.
-///		@returns : Pointer to the new Application.
-//----------------------------------------------------------------------------------------------------
-extern nes::Application* CreateApplication(const nes::CommandLineArgs& args);
-
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
@@ -78,13 +69,13 @@ namespace nes
         Window m_window{};
         Renderer m_renderer{};
         InputManager m_inputManager{};
+        SceneManager m_sceneManager{};
         Timer m_timer{};
         double m_timeSinceStartup = 0.f;
         bool m_closeRequested = false;
 
     public:
         explicit Application(const CommandLineArgs& args);
-        virtual ~Application() = default;
         
         Application(const Application&) = delete;
         Application& operator=(const Application&) = delete;
@@ -104,26 +95,13 @@ namespace nes
         void PushEvent(Event& e);
         void Quit();
 
-        [[nodiscard]] Window& GetWindow();
-        [[nodiscard]] const Window& GetWindow() const;
-        [[nodiscard]] const Renderer& GetRenderer() const { return m_renderer; }
+        [[nodiscard]] Window&             GetWindow();
+        [[nodiscard]] const Window&       GetWindow() const;
+        [[nodiscard]] const Renderer&     GetRenderer() const       { return m_renderer; }
+        [[nodiscard]] const InputManager& GetInputManager() const   { return m_inputManager; }
+        [[nodiscard]] SceneManager&       GetSceneManager()         { return m_sceneManager; }
 
     private:
-        //----------------------------------------------------------------------------------------------------
-        //		NOTES:
-        //      [Consider]: I'd like a better name difference between the Init() function and this. I'd want to
-        //                  to change the Main init to something else and call this function Init().
-        //		
-        ///		@brief : Initialization function that can be overridden by derived classes. This is called at the end of
-        ///             the public Init() function during startup.
-        //----------------------------------------------------------------------------------------------------
-        virtual bool PostInit() { return true; }
-        
-        //----------------------------------------------------------------------------------------------------
-        ///		@brief : Runs a single frame of the Application.
-        ///		@param deltaTime : Delta time since the last frame.
-        //----------------------------------------------------------------------------------------------------
-        virtual void Update(double deltaTime) = 0;
         void ProcessAppEvents();
     };
 }

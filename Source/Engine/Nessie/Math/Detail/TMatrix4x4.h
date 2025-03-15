@@ -1,6 +1,8 @@
 ﻿// TMatrix4x4.h
 #pragma once
 #include "TMatrix3x3.h"
+#include "Math/Quaternion.h"
+#include "Math/Vector4.h"
 
 namespace nes
 {
@@ -28,6 +30,7 @@ namespace nes
         /// Default constructor initializes to the Identity Matrix. 
         constexpr TMatrix4x4() = default;
         constexpr TMatrix4x4(const Type values[N * N]);
+        constexpr TMatrix4x4(const TMatrix3x3<Type>& matrix);
 
         constexpr bool operator==(const TMatrix4x4& other) const;
         constexpr bool operator!=(const TMatrix4x4& other) const { return !(*this == other); }
@@ -39,6 +42,8 @@ namespace nes
         TMatrix4x4& operator-=(const TMatrix4x4& other);
         TMatrix4x4& operator*=(const TMatrix4x4& other);
         TMatrix4x4& operator*=(const float scalar);
+        
+        TVector4<Type> operator[](const size_t index) const;
 
         bool TryInvert();
         bool TryGetInverse(TMatrix4x4& result) const;
@@ -46,6 +51,18 @@ namespace nes
         TMatrix4x4& Transpose();
         TMatrix4x4 Transposed() const;
         float Determinant() const;
+        constexpr TVector3<Type> GetAxis(const Axis axis) const;
+        constexpr TVector3<Type> GetAxis(const int axis) const;
+        constexpr TVector4<Type> GetColumn(const int column) const;
+        constexpr TVector4<Type> GetRow(const int row) const;
+
+        void RemoveScaling();
+        TVector3<Type> ExtractScaling();
+        TVector3<Type> GetScale() const;
+        TMatrix4x4 GetWithoutScale() const;
+
+        TVector3<Type> TransformPoint(const TVector3<Type>& point) const;
+        TVector3<Type> TransformVector(const TVector3<Type>& vector) const;
 
         TMatrix4x4& Concatenate(const TMatrix4x4& other);
         static TMatrix4x4 Concatenate(const TMatrix4x4& a, const TMatrix4x4& b);
@@ -55,6 +72,12 @@ namespace nes
         static constexpr TMatrix4x4 Zero();
         static constexpr TMatrix4x4 Identity() { return TMatrix4x4(); }
     };
+
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TMatrix4x4<Type>& matrix, const TVector4<Type>& vector);
+    
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TVector4<Type>& vector, const TMatrix4x4<Type>& matrix);
 }
 
 namespace nes
@@ -64,6 +87,26 @@ namespace nes
     {
         NES_ASSERT(values != nullptr);
         memcpy(&(m[0][0]), values, N * N * sizeof(Type));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Constructs a 4x4 matrix from a 3x3 Matrix. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TMatrix4x4<Type>::TMatrix4x4(const TMatrix3x3<Type>& matrix)
+        : TMatrix4x4() // Default construct to the identity matrix
+    {
+        m[0][0] = matrix.m[0][0];
+        m[0][1] = matrix.m[0][1];
+        m[0][2] = matrix.m[0][2];
+
+        m[1][0] = matrix.m[1][0];
+        m[1][1] = matrix.m[1][1];
+        m[1][2] = matrix.m[1][2];
+        
+        m[2][0] = matrix.m[2][0];
+        m[2][1] = matrix.m[2][1];
+        m[2][2] = matrix.m[2][2];
     }
 
     template <FloatingPointType Type>
@@ -79,6 +122,55 @@ namespace nes
         }
 
         return true;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns an axis of this matrix with scaling included. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TMatrix4x4<Type>::GetAxis(const Axis axis) const
+    {
+        switch (axis)
+        {
+            case Axis::X: return TVector3<Type>(m[0][0], m[1][0], m[2][0]);
+            case Axis::Y: return TVector3<Type>(m[0][1], m[1][1], m[2][1]);
+            case Axis::Z: return TVector3<Type>(m[0][2], m[1][2], m[2][2]);
+            case Axis::W: return TVector3<Type>(m[0][3], m[1][3], m[2][3]);
+            
+            default:
+                NES_ASSERTV(false, "Invalid Axis request!");
+                return TVector4<Type>::GetZeroVector();
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns an axis of this matrix with scaling included. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector3<Type> TMatrix4x4<Type>::GetAxis(const int axis) const
+    {
+        NES_ASSERT(axis >= 0 && axis < static_cast<int>(N));
+        return TVector3<Type>(m[0][axis], m[1][axis], m[2][axis]);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a column of this matrix as a vector.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector4<Type> TMatrix4x4<Type>::GetColumn(const int column) const
+    {
+        NES_ASSERT(column >= 0 && column < static_cast<int>(N));
+        return TVector4<Type>(m[0][column], m[1][column], m[2][column], m[3][column]);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a row of this matrix as a vector.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr TVector4<Type> TMatrix4x4<Type>::GetRow(const int row) const
+    {
+        NES_ASSERT(row >= 0 && row < static_cast<int>(N));
+        return TVector4<Type>(m[row][0], m[row][1], m[row][2], m[row][3]);
     }
 
     template <FloatingPointType Type>
@@ -195,6 +287,13 @@ namespace nes
     {
         *this = *this + scalar;
         return *this;
+    }
+
+    template <FloatingPointType Type>
+    TVector4<Type> TMatrix4x4<Type>::operator[](const size_t index) const
+    {
+        NES_ASSERT(index < N);
+        return GetColumn(static_cast<int>(index));
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -343,6 +442,97 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Removes scaling from this Matrix. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void TMatrix4x4<Type>::RemoveScaling()
+    {
+        for (size_t i = 0; i < N - 1; ++i)
+        {
+            const Type squaredMag = GetAxis(static_cast<int>(i)).SquaredMagnitude();
+            const Type axisScaleFactor = squaredMag < math::PrecisionDelta<Type>() ? static_cast<Type>(1) : static_cast<Type>(1) / std::sqrt(squaredMag);
+            m[0][i] *= axisScaleFactor;
+            m[1][i] *= axisScaleFactor;
+            m[2][i] *= axisScaleFactor;
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Removes scaling from this Matrix and returns the scale as a Vector3. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TMatrix4x4<Type>::ExtractScaling()
+    {
+        TVector3<Type> scale;
+
+        for (size_t i = 0; i < N - 1; ++i)
+        {
+            const Type squaredMag = GetAxis(static_cast<int>(i)).SquaredMagnitude();
+            const Type axisScale = squaredMag < math::PrecisionDelta<Type>() ? static_cast<Type>(1) : std::sqrt(squaredMag);
+            scale[i] = axisScale;
+
+            // Remove scale from the axis:
+            const Type invAxisScale = static_cast<Type>(1) / axisScale;
+            m[0][i] *= invAxisScale;
+            m[1][i] *= invAxisScale;
+            m[2][i] *= invAxisScale;
+        }
+        
+        return scale;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Get the Scale vector from this Matrix. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TMatrix4x4<Type>::GetScale() const
+    {
+        TVector3<Type> scale;
+
+        for (size_t i = 0; i < N - 1; ++i)
+        {
+            const Type squaredMag = GetAxis(static_cast<int>(i)).SquaredMagnitude();
+            const Type axisScale = squaredMag < math::PrecisionDelta<Type>() ? static_cast<Type>(1) : std::sqrt(squaredMag);
+            scale[i] = axisScale;
+        }
+        
+        return scale;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a copy of this Matrix with the scaling removed. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> TMatrix4x4<Type>::GetWithoutScale() const
+    {
+        TMatrix4x4 result(*this);
+        result.RemoveScaling();
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Transform a 3D point by this Matrix. This will include the Translation defined by this
+    ///              matrix.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TMatrix4x4<Type>::TransformPoint(const TVector3<Type>& point) const
+    {
+        const Vector4 transformed = (*this * Vector4(point, static_cast<Type>(1)));
+        return Vector3(transformed.x, transformed.y, transformed.z);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Transform a 3D vector by this Matrix. This will NOT include the translation defined by
+    ///             this matrix.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TMatrix4x4<Type>::TransformVector(const TVector3<Type>& vector) const
+    {
+        const Vector4 transformed = (*this * Vector4(vector, static_cast<Type>(0)));
+        return Vector3(transformed.x, transformed.y, transformed.z);
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Sets this matrix to the result of applying this matrix, and then the "other". This
     ///         returns a reference to the combined matrix, so they can be stringed together.
     //----------------------------------------------------------------------------------------------------
@@ -379,5 +569,25 @@ namespace nes
         }
 
         return result;
+    }
+
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TMatrix4x4<Type>& matrix, const TVector4<Type>& vector)
+    {
+        TVector4<Type> result;
+        
+        // Column Orientation:
+        result[0] = (matrix.m[0][0] * vector[0]) + (matrix.m[0][1] * vector[1]) + (matrix.m[0][2] * vector[2]) + (matrix.m[0][3] * vector[3]);
+        result[1] = (matrix.m[1][0] * vector[0]) + (matrix.m[1][1] * vector[1]) + (matrix.m[1][2] * vector[2]) + (matrix.m[1][3] * vector[3]);
+        result[2] = (matrix.m[2][0] * vector[0]) + (matrix.m[2][1] * vector[1]) + (matrix.m[2][2] * vector[2]) + (matrix.m[2][3] * vector[3]);
+        result[3] = (matrix.m[3][0] * vector[0]) + (matrix.m[3][1] * vector[1]) + (matrix.m[3][2] * vector[2]) + (matrix.m[3][3] * vector[3]);
+        
+        return result;
+    }
+
+    template <FloatingPointType Type>
+    TVector4<Type> operator*(const TVector4<Type>& vector, const TMatrix4x4<Type>& matrix)
+    {
+        return matrix * vector;
     }
 }

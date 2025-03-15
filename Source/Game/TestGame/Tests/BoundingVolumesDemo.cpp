@@ -72,12 +72,12 @@ bool BoundingVolumesDemo::Init()
 void BoundingVolumesDemo::Reset()
 {
     // Reset PolyA transform.
-    m_transformA.m_position = { -100.f, 0.f};
+    m_transformA.m_location = { -100.f, 0.f};
     m_transformA.m_rotation = {};
     m_transformA.m_scale = {1.f, 1.f};
 
     // Reset PolyB transform
-    m_transformB.m_position = { 100.f, 0.f};
+    m_transformB.m_location = { 100.f, 0.f};
     m_transformB.m_rotation = {};
     m_transformB.m_scale = {1.f, 1.f};
 }
@@ -173,7 +173,7 @@ void BoundingVolumesDemo::RenderImGui()
     // Poly A:
     {
         ImGui::SeparatorText("Poly A");
-        ImGui::DragFloat2("Position##A", &m_transformA.m_position.x);
+        ImGui::DragFloat2("Position##A", &m_transformA.m_location.x);
         ImGui::SliderAngle("Rotation##A", &m_transformA.m_rotation);
         ImGui::DragFloat2("Scale##A", &m_transformA.m_scale.x);
     }
@@ -181,7 +181,7 @@ void BoundingVolumesDemo::RenderImGui()
     // Poly B:
     {
         ImGui::SeparatorText("Poly B");
-        ImGui::DragFloat2("Position##B", &m_transformB.m_position.x);
+        ImGui::DragFloat2("Position##B", &m_transformB.m_location.x);
         ImGui::SliderAngle("Rotation##B", &m_transformB.m_rotation);
         ImGui::DragFloat2("Scale##B", &m_transformB.m_scale.x);
     }

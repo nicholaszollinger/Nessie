@@ -1,0 +1,43 @@
+# Test Scene
+Scene:
+  Name: "Test"
+  Layers:
+    World:
+      Entities:
+      - Entity: 0
+        LayerIndex: 0
+        Name: "Camera"
+        Parent: null
+        Location: [0, 0, 0]
+        Orientation: [0, 0, 0]
+        Scale: [1, 1, 1]
+        IsEnabled: true
+        Components:
+          CameraComponent:
+            Name: "Camera"
+            IsEnabled: true
+            SetActiveOnEnabled: true
+            PerspectiveFOV: 60.0
+            PerspectiveNear: 0.1
+            PerspectiveFar: 1000.0
+            OrthographicSize: 10.0
+            OrthographicNear: -1.0
+            OrthographicFar: 1.0
+            ProjectionType: 0
+
+          FreeCamMovementComponent:
+            Name: "FreeCamMovement"
+            IsEnabled: true
+            MoveSpeed: 10.0
+            TurnSpeedYaw: 30.0
+            TurnSpeedPitch: 20.0
+            
+      - Entity: 1
+        LayerIndex: 0
+        Name: "Cube"
+        Parent: null
+        IsEnabled: true
+        Location: [50.0, 0, 0]
+        Orientation: [0, 0, 0]
+        Scale: [1, 1, 1]
+        Components:

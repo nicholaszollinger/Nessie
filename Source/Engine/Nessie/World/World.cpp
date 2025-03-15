@@ -1,123 +1,213 @@
-// World.cpp
-
+﻿// World.cpp
 #include "World.h"
-#include "Components/HierarchyComponent.h"
-#include "Components/NameComponent.h"
-#include "Debug/Assert.h"
+#include <yaml-cpp/yaml.h>
+#include "Entity3D.h"
+#include "Components/CameraComponent.h"
+#include "Components/FreeCamMovementComponent.h"
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Create a new Entity with an IDComponent and a TagComponent.
-    ///		@param name : Name of the Entity.
-    ///		@returns : The newly created Entity.
-    //----------------------------------------------------------------------------------------------------
-    Entity World::CreateEntity(const std::string& name)
+    World::World(Scene* pScene)
+        : EntityLayer(pScene)
+        , m_entityPool(this)
     {
-        NES_ASSERT(m_pRegistry);
-
-        Entity entity = m_pRegistry->CreateEntity();
-        entity.AddComponent<IDComponent>(); // Generates a new ID for the Entity.
-
-        if (!name.empty())
-        {
-            entity.AddComponent<NameComponent>();
-        }
-
-        return entity;
+        //
     }
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Create an Entity with a specified ID and name.
-    ///		@param id : ID to give the new Entity.
-    ///		@param name : Name of the Entity.
-    ///		@returns : The new Entity.
-    //----------------------------------------------------------------------------------------------------
-    Entity World::CreateEntityWithID(const EntityID id, const std::string& name)
+    StrongPtr<Entity3D> World::CreateEntity(const EntityID& id, const StringID& name)
     {
-        NES_ASSERT(m_pRegistry);
-
-        Entity entity = m_pRegistry->CreateEntity();
-
-        // Add a IDComponent with the given ID.
-        entity.AddComponent<IDComponent>(id);
-
-        if (!name.empty())
-        {
-            entity.AddComponent<NameComponent>();
-        }
-
-        return entity;
+        StrongPtr<Entity3D> pActor = m_entityPool.CreateEntity(id, name);
+        return pActor;
     }
 
-    void World::Update(const double deltaRealTime)
+    // [TODO]: Can these be pushed up to the base layer?
+    void World::DestroyEntity(const LayerHandle& handle)
     {
-        if (UpdateTime(deltaRealTime))
+        m_entityPool.QueueDestroyEntity(handle);
+    }
+
+    // [TODO]: Can these be pushed up to the base layer? 
+    bool World::IsValidNode(const LayerHandle& handle) const
+    {
+        return m_entityPool.IsValidEntity(handle);
+    }
+
+    bool World::InitializeLayer()
+    {
+        for (auto& entity : m_entityPool)
         {
-            // Fixed Update
-            /*for (auto& system : m_systems)
+            if (!entity.Init())
             {
-                system->FixedUpdate();
-            }*/
+                NES_ERRORV("World", "Failed to initialize World! Failed to initialize Entity: ", entity.GetName().CStr());
+                return false;
+            }
+        }
+        
+        return true;
+    }
+
+    void World::OnSceneBegin()
+    {
+        // [TODO]:
+    }
+
+    void World::OnLayerDestroyed()
+    {
+        m_entityPool.ClearPool();
+    }
+
+    void World::OnEvent([[maybe_unused]] Event& event)
+    {
+        // [TODO]: 
+    }
+    
+    void World::EditorRenderEntityHierarchy()
+    {
+        // [TODO]: 
+    }
+
+    void World::Render([[maybe_unused]] const Camera& worldCamera)
+    {
+        // [TODO]: 
+        // Push the Camera uniforms for the Mesh Rendering.
+    }
+
+    void World::Tick([[maybe_unused]] const double deltaTime)
+    {
+        // [TODO]:
+        // Tick the Collision System...
+        //m_actorPool.ProcessDestroyedEntities();
+    }
+
+    bool World::LoadLayer(YAML::Node& layerNode)
+    {
+        auto entities = layerNode["Entities"];
+        if (!entities)
+        {
+            NES_ERROR("Failed to load World Layer! No Entities node found!");
+            return false;
         }
 
-        // Update
-        /*for (auto& system : m_systems)
+        for (auto entityNode : entities)
         {
-            system->Update();
-        }*/
-    }
+            const uint64_t entityID = entityNode["Entity"].as<uint64_t>(); 
+            const StringID entityName = entityNode["Name"].as<std::string>();
+            StrongPtr<Entity3D> pEntity = CreateEntity(entityID, entityName);
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Updates the World Delta Time & Real Time, and checks if it's time for a Fixed Update.
-    ///		@param deltaRealTime : Real Time elapsed since the last frame.
-    ///		@returns : True if it's time for a Fixed Update, False otherwise.
-    //----------------------------------------------------------------------------------------------------
-    bool World::UpdateTime(const double deltaRealTime)
-    {
-        m_realTimeElapsed += deltaRealTime;
-        m_worldDeltaTime = static_cast<float>(deltaRealTime) * m_worldTimeScale;
-        m_timeLeftForFixed -= deltaRealTime;
+            // Load Actor Data:
+            {
+                // IsEnabled:
+                const bool isEnabled = entityNode["IsEnabled"].as<bool>();
+                pEntity->SetEnabled(isEnabled);
+                
+                // Parent:
+                auto parentNode = entityNode["Parent"];
+                if (!parentNode.IsNull())
+                {
+                    // [TODO]: Save the EntityID of the parent, and
+                    // perform a parenting step at the end.
+                }
+                
+                // Location
+                Vector3 location;
+                const auto locationNode = entityNode["Location"];
+                {
+                    location.x = locationNode[0].as<float>();
+                    location.y = locationNode[1].as<float>();
+                    location.z = locationNode[2].as<float>();
+                }
+                
+                // Orientation
+                Quat orientation;
+                const auto orientationNode = entityNode["Orientation"];
+                {
+                    Vector3 eulerAngles;
+                    eulerAngles.x = orientationNode[0].as<float>();
+                    eulerAngles.y = orientationNode[1].as<float>();
+                    eulerAngles.z = orientationNode[2].as<float>();
+                    orientation = Quat::MakeFromEuler(eulerAngles);
+                }
+                
+                // Scale
+                Vector3 scale;
+                const auto scaleNode = entityNode["Scale"];
+                {
+                    scale.x = scaleNode[0].as<float>();
+                    scale.y = scaleNode[1].as<float>();
+                    scale.z = scaleNode[2].as<float>();
+                }
+                pEntity->SetLocalTransform(location, orientation, scale);
+            }
+            
+            auto componentsNode = entityNode["Components"];
+            for (auto componentNode : componentsNode)
+            {
+                const StringID componentName = componentNode.first.as<std::string>();
 
-        if (m_timeLeftForFixed < 0.0)
-        {
-            m_timeLeftForFixed = m_fixedTimeStep;
-            return true;
+                // [HACK]: Just checking for specific components for now. 
+                // [TODO]: Loading Components should be done systematically, through
+                // some Factory or Serialize function.
+
+                // Camera
+                if (componentName == CameraComponent::GetStaticTypename())
+                {
+                    auto cameraNode = componentNode.second;
+                    const StringID name = cameraNode["Name"].as<std::string>();
+                    StrongPtr<CameraComponent> pCamera = pEntity->AddComponent<CameraComponent>(name);
+
+                    const bool setActiveOnEnable = cameraNode["SetActiveOnEnabled"].as<bool>(true);
+                    pCamera->SetActiveOnEnabled(setActiveOnEnable);
+
+                    // Camera Data:
+                    auto& camera = pCamera->GetCamera();
+                    
+                    // Perspective Params
+                    float value = cameraNode["PerspectiveFOV"].as<float>();
+                    camera.SetPerspectiveFOV(value);
+
+                    value = cameraNode["PerspectiveNear"].as<float>();
+                    camera.SetPerspectiveNearPlane(value);
+
+                    value = cameraNode["PerspectiveFar"].as<float>();
+                    camera.SetPerspectiveFarPlane(value);
+
+                    // Orthographic Params
+                    value = cameraNode["OrthographicSize"].as<float>();
+                    camera.SetOrthographicSize(value);
+                    
+                    value = cameraNode["OrthographicNear"].as<float>();
+                    camera.SetOrthographicNearPlane(value);
+
+                    value = cameraNode["OrthographicFar"].as<float>();
+                    camera.SetOrthographicFarPlane(value);
+
+                    // ProjectionType
+                    const auto projectionType = static_cast<Camera::ProjectionType>(cameraNode["ProjectionType"].as<uint8_t>());
+                    camera.SetProjectionType(projectionType);
+                }
+
+                // Free Cam
+                if (componentName == FreeCamMovementComponent::GetStaticTypename())
+                {
+                    auto freeCamNode = componentNode.second;
+                    const StringID name = freeCamNode["Name"].as<std::string>();
+                    StrongPtr<FreeCamMovementComponent> pFreeCam = pEntity->AddComponent<FreeCamMovementComponent>(name);
+
+                    float value = freeCamNode["MoveSpeed"].as<float>();
+                    pFreeCam->SetMoveSpeed(value);
+
+                    value = freeCamNode["TurnSpeedYaw"].as<float>();
+                    pFreeCam->SetTurnSpeedYaw(value);
+
+                    value = freeCamNode["TurnSpeedPitch"].as<float>();
+                    pFreeCam->SetTurnSpeedPitch(value);
+
+                    const bool isEnabled = freeCamNode["IsEnabled"].as<bool>(true);
+                    pFreeCam->SetEnabled(isEnabled);
+                }
+            }
         }
 
-        return false;
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Destroy the World, clearing all Entities that are not marked as Persistent and
-    ///              destroying all Systems.
-    //----------------------------------------------------------------------------------------------------
-    void World::Destroy()
-    {
-        // [TODO]: Destroy all Entities not marked as Persistent.
-        // [TODO]: Destroy all Systems.
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //				
-    ///		@brief : Set the global timescale of the World.
-    ///		@param timeScale : Timescale to set. 1.0f is no scaling, 0.5f is half speed, 2.0f is double speed.
-    ///     @note : A timescale of 0 will make DeltaTime always equal to 0.
-    ///     @note : However, Fixed Updates are not effected by the timescale. If you want a fixed
-    ///     @note : system to be effected by the timescale, you must manually scale the fixed time step
-    ///     @note : in the system.
-    //----------------------------------------------------------------------------------------------------
-    void World::SetGlobalTimeScale(const float timeScale)
-    {
-        m_worldTimeScale = timeScale;
+        return true;
     }
 }

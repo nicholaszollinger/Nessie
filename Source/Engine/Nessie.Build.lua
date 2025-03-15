@@ -38,7 +38,6 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     dependencyInjector.Link("yaml_cpp");
     dependencyInjector.AddFilesToProject("imgui");
-    dependencyInjector.AddFilesToProject("entt");
     dependencyInjector.AddFilesToProject("BleachLeakDetector");
 
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}

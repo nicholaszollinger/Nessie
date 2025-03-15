@@ -346,7 +346,7 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const int axis) const
     {
-        NES_ASSERT(axis >= 0 && axis < 3);
+        NES_ASSERT(axis >= 0 && axis < static_cast<int>(N));
         return TVector3<Type>(m[0][axis], m[1][axis], m[2][axis]);
     }
 
@@ -356,7 +356,7 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector3<Type> TMatrix3x3<Type>::GetColumn(const int column) const
     {
-        NES_ASSERT(column >= 0 && column < N);
+        NES_ASSERT(column >= 0 && column < static_cast<int>(N));
         return TVector3<Type>(m[0][column], m[1][column], m[2][column]);
     }
 
@@ -366,7 +366,7 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector3<Type> TMatrix3x3<Type>::GetRow(const int row) const
     {
-        NES_ASSERT(row >= 0 && row < N);
+        NES_ASSERT(row >= 0 && row < static_cast<int>(N));
         return TVector3<Type>(m[row][0], m[row][1], m[row][2]);
     }
 

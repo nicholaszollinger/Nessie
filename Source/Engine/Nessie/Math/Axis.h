@@ -10,5 +10,6 @@ namespace nes
         X       = 1,
         Y       = 2,
         Z       = 4,
+        W       = 8,
     };
 }
