@@ -75,6 +75,7 @@ namespace nes
         template <typename Type> requires TypeIsDerivedFrom<Type, TComponent<DerivedType>>
         StrongPtr<Type> GetComponent();
 
+        [[nodiscard]] const std::vector<StrongPtr<BaseComponentType>>&  GetComponents() const { return m_components; }
         [[nodiscard]] DerivedType*                      GetParent() const               { return m_pParent; }
         [[nodiscard]] const std::vector<DerivedType*>&  GetChildren() const             { return m_children; }
         [[nodiscard]] EntityLayer*                      GetLayer() const                { return m_pLayer; }
