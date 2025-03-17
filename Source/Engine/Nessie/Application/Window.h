@@ -36,7 +36,7 @@ namespace nes
         friend class Application;
         
         WindowProperties m_properties{};
-        void* m_pWindowContext = nullptr;
+        void* m_pNativeWindowHandle = nullptr;
         Vector2f m_cursorPosition{};
 
     private:
@@ -63,8 +63,7 @@ namespace nes
         WindowExtent Resize(const WindowExtent& extent);
         WindowExtent Resize(const uint32_t width, const uint32_t height);
 
-        [[nodiscard]] void* GetNativeWindowHandle() const;
-        [[nodiscard]] void* GetWindowContext() const         { return m_pWindowContext; }
+        [[nodiscard]] void* GetNativeWindowHandle() const    { return m_pNativeWindowHandle; }
         [[nodiscard]] const WindowExtent& GetExtent() const { return m_properties.m_extent; }
         [[nodiscard]] WindowMode GetWindowMode() const      { return m_properties.m_windowMode; }
         [[nodiscard]] const Vector2f& GetCursorPosition() const { return m_cursorPosition; }

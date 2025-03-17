@@ -1,6 +1,5 @@
 #pragma once
 // FormatString.hpp
-
 #include <chrono>
 #include <ostream>
 #include <string>
@@ -10,8 +9,8 @@
 // - Printf style formatting. After living with this comma style for a while, Printf makes things more clear.
 //    - Investigate the FString literal that was proposed for C++. (Probably too hard)
 //    - Investigate Unreal's version of this.
-//    - Example: FormatString("Hello %d, %f", 1, 3.14159); -> "Hello 1, 3.15"
-//             - I want to be able to set how the float is formatted. (e.g. %2f could be 3.14, %3f could be 3.142 - notice the rounding!)
+//    - Example: FormatString("Hello %d, %.2f", 1, 3.14159); -> "Hello 1, 3.15"
+//             - I want to be able to set how the float is formatted. (e.g. %.2f could be 3.14, %.3f could be 3.142 - notice the rounding!)
 // - This should all be wrapped in a namespace!
 // - Move the Current Time string functions to the Time module.
 // - Move the Functor invocation functions to somewhere more Generic.

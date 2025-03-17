@@ -4,6 +4,7 @@
 #include "TMatrix3x3.h"
 #include "TMatrix4x4.h"
 #include "Math/Quaternion.h"
+#include "Math/Rotation.h"
 
 namespace nes::math
 {
@@ -17,31 +18,37 @@ namespace nes::math
     TMatrix4x4<Type> ToMat4(const TQuaternion<Type>& q);
 
     template <FloatingPointType Type>
+    TMatrix4x4<Type> ToMat4(const TRotation<Type>& r);
+
+    template <FloatingPointType Type>
     TQuaternion<Type> ToQuat(const TMatrix3x3<Type>& matrix);
 
     template <FloatingPointType Type>
     TQuaternion<Type> ToQuat(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationFromEuler(const TVector3<Type>& eulerAngles);
+    TRotation<Type> ToRotation(const TMatrix3x3<Type>& matrix);
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationFromEuler(const Type pitch, const Type yaw, const Type roll);
+    TRotation<Type> ToRotation(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
-    TQuaternion<Type> ExtractOrientationQuat(const TMatrix4x4<Type>& matrix);
+    TMatrix4x4<Type> MakeRotationFromEuler(const TVector3<Type>& eulerAngles);
 
     template <FloatingPointType Type>
-    TMatrix3x3<Type> ExtractMatrixOrientation3x3(const TMatrix4x4<Type>& matrix);
+    TMatrix4x4<Type> MakeRotationFromEuler(const Type pitch, const Type yaw, const Type roll);
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> ExtractMatrixOrientation4x4(const TMatrix4x4<Type>& matrix);
+    TQuaternion<Type> ExtractRotationQuat(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
-    void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TQuaternion<Type>& orientation, TVector3<Type>& scale);
+    TRotation<Type> ExtractRotation(const TMatrix4x4<Type>& matrix);
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& orientation, const TVector3<Type>& scale);
+    TMatrix3x3<Type> ExtractMatrixRotation3x3(const TMatrix4x4<Type>& matrix);
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> ExtractMatrixRotation4x4(const TMatrix4x4<Type>& matrix);
 }
 
 namespace nes::math
@@ -66,17 +73,17 @@ namespace nes::math
         const Type wz = q.w * q.z;
         
         TMatrix3x3<Type> result;
-        result.m[0][0] = static_cast<Type>(1) - static_cast<Type>(2) * (yy + zz);
-        result.m[1][0] = static_cast<Type>(2) * (xy + wz);
-        result.m[2][0] = static_cast<Type>(2) * (xz - wy);
+        result[0][0] = static_cast<Type>(1) - static_cast<Type>(2) * (yy + zz);
+        result[0][1] = static_cast<Type>(2) * (xy + wz);
+        result[0][2] = static_cast<Type>(2) * (xz - wy);
 
-        result.m[0][1] = static_cast<Type>(2) * (xy - wz);
-        result.m[1][1] = static_cast<Type>(1) - static_cast<Type>(2) * (xx + zz);
-        result.m[2][1] = static_cast<Type>(2) * (xz + wy);
+        result[1][0] = static_cast<Type>(2) * (xy - wz);
+        result[1][1] = static_cast<Type>(1) - static_cast<Type>(2) * (xx + zz);
+        result[1][2] = static_cast<Type>(2) * (yz + wx);
 
-        result.m[0][2] = static_cast<Type>(2) * (xz + wy);
-        result.m[1][2] = static_cast<Type>(2) * (yz - wx);
-        result.m[2][2] = static_cast<Type>(1) - static_cast<Type>(2) * (xx + yy);
+        result[2][0] = static_cast<Type>(2) * (xz + wy);
+        result[2][1] = static_cast<Type>(2) * (yz - wx);
+        result[2][2] = static_cast<Type>(1) - static_cast<Type>(2) * (xx + yy);
         
         return result;
     }
@@ -88,17 +95,17 @@ namespace nes::math
     TMatrix3x3<Type> ToMat3(const TMatrix4x4<Type>& m)
     {
         TMatrix3x3<Type> result;
-        result.m[0][0] = m.m[0][0];
-        result.m[1][0] = m.m[1][0];
-        result.m[2][0] = m.m[2][0];
+        result[0][0] = m[0][0];
+        result[0][1] = m[0][1];
+        result[0][2] = m[0][2];
         
-        result.m[0][1] = m.m[0][1];
-        result.m[1][1] = m.m[1][1];
-        result.m[2][1] = m.m[2][1];
+        result[1][0] = m[1][0];
+        result[1][1] = m[1][1];
+        result[1][2] = m[1][2];
 
-        result.m[0][2] = m.m[0][2];
-        result.m[1][2] = m.m[1][2];
-        result.m[2][2] = m.m[2][2];
+        result[2][0] = m[2][0];
+        result[2][1] = m[2][1];
+        result[2][2] = m[2][2];
         return result;
     }
 
@@ -111,6 +118,12 @@ namespace nes::math
         return TMatrix4x4<Type>(ToMat3<Type>(q));
     }
 
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> ToMat4(const TRotation<Type>& r)
+    {
+        return MakeRotationFromEuler(r.m_pitch * DegreesToRadians(), r.m_yaw * DegreesToRadians(), r.m_roll * DegreesToRadians());
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Converts the 3x3 Matrix to a Quaternion. Note: this will not remove any scaling present
     ///             in the matrix!
@@ -119,10 +132,10 @@ namespace nes::math
     TQuaternion<Type> ToQuat(const TMatrix3x3<Type>& matrix)
     {
         // pg 286 of "Math Primer for Graphics and Game Development".
-        const Type fourXSquaredMinus1 = matrix.m[0][0] - matrix.m[1][1] - matrix.m[2][2];
-        const Type fourYSquaredMinus1 = matrix.m[1][1] - matrix.m[0][0] - matrix.m[2][2];
-        const Type fourZSquaredMinus1 = matrix.m[2][2] - matrix.m[0][0] - matrix.m[1][1];
-        const Type fourWSquaredMinus1 = matrix.m[0][0] + matrix.m[1][1] + matrix.m[2][2];
+        const Type fourXSquaredMinus1 = matrix[0][0] - matrix[1][1] - matrix[2][2];
+        const Type fourYSquaredMinus1 = matrix[1][1] - matrix[0][0] - matrix[2][2];
+        const Type fourZSquaredMinus1 = matrix[2][2] - matrix[0][0] - matrix[1][1];
+        const Type fourWSquaredMinus1 = matrix[0][0] + matrix[1][1] + matrix[2][2];
 
         // Determine which of w, x, y, or z has the largest absolute value.
         int biggestIndex = 0;
@@ -153,29 +166,29 @@ namespace nes::math
             case 0: // W
                 return TQuaternion<Type>(
                     biggestValue,
-                    (matrix.m[2][1] - matrix.m[1][2]) * mult,
-                    (matrix.m[0][2] - matrix.m[2][0]) * mult,
-                    (matrix.m[1][0] - matrix.m[0][1]) * mult);
+                    (matrix[1][2] - matrix[2][1]) * mult,
+                    (matrix[2][0] - matrix[0][2]) * mult,
+                    (matrix[0][1] - matrix[1][0]) * mult);
 
             case 1: // X
                 return TQuaternion<Type>(
-                    (matrix.m[2][1] - matrix.m[1][2]) * mult,
+                    (matrix[1][2] - matrix[2][1]) * mult,
                     biggestValue,
-                    (matrix.m[1][0] + matrix.m[0][1]) * mult,
-                    (matrix.m[0][2] + matrix.m[2][0]) * mult);
+                    (matrix[0][1] + matrix[1][0]) * mult,
+                    (matrix[2][0] + matrix[0][2]) * mult);
 
             case 2: // Y
                 return TQuaternion<Type>(
-                    (matrix.m[0][2] - matrix.m[2][0]) * mult,
-                    (matrix.m[1][0] + matrix.m[0][1]) * mult,
+                    (matrix[2][0] - matrix[0][2]) * mult,
+                    (matrix[0][1] + matrix[1][0]) * mult,
                     biggestValue,
-                    (matrix.m[2][1] + matrix.m[1][2]) * mult);
+                    (matrix[1][2] + matrix[2][1]) * mult);
 
             case 3: // Z
                 return TQuaternion<Type>(
-                    (matrix.m[1][0] - matrix.m[0][1]) * mult,
-                    (matrix.m[0][2] + matrix.m[2][0]) * mult,
-                    (matrix.m[2][1] + matrix.m[1][2]) * mult,
+                    (matrix[0][1] - matrix[1][0]) * mult,
+                    (matrix[2][0] + matrix[0][2]) * mult,
+                    (matrix[1][2] + matrix[2][1]) * mult,
                     biggestValue);
 
             default:
@@ -194,11 +207,36 @@ namespace nes::math
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Converts the rotation defined by the Matrix as a Rotation object.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TRotation<Type> ToRotation(const TMatrix3x3<Type>& matrix)
+    {
+        const Type tanPitch = std::atan2(matrix[2][1], matrix[2][2]);
+        const Type cosYaw = std::sqrt((matrix[0][0] * matrix[0][0]) + (matrix[1][0] * matrix[1][0]));
+        const Type tanYaw = std::atan2(-matrix[2][0], cosYaw);
+        const Type sinPitch = std::sin(tanPitch);
+        const Type cosPitch = std::cos(tanPitch);
+        const Type tanRoll = std::atan2(sinPitch * matrix[0][2] - cosPitch * matrix[0][1], cosPitch * matrix[1][1] - sinPitch * matrix[1][2]);
+        
+        return TRotation<Type>(-tanPitch * RadiansToDegrees(), -tanYaw * RadiansToDegrees(), -tanRoll * RadiansToDegrees());
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Converts the rotation defined by the Matrix as a Rotation object.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TRotation<Type> ToRotation(const TMatrix4x4<Type>& matrix)
+    {
+        return ToRotation(TMat3<Type>(matrix));
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Make an Orientation Matrix from a set of Euler Angles. The Angles are expected to
     ///             be in radians, and in the form: x=pitch, y=yaw, z=roll.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationFromEuler(const TVector3<Type>& eulerAngles)
+    TMatrix4x4<Type> MakeRotationFromEuler(const TVector3<Type>& eulerAngles)
     {
         const Type cosPitch = std::cos(eulerAngles.x);
         const Type sinPitch = std::sin(eulerAngles.x);
@@ -208,17 +246,17 @@ namespace nes::math
         const Type sinRoll = std::sin(eulerAngles.z);
 
         TMatrix4x4<Type> result = TMatrix4x4<Type>::Identity();
-        result.m[0][0] = (cosYaw * cosRoll) + (sinYaw * sinPitch * sinRoll);
-        result.m[1][0] = (sinRoll * cosPitch);
-        result.m[2][0] = -(sinYaw * cosRoll) + (cosYaw * sinPitch * sinRoll);
+        result[0][0] = (cosYaw * cosRoll) + (sinYaw * sinPitch * sinRoll);
+        result[0][1] = (sinRoll * cosPitch);
+        result[0][2] = -(sinYaw * cosRoll) + (cosYaw * sinPitch * sinRoll);
 
-        result.m[0][1] = -(cosYaw * sinRoll) + (sinYaw * sinPitch * cosRoll);
-        result.m[1][1] = (cosRoll * cosPitch);
-        result.m[2][1] = (sinRoll * sinYaw) + (cosYaw * sinPitch * cosRoll);
+        result[1][0] = -(cosYaw * sinRoll) + (sinYaw * sinPitch * cosRoll);
+        result[1][1] = (cosRoll * cosPitch);
+        result[1][2] = (sinRoll * sinYaw) + (cosYaw * sinPitch * cosRoll);
 
-        result.m[0][2] = (sinYaw * cosPitch);
-        result.m[1][2] = -sinPitch;
-        result.m[2][2] = (cosYaw * cosPitch);
+        result[2][0] = (sinYaw * cosPitch);
+        result[2][1] = -sinPitch;
+        result[2][2] = (cosYaw * cosPitch);
         
         return result;
     }
@@ -228,16 +266,16 @@ namespace nes::math
     ///             be in radians.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationFromEuler(const Type pitch, const Type yaw, const Type roll)
+    TMatrix4x4<Type> MakeRotationFromEuler(const Type pitch, const Type yaw, const Type roll)
     {
-        return MakeOrientationFromEuler(TVector3<Type>(pitch, yaw, roll));
+        return MakeRotationFromEuler(TVector3<Type>(pitch, yaw, roll));
     }
 
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the unscaled orientation of the matrix as a Quaternion.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TQuaternion<Type> ExtractOrientationQuat(const TMatrix4x4<Type>& matrix)
+    TQuaternion<Type> ExtractRotationQuat(const TMatrix4x4<Type>& matrix)
     {
         TMatrix4x4<Type> copy(matrix);
         copy.RemoveScaling();
@@ -245,10 +283,21 @@ namespace nes::math
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns the unscaled rotation of the matrix as a Rotation object. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TRotation<Type> ExtractRotation(const TMatrix4x4<Type>& matrix)
+    {
+        TMatrix4x4<Type> copy(matrix);
+        copy.RemoveScaling();
+        return ToRotation(ToMat3<Type>(copy));
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the unscaled orientation of the matrix as a 3x3 Matrix. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix3x3<Type> ExtractMatrixOrientation3x3(const TMatrix4x4<Type>& matrix)
+    TMatrix3x3<Type> ExtractMatrixRotation3x3(const TMatrix4x4<Type>& matrix)
     {
         TMatrix4x4<Type> copy(matrix);
         copy.RemoveScaling();
@@ -259,45 +308,16 @@ namespace nes::math
     ///		@brief : Returns the unscaled orientation of the matrix as a 4x4 matrix. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> ExtractMatrixOrientation4x4(const TMatrix4x4<Type>& matrix)
+    TMatrix4x4<Type> ExtractMatrixRotation4x4(const TMatrix4x4<Type>& matrix)
     {
         TMatrix4x4<Type> copy(matrix);
         copy.RemoveScaling();
-        copy.m[0][3] = static_cast<Type>(0);
-        copy.m[1][3] = static_cast<Type>(0);
-        copy.m[2][3] = static_cast<Type>(0);
-        copy.m[3][3] = static_cast<Type>(1);
-        
-        copy.m[3][0] = static_cast<Type>(0);
-        copy.m[3][1] = static_cast<Type>(0);
-        copy.m[3][2] = static_cast<Type>(0);
+        // Zero out translation:
+        copy[3] = TVector4<Type>(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1));
+        // Set the bottom row to zero.
+        copy[0][3] = static_cast<Type>(0);
+        copy[1][3] = static_cast<Type>(0);
+        copy[2][3] = static_cast<Type>(0);
         return copy;
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      [Consider] glm's implementation accounts for skew and perspective. 
-    //		
-    ///		@brief : Decompose the Matrix into its discrete translation, orientation, scale, skew, and perspective
-    ///             values.
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TQuaternion<Type>& orientation,
-        TVector3<Type>& scale)
-    {
-        TMatrix4x4<Type> copy(matrix);
-        scale = copy.ExtractScaling();
-        orientation = ToQuat(ToMat3<Type>(copy));
-        translation = copy.GetAxis(3);
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Creates a 4x4 matrix containing the translation, orientation and scale values. 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& orientation,
-        const TVector3<Type>& scale)
-    {
-        return MakeTranslationMatrix(translation) * ToMat4(orientation) * MakeScaleMatrix(scale);
     }
 }

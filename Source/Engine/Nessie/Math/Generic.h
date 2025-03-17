@@ -68,13 +68,13 @@ namespace nes::math
     template <FloatingPointType Type = float>
     constexpr Type RadiansToDegrees()
     {
-        return static_cast<Type>(180.0 / Pi());
+        return static_cast<Type>(180.0 / Pi<double>());
     }
 
     template <FloatingPointType Type = float>
     constexpr Type DegreesToRadians()
     {
-        return static_cast<Type>(Pi() / 180.0);
+        return static_cast<Type>(Pi<double>() / 180.0);
     }
 
     template <FloatingPointType Type = float>

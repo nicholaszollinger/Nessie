@@ -6,6 +6,9 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 
 **Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
+**Vulkan**: *The engine requires Vulkan to be installed. Use the following link to install a compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.304.0/windows/VulkanSDK-1.4.304.0-Installer.exe)
+* Leave everything default when installing.
+
 # How to Build
 Double click `GenerateSolution.bat` to generate the Visual Studio Projects and Solution!
 

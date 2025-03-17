@@ -5,22 +5,12 @@
 #include "EntityLayer.h"
 #include "Core/Events/Event.h"
 #include "Core/Memory/StrongPtr.h"
+#include "Math/Matrix.h"
 
 namespace nes
 {
     class Camera;
     class WorldComponent;
-
-    struct TickFunction
-    {
-        // void* m_pOwner?
-        std::function<void(float deltaTime)> m_function;
-    };
-
-    struct EventHandler
-    {
-        std::function<void(Event& event)> m_callback;
-    };
     
     //----------------------------------------------------------------------------------------------------
     ///		@brief : A Scene manages a stack of NodeLayers and processed in the following order:
@@ -35,10 +25,9 @@ namespace nes
         friend class SceneManager;
 
         std::vector<StrongPtr<EntityLayer>>   m_layerStack{};
-        std::vector<TickFunction>           m_tickFunctions{};
-        std::vector<EventHandler>           m_eventHandlers{};
         const Camera*                       m_pActiveCamera = nullptr;
         StringID                            m_name;
+        bool                                m_isBeingDestroyed = false;
 
         // TimeInfo:
         double m_realTimeElapsed = 0.0f;                // The amount of Time elapsed since the start of the Application.
@@ -53,9 +42,6 @@ namespace nes
         Scene& operator=(const Scene&) = delete;
         Scene(Scene&&) noexcept = delete;
         Scene& operator=(Scene&&) noexcept = delete;
-
-        void RegisterTickFunction(const TickFunction& function);
-        void RegisterEventHandler(const EventHandler& handler);
 
         void SetActiveCamera(const Camera* camera);
         [[nodiscard]] const Camera* GetActiveCamera() const { return m_pActiveCamera; }
@@ -75,6 +61,7 @@ namespace nes
         bool Begin();
         void OnEvent(Event& event);
         void Tick(const double deltaRealTime);
+        void PreRender();
         void Render();
         bool UpdateTime(const double deltaRealTime);
         void Destroy();

@@ -46,7 +46,9 @@ namespace nes
     
     private:
         bool Init(YAML::Node& applicationSettings);
-        void Close();
+        void Shutdown();
+        void PreRender();
+        void Render();
         void Update(const double deltaRealTime);
         void OnEvent(Event& event);
         bool TransitionToScene();

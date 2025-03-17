@@ -72,6 +72,9 @@ namespace nes
         static constexpr TVector3 GetRollAxis()      { return GetForwardVector(); }
     };
 
+    template <ScalarType VecType>
+    TVector3<VecType> operator*(const ScalarType auto scalar, const TVector3<VecType> vec);
+
     template <FloatingPointType Type>
     Type ScalarTripleProduct(const TVector3<Type>& u, const TVector3<Type>& v, const TVector3<Type>& w);
 
@@ -93,61 +96,37 @@ namespace nes
     template <ScalarType Type>
     constexpr TVector3<Type> TVector3<Type>::operator-() const
     {
-        TVector3 result;
-        result.x = -x;
-        result.y = -y;
-        result.z = -z;
-        return result;
+        return { -x, -y, -z };
     }
 
     template <ScalarType Type>
     constexpr TVector3<Type> TVector3<Type>::operator+(const TVector3 right) const
     {
-        TVector3 result = right;
-        result.x += x;
-        result.y += y;
-        result.z += z;
-        return result;
+        return { x + right.x, y + right.y, z + right.z };
     }
 
     template <ScalarType Type>
     constexpr TVector3<Type> TVector3<Type>::operator-(const TVector3 right) const
     {
-        TVector3 result = right;
-        result.x -= x;
-        result.y -= y;
-        result.z -= z;
-        return result;
+        return { x - right.x, y - right.y, z - right.z };
     }
 
     template <ScalarType Type>
     constexpr TVector3<Type> TVector3<Type>::operator*(const TVector3 right) const
     {
-        TVector3 result = right;
-        result.x *= x;
-        result.y *= y;
-        result.z *= z;
-        return result;
+        return { x * right.x, y * right.y, z * right.z };
     }
 
     template <ScalarType Type>
     constexpr TVector3<Type> TVector3<Type>::operator/(const TVector3 right) const
     {
-        TVector3 result = right;
-        result.x /= x;
-        result.y /= y;
-        result.z /= z;
-        return result;
+        return { x / right.x, y / right.y, z / right.z };
     }
 
     template <ScalarType Type>
     constexpr TVector3<Type> TVector3<Type>::operator*(const ScalarType auto scalar) const
     {
-        TVector3 result = *this;
-        result.x *= scalar;
-        result.y *= scalar;
-        result.z *= scalar;
-        return result;
+        return { x * static_cast<Type>(scalar), y * static_cast<Type>(scalar), z * static_cast<Type>(scalar) };
     }
 
     template <ScalarType Type>
@@ -155,11 +134,7 @@ namespace nes
     {
         NES_ASSERT(scalar != static_cast<decltype(scalar)>(0));
         
-        TVector3 result = *this;
-        result.x /= scalar;
-        result.y /= scalar;
-        result.z /= scalar;
-        return result;
+        return { x / static_cast<Type>(scalar), y / static_cast<Type>(scalar), z / static_cast<Type>(scalar) };
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -406,6 +381,12 @@ namespace nes
     {
         const float angleRadians = AngleBetweenVectors(a, b);
         return math::ToDegrees(angleRadians);
+    }
+
+    template <ScalarType VecType>
+    TVector3<VecType> operator*(const ScalarType auto scalar, const TVector3<VecType> vec)
+    {
+        return vec * scalar;
     }
 
     //----------------------------------------------------------------------------------------------------

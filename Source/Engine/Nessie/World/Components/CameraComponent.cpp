@@ -9,8 +9,14 @@ namespace nes
 {
     bool CameraComponent::Init()
     {
+        if (!Entity3DComponent::Init())
+        {
+            return false;
+        }
+
         const auto windowExtent = Application::Get().GetWindow().GetExtent();
         m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
+        
         // [TODO]: Subscribe to WindowResize events...
         return true;
     }
@@ -48,11 +54,11 @@ namespace nes
     {
         // Set the ViewMatrix of the Camera to look toward the position in front of the camera.
         const auto& worldTransformMatrix = GetOwner()->GetWorldTransformMatrix();
-        const Mat4 orientationMatrix = math::ExtractMatrixOrientation4x4(worldTransformMatrix);
+        const Mat4 orientationMatrix = math::ExtractMatrixRotation4x4(worldTransformMatrix);
         
-        const auto cameraForward = math::XYZ(orientationMatrix * Vector4(0.f, 0.f, 1.f, 0.f));
-        const auto cameraUp = math::XYZ(orientationMatrix * Vector4(0.f, 1.f, 0.f, 0.f));
-        const Vector3 cameraPosition = math::XYZ(worldTransformMatrix.GetColumn(3)); 
+        const auto cameraForward = orientationMatrix.TransformVector(Vector3::GetForwardVector());
+        const auto cameraUp = orientationMatrix.TransformVector(Vector3::GetUpVector());
+        const Vector3 cameraPosition = math::XYZ(worldTransformMatrix[3]); 
         m_camera.LookAt(cameraPosition, cameraPosition + cameraForward, cameraUp);
     }
 
@@ -77,7 +83,11 @@ namespace nes
         // If this is currently the Active Camera, we need to disable it.
         if (IsActiveCamera())
         {
-            NES_WARN("Disabling active Camera in World!!!");
+            if (!GetOwner()->GetLayer()->IsBeingDestroyed())
+            {
+                NES_WARN("Disabling active Camera in World!!!");
+            }
+
             Scene* pScene = GetOwner()->GetScene();
             NES_ASSERT(pScene);
             pScene->SetActiveCamera(nullptr);

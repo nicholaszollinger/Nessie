@@ -4,12 +4,13 @@ Scene:
   Layers:
     World:
       Entities:
+      # "Editor Camera"
       - Entity: 0
         LayerIndex: 0
         Name: "Camera"
         Parent: null
-        Location: [0, 0, 0]
-        Orientation: [0, 0, 0]
+        Location: [3.5, 4, -7.5]
+        Rotation: [20, -42, 0]
         Scale: [1, 1, 1]
         IsEnabled: true
         Components:
@@ -17,9 +18,9 @@ Scene:
             Name: "Camera"
             IsEnabled: true
             SetActiveOnEnabled: true
-            PerspectiveFOV: 60.0
+            PerspectiveFOV: 60 #Needs to be in radians... #60.0
             PerspectiveNear: 0.1
-            PerspectiveFar: 1000.0
+            PerspectiveFar: 100.0
             OrthographicSize: 10.0
             OrthographicNear: -1.0
             OrthographicFar: 1.0
@@ -29,15 +30,35 @@ Scene:
             Name: "FreeCamMovement"
             IsEnabled: true
             MoveSpeed: 10.0
-            TurnSpeedYaw: 30.0
-            TurnSpeedPitch: 20.0
+            TurnSpeedYaw: 2000.0
+            TurnSpeedPitch: 1700.0
             
+      # "Player"
       - Entity: 1
         LayerIndex: 0
-        Name: "Cube"
+        Name: "Player"
         Parent: null
         IsEnabled: true
-        Location: [50.0, 0, 0]
-        Orientation: [0, 0, 0]
+        Location: [0, 0, 0]
+        Rotation: [0, 0, 0]
         Scale: [1, 1, 1]
         Components:
+      
+      # "Player Mesh"
+      - Entity: 2
+        LayerIndex: 0
+        Name: "Player Mesh"
+        Parent: 1
+        IsEnabled: true
+        Location: [0, 0, 3]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+        Components:
+          MeshComponent:
+            Name: "Mesh"
+            IsEnabled: true
+            # [TODO]: Primitive Transform Data:
+            # [TODO]: MeshID
+            # [TODO]: MaterialID
+            # [TODO]: PipelineID?
+

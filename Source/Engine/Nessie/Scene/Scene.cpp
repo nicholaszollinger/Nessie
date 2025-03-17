@@ -8,6 +8,7 @@ namespace nes
 {
     bool Scene::Init()
     {
+        m_isBeingDestroyed = false;
         // Layers should already be added when loading the World.
         NES_ASSERTV(!m_layerStack.empty(), "World contains no Layers!");
 
@@ -46,7 +47,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void Scene::Destroy()
     {
-        m_tickFunctions.clear();
+        m_isBeingDestroyed = true;
 
         for (auto& pLayer : m_layerStack)
         {
@@ -86,6 +87,20 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    ///		@brief : Called before Render on each layer in the stack, from bottom to top.
+    //----------------------------------------------------------------------------------------------------
+    void Scene::PreRender()
+    {
+        if (!m_pActiveCamera)
+            return;
+        
+        for (auto& pLayer : m_layerStack)
+        {
+            pLayer->PreRender(*m_pActiveCamera);
+        }
+    }
+
+    //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
     ///		@brief : Renders each Layer in the World, from the bottom to the top of the Layer stack. 
@@ -112,25 +127,6 @@ namespace nes
         {
             (*it)->OnEvent(event);
         }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    //      [TODO]:
-    //      There is no identification as a part of registering, so we can't easily unregister.
-    //
-    ///		@brief : Register a Tick function to be processed in the next Update. 
-    //----------------------------------------------------------------------------------------------------
-    void Scene::RegisterTickFunction(const TickFunction& function)
-    {
-        m_tickFunctions.emplace_back(function);
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Hook into events. 
-    //----------------------------------------------------------------------------------------------------
-    void Scene::RegisterEventHandler(const EventHandler& eventHandler)
-    {
-        m_eventHandlers.emplace_back(eventHandler);
     }
 
     void Scene::SetActiveCamera(const Camera* camera)

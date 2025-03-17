@@ -10,10 +10,17 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
     kind "ConsoleApp"
 
-    dependencyInjector.Link("Nessie");
     dependencyInjector.Include("BleachLeakDetector");
     dependencyInjector.Include("imgui");
     dependencyInjector.Include("yaml_cpp");
+    dependencyInjector.Link("Nessie");
+    dependencyInjector.Link("Assimp");
+
+    -- Link RenderAPI libraries if needed.
+    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
+    if (renderAPI == "Vulkan") then
+        dependencyInjector.Link("Vulkan");
+    end
 
     defines { "YAML_CPP_STATIC_DEFINE" }
 

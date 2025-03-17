@@ -1,17 +1,37 @@
 ﻿// Renderer.h
 #pragma once
-#include "Rect.h"
+//#include "OverlayRenderer.h"
+#include "Mesh.h"
+#include "RendererContext.h"
 #include "Application/Window.h"
 #include "Core/Generic/Color.h"
 #include "Math/Matrix.h"
-#include "Math/Triangle.h"
+
+// [TODO]: Remove when API is set up to hide direct calls.
+#include <imgui.h>
+
+namespace GAP311 { class VulkanShaderLibrary; }
 
 namespace nes
 {
+    class RendererContext;
+    
     class Renderer
     {
+    public:
+        using ImmediateCommandFunc = std::function<void(RendererContext& context)>;
+        
+    private:
         friend class Application;
+        RendererContext* m_pRenderContext = nullptr;
         Window* m_pWindow = nullptr;
+        GAP311::VulkanShaderLibrary* m_pShaderLibrary = nullptr;
+        //OverlayRenderer m_overlayRenderer{};
+
+        // The Current Frame's Command and Frame Buffer
+        // to handle incoming draw calls.
+        vk::CommandBuffer m_commandBuffer{};
+        vk::Framebuffer m_frameBuffer{};
 
     private:
         Renderer() = default;
@@ -23,25 +43,49 @@ namespace nes
         Renderer& operator=(const Renderer&) = delete;
         Renderer(Renderer&&) = delete;
         Renderer& operator=(Renderer&&) = delete;
-        
-        void Clear(const Color& color) const;
-        void Clear(const LinearColor& color) const;
 
-        // 2D
-        void DrawLine(const Vector2& from, const Vector2& to, const LinearColor& color) const;
-        void DrawRect(const Rectf& rect, const LinearColor& color) const;
-        void DrawFillRect(const Rectf& rect, const LinearColor& color) const;
-        void DrawCircle(const Vector2& position, float radius, const LinearColor& color) const;
-        void DrawFillCircle(const Vector2& position, float radius, const LinearColor& color) const;
-        void DrawTriangle(const Triangle2D& triangle, const LinearColor& color) const;
-        void DrawPolygon2D(const Vector2* vertices, size_t count, const LinearColor& color) const;
-        void DrawPolygon2D(const std::vector<Vector2>& vertices, const std::vector<size_t>& indices, const LinearColor& color) const;
+        // Buffers:
+        [[nodiscard]] static vk::Buffer CreateIndexBuffer(const void* pIndices, const size_t dataTypeSize, const size_t count);
+        [[nodiscard]] static vk::Buffer CreateVertexBuffer(const void* pVertexData, const size_t vertexTypeSize, const size_t count);
+        [[nodiscard]] static vk::Buffer CreateIndexBuffer(const std::vector<uint32_t>& bufferData);
+        static void DestroyBuffer(vk::Buffer& buffer);
+        static void UpdateBuffer(vk::Buffer buffer, const size_t offset, const size_t typeSize, const void* pData);
+
+        // Pipeline:
+        static std::shared_ptr<RendererContext::GraphicsPipeline> CreatePipeline(const nes::GraphicsPipelineConfig& config);
+        static void DestroyPipeline(std::shared_ptr<RendererContext::GraphicsPipeline>& pPipeline);
+        static void BindGraphicsPipeline(std::shared_ptr<RendererContext::GraphicsPipeline>& pPipeline);
+        static void BindDescriptorSets(const std::shared_ptr<RendererContext::GraphicsPipeline>& pPipeline,
+            const vk::PipelineBindPoint bindPoint, const vk::ArrayProxy<const vk::DescriptorSet>& descriptorSets);
+
+        // Shaders:
+        static vk::ShaderModule GetShader(const std::string& shaderName);
+        static void PushShaderConstant(std::shared_ptr<RendererContext::GraphicsPipeline> pPipeline, vk::ShaderStageFlagBits shaderStage, const uint32_t offset, const uint32_t size, const void* pValues);
+
+        // Uniforms:
+        [[nodiscard]] static vk::Buffer CreateUniformBuffer(const size_t uniformTypeSize, void* pInitialData = nullptr);
+        [[nodiscard]] static RendererContext::ShaderUniform CreateUniformForBuffer(int binding, vk::Buffer buffer, vk::DeviceSize size, vk::DeviceSize offset = 0, vk::ShaderStageFlags stages = vk::ShaderStageFlagBits::eAllGraphics);
+        static void DestroyUniform(RendererContext::ShaderUniform uniform);
+        
+        // Drawing:
+        static void BeginImGui();
+        static void EndImGui();
+        static void BeginRenderPass(const vk::Rect2D& displayArea, const vk::ClearValue clearValues[], const uint32_t clearValueCount);
+        static void EndRenderPass();
+        static void Draw(const vk::Buffer& vertexBuffer, const uint32_t vertexCount);
+        static void Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance);
+        static void DrawIndexed(const vk::Buffer& vertexBuffer, const vk::Buffer& indexBuffer, const uint32_t indexCount);
         
     protected:
-        bool Init(Window* pWindow);
-        void Close();
+        static Renderer& Instance();
+        bool Init(Window* pWindow, const ApplicationProperties& appProperties);
+        void Shutdown();
+        void WaitUntilIdle() const;
         
-        void BeginFrame();
-        void SubmitFrame();
+        bool BeginFrame();
+        void EndFrame();
+        
+        void InitializeImGui();
+        void ShutdownImGui();
     };
 }

@@ -7,7 +7,7 @@ Window:
     Label: "Test Game"
     Extent: [1600, 900]
     Mode: 0
-    IsResizable: true
+    IsResizable: false
     VsyncEnabled: false
 
 SceneManager:

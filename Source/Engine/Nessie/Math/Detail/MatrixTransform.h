@@ -8,10 +8,10 @@ namespace nes::math
     TMatrix4x4<Type> MakeTranslationMatrix(const TVector3<Type>& translation);
 
     template <FloatingPointType Type>
-    TMatrix3x3<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation);
+    TMatrix3x3<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation);
     
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation);
+    TMatrix4x4<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation);
 
     template <FloatingPointType Type>
     TMatrix4x4<Type> MakeScaleMatrix(const TVector3<Type>& scale);
@@ -21,7 +21,18 @@ namespace nes::math
 
     template <FloatingPointType Type>
     TMatrix4x4<Type> LookAt(const TVector3<Type>& eyeLocation, const TVector3<Type>& targetLocation, const TVector3<Type>& upVector);
+    
+    template <FloatingPointType Type>
+    void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TQuaternion<Type>& orientation, TVector3<Type>& scale);
 
+    template <FloatingPointType Type>
+    void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TRotation<Type>& rotation, TVector3<Type>& scale);
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& orientation, const TVector3<Type>& scale);
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TRotation<Type>& rotation, const TVector3<Type>& scale);
 }
 
 namespace nes::math
@@ -33,9 +44,7 @@ namespace nes::math
     TMatrix4x4<Type> MakeTranslationMatrix(const TVector3<Type>& translation)
     {
         TMatrix4x4<Type> result = TMatrix4x4<Type>::Identity();
-        result.m[0][3] = translation.x;
-        result.m[1][3] = translation.y;
-        result.m[2][3] = translation.z;
+        result[3] = TVector4<Type>(translation, static_cast<Type>(1));
         return result;
     }
 
@@ -43,7 +52,7 @@ namespace nes::math
     ///		@brief : Create an Orientation Matrix from a quaternion.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix3x3<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation)
+    TMatrix3x3<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation)
     {
         return ToMat3<Type>(orientation);
     }
@@ -52,7 +61,7 @@ namespace nes::math
     ///		@brief : Create an Orientation Matrix from a Quaternion Orientation. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeOrientationMatrix(const TQuaternion<Type>& orientation)
+    TMatrix4x4<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation)
     {
         return ToMat4<Type>(orientation);
     }
@@ -64,9 +73,9 @@ namespace nes::math
     TMatrix4x4<Type> MakeScaleMatrix(const TVector3<Type>& scale)
     {
         TMatrix4x4<Type> matrix = TMatrix4x4<Type>::Identity();
-        matrix.m[0][0] = scale.x;
-        matrix.m[1][1] = scale.y;
-        matrix.m[2][2] = scale.z;
+        matrix[0][0] = scale.x;
+        matrix[1][1] = scale.y;
+        matrix[2][2] = scale.z;
         return matrix;
     }
 
@@ -76,11 +85,7 @@ namespace nes::math
     template <FloatingPointType Type>
     TMatrix4x4<Type> MakeScaleMatrix(const Type uniformScale)
     {
-        TMatrix4x4<Type> matrix = TMatrix4x4<Type>::Identity();
-        matrix.m[0][0] = uniformScale;
-        matrix.m[1][1] = uniformScale;
-        matrix.m[2][2] = uniformScale;
-        return matrix;
+        return TMatrix4x4<Type>(uniformScale);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -99,20 +104,71 @@ namespace nes::math
         const TVector3<Type> right = (TVector3<Type>::Cross(upVector, forward)).Normalized();
         const TVector3<Type> up = TVector3<Type>::Cross(forward, right);
 
+        result[0][0] = right.x;
+        result[1][0] = right.y;
+        result[2][0] = right.z;
 
-        result.m[0][0] = right.x;
-        result.m[1][0] = right.y;
-        result.m[2][0] = right.z;
-        result.m[0][1] = up.x;
-        result.m[1][1] = up.y;
-        result.m[2][1] = up.z;
-        result.m[2][0] = forward.x;
-        result.m[2][1] = forward.y;
-        result.m[2][2] = forward.z;
-        result.m[0][3] = -TVector3<Type>::Dot(right, eyeLocation);
-        result.m[1][3] = -TVector3<Type>::Dot(up, eyeLocation);
-        result.m[2][3] = -TVector3<Type>::Dot(forward, eyeLocation);
+        result[0][1] = up.x;
+        result[1][1] = up.y;
+        result[2][1] = up.z;
+
+        result[0][2] = forward.x;
+        result[1][2] = forward.y;
+        result[2][2] = forward.z;
+
+        result[3][0] = -TVector3<Type>::Dot(right, eyeLocation);
+        result[3][1] = -TVector3<Type>::Dot(up, eyeLocation);
+        result[3][2] = -TVector3<Type>::Dot(forward, eyeLocation);
         
         return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //      [Consider] glm's implementation accounts for skew and perspective. 
+    //		
+    ///		@brief : Decompose the Matrix into its discrete translation, orientation, and scale values.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TQuaternion<Type>& orientation,
+        TVector3<Type>& scale)
+    {
+        TMatrix4x4<Type> copy(matrix);
+        scale = copy.ExtractScaling();
+        orientation = ToQuat(ToMat3<Type>(copy));
+        translation = copy.GetAxis(3);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //      [Consider] glm's implementation accounts for skew and perspective. 
+    //		
+    ///		@brief : Decompose the Matrix into its discrete translation, rotation, and scale values.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void DecomposeMatrix(const TMatrix4x4<Type>& matrix, TVector3<Type>& translation, TRotation<Type>& rotation,
+        TVector3<Type>& scale)
+    {
+        TMatrix4x4<Type> copy(matrix);
+        scale = copy.ExtractScaling();
+        rotation = ToRotation(ToMat3<Type>(copy));
+        translation = copy.GetAxis(3);
+    }
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TRotation<Type>& rotation,
+        const TVector3<Type>& scale)
+    {
+        return MakeTranslationMatrix(translation) * ToMat4(rotation) * MakeScaleMatrix(scale);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Creates a 4x4 matrix containing the translation, orientation and scale values. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& orientation,
+        const TVector3<Type>& scale)
+    {
+        return MakeTranslationMatrix(translation) * ToMat4(orientation) * MakeScaleMatrix(scale);
     }
 }

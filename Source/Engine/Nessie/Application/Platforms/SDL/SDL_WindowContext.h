@@ -1,8 +1,10 @@
 ﻿// SDL_WindowContext.h
 #pragma once
-
+#include "Core/Config.h"
+#ifdef NES_WINDOW_API_SDL
 struct SDL_Window;
 struct SDL_Renderer;
+
 
 namespace nes
 {
@@ -19,3 +21,4 @@ namespace nes
         ~SDL_WindowContext();
     };
 }
+#endif

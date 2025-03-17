@@ -100,14 +100,9 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Get the resulting combined rotation of "other" then "this".
-    ///             Geometrically, we are rotating first by the "other" Quaternion and then by
-    ///             this Quaternion. It is a *non-commutative* combination of the two rotations.
-    ///             For Example, if you want to rotate a point "v" by Quaternion "a" and then by Quaternion "b",
-    ///             you would multiply b * a, then call the result's RotateVector(v) function.
-    ///             - This is also known as the "Hamilton Product".
+    ///		@brief : Multiply this Quaternion by another. (Result = this * other).
+    ///         Order matters when combining quaternion rotations. C = A * B will return a
+    ///         Quaternion C that first applies B then A. They are combined from right-to-left.
     ///		@param other : The Quaternion that would rotate first by.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
@@ -121,19 +116,14 @@ namespace nes
         result.y = (w * other.y) + (y * other.w) + (z * other.x) - (x * other.z);
         result.z = (w * other.z) + (z * other.w) + (x * other.y) - (y * other.x);
 
-        return *this;
+        return result;
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Combine the rotation of "other" then "this" into this Quaternion.
-    ///             Geometrically, we are rotating first by the "other" Quaternion and then by
-    ///             this Quaternion. It is a *non-commutative* combination of the two rotations.
-    ///             For Example, if you want to rotate a point "v" by Quaternion "a" and then by Quaternion "b",
-    ///             you would multiply b * a, then call this Quaternion's RotateVector(v) function.
-    ///             - This is also known as the "Hamilton Product".
-    ///		@param other : The Quaternion that would rotate first by.
+    ///		@brief : Multiply this Quaternion by another. (this = this * other).
+    ///         Order matters when combining quaternion rotations. C = A * B will return a
+    ///         Quaternion C that first applies B then A. They are combined from right-to-left.
+    ///		@param other : The Quaternion that would rotate *second* by.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
     TQuaternion<Type>& TQuaternion<Type>::operator*=(const TQuaternion& other)
@@ -153,7 +143,7 @@ namespace nes
     template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::operator/(const TQuaternion& other) const
     {
-        return Inverse() * other;
+        return other * Inverse();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -174,7 +164,7 @@ namespace nes
     template <FloatingPointType Type>
     TQuaternion<Type> TQuaternion<Type>::operator-(const TQuaternion& other) const
     {
-        return other * Inverse();
+        return TQuaternion(w - other.w, x - other.x, y - other.y, z - other.z);
     }
 
     template <FloatingPointType Type>
@@ -279,7 +269,7 @@ namespace nes
     {
         const Type magnitude = Magnitude();
         
-        if (magnitude != static_cast<Type>(0))
+        if (math::CheckEqualFloats(magnitude, static_cast<Type>(0)))
         {
             w /= magnitude;
             x /= magnitude;
@@ -502,8 +492,8 @@ namespace nes
     template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::EulerAngles() const
     {
-        TVector3<Type> result{}; // Pitch, Yaw, Roll = (0, 0, 0)
-
+        //return TVector3<Type>(Pitch(), Yaw(), Roll()) * math::RadiansToDegrees();
+        TVector3<Type> result;
         // Extract the sine(pitch)
         const Type sinePitch = -2.f * (y * z - w * x);
 
@@ -530,17 +520,12 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
     ///		@brief : Get the Axis of rotation for this Quaternion. 
-    ///		@returns : 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::RotationAxis() const
     {
-        auto axis = TVector3<Type>(x, y, z);
-        axis.Normalize();
-        return axis;
+        return TVector3<Type>(x, y, z);
     }
     
     //----------------------------------------------------------------------------------------------------
@@ -565,18 +550,19 @@ namespace nes
     void TQuaternion<Type>::RotateVector(TVector3<Type>& vector) const
     {
         // Formula : v' = q * v * q^-1
-        //const Quaternion vecExtended = Quaternion(vec.x, vec.y, vec.z, 0.0f);
-        //Quaternion rotated = *this * vecExtended * GetInverse();
-        //return rotated.GetAxis();
+        //const TQuaternion vecExtended = TQuaternion(0.0f, vector.x, vector.y, vector.z);
+        //// NOTE: The order may need to be reversed with my * operator.
+        //const TQuaternion rotated = (*this) * vecExtended * Inverse();
+        //vector = rotated.RotationAxis();
 
         // According to the article, this is a computationally faster way to rotate a vector.
         // Potentially by 30%.
         // https://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-        TVector3<Type> quatAxis = RotationAxis();
-        const TVector3<Type> uv = TVector3<Type>::Cross(quatAxis, vector);
+        TVector3<Type> quatAxis = RotationAxis(); //TVector3<Type>(x, y, z);
+        const TVector3<Type> uv = static_cast<Type>(2) * TVector3<Type>::Cross(quatAxis, vector);
         const TVector3<Type> uuv = TVector3<Type>::Cross(quatAxis, uv);
-
-        vector = vector + ((uv * w) + uuv) * 2.f;
+        
+        vector += ((w * uv) + uuv); 
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -623,16 +609,16 @@ namespace nes
     template <FloatingPointType Type>
     Type TQuaternion<Type>::Pitch() const
     {
-        const float sinePitch = 2.f + (y * z + w * x);
+        const float sinePitch = static_cast<Type>(2) + ((y * z) + (w * x));
         const float cosinePitch = (w * w) - (x * x) - (y * y) + (z * z);
-
+        
         // Handle potential Gimbal Lock. We need to avoid atan2(0, 0).
-        if (math::CheckEqualFloats(math::Abs(sinePitch), 1.f))
+        if (TVector2<Type>(cosinePitch, sinePitch) == TVector2<Type>::GetZeroVector())
         {
-            return 2.f * std::atan2(x, w);
+            return static_cast<Type>(2) * std::atan2(x, w);
         }
 
-        return std::atan2(sinePitch, cosinePitch);
+        return static_cast<Type>(std::atan2(sinePitch, cosinePitch));
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -641,7 +627,7 @@ namespace nes
     template <FloatingPointType Type>
     Type TQuaternion<Type>::Yaw() const
     {
-        return math::SafeASin(math::ClampSignedNormalized(-2.f * (x * z - w * y)));
+        return math::SafeASin(static_cast<Type>(-2) * ((x * z) - (w * y)));
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -650,16 +636,16 @@ namespace nes
     template <FloatingPointType Type>
     Type TQuaternion<Type>::Roll() const
     {
-        const float sineRoll = 2 * (x * y + w * z);
+        const float sineRoll = static_cast<Type>(2) * ((x * y) + (w * z));
         const float cosineRoll = (w * w) + (x * x) - (y * y) - (z * z);
 
         // Handle potential Gimbal Lock.
-        if (math::CheckEqualFloats(math::Abs(sineRoll), 0.f))
+        if (TVector2<Type>(cosineRoll, sineRoll) == TVector2<Type>::GetZeroVector())
         {
-            return 0.f;
+            return static_cast<Type>(0);
         }
 
-        return std::atan2(sineRoll, cosineRoll);
+        return static_cast<Type>(std::atan2(sineRoll, cosineRoll));
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -691,22 +677,22 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TQuaternion<Type> TQuaternion<Type>::MakeFromEuler(const TVector3<Type>& euler)
     {
-        const auto eulerRadians = euler * math::DegreesToRadians();
+        const auto halfEulerRadians = euler * (math::DegreesToRadians<Type>() * static_cast<Type>(0.5));
         
-        const float cosinePitch = std::cos(eulerRadians.x * 0.5f);
-        const float sinePitch = std::sin(eulerRadians.x * 0.5f);
-        const float cosineYaw = std::cos(eulerRadians.y * 0.5f);
-        const float sineYaw = std::sin(eulerRadians.y * 0.5f);
-        const float cosineRoll = std::cos(eulerRadians.z * 0.5f);
-        const float sineRoll = std::sin(eulerRadians.z * 0.5f);
+        const float cosPitch = std::cos(halfEulerRadians.x);
+        const float cosYaw   = std::cos(halfEulerRadians.y);
+        const float cosRoll  = std::cos(halfEulerRadians.z);
 
-        TQuaternion result
-        {
-            cosinePitch * cosineYaw * cosineRoll + sinePitch * sineYaw * sineRoll,
-            sinePitch * cosineYaw * cosineRoll - cosinePitch * sineYaw * sineRoll,
-            cosinePitch * sineYaw * cosineRoll + sinePitch * cosineYaw * sineRoll,
-            cosinePitch * cosineYaw * sineRoll - sinePitch * sineYaw * cosineRoll,
-        };
+        const float sinPitch = std::sin(halfEulerRadians.x);
+        const float sinYaw   = std::sin(halfEulerRadians.y);
+        const float sinRoll  = std::sin(halfEulerRadians.z);
+
+        TQuaternion result;
+        result.w = (cosPitch * cosYaw * cosRoll) + (sinPitch * sinYaw * sinRoll);
+        result.x = (sinPitch * cosYaw * cosRoll) - (cosPitch * sinYaw * sinRoll);
+        result.y = (cosPitch * sinYaw * cosRoll) + (sinPitch * cosYaw * sinRoll);
+        result.z = (cosPitch * cosYaw * sinRoll) - (sinPitch * sinYaw * cosRoll);
+        
         return result;
     }
 

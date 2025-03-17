@@ -59,6 +59,9 @@ namespace nes
         static constexpr TVector4 GetForwardVector() { return TVector4(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
     };
 
+    template <ScalarType VecType>
+    TVector4<VecType> operator*(const ScalarType auto scalar, const TVector4<VecType> vec);
+
     using Vector4f = TVector4<float>;
     using Vector4d = TVector4<double>;
     using Vector4i = TVector4<int>;
@@ -68,10 +71,10 @@ namespace nes
     template <ScalarType Type>
     constexpr TVector4<Type>::TVector4(const ScalarType auto x, const ScalarType auto y, const ScalarType auto z,
         const ScalarType auto w)
-        : x(x)
-        , y(y)
-        , z(z)
-        , w(w)
+        : x(static_cast<Type>(x))
+        , y(static_cast<Type>(y))
+        , z(static_cast<Type>(z))
+        , w(static_cast<Type>(w))
     {
         //
     }
@@ -83,6 +86,7 @@ namespace nes
         y = vector3.y;
         z = vector3.z;
         w = 1.f; // 1 or zero?
+        return *this;
     }
 
     template <ScalarType Type>
@@ -124,14 +128,14 @@ namespace nes
     template <ScalarType Type>
     constexpr TVector4<Type> TVector4<Type>::operator*(const ScalarType auto scalar) const
     {
-        return { x * scalar, y * scalar, z * scalar, w * scalar };
+        return { x * static_cast<Type>(scalar), y * static_cast<Type>(scalar), z * static_cast<Type>(scalar), w * static_cast<Type>(scalar) };
     }
 
     template <ScalarType Type>
     constexpr TVector4<Type> TVector4<Type>::operator/(const ScalarType auto scalar) const
     {
         NES_ASSERT(scalar != static_cast<decltype(scalar)>(0));
-        return { x / scalar, y / scalar, z / scalar, w / scalar };
+        return { x / static_cast<Type>(scalar), y / static_cast<Type>(scalar), z / static_cast<Type>(scalar), w / static_cast<Type>(scalar) };
     }
 
     template <ScalarType Type>
@@ -274,7 +278,13 @@ namespace nes
     {
         return CombineIntoString("(x=", x, ", y=", y, ", z=", z, ", w=", w, ")");
     }
-    
+
+    template <ScalarType VecType>
+    TVector4<VecType> operator*(const ScalarType auto scalar, const TVector4<VecType> vec)
+    {
+        return vec * scalar;
+    }
+
     //-----------------------------------------------------------------------------------------------------------------------------
     ///		@brief : Calculate the Dot Product between two vectors.
     ///            The dot product geometrically represents the cosine of the angle between the two

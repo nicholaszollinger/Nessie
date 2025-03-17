@@ -13,27 +13,33 @@ namespace nes
     {
         // Dimension of the Square Matrix.
         static constexpr size_t N = 2;
-        
-        Type m[N][N]
-        {
-            { 1, 0 },
-            { 0, 1 }
-        };
 
-        /// Default constructor initializes to the Identity Matrix. 
+        using ColumnType = TVector2<Type>;
+        using RowType    = TVector2<Type>;
+
+    private:
+        ColumnType m_columns[N]{};
+
+    public:
+        /// Default constructor initializes to zero matrix. 
         constexpr TMatrix2x2() = default;
-        constexpr TMatrix2x2(const Type values[N * N]);
+        constexpr TMatrix2x2(const Type diagonalValue);
+        constexpr TMatrix2x2(const Type& x0, const Type& y0,
+                            const Type& x1, const Type& y1);
+        constexpr TMatrix2x2(const ColumnType& c0, const ColumnType& c1);
 
         constexpr bool operator==(const TMatrix2x2& other) const;
         constexpr bool operator!=(const TMatrix2x2& other) const { return !(*this == other); }
         TMatrix2x2 operator+(const TMatrix2x2& other) const;
         TMatrix2x2 operator-(const TMatrix2x2& other) const;
         TMatrix2x2 operator*(const TMatrix2x2& other) const;
-        TMatrix2x2 operator*(const float scalar);
+        TMatrix2x2 operator*(const Type scalar) const;
         TMatrix2x2& operator+=(const TMatrix2x2& other);
         TMatrix2x2& operator-=(const TMatrix2x2& other);
         TMatrix2x2& operator*=(const TMatrix2x2& other);
-        TMatrix2x2& operator*=(const float scalar);
+        TMatrix2x2& operator*=(const Type scalar);
+        ColumnType& operator[](size_t index);
+        const ColumnType& operator[](size_t index) const;
 
         bool TryInvert();
         bool TryGetInverse(TMatrix2x2& result) const;
@@ -51,8 +57,8 @@ namespace nes
         TMatrix2x2& Concatenate(const TMatrix2x2& other);
         static TMatrix2x2 Concatenate(const TMatrix2x2& a, const TMatrix2x2& b);
         
-        static constexpr TMatrix2x2 Zero();
-        static constexpr TMatrix2x2 Identity() { return TMatrix2x2(); }
+        static constexpr TMatrix2x2 Zero() { return TMatrix2x2(static_cast<Type>(0)); }
+        static constexpr TMatrix2x2 Identity() { return TMatrix2x2(static_cast<Type>(1)); }
     };
 
     template <FloatingPointType Type>
@@ -65,10 +71,28 @@ namespace nes
 namespace nes
 {
     template <FloatingPointType Type>
-    constexpr TMatrix2x2<Type>::TMatrix2x2(const Type values[N * N])
+    constexpr TMatrix2x2<Type>::TMatrix2x2(const Type diagonalValue)
     {
-        NES_ASSERT(values != nullptr);
-        memcpy(&(m[0][0]), values, N * N * sizeof(Type));
+        m_columns[0][0] = diagonalValue;
+        m_columns[1][1] = diagonalValue;
+    }
+
+    template <FloatingPointType Type>
+    constexpr TMatrix2x2<Type>::TMatrix2x2(const Type& x0, const Type& y0, const Type& x1, const Type& y1)
+        : m_columns
+        {
+            ColumnType(x0, y0),
+            ColumnType(x1, y1)
+        }
+    {
+        //
+    }
+
+    template <FloatingPointType Type>
+    constexpr TMatrix2x2<Type>::TMatrix2x2(const ColumnType& c0, const ColumnType& c1)
+        : m_columns{ c0, c1 }
+    {
+        //
     }
 
     template <FloatingPointType Type>
@@ -76,37 +100,19 @@ namespace nes
     {
         for (size_t i = 0; i < N; ++i)
         {
-            for (size_t j = 0; j < N; ++j)
-            {
-                if (m[i][j] != other.m[i][j])
-                    return false;
-            }
+            if (this->m_columns[i] != other[i])
+                return false;
         }
 
         return true;
     }
 
     template <FloatingPointType Type>
-    constexpr TMatrix2x2<Type> TMatrix2x2<Type>::Zero()
-    {
-        TMatrix2x2 result{};
-        memset(&(result.m[0][0]), 0, N * N * sizeof(Type));
-        return result;
-    }
-
-    template <FloatingPointType Type>
     TMatrix2x2<Type> TMatrix2x2<Type>::operator+(const TMatrix2x2& other) const
     {
         TMatrix2x2 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] += other.m[i][j];
-            }
-        }
-        
+        result[0] += other[0];
+        result[1] += other[1];
         return result;
     }
 
@@ -117,10 +123,7 @@ namespace nes
         
         for (size_t i = 0; i < N; ++i)
         {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] -= other.m[i][j];
-            }
+            result.m_columns[i] -= other[i];
         }
         
         return result;
@@ -129,32 +132,24 @@ namespace nes
     template <FloatingPointType Type>
     TMatrix2x2<Type> TMatrix2x2<Type>::operator*(const TMatrix2x2& other) const
     {
-        TMatrix2x2 result;
-        
-        // 1st Row * 1-2 Columns
-        result.m[0][0] = (m[0][0] * other.m[0][0]) + (m[0][1] * other.m[1][0]);
-        result.m[0][1] = (m[0][0] * other.m[0][1]) + (m[0][1] * other.m[1][1]);
+        const ColumnType a0 = m_columns[0];
+        const ColumnType a1 = m_columns[1];
 
-        // 2nd Row * 1-2 Columns
-        result.m[1][0] = (m[1][0] * other.m[0][0] + (m[1][1] * other.m[1][0]));
-        result.m[1][1] = (m[1][0] * other.m[0][1] + (m[1][1] * other.m[1][1]));
+        const ColumnType b0 = other[0];
+        const ColumnType b1 = other[1];
         
+        TMatrix2x2 result;
+        result[0] = (a0 * b0[0]) + (a1 * b0[1]);
+        result[1] = (a0 * b1[0]) + (a1 * b1[1]);
         return result;
     }
 
     template <FloatingPointType Type>
-    TMatrix2x2<Type> TMatrix2x2<Type>::operator*(const float scalar)
+    TMatrix2x2<Type> TMatrix2x2<Type>::operator*(const Type scalar) const
     {
         TMatrix2x2 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] *= scalar;
-            }
-        }
-        
+        result[0] *= scalar;
+        result[1] *= scalar;
         return result;
     }
 
@@ -180,10 +175,30 @@ namespace nes
     }
 
     template <FloatingPointType Type>
-    TMatrix2x2<Type>& TMatrix2x2<Type>::operator*=(const float scalar)
+    TMatrix2x2<Type>& TMatrix2x2<Type>::operator*=(const Type scalar)
     {
         *this = *this + scalar;
         return *this;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a column of the matrix. The index must less than 2. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    typename TMatrix2x2<Type>::ColumnType& TMatrix2x2<Type>::operator[](const size_t index)
+    {
+        NES_ASSERT(index < N);
+        return m_columns[index];
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    ///		@brief : Returns a column of the matrix. The index must less than 2. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    const typename TMatrix2x2<Type>::ColumnType& TMatrix2x2<Type>::operator[](const size_t index) const
+    {
+        NES_ASSERT(index < N);
+        return m_columns[index];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -206,11 +221,11 @@ namespace nes
             
         // The inverse determinant * the adjugate
         // Nice video explaining the process: https://www.youtube.com/watch?v=01c12NaUQDw
-        m[0][0] = invDeterminant * copy.m[1][1];
-        m[1][1] = invDeterminant * copy.m[0][0];
+        this->m_columns[0][0] = invDeterminant * copy[1][1];
+        this->m_columns[1][1] = invDeterminant * copy[0][0];
 
-        m[0][1] = invDeterminant * -copy.m[0][1];
-        m[1][0] = invDeterminant * -copy.m[1][0];
+        this->m_columns[1][0] = invDeterminant * -copy[1][0];
+        this->m_columns[0][1] = invDeterminant * -copy[0][1];
 
         return true;
     }
@@ -230,8 +245,7 @@ namespace nes
     template <FloatingPointType Type>
     bool TMatrix2x2<Type>::IsIdentity() const
     {
-        return m[0][0] == 1.0f && m[0][1] == 0.0f
-            && m[1][0] == 0.0f && m[1][1] == 1.0f;
+        return *this == TMatrix2x2<Type>::Identity();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -256,7 +270,7 @@ namespace nes
         {
             for (size_t j = 0; j < N; ++j)
             {
-                result.m[i][j] = m[j][i];
+                result[i][j] = this->m_columns[j][i];
             }
         }
         
@@ -271,8 +285,8 @@ namespace nes
     {
         switch (axis)
         {
-            case Axis::X: return TVector2<Type>(m[0][0], m[1][0]);
-            case Axis::Y: return TVector2<Type>(m[0][1], m[1][1]);
+            case Axis::X: return m_columns[0];
+            case Axis::Y: return m_columns[1];
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
@@ -286,8 +300,8 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const int axis) const
     {
-        NES_ASSERT(axis >= 0 && axis < N);
-        return TVector2<Type>(m[0][axis], m[1][axis]);
+        NES_ASSERT(axis >= 0 && axis < static_cast<int>(N));
+        return m_columns[axis];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -296,8 +310,8 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector2<Type> TMatrix2x2<Type>::GetColumn(const int column) const
     {
-        NES_ASSERT(column >= 0 && column < N);
-        return TVector2<Type>(m[0][column], m[1][column]);
+        NES_ASSERT(column >= 0 && column < static_cast<int>(N));
+        return m_columns[column];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -306,8 +320,8 @@ namespace nes
     template <FloatingPointType Type>
     constexpr TVector2<Type> TMatrix2x2<Type>::GetRow(const int row) const
     {
-        NES_ASSERT(row >= 0 && row < N);
-        return TVector2<Type>(m[row][0], m[row][1]);
+        NES_ASSERT(row >= 0 && row < static_cast<int>(N));
+        return TVector2<Type>(this->m_columns[0][row], this->m_columns[1][row]);
     }
 
     template <FloatingPointType Type>
@@ -316,7 +330,7 @@ namespace nes
         // Page 162 of "3D Math Primer for Graphics and Game Development".
         // Page 27 of "Real-Time Collision Detection".
         // Difference of the products of the two diagonals
-        return (m[0][0] * m[1][1]) - (m[0][1] * m[1][0]);
+        return (this->m_columns[0][0] * this->m_columns[1][1]) - (this->m_columns[1][0] * this->m_columns[0][1]);
     }
 
     template <FloatingPointType Type>
@@ -329,7 +343,7 @@ namespace nes
         {
             for (size_t j = 0; j < N; ++j)
             {
-                result += std::to_string(m[i][j]) + " ";
+                result += std::to_string(this->m_columns[j][i]) + " ";
             }
             
             result += "\n";
@@ -362,13 +376,8 @@ namespace nes
     TVector2<Type> operator*(const TMatrix2x2<Type>& matrix, const TVector2<Type>& vector)
     {
         TVector2<Type> result;
-        // Column Orientation
-        result.x = matrix.m[0][0] * vector.x + matrix.m[0][1] * vector.y;
-        result.y = matrix.m[1][0] * vector.x + matrix.m[1][1] * vector.y;
-
-        // Row Orientation
-        //result.x = matrix.m[0][0] * vector.x + matrix.m[1][0] * vector.y;
-        //result.y = matrix.m[0][1] * vector.x + matrix.m[1][1] * vector.y;
+        result[0] = matrix[0][0] * vector[0] + matrix[1][0] * vector[1];
+        result[1] = matrix[0][1] * vector[0] + matrix[1][1] * vector[1];
         return result;
     }
 

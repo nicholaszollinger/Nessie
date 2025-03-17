@@ -174,7 +174,7 @@ namespace nes
         {
             // ...project the toPoint vector onto that axis to get the
             // distance along the axis of toPoint from the center.
-            const TVector2<Type> axis = m_orientation.GetAxis(i);
+            const TVector2<Type> axis = m_orientation[i];
             Type distance = TVector2<Type>::Dot(toPoint, axis); 
 
             // Clamp the distance to the extents
@@ -224,11 +224,11 @@ namespace nes
         {
             for (int j = 0; j < 2; ++j)
             {
-                orientation.m[i][j] = TVector2<Type>::Dot(m_orientation.GetRow(i), other.m_orientation.GetColumn(j));
+                orientation[i][j] = TVector2<Type>::Dot(m_orientation.GetRow(i), other.m_orientation.GetColumn(j));
 
                 // Compute common subexpressions. Add in an epsilon term to counteract arithmetic errors when two edges are
                 // parallel and their cross product is (near) null.
-                orientationAbs.m[i][j] = math::Abs(orientation.m[i][j]) + math::PrecisionDelta<Type>();  
+                orientationAbs[i][j] = math::Abs(orientation[i][j]) + math::PrecisionDelta<Type>();  
             }
         }
 
@@ -249,8 +249,8 @@ namespace nes
         for (int i = 0; i < 2; ++i)
         {
             radiusA = m_extents[i];
-            radiusB = (other.m_extents[0] * orientationAbs.m[i][0])
-                    + (other.m_extents[1] * orientationAbs.m[i][1]);
+            radiusB = (other.m_extents[0] * orientationAbs[i][0])
+                    + (other.m_extents[1] * orientationAbs[i][1]);
 
             if (math::Abs(translation[i]) > radiusA + radiusB)
                 return false;
@@ -260,8 +260,8 @@ namespace nes
         // Test L = other.R[1]
         for (int i = 0; i < 2; ++i)
         {
-            radiusA = (m_extents[0] * orientationAbs.m[i][0])
-                    + (m_extents[1] * orientationAbs.m[i][1]);
+            radiusA = (m_extents[0] * orientationAbs[i][0])
+                    + (m_extents[1] * orientationAbs[i][1]);
             radiusB = other.m_extents[i];
 
             if (math::Abs((translation[0] * orientation[0][i]) + (translation[1] * orientation[1][i])) > radiusA + radiusB)
@@ -364,11 +364,11 @@ namespace nes
         {
             for (int j = 0; j < 3; ++j)
             {
-                orientation.m[i][j] = TVector3<Type>::Dot(m_orientation.GetRow(i), other.m_orientation.GetColumn(j));
+                orientation[i][j] = TVector3<Type>::Dot(m_orientation.GetRow(i), other.m_orientation.GetColumn(j));
 
                 // Compute common subexpressions. Add in an epsilon term to counteract arithmetic errors when two edges are
                 // parallel and their cross product is (near) null.
-                orientationAbs.m[i][j] = math::Abs(orientation.m[i][j]) + math::PrecisionDelta<Type>();  
+                orientationAbs[i][j] = math::Abs(orientation[i][j]) + math::PrecisionDelta<Type>();  
             }
         }
 
@@ -392,9 +392,9 @@ namespace nes
         for (int i = 0; i < 3; ++i)
         {
             radiusA = m_extents[i];
-            radiusB = (other.m_extents[0] * orientationAbs.m[i][0])
-                    + (other.m_extents[1] * orientationAbs.m[i][1])
-                    + (other.m_extents[2] * orientationAbs.m[i][2]);
+            radiusB = (other.m_extents[0] * orientationAbs[i][0])
+                    + (other.m_extents[1] * orientationAbs[i][1])
+                    + (other.m_extents[2] * orientationAbs[i][2]);
 
             // There *is* a separating Axis:
             if (math::Abs(translation[i]) > radiusA + radiusB)
@@ -407,9 +407,9 @@ namespace nes
         // L = other.m_localOrientation[2]
         for (int i = 0; i < 3; ++i)
         {
-            radiusA = (m_extents[0] * orientationAbs.m[i][0])
-                    + (m_extents[1] * orientationAbs.m[i][1])
-                    + (m_extents[2] * orientationAbs.m[i][2]);
+            radiusA = (m_extents[0] * orientationAbs[i][0])
+                    + (m_extents[1] * orientationAbs[i][1])
+                    + (m_extents[2] * orientationAbs[i][2]);
             radiusB = other.m_extents[i];
 
             // There *is* a separating Axis:
@@ -418,57 +418,57 @@ namespace nes
         }
 
         // Test Axis: L = R[0] x other.R[0]
-        radiusA =       m_extents[1] * orientationAbs.m[2][0] +       m_extents[2] * orientationAbs.m[1][0];
-        radiusB = other.m_extents[1] * orientationAbs.m[0][2] + other.m_extents[2] * orientationAbs.m[0][1];
-        if (math::Abs(translation[2] * orientation.m[1][0] - translation[1] * orientation.m[2][0]) > radiusA + radiusB)
+        radiusA =       m_extents[1] * orientationAbs[2][0] +       m_extents[2] * orientationAbs[1][0];
+        radiusB = other.m_extents[1] * orientationAbs[0][2] + other.m_extents[2] * orientationAbs[0][1];
+        if (math::Abs(translation[2] * orientation[1][0] - translation[1] * orientation[2][0]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[0] x other.R[1]
-        radiusA =       m_extents[1] * orientationAbs.m[2][1] +       m_extents[2] * orientationAbs.m[1][1];
-        radiusB = other.m_extents[0] * orientationAbs.m[0][2] + other.m_extents[2] * orientationAbs.m[0][0];
-        if (math::Abs(translation[2] * orientation.m[1][1] - translation[1] * orientation.m[2][1]) > radiusA + radiusB)
+        radiusA =       m_extents[1] * orientationAbs[2][1] +       m_extents[2] * orientationAbs[1][1];
+        radiusB = other.m_extents[0] * orientationAbs[0][2] + other.m_extents[2] * orientationAbs[0][0];
+        if (math::Abs(translation[2] * orientation[1][1] - translation[1] * orientation[2][1]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[0] x other.R[2]
-        radiusA =       m_extents[1] * orientationAbs.m[2][2] +       m_extents[2] * orientationAbs.m[1][2];
-        radiusB = other.m_extents[0] * orientationAbs.m[0][1] + other.m_extents[1] * orientationAbs.m[0][0];
-        if (math::Abs(translation[2] * orientation.m[1][2] - translation[1] * orientation.m[2][2]) > radiusA + radiusB)
+        radiusA =       m_extents[1] * orientationAbs[2][2] +       m_extents[2] * orientationAbs[1][2];
+        radiusB = other.m_extents[0] * orientationAbs[0][1] + other.m_extents[1] * orientationAbs[0][0];
+        if (math::Abs(translation[2] * orientation[1][2] - translation[1] * orientation[2][2]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[1] x other.R[0]
-        radiusA =       m_extents[0] * orientationAbs.m[2][0] +       m_extents[2] * orientationAbs.m[0][0];
-        radiusB = other.m_extents[1] * orientationAbs.m[1][2] + other.m_extents[2] * orientationAbs.m[1][1];
-        if (math::Abs(translation[0] * orientation.m[2][0] - translation[2] * orientation.m[0][0]) > radiusA + radiusB)
+        radiusA =       m_extents[0] * orientationAbs[2][0] +       m_extents[2] * orientationAbs[0][0];
+        radiusB = other.m_extents[1] * orientationAbs[1][2] + other.m_extents[2] * orientationAbs[1][1];
+        if (math::Abs(translation[0] * orientation[2][0] - translation[2] * orientation[0][0]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[1] x other.R[1]
-        radiusA =       m_extents[0] * orientationAbs.m[2][1] +       m_extents[2] * orientationAbs.m[0][1];
-        radiusB = other.m_extents[0] * orientationAbs.m[1][2] + other.m_extents[2] * orientationAbs.m[1][0];
-        if (math::Abs(translation[0] * orientation.m[2][1] - translation[2] * orientation.m[0][1]) > radiusA + radiusB)
+        radiusA =       m_extents[0] * orientationAbs[2][1] +       m_extents[2] * orientationAbs[0][1];
+        radiusB = other.m_extents[0] * orientationAbs[1][2] + other.m_extents[2] * orientationAbs[1][0];
+        if (math::Abs(translation[0] * orientation[2][1] - translation[2] * orientation[0][1]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[1] x other.R[2]
-        radiusA =       m_extents[0] * orientationAbs.m[2][2] +       m_extents[2] * orientationAbs.m[0][2];
-        radiusB = other.m_extents[0] * orientationAbs.m[1][1] + other.m_extents[1] * orientationAbs.m[1][0];
-        if (math::Abs(translation[0] * orientation.m[2][1] - translation[2] * orientation.m[0][1]) > radiusA + radiusB)
+        radiusA =       m_extents[0] * orientationAbs[2][2] +       m_extents[2] * orientationAbs[0][2];
+        radiusB = other.m_extents[0] * orientationAbs[1][1] + other.m_extents[1] * orientationAbs[1][0];
+        if (math::Abs(translation[0] * orientation[2][1] - translation[2] * orientation[0][1]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[2] x other.R[0]
-        radiusA =       m_extents[0] * orientationAbs.m[1][0] +       m_extents[1] * orientationAbs.m[0][0];
-        radiusB = other.m_extents[1] * orientationAbs.m[2][2] + other.m_extents[2] * orientationAbs.m[2][1];
-        if (math::Abs(translation[1] * orientation.m[0][0] - translation[0] * orientation.m[1][0]) > radiusA + radiusB)
+        radiusA =       m_extents[0] * orientationAbs[1][0] +       m_extents[1] * orientationAbs[0][0];
+        radiusB = other.m_extents[1] * orientationAbs[2][2] + other.m_extents[2] * orientationAbs[2][1];
+        if (math::Abs(translation[1] * orientation[0][0] - translation[0] * orientation[1][0]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[2] x other.R[1]
-        radiusA =       m_extents[0] * orientationAbs.m[1][1] +       m_extents[1] * orientationAbs.m[0][1];
-        radiusB = other.m_extents[0] * orientationAbs.m[2][2] + other.m_extents[2] * orientationAbs.m[2][0];
-        if (math::Abs(translation[1] * orientation.m[0][1] - translation[0] * orientation.m[1][1]) > radiusA + radiusB)
+        radiusA =       m_extents[0] * orientationAbs[1][1] +       m_extents[1] * orientationAbs[0][1];
+        radiusB = other.m_extents[0] * orientationAbs[2][2] + other.m_extents[2] * orientationAbs[2][0];
+        if (math::Abs(translation[1] * orientation[0][1] - translation[0] * orientation[1][1]) > radiusA + radiusB)
             return false;
 
         // Test Axis: L = R[2] x other.R[2]
-        radiusA =       m_extents[0] * orientationAbs.m[1][2] +       m_extents[1] * orientationAbs.m[0][2];
-        radiusB = other.m_extents[0] * orientationAbs.m[2][1] + other.m_extents[1] * orientationAbs.m[2][0];
-        if (math::Abs(translation[1] * orientation.m[0][2] - translation[0] * orientation.m[1][2]) > radiusA + radiusB)
+        radiusA =       m_extents[0] * orientationAbs[1][2] +       m_extents[1] * orientationAbs[0][2];
+        radiusB = other.m_extents[0] * orientationAbs[2][1] + other.m_extents[1] * orientationAbs[2][0];
+        if (math::Abs(translation[1] * orientation[0][2] - translation[0] * orientation[1][2]) > radiusA + radiusB)
             return false;
 
         // There is no separating Axis found, so the OBBs must be intersecting

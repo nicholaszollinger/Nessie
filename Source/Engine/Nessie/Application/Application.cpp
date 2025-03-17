@@ -109,7 +109,7 @@ namespace nes
         }
 
         // Create the Renderer
-        if (!m_renderer.Init(&m_window))
+        if (!m_renderer.Init(&m_window, m_properties))
         {
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the Renderer!");
             return ExitCode::FatalError;
@@ -132,21 +132,24 @@ namespace nes
 
         while (!m_window.ShouldClose() && !m_closeRequested)
         {
-            const double deltaTime = m_timer.Tick();
+            const double deltaTime = m_timer.Tick<Timer::Seconds>();
             m_timeSinceStartup += deltaTime;
-            
-            m_inputManager.Update(deltaTime);
             
             // [TODO]: Sync with the Render Thread.
             // [TODO]: Sync with the Resource Thread.
-            
-            m_renderer.BeginFrame();
+
+            // Update:
+            ProcessAppEvents();
+            m_inputManager.Update(deltaTime);
+            m_sceneManager.Update(deltaTime);
+
+            // Submitting to Renderer:
+            if (m_renderer.BeginFrame())
             {
-                // App Update:
-                ProcessAppEvents();
-                m_sceneManager.Update(deltaTime);
+                m_sceneManager.PreRender();
+                m_sceneManager.Render();
                 
-                m_renderer.SubmitFrame();
+                m_renderer.EndFrame();
             }
             
             m_window.ProcessEvents();
@@ -167,8 +170,10 @@ namespace nes
     {
         NES_ASSERTV(IsMainThread());
 
-        m_sceneManager.Close();
-        m_renderer.Close();
+        m_renderer.WaitUntilIdle();
+
+        m_sceneManager.Shutdown();
+        m_renderer.Shutdown();
         m_inputManager.Shutdown();
         m_window.Close();
 
@@ -189,7 +194,7 @@ namespace nes
         m_closeRequested = true;
     }
 
-    void Application::PushEvent([[maybe_unused]] Event& e)
+    void Application::PushEvent(Event& e)
     {
         m_sceneManager.OnEvent(e);
     }

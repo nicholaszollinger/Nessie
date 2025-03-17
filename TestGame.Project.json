@@ -1,5 +1,5 @@
 {
     "ProjectName": "TestGame",
     "StartupProject": "TestGame",
-    "RenderAPI": "SDL"
+    "RenderAPI": "Vulkan"
 }
