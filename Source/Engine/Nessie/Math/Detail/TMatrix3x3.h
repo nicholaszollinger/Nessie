@@ -29,29 +29,34 @@ namespace nes
     {
         // Dimension of the Square Matrix.
         static constexpr size_t N = 3;
-        using RowType = TVector3<Type>;
-        
-        Type m[N][N]
-        {
-            { 1, 0, 0 },
-            { 0, 1, 0 },
-            { 0, 0, 1 }
-        };
+        using ColumnType = TVector3<Type>;
+        using RowType    = TVector3<Type>;
 
-        /// Default constructor initializes to the Identity Matrix. 
+    private:
+        ColumnType m_columns[N]{};
+
+    public:
+        /// Default constructor initializes to the Zero Matrix. 
         constexpr TMatrix3x3() = default;
-        constexpr TMatrix3x3(const Type values[N * N]);
+        constexpr TMatrix3x3(const Type& diagonalValue);
+        constexpr TMatrix3x3(const Type& x0, const Type& y0, const Type& z0,
+                            const Type& x1, const Type& y1, const Type& z1,
+                            const Type& x2, const Type& y2, const Type& z2);
+        constexpr TMatrix3x3(const ColumnType& c0, const ColumnType& c1, const ColumnType& c2);
 
         constexpr bool operator==(const TMatrix3x3& other) const;
         constexpr bool operator!=(const TMatrix3x3& other) const { return !(*this == other); }
         TMatrix3x3 operator+(const TMatrix3x3& other) const;
         TMatrix3x3 operator-(const TMatrix3x3& other) const;
         TMatrix3x3 operator*(const TMatrix3x3& other) const;
-        TMatrix3x3 operator*(const float scalar);
+        TMatrix3x3 operator*(const Type scalar) const;
         TMatrix3x3& operator+=(const TMatrix3x3& other);
         TMatrix3x3& operator-=(const TMatrix3x3& other);
         TMatrix3x3& operator*=(const TMatrix3x3& other);
-        TMatrix3x3& operator*=(const float scalar);
+        TMatrix3x3& operator*=(const Type scalar);
+
+        ColumnType& operator[](const size_t index);
+        const ColumnType& operator[](const size_t index) const;
 
         bool TryInvert();
         bool TryGetInverse(TMatrix3x3& result) const;
@@ -72,8 +77,8 @@ namespace nes
         TMatrix3x3& Concatenate(const TMatrix3x3& other);
         static TMatrix3x3 Concatenate(const TMatrix3x3& a, const TMatrix3x3& b);
         
-        static constexpr TMatrix3x3 Zero();
-        static constexpr TMatrix3x3 Identity() { return {}; }
+        static constexpr TMatrix3x3 Zero() { return {}; }
+        static constexpr TMatrix3x3 Identity() { return TMatrix3x3(static_cast<Type>(1)); }
     };
 
     template <FloatingPointType Type>
@@ -86,10 +91,32 @@ namespace nes
 namespace nes
 {
     template <FloatingPointType Type>
-    constexpr TMatrix3x3<Type>::TMatrix3x3(const Type values[N * N])
+    constexpr TMatrix3x3<Type>::TMatrix3x3(const Type& diagonalValue)
     {
-        NES_ASSERT(values != nullptr);
-        memcpy(&(m[0][0]), values, N * N * sizeof(Type));
+        m_columns[0][0] = diagonalValue;
+        m_columns[1][1] = diagonalValue;
+        m_columns[2][2] = diagonalValue;
+    }
+
+    template <FloatingPointType Type>
+    constexpr TMatrix3x3<Type>::TMatrix3x3(const Type& x0, const Type& y0, const Type& z0, const Type& x1,
+        const Type& y1, const Type& z1, const Type& x2, const Type& y2, const Type& z2)
+        : m_columns
+        {
+            ColumnType(x0, y0, z0),
+            ColumnType(x1, y1, z1),
+            ColumnType(x2, y2, z2)
+        }
+    {
+        //
+    }
+
+    template <FloatingPointType Type>
+    constexpr TMatrix3x3<Type>::TMatrix3x3(const ColumnType& c0, const ColumnType& c1,
+        const ColumnType& c2)
+        : m_columns{ c0, c1, c2 }
+    {
+        //
     }
 
     template <FloatingPointType Type>
@@ -97,43 +124,20 @@ namespace nes
     {
         for (size_t i = 0; i < N; ++i)
         {
-            for (size_t j = 0; j < N; ++j)
-            {
-                if (m[i][j] != other.m[i][j])
-                    return false;
-            }
+            if (this->m_columns[i] != other[i])
+                return false;
         }
 
         return true;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Returns a Matrix with all values set to 0. 
-    ///		@returns : 
-    //----------------------------------------------------------------------------------------------------
-    template <FloatingPointType Type>
-    constexpr TMatrix3x3<Type> TMatrix3x3<Type>::Zero()
-    {
-        TMatrix3x3 result{};
-        memset(&(result.m[0][0]), 0, N * N * sizeof(Type));
-        return result;
-    }
-
+    
     template <FloatingPointType Type>
     TMatrix3x3<Type> TMatrix3x3<Type>::operator+(const TMatrix3x3& other) const
     {
         TMatrix3x3 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] += other.m[i][j];
-            }
-        }
-        
+        result[0] += other[0];
+        result[1] += other[1];
+        result[2] += other[2];
         return result;
     }
 
@@ -141,54 +145,37 @@ namespace nes
     TMatrix3x3<Type> TMatrix3x3<Type>::operator-(const TMatrix3x3& other) const
     {
         TMatrix3x3 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] -= other.m[i][j];
-            }
-        }
-        
+        result[0] -= other[0];
+        result[1] -= other[1];
+        result[2] -= other[2];
         return result;
     }
 
     template <FloatingPointType Type>
     TMatrix3x3<Type> TMatrix3x3<Type>::operator*(const TMatrix3x3& other) const
     {
-        TMatrix3x3 result;
-        
-        // 1st Row * 1-3 Columns
-        result.m[0][0] = (m[0][0] * other.m[0][0]) + (m[0][1] * other.m[1][0]) + (m[0][2] * other.m[2][0]);
-        result.m[0][1] = (m[0][0] * other.m[0][1]) + (m[0][1] * other.m[1][1]) + (m[0][2] * other.m[2][1]);
-        result.m[0][2] = (m[0][0] * other.m[0][2]) + (m[0][1] * other.m[1][2]) + (m[0][2] * other.m[2][2]);
-        
-        // 2nd Row * 1-3 Columns
-        result.m[1][0] = (m[1][0] * other.m[0][0]) + (m[1][1] * other.m[1][0]) + (m[1][2] * other.m[2][0]);
-        result.m[1][1] = (m[1][0] * other.m[0][1]) + (m[1][1] * other.m[1][1]) + (m[1][2] * other.m[2][1]);
-        result.m[1][2] = (m[1][0] * other.m[0][2]) + (m[1][1] * other.m[1][2]) + (m[1][2] * other.m[2][2]);
+        const ColumnType a0 = m_columns[0];
+        const ColumnType a1 = m_columns[1];
+        const ColumnType a2 = m_columns[2];
 
-        // 3rd Row * 1-3 Columns
-        result.m[2][0] = (m[2][0] * other.m[0][0]) + (m[2][1] * other.m[1][0]) + (m[2][2] * other.m[2][0]);
-        result.m[2][1] = (m[2][0] * other.m[0][1]) + (m[2][1] * other.m[1][1]) + (m[2][2] * other.m[2][1]);
-        result.m[2][2] = (m[2][0] * other.m[0][2]) + (m[2][1] * other.m[1][2]) + (m[2][2] * other.m[2][2]);
+        const ColumnType b0 = other[0];
+        const ColumnType b1 = other[1];
+        const ColumnType b2 = other[2];
         
+        TMatrix3x3 result;
+        result[0] = (a0 * b0[0]) + (a1 * b0[1]) + (a2 * b0[2]);
+        result[1] = (a0 * b1[0]) + (a1 * b1[1]) + (a2 * b1[2]);
+        result[2] = (a0 * b2[0]) + (a1 * b2[1]) + (a2 * b2[2]);
         return result;
     }
 
     template <FloatingPointType Type>
-    TMatrix3x3<Type> TMatrix3x3<Type>::operator*(const float scalar)
+    TMatrix3x3<Type> TMatrix3x3<Type>::operator*(const Type scalar) const
     {
         TMatrix3x3 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] *= scalar;
-            }
-        }
-        
+        result[0] *= scalar;
+        result[1] *= scalar;
+        result[2] *= scalar;
         return result;
     }
 
@@ -214,10 +201,24 @@ namespace nes
     }
 
     template <FloatingPointType Type>
-    TMatrix3x3<Type>& TMatrix3x3<Type>::operator*=(const float scalar)
+    TMatrix3x3<Type>& TMatrix3x3<Type>::operator*=(const Type scalar)
     {
         *this = *this + scalar;
         return *this;
+    }
+
+    template <FloatingPointType Type>
+    typename TMatrix3x3<Type>::ColumnType& TMatrix3x3<Type>::operator[](const size_t index)
+    {
+        NES_ASSERT(index < N);
+        return m_columns[index];
+    }
+
+    template <FloatingPointType Type>
+    const typename TMatrix3x3<Type>::ColumnType& TMatrix3x3<Type>::operator[](const size_t index) const
+    {
+        NES_ASSERT(index < N);
+        return m_columns[index];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -238,17 +239,17 @@ namespace nes
 
         const float invDeterminant = 1.0f / determinant;
             
-        m[0][0] = invDeterminant * math::DifferenceOfProducts(copy.m[1][1], copy.m[2][2], copy.m[1][2], copy.m[2][1]);
-        m[1][0] = invDeterminant * math::DifferenceOfProducts(copy.m[1][2], copy.m[2][0], copy.m[1][0], copy.m[2][2]);
-        m[2][0] = invDeterminant * math::DifferenceOfProducts(copy.m[1][0], copy.m[2][1], copy.m[1][1], copy.m[2][0]);
+        this->m_columns[0][0] = invDeterminant * math::DifferenceOfProducts(copy[1][1], copy[2][2], copy[2][1], copy[1][2]);
+        this->m_columns[0][1] = invDeterminant * math::DifferenceOfProducts(copy[2][1], copy[0][2], copy[0][1], copy[2][2]);
+        this->m_columns[0][2] = invDeterminant * math::DifferenceOfProducts(copy[0][1], copy[1][2], copy[1][1], copy[0][2]);
             
-        m[0][1] = invDeterminant * math::DifferenceOfProducts(copy.m[0][2], copy.m[2][1], copy.m[0][1], copy.m[2][2]);
-        m[1][1] = invDeterminant * math::DifferenceOfProducts(copy.m[0][0], copy.m[2][2], copy.m[0][2], copy.m[2][0]);
-        m[2][1] = invDeterminant * math::DifferenceOfProducts(copy.m[0][1], copy.m[2][0], copy.m[0][0], copy.m[2][1]);
+        this->m_columns[1][0] = invDeterminant * math::DifferenceOfProducts(copy[2][0], copy[1][2], copy[1][0], copy[2][2]);
+        this->m_columns[1][1] = invDeterminant * math::DifferenceOfProducts(copy[0][0], copy[2][2], copy[2][0], copy[0][2]);
+        this->m_columns[1][2] = invDeterminant * math::DifferenceOfProducts(copy[1][0], copy[0][2], copy[0][0], copy[1][2]);
             
-        m[0][2] = invDeterminant * math::DifferenceOfProducts(copy.m[0][1], copy.m[1][2], copy.m[0][2], copy.m[1][1]);
-        m[1][2] = invDeterminant * math::DifferenceOfProducts(copy.m[0][2], copy.m[1][0], copy.m[0][0], copy.m[1][2]);
-        m[2][2] = invDeterminant * math::DifferenceOfProducts(copy.m[0][0], copy.m[1][1], copy.m[0][1], copy.m[1][0]);
+        this->m_columns[2][0] = invDeterminant * math::DifferenceOfProducts(copy[1][0], copy[2][1], copy[2][0], copy[1][1]);
+        this->m_columns[2][1] = invDeterminant * math::DifferenceOfProducts(copy[2][0], copy[0][1], copy[0][0], copy[2][1]);
+        this->m_columns[2][2] = invDeterminant * math::DifferenceOfProducts(copy[0][0], copy[1][1], copy[1][0], copy[0][1]);
 
         return true;
     }
@@ -268,9 +269,7 @@ namespace nes
     template <FloatingPointType Type>
     bool TMatrix3x3<Type>::IsIdentity() const
     {
-        return m[0][0] == 1.f && m[0][1] == 0.f && m[0][2] == 0.f
-            && m[1][0] == 0.f && m[1][1] == 1.f && m[1][2] == 0.f
-            && m[2][0] == 0.f && m[2][1] == 0.f && m[2][2] == 1.f;
+        return *this == Identity(); 
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -295,7 +294,7 @@ namespace nes
         {
             for (size_t j = 0; j < N; ++j)
             {
-                result.m[i][j] = m[j][i];
+                result[i][j] = this->m_columns[j][i];
             }
         }
         
@@ -311,13 +310,13 @@ namespace nes
 
         // Difference of the products of the 3 forward and 3 backward diagonals
         // An image can be found in the book that shows it clearly.
-        determinant += (m[0][0] * m[1][1] * m[2][2]);
-        determinant += (m[0][1] * m[1][2] * m[2][0]);
-        determinant += (m[0][2] * m[1][0] * m[2][1]);
+        determinant += (this->m_columns[0][0] * this->m_columns[1][1] * this->m_columns[2][2]);
+        determinant += (this->m_columns[1][0] * this->m_columns[2][1] * this->m_columns[0][2]);
+        determinant += (this->m_columns[2][0] * this->m_columns[0][1] * this->m_columns[1][2]);
 
-        determinant -= (m[0][0] * m[1][2] * m[2][1]);
-        determinant -= (m[0][1] * m[1][0] * m[2][2]);
-        determinant -= (m[0][2] * m[1][1] * m[2][0]);
+        determinant -= (this->m_columns[0][0] * this->m_columns[2][1] * this->m_columns[1][2]);
+        determinant -= (this->m_columns[1][0] * this->m_columns[0][1] * this->m_columns[2][2]);
+        determinant -= (this->m_columns[2][0] * this->m_columns[1][1] * this->m_columns[0][2]);
 
         return determinant;
     }
@@ -330,9 +329,9 @@ namespace nes
     {
         switch (axis)
         {
-            case Axis::X: return TVector3<Type>(m[0][0], m[1][0], m[2][0]);
-            case Axis::Y: return TVector3<Type>(m[0][1], m[1][1], m[2][1]);
-            case Axis::Z: return TVector3<Type>(m[0][2], m[1][2], m[2][2]);
+            case Axis::X: return m_columns[0];
+            case Axis::Y: return m_columns[1];
+            case Axis::Z: return m_columns[2];
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
@@ -347,7 +346,7 @@ namespace nes
     constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const int axis) const
     {
         NES_ASSERT(axis >= 0 && axis < static_cast<int>(N));
-        return TVector3<Type>(m[0][axis], m[1][axis], m[2][axis]);
+        return m_columns[axis];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -357,7 +356,7 @@ namespace nes
     constexpr TVector3<Type> TMatrix3x3<Type>::GetColumn(const int column) const
     {
         NES_ASSERT(column >= 0 && column < static_cast<int>(N));
-        return TVector3<Type>(m[0][column], m[1][column], m[2][column]);
+        return m_columns[column];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -367,7 +366,10 @@ namespace nes
     constexpr TVector3<Type> TMatrix3x3<Type>::GetRow(const int row) const
     {
         NES_ASSERT(row >= 0 && row < static_cast<int>(N));
-        return TVector3<Type>(m[row][0], m[row][1], m[row][2]);
+        return RowType(
+            this->m_columns[0][row]
+            , this->m_columns[1][row]
+            , this->m_columns[2][row]);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -400,7 +402,7 @@ namespace nes
         {
             for (size_t j = 0; j < N; ++j)
             {
-                result += std::to_string(m[i][j]) + " ";
+                result += std::to_string(this->m_columns[j][i]) + " ";
             }
             
             result += "\n";
@@ -433,15 +435,9 @@ namespace nes
     TVector3<Type> operator*(const TMatrix3x3<Type>& matrix, const TVector3<Type>& vector)
     {
         TVector3<Type> result;
-        // Column Orientation:
-        result[0] = (matrix.m[0][0] * vector[0]) + (matrix.m[0][1] * vector[1]) + (matrix.m[0][2] * vector[2]);
-        result[1] = (matrix.m[1][0] * vector[0]) + (matrix.m[1][1] * vector[1]) + (matrix.m[1][2] * vector[2]);
-        result[2] = (matrix.m[2][0] * vector[0]) + (matrix.m[2][1] * vector[1]) + (matrix.m[2][2] * vector[2]);
-
-        // Row Orientation:
-        //result.x = vector.x * matrix.m[0][0] + vector.y * matrix.m[1][0] + vector.z * matrix.m[2][0];
-        //result.y = vector.x * matrix.m[0][1] + vector.y * matrix.m[1][1] + vector.z * matrix.m[2][1];
-        //result.z = vector.x * matrix.m[0][2] + vector.y * matrix.m[1][2] + vector.z * matrix.m[2][2];
+        result[0] = matrix[0][0] * vector[0] + matrix[1][0] * vector[1] + matrix[2][0] * vector[2];
+        result[1] = matrix[0][1] * vector[0] + matrix[1][1] * vector[1] + matrix[2][1] * vector[2];
+        result[2] = matrix[0][2] * vector[0] + matrix[1][2] * vector[1] + matrix[2][2] * vector[2];
         return result;
     }
 

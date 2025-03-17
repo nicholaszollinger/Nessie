@@ -1,20 +1,68 @@
 ﻿// World.h
 #pragma once
 #include "Entity3D.h"
+#include "Components/MeshComponent.h"
+#include "Core/Generic/Color.h"
 #include "Scene/EntityLayer.h"
 #include "Scene/EntityPool.h"
 
 namespace nes
 {
+    struct Material;
+
+    enum class WorldRenderMode : uint8_t
+    {
+        Fill = 0,
+        Wireframe,
+        Num, // Only the above two are supported atm.
+        Point,
+        FillRectangleNV,
+    };
+    
     //----------------------------------------------------------------------------------------------------
     ///		@brief : A World manages the 3D space of a Scene. 
     //----------------------------------------------------------------------------------------------------
     class World final : public EntityLayer
     {
         NES_DEFINE_ENTITY_LAYER(World, Entity3D)
-        using EntityPool = TEntityPool<Entity3D>;
+        
+        struct SceneCameraUniforms
+        {
+            static constexpr uint32_t kBinding = 0;
 
+            Mat4 m_projectionMatrix = Mat4::Identity();
+            Mat4 m_viewMatrix = Mat4::Identity();
+        };
+        
+    public:
+        struct GeometryPushConstants
+        {
+            Mat4 m_objectMatrix = Mat4::Identity();
+            // Note: This is only here because the Material is trivial for now.
+            // a full material might not make sense as a push constant and should be
+            // moved to a Uniform Buffer.
+            LinearColor m_baseColor = LinearColor::White();
+        };
+
+    private:
+        using EntityPool = TEntityPool<Entity3D>;
         EntityPool m_entityPool;
+        std::vector<EventHandler> m_eventHandlers{};
+
+        // Render Resources:
+        std::vector<MeshComponent*> m_transparentMeshes;
+        std::vector<MeshComponent*> m_opaqueMeshes;
+        std::vector<std::shared_ptr<nes::RendererContext::GraphicsPipeline>> m_defaultMeshPipelines{};
+        std::shared_ptr<nes::RendererContext::GraphicsPipeline> m_gridPipeline = nullptr;
+        std::vector<std::shared_ptr<Mesh>> m_meshAssets;
+        std::vector<std::shared_ptr<Material>> m_materialAssets;
+        RendererContext::ShaderUniform m_cameraUniforms;
+        vk::Buffer m_cameraUniformBuffer;
+        WorldRenderMode m_currentRenderMode = WorldRenderMode::Fill;
+
+        // TEMP:
+        Entity3D* m_pSelectedEntity = nullptr;
+        StrongPtr<Entity3DComponent> m_pSelectedComponent = nullptr;
         
     public:
         explicit World(Scene* pScene);
@@ -22,18 +70,40 @@ namespace nes
         
         virtual void DestroyEntity(const LayerHandle& handle) override;
         [[nodiscard]] virtual bool IsValidNode(const LayerHandle& handle) const override;
+
+        void RegisterEventHandler(const EventHandler& handler);
+        void RegisterMesh(MeshComponent* pMesh);
+        [[nodiscard]] std::shared_ptr<nes::RendererContext::GraphicsPipeline> GetDefaultMeshRenderPipeline() const;
         
     private:
         virtual bool InitializeLayer() override;
         virtual void OnSceneBegin() override;
         virtual void OnLayerDestroyed() override;
+        virtual void PreRender(const Camera& sceneCamera) override;
         virtual void Render(const Camera& worldCamera) override;
-        virtual void Tick(const double deltaTime) override;
         virtual void OnEvent(Event& event) override;
+        virtual void Tick(const float deltaTime) override;
+        virtual bool LoadLayer(YAML::Node& layerNode) override;
 
         // TEMP:
         virtual void EditorRenderEntityHierarchy() override;
-        virtual bool LoadLayer(YAML::Node& layerNode) override;
+
+        // TEMP
+        // [TODO]: Make a Property Drawer class, that updates an internal property value.
+        void EditorDrawInspector();
+        void EditorDrawEntityNode(Entity3D& entity);
+        void EditorDrawComponentNode(StrongPtr<Entity3DComponent>& component);
+        void EditorDrawComponentProperties(StrongPtr<Entity3DComponent>& component);
+        bool EditorDrawPropertyVector3(const char* pLabel, Vector3& value);
+        bool EditorDrawPropertyRotation(const char* pLabel, Rotation& value);
+        bool EditorDrawPropertyFloat(const char* pLabel, float& value);
+        bool EditorDrawPropertyBool(const char* pLabel, bool& value);
+        bool EditorDrawPropertyTransform(const char* pLabel, Vector3& location, Rotation& rotation, Vector3& scale);
+        bool EditorDrawPropertyLinearColor(const char* pLabel, LinearColor& value);
+
+        void CreateRenderResources();
+        void FreeRenderResources();
+        void RenderGrid();
     };
 
     static_assert(EntityLayerType<World>, "World not correctly setup as an Entity Layer!!!");

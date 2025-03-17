@@ -3,12 +3,15 @@
 
 local projectCore = require ("ProjectCore");
 
+local libFolder = projectCore.ProjectIntermediateLibsLocation .. "Nessie\\";
+
 local p = {};
 p.Name = "Nessie";
 
 function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
 
+    targetdir(libFolder)
     kind "StaticLib"
     language "C++"
     cppdialect "C++20"
@@ -22,6 +25,8 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     {
         "YAML_CPP_STATIC_DEFINE"
 		, "NES_LOG_DIR=R\"($(SolutionDir)Saved\\Logs\\)\""
+        , "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\""
+		, "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\""
     }
     
     -- Set the Render API based on the Project Settings:
@@ -32,14 +37,20 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     files
     {
         projectDir .. "**.h",
+        projectDir .. "**.hpp",
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",
+
+        -- Add the Shader files:
+        projectCore.SolutionDir .. "Shaders\\**.glsl",
     }
 
-    dependencyInjector.Link("yaml_cpp");
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("BleachLeakDetector");
+    dependencyInjector.Link("yaml_cpp");
+    dependencyInjector.Include("Assimp");
 
+    prebuildcommands { "{MKDIR} %[" .. projectCore.DefaultOutDir .. "]"}
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}
 end
 
@@ -59,14 +70,25 @@ function p.SetRenderAPI(projectDir, dependencyInjector)
 
     -- Ensure that the RenderAPI is valid on the Platform.
     if (renderAPI == "SDL") then
-        -- Only available on Windows for now. I have only made sure
-        -- that it works on Windows.
+        -- Only available on Windows for now.
         if (_TARGET_OS == "windows") then
             defines
             {
                 "_RENDER_API_SDL"
             }
             dependencyInjector.Link("SDL");
+            return true;
+        end
+    elseif (renderAPI == "Vulkan") then
+        -- Only available on Windows for now.
+        if (_TARGET_OS == "windows") then
+            defines
+            {
+                "_RENDER_API_VULKAN"
+            }
+
+            dependencyInjector.Link("glfw");
+            dependencyInjector.Include("Vulkan");
             return true;
         end
     end
@@ -77,11 +99,19 @@ end
 
 function p.Link(projectDir)
     links { "Nessie" }
-    libdirs { projectCore.DefaultOutDir }
+    libdirs { libFolder }
+
+    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
+    if (renderAPI == "Vulkan") then
+        defines { "_RENDER_API_VULKAN" }
+    elseif (renderAPI == "SDL") then
+        defines { "_RENDER_API_SDL" }
+    end
 end
 
 function p.Include(projectDir)
     includedirs { projectDir }
+
 end
 
 return p;

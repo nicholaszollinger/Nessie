@@ -97,46 +97,31 @@ namespace nes
     template <ScalarType Type>
     constexpr TVector2<Type> TVector2<Type>::operator-() const
     {
-        TVector2 result;
-        result.x = -x;
-        result.y = -y;
-        return result;
+        return { -x, -y };
     }
 
     template <ScalarType Type>
     constexpr TVector2<Type> TVector2<Type>::operator+(const TVector2 right) const
     {
-        TVector2 result = right;
-        result.x += x;
-        result.y += y;
-        return result;
+        return { x + right.x, y + right.y };
     }
 
     template <ScalarType Type>
     constexpr TVector2<Type> TVector2<Type>::operator-(const TVector2 right) const
     {
-        TVector2 result = *this;
-        result.x -= right.x;
-        result.y -= right.y;
-        return result;
+        return { x - right.x, y - right.y };
     }
 
     template <ScalarType Type>
     constexpr TVector2<Type> TVector2<Type>::operator*(const TVector2 right) const
     {
-        TVector2 result = right;
-        result.x *= x;
-        result.y *= y;
-        return result;
+        return { x * right.x, y * right.y };
     }
 
     template <ScalarType Type>
     constexpr TVector2<Type> TVector2<Type>::operator*(const ScalarType auto scalar) const
     {
-        TVector2 result = *this;
-        result.x *= static_cast<Type>(scalar);
-        result.y *= static_cast<Type>(scalar);
-        return result;
+        return { x * static_cast<Type>(scalar), y * static_cast<Type>(scalar) };
     }
 
     template <ScalarType Type>
@@ -144,10 +129,7 @@ namespace nes
     {
         NES_ASSERT(scalar != static_cast<decltype(scalar)>(0));
 
-        TVector2 result = *this;
-        result.x /= static_cast<Type>(scalar);
-        result.y /= static_cast<Type>(scalar);
-        return result;
+        return { x / static_cast<Type>(scalar), y / static_cast<Type>(scalar) };
     }
 
     template <ScalarType Type>

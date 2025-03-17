@@ -5,12 +5,14 @@
 #include "Math/Quaternion.h"
 #include "Scene/Scene.h"
 #include "World/Entity3D.h"
+#include "World/World.h"
 
 namespace nes
 {
     bool FreeCamMovementComponent::Init()
     {
-        return true;
+        m_rotationEnabled = false;
+        return Entity3DComponent::Init();
     }
 
     void FreeCamMovementComponent::OnEnabled()
@@ -21,15 +23,15 @@ namespace nes
             ProcessCameraMovement(deltaTime);            
         };
 
-        auto* pScene = GetOwner()->GetScene();
-        pScene->RegisterTickFunction(tick);
+        auto* pWorld = GetOwner()->GetWorld();
+        pWorld->RegisterTick(tick);
 
         EventHandler handler;
         handler.m_callback = [this](Event& event) -> void
         {
             OnEvent(event);  
         };
-        pScene->RegisterEventHandler(handler);
+        pWorld->RegisterEventHandler(handler);
     }
 
     void FreeCamMovementComponent::OnDisabled()
@@ -104,25 +106,27 @@ namespace nes
         ProcessInput();
         const Vector3 deltaPitchYawRoll = Vector3(m_inputRotation.x * m_turnSpeedPitch, m_inputRotation.y * m_turnSpeedYaw, 0.f) * deltaTime;
         const Vector3 deltaMovement = m_inputMovement * (m_moveSpeed * deltaTime);
-
-        // If input was detected:
-        if (deltaPitchYawRoll.SquaredMagnitude() > 0.f && deltaMovement.SquaredMagnitude() > 0.f)
+        
+        Entity3D* pOwner = GetOwner();
+        if (deltaPitchYawRoll.SquaredMagnitude() > 0.f || deltaMovement.SquaredMagnitude() > 0.f)
         {
-            Entity3D* pOwner = GetOwner();
-            
             // Apply Rotation:
-            Quat localOrientation = pOwner->GetLocalOrientation();
-            localOrientation = Quat::MakeFromEuler(deltaPitchYawRoll) * localOrientation;
+            Rotation localRotation = pOwner->GetLocalRotation();
+            if (deltaPitchYawRoll.SquaredMagnitude() > 0.f)
+            {
+                const Rotation deltaRotation(deltaPitchYawRoll);
+                localRotation += deltaRotation;
+            }
 
             // Translation:
             // - Add the Delta XZ movement in our local orientation.
             // - Add the Delta Y movement on the world Y axis.
             Vector3 localLocation = pOwner->GetLocalLocation();
-            localLocation += localOrientation.RotatedVector(Vector3(deltaMovement.x, 0.f, deltaMovement.z));
+            localLocation += localRotation.RotatedVector(Vector3(deltaMovement.x, 0.f, deltaMovement.z));
             localLocation.y += deltaMovement.y;
 
             // Set the new Transform
-            pOwner->SetLocalTransform(localLocation, localOrientation, Vector3::GetUnitVector());
+            pOwner->SetLocalTransform(localLocation, localRotation, Vector3::GetUnitVector());
         }
     }
 }

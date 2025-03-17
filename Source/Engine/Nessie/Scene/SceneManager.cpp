@@ -77,7 +77,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Close the SceneManager.
     //----------------------------------------------------------------------------------------------------
-    void SceneManager::Close()
+    void SceneManager::Shutdown()
     {
         m_pActiveScene.Reset();
         
@@ -92,6 +92,18 @@ namespace nes
         }
         
         m_sceneMap.clear();
+    }
+
+    void SceneManager::PreRender()
+    {
+        if (m_pActiveScene)
+            m_pActiveScene->PreRender();
+    }
+
+    void SceneManager::Render()
+    {
+        if (m_pActiveScene)
+            m_pActiveScene->Render();
     }
 
     //----------------------------------------------------------------------------------------------------

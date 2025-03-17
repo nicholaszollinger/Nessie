@@ -584,117 +584,117 @@ namespace nes::geo
         // disjoint, then there is a separating axis and the Triangle and AABB do not overlap.
 
         // Axis = obb.m_axis[0] x triEdges[0]
-        TVector3<Type> axis = TVector3<Type>::Cross(obb.m_axes[0], triEdges[0]);
+        TVector3<Type> axis = TVector3<Type>::Cross(obb.m_orientation[0], triEdges[0]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[0] x triEdges[1]
-        axis = TVector3<Type>::Cross(obb.m_axes[0], triEdges[1]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[0], triEdges[1]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[0] x triEdges[2]
-        axis = TVector3<Type>::Cross(obb.m_axes[0], triEdges[2]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[0], triEdges[2]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[1] x triEdges[0]
-        axis = TVector3<Type>::Cross(obb.m_axes[1], triEdges[0]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[1], triEdges[0]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[1] x triEdges[1]
-        axis = TVector3<Type>::Cross(obb.m_axes[1], triEdges[1]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[1], triEdges[1]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[1] x triEdges[2]
-        axis = TVector3<Type>::Cross(obb.m_axes[1], triEdges[2]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[1], triEdges[2]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[2] x triEdges[0]
-        axis = TVector3<Type>::Cross(obb.m_axes[2], triEdges[0]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[2], triEdges[0]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[2] x triEdges[1]
-        axis = TVector3<Type>::Cross(obb.m_axes[2], triEdges[1]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[2], triEdges[1]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
         }
 
         // Axis = obb.m_axis[2] x triEdges[2]
-        axis = TVector3<Type>::Cross(obb.m_axes[2], triEdges[2]);
+        axis = TVector3<Type>::Cross(obb.m_orientation[2], triEdges[2]);
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_axes[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_axes[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_axes[2], axis));
+        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -702,7 +702,7 @@ namespace nes::geo
 
         // Test the 3 axes corresponding to the face normals of the box.
         
-        axis = obb.m_axes[0];
+        axis = obb.m_orientation[0];
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
@@ -712,7 +712,7 @@ namespace nes::geo
             return false;
         }
         
-        axis = obb.m_axes[1];
+        axis = obb.m_orientation[1];
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
@@ -722,7 +722,7 @@ namespace nes::geo
             return false;
         }
 
-        axis = obb.m_axes[2];
+        axis = obb.m_orientation[2];
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);

@@ -19,31 +19,36 @@ namespace nes
         // Dimension of the Square Matrix.
         static constexpr size_t N = 4;
         
-        Type m[N][N]
-        {
-            { 1, 0, 0, 0 },
-            { 0, 1, 0, 0 },
-            { 0, 0, 1, 0 },
-            { 0, 0, 0, 1 },
-        };
+        using ColumnType = TVector4<Type>;
+        using RowType    = TVector4<Type>;
 
-        /// Default constructor initializes to the Identity Matrix. 
+    private:
+        ColumnType m_columns[N]{};
+        
+    public:
+        /// Default constructor initializes to the Zero Matrix. 
         constexpr TMatrix4x4() = default;
-        constexpr TMatrix4x4(const Type values[N * N]);
-        constexpr TMatrix4x4(const TMatrix3x3<Type>& matrix);
+        constexpr TMatrix4x4(const Type diagonalValue);
+        constexpr TMatrix4x4(const Type& x0, const Type& y0, const Type& z0, const Type& w0,
+                             const Type& x1, const Type& y1, const Type& z1, const Type& w1,
+                             const Type& x2, const Type& y2, const Type& z2, const Type& w2,
+                             const Type& x3, const Type& y3, const Type& z3, const Type& w3);
+        constexpr TMatrix4x4(const ColumnType& c0, const ColumnType& c1, const ColumnType& c2, const ColumnType& c3);
+        constexpr TMatrix4x4(const TMatrix3x3<Type>& mat3);
 
         constexpr bool operator==(const TMatrix4x4& other) const;
         constexpr bool operator!=(const TMatrix4x4& other) const { return !(*this == other); }
         TMatrix4x4 operator+(const TMatrix4x4& other) const;
         TMatrix4x4 operator-(const TMatrix4x4& other) const;
         TMatrix4x4 operator*(const TMatrix4x4& other) const;
-        TMatrix4x4 operator*(const float scalar);
+        TMatrix4x4 operator*(const Type scalar) const;
         TMatrix4x4& operator+=(const TMatrix4x4& other);
         TMatrix4x4& operator-=(const TMatrix4x4& other);
         TMatrix4x4& operator*=(const TMatrix4x4& other);
-        TMatrix4x4& operator*=(const float scalar);
+        TMatrix4x4& operator*=(const Type scalar);
         
-        TVector4<Type> operator[](const size_t index) const;
+        TVector4<Type>& operator[](const size_t index);
+        const TVector4<Type>& operator[](const size_t index) const;
 
         bool TryInvert();
         bool TryGetInverse(TMatrix4x4& result) const;
@@ -69,8 +74,8 @@ namespace nes
         
         std::string ToString() const;
         
-        static constexpr TMatrix4x4 Zero();
-        static constexpr TMatrix4x4 Identity() { return TMatrix4x4(); }
+        static constexpr TMatrix4x4 Zero()      { return {}; }
+        static constexpr TMatrix4x4 Identity()  { return TMatrix4x4(static_cast<Type>(1)); }
     };
 
     template <FloatingPointType Type>
@@ -82,31 +87,52 @@ namespace nes
 
 namespace nes
 {
-    template <FloatingPointType Type>
-    constexpr TMatrix4x4<Type>::TMatrix4x4(const Type values[N * N])
-    {
-        NES_ASSERT(values != nullptr);
-        memcpy(&(m[0][0]), values, N * N * sizeof(Type));
-    }
-
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Constructs a 4x4 matrix from a 3x3 Matrix. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TMatrix4x4<Type>::TMatrix4x4(const TMatrix3x3<Type>& matrix)
-        : TMatrix4x4() // Default construct to the identity matrix
+    constexpr TMatrix4x4<Type>::TMatrix4x4(const TMatrix3x3<Type>& mat3)
+        : m_columns
+        {
+            TVector4<Type>(mat3[0], static_cast<Type>(0)),
+            TVector4<Type>(mat3[1], static_cast<Type>(0)),
+            TVector4<Type>(mat3[2], static_cast<Type>(0)),
+            TVector4<Type>(TVector3<Type>::GetZeroVector(), static_cast<Type>(1)),
+        }
     {
-        m[0][0] = matrix.m[0][0];
-        m[0][1] = matrix.m[0][1];
-        m[0][2] = matrix.m[0][2];
+        //
+    }
 
-        m[1][0] = matrix.m[1][0];
-        m[1][1] = matrix.m[1][1];
-        m[1][2] = matrix.m[1][2];
-        
-        m[2][0] = matrix.m[2][0];
-        m[2][1] = matrix.m[2][1];
-        m[2][2] = matrix.m[2][2];
+    template <FloatingPointType Type>
+    constexpr TMatrix4x4<Type>::TMatrix4x4(const Type diagonalValue)
+    {
+        m_columns[0][0] = diagonalValue;
+        m_columns[1][1] = diagonalValue;
+        m_columns[2][2] = diagonalValue;
+        m_columns[3][3] = diagonalValue;
+    }
+
+    template <FloatingPointType Type>
+    constexpr TMatrix4x4<Type>::TMatrix4x4(const Type& x0, const Type& y0, const Type& z0, const Type& w0,
+        const Type& x1, const Type& y1, const Type& z1, const Type& w1, const Type& x2, const Type& y2, const Type& z2,
+        const Type& w2, const Type& x3, const Type& y3, const Type& z3, const Type& w3)
+        : m_columns
+        {
+            ColumnType(x0, y0, z0, w0),
+            ColumnType(x1, y1, z1, w1),
+            ColumnType(x2, y2, z2, w2),
+            ColumnType(x3, y3, z3, w3)
+        }
+    {
+        //
+    }
+
+    template <FloatingPointType Type>
+    constexpr TMatrix4x4<Type>::TMatrix4x4(const TVector4<Type>& c0, const TVector4<Type>& c1, const TVector4<Type>& c2,
+        const TVector4<Type>& c3)
+        : m_columns{ c0, c1, c2, c3 }
+    {
+        //
     }
 
     template <FloatingPointType Type>
@@ -114,11 +140,8 @@ namespace nes
     {
         for (size_t i = 0; i < N; ++i)
         {
-            for (size_t j = 0; j < N; ++j)
-            {
-                if (m[i][j] != other.m[i][j])
-                    return false;
-            }
+            if (this->m_columns[i] != other[i])
+                return false;
         }
 
         return true;
@@ -132,10 +155,10 @@ namespace nes
     {
         switch (axis)
         {
-            case Axis::X: return TVector3<Type>(m[0][0], m[1][0], m[2][0]);
-            case Axis::Y: return TVector3<Type>(m[0][1], m[1][1], m[2][1]);
-            case Axis::Z: return TVector3<Type>(m[0][2], m[1][2], m[2][2]);
-            case Axis::W: return TVector3<Type>(m[0][3], m[1][3], m[2][3]);
+            case Axis::X: return TVector3<Type>(m_columns[0].x, m_columns[0].y, m_columns[0].z);
+            case Axis::Y: return TVector3<Type>(m_columns[1].x, m_columns[1].y, m_columns[1].z);
+            case Axis::Z: return TVector3<Type>(m_columns[2].x, m_columns[2].y, m_columns[2].z);
+            case Axis::W: return TVector3<Type>(m_columns[3].x, m_columns[3].y, m_columns[3].z);
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
@@ -150,7 +173,7 @@ namespace nes
     constexpr TVector3<Type> TMatrix4x4<Type>::GetAxis(const int axis) const
     {
         NES_ASSERT(axis >= 0 && axis < static_cast<int>(N));
-        return TVector3<Type>(m[0][axis], m[1][axis], m[2][axis]);
+        return TVector3<Type>(m_columns[axis].x, m_columns[axis].y, m_columns[axis].z);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -160,7 +183,7 @@ namespace nes
     constexpr TVector4<Type> TMatrix4x4<Type>::GetColumn(const int column) const
     {
         NES_ASSERT(column >= 0 && column < static_cast<int>(N));
-        return TVector4<Type>(m[0][column], m[1][column], m[2][column], m[3][column]);
+        return m_columns[column];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -170,30 +193,21 @@ namespace nes
     constexpr TVector4<Type> TMatrix4x4<Type>::GetRow(const int row) const
     {
         NES_ASSERT(row >= 0 && row < static_cast<int>(N));
-        return TVector4<Type>(m[row][0], m[row][1], m[row][2], m[row][3]);
-    }
-
-    template <FloatingPointType Type>
-    constexpr TMatrix4x4<Type> TMatrix4x4<Type>::Zero()
-    {
-        TMatrix4x4 result{};
-        memset(&(result.m[0][0]), 0, N * N * sizeof(Type));
-        return result;
+        return RowType(
+            this->m_columns[0][row]
+            , this->m_columns[1][row]
+            , this->m_columns[2][row]
+            , this->m_columns[3][row]);
     }
 
     template <FloatingPointType Type>
     TMatrix4x4<Type> TMatrix4x4<Type>::operator+(const TMatrix4x4& other) const
     {
         TMatrix4x4 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] += other.m[i][j];
-            }
-        }
-        
+        result[0] += other[0];
+        result[1] += other[1];
+        result[2] += other[2];
+        result[3] += other[3];
         return result;
     }
 
@@ -201,63 +215,42 @@ namespace nes
     TMatrix4x4<Type> TMatrix4x4<Type>::operator-(const TMatrix4x4& other) const
     {
         TMatrix4x4 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] -= other.m[i][j];
-            }
-        }
-        
+        result[0] -= other[0];
+        result[1] -= other[1];
+        result[2] -= other[2];
+        result[3] -= other[3];
         return result;
     }
 
     template <FloatingPointType Type>
     TMatrix4x4<Type> TMatrix4x4<Type>::operator*(const TMatrix4x4& other) const
     {
-        TMatrix4x4 result(*this);
+        const ColumnType a0 = m_columns[0];
+        const ColumnType a1 = m_columns[1];
+        const ColumnType a2 = m_columns[2];
+        const ColumnType a3 = m_columns[3];
+
+        const ColumnType b0 = other[0];
+        const ColumnType b1 = other[1];
+        const ColumnType b2 = other[2];
+        const ColumnType b3 = other[3];
         
-        // 1st Row * 1-4 Columns
-        result.m[0][0] = (m[0][0] * other.m[0][0]) + (m[0][1] * other.m[1][0]) + (m[0][2] * other.m[2][0]) + (m[0][3] * other.m[3][0]);
-        result.m[0][1] = (m[0][0] * other.m[0][1]) + (m[0][1] * other.m[1][1]) + (m[0][2] * other.m[2][1]) + (m[0][3] * other.m[3][1]);
-        result.m[0][2] = (m[0][0] * other.m[0][2]) + (m[0][1] * other.m[1][2]) + (m[0][2] * other.m[2][2]) + (m[0][3] * other.m[3][2]);
-        result.m[0][3] = (m[0][0] * other.m[0][3]) + (m[0][1] * other.m[1][3]) + (m[0][2] * other.m[2][3]) + (m[0][3] * other.m[3][3]);
-
-        // 2nd Row * 1-4 Columns
-        result.m[1][0] = (m[1][0] * other.m[0][0]) + (m[1][1] * other.m[1][0]) + (m[1][2] * other.m[2][0]) + (m[1][3] * other.m[3][0]);
-        result.m[1][1] = (m[1][0] * other.m[0][1]) + (m[1][1] * other.m[1][1]) + (m[1][2] * other.m[2][1]) + (m[1][3] * other.m[3][1]);
-        result.m[1][2] = (m[1][0] * other.m[0][2]) + (m[1][1] * other.m[1][2]) + (m[1][2] * other.m[2][2]) + (m[1][3] * other.m[3][2]);
-        result.m[1][3] = (m[1][0] * other.m[0][3]) + (m[1][1] * other.m[1][3]) + (m[1][2] * other.m[2][3]) + (m[1][3] * other.m[3][3]);
-
-        // 3rd Row * 1-4 Columns
-        result.m[2][0] = (m[2][0] * other.m[0][0]) + (m[2][1] * other.m[1][0]) + (m[2][2] * other.m[2][0]) + (m[2][3] * other.m[3][0]);
-        result.m[2][1] = (m[2][0] * other.m[0][1]) + (m[2][1] * other.m[1][1]) + (m[2][2] * other.m[2][1]) + (m[2][3] * other.m[3][1]);
-        result.m[2][2] = (m[2][0] * other.m[0][2]) + (m[2][1] * other.m[1][2]) + (m[2][2] * other.m[2][2]) + (m[2][3] * other.m[3][2]);
-        result.m[2][3] = (m[2][0] * other.m[0][3]) + (m[2][1] * other.m[1][3]) + (m[2][2] * other.m[2][3]) + (m[2][3] * other.m[3][3]);
-
-        // 4th Row * 1-4 Columns
-        result.m[3][0] = (m[2][0] * other.m[0][0]) + (m[2][1] * other.m[1][0]) + (m[2][2] * other.m[2][0]) + (m[3][3] * other.m[3][0]);
-        result.m[3][1] = (m[2][0] * other.m[0][1]) + (m[2][1] * other.m[1][1]) + (m[2][2] * other.m[2][1]) + (m[3][3] * other.m[3][1]);
-        result.m[3][2] = (m[2][0] * other.m[0][2]) + (m[2][1] * other.m[1][2]) + (m[2][2] * other.m[2][2]) + (m[3][3] * other.m[3][2]);
-        result.m[3][3] = (m[2][0] * other.m[0][3]) + (m[2][1] * other.m[1][3]) + (m[2][2] * other.m[2][3]) + (m[3][3] * other.m[3][3]);
-        
+        TMatrix4x4 result;
+        result[0] = (a0 * b0[0]) + (a1 * b0[1]) + (a2 * b0[2]) + (a3 * b0[3]);
+        result[1] = (a0 * b1[0]) + (a1 * b1[1]) + (a2 * b1[2]) + (a3 * b1[3]);
+        result[2] = (a0 * b2[0]) + (a1 * b2[1]) + (a2 * b2[2]) + (a3 * b2[3]);
+        result[3] = (a0 * b3[0]) + (a1 * b3[1]) + (a2 * b3[2]) + (a3 * b3[3]);
         return result;
     }
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type> TMatrix4x4<Type>::operator*(const float scalar)
+    TMatrix4x4<Type> TMatrix4x4<Type>::operator*(const Type scalar) const
     {
         TMatrix4x4 result(*this);
-        
-        for (size_t i = 0; i < N; ++i)
-        {
-            for (size_t j = 0; j < N; ++j)
-            {
-                result.m[i][j] *= scalar;
-            }
-        }
-        
+        result[0] *= scalar;
+        result[1] *= scalar;
+        result[2] *= scalar;
+        result[3] *= scalar;
         return result;
     }
 
@@ -283,17 +276,24 @@ namespace nes
     }
 
     template <FloatingPointType Type>
-    TMatrix4x4<Type>& TMatrix4x4<Type>::operator*=(const float scalar)
+    TMatrix4x4<Type>& TMatrix4x4<Type>::operator*=(const Type scalar)
     {
         *this = *this + scalar;
         return *this;
     }
 
     template <FloatingPointType Type>
-    TVector4<Type> TMatrix4x4<Type>::operator[](const size_t index) const
+    TVector4<Type>& TMatrix4x4<Type>::operator[](const size_t index)
     {
         NES_ASSERT(index < N);
-        return GetColumn(static_cast<int>(index));
+        return m_columns[index];
+    }
+
+    template <FloatingPointType Type>
+    const TVector4<Type>& TMatrix4x4<Type>::operator[](const size_t index) const
+    {
+        NES_ASSERT(index < N);
+        return m_columns[index];
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -316,48 +316,48 @@ namespace nes
         // excerpted here:
         //   http://www.geometrictools.com/Documentation/LaplaceExpansionTheorem.pdf
         
-        float s0 = math::DifferenceOfProducts(m[0][0], m[1][1], m[1][0], m[0][1]);
-        float s1 = math::DifferenceOfProducts(m[0][0], m[1][2], m[1][0], m[0][2]);
-        float s2 = math::DifferenceOfProducts(m[0][0], m[1][3], m[1][0], m[0][3]);
-
-        float s3 = math::DifferenceOfProducts(m[0][1], m[1][2], m[1][1], m[0][2]);
-        float s4 = math::DifferenceOfProducts(m[0][1], m[1][3], m[1][1], m[0][3]);
-        float s5 = math::DifferenceOfProducts(m[0][2], m[1][3], m[1][2], m[0][3]);
-
-        float c0 = math::DifferenceOfProducts(m[2][0], m[3][1], m[3][0], m[2][1]);
-        float c1 = math::DifferenceOfProducts(m[2][0], m[3][2], m[3][0], m[2][2]);
-        float c2 = math::DifferenceOfProducts(m[2][0], m[3][3], m[3][0], m[2][3]);
+        float s0 = math::DifferenceOfProducts(m_columns[0][0], m_columns[1][1], m_columns[0][1], m_columns[1][0]);
+        float s1 = math::DifferenceOfProducts(m_columns[0][0], m_columns[2][1], m_columns[0][1], m_columns[2][0]);
+        float s2 = math::DifferenceOfProducts(m_columns[0][0], m_columns[3][1], m_columns[0][1], m_columns[3][0]);
         
-        float c3 = math::DifferenceOfProducts(m[2][1], m[3][2], m[3][1], m[2][2]);
-        float c4 = math::DifferenceOfProducts(m[2][1], m[3][3], m[3][1], m[2][3]);
-        float c5 = math::DifferenceOfProducts(m[2][2], m[3][3], m[3][2], m[2][3]);
-
+        float s3 = math::DifferenceOfProducts(m_columns[1][0], m_columns[2][1], m_columns[1][1], m_columns[2][0]);
+        float s4 = math::DifferenceOfProducts(m_columns[1][0], m_columns[3][1], m_columns[1][1], m_columns[3][0]);
+        float s5 = math::DifferenceOfProducts(m_columns[2][0], m_columns[3][1], m_columns[2][1], m_columns[3][0]);
+        
+        float c0 = math::DifferenceOfProducts(m_columns[0][2], m_columns[1][3], m_columns[0][3], m_columns[1][2]);
+        float c1 = math::DifferenceOfProducts(m_columns[0][2], m_columns[2][3], m_columns[0][3], m_columns[2][2]);
+        float c2 = math::DifferenceOfProducts(m_columns[0][2], m_columns[3][3], m_columns[0][3], m_columns[3][2]);
+        
+        float c3 = math::DifferenceOfProducts(m_columns[1][2], m_columns[2][3], m_columns[1][3], m_columns[2][2]);
+        float c4 = math::DifferenceOfProducts(m_columns[1][2], m_columns[3][3], m_columns[1][3], m_columns[3][2]);
+        float c5 = math::DifferenceOfProducts(m_columns[2][2], m_columns[3][3], m_columns[2][3], m_columns[3][2]);
+        
         const float determinant = (s0 * c5) - (s1 * c4) + (s2 * c3) + (s3 * c2) + (s5 * c0) - (s4 * c1);
         if (math::CheckEqualFloats(determinant, 0.f))
             return false;
         
         const TMatrix4x4 copy = *this;
         float inverseDeterminant = 1.f / determinant;
-
-        m[0][0] = inverseDeterminant * ((copy.m[1][1] * c5)  + (copy.m[1][3] * c3) + (-copy.m[1][2] * c4));
-        m[0][1] = inverseDeterminant * ((-copy.m[0][1] * c5) + (copy.m[0][2] * c4) + (-copy.m[0][3] * c3));
-        m[0][2] = inverseDeterminant * ((copy.m[3][1] * s5)  + (copy.m[3][3] * s3) + (-copy.m[3][2] * s4));
-        m[0][3] = inverseDeterminant * ((-copy.m[2][1] * s5) + (copy.m[2][2] * s4) + (-copy.m[2][3] * s3));
-
-        m[1][0] = inverseDeterminant * ((-copy.m[1][0] * c5) + (copy.m[1][2] * c2) + (-copy.m[1][3] * c1));
-        m[1][1] = inverseDeterminant * ((copy.m[0][0] * c5)  + (copy.m[0][3] * c1) + (-copy.m[0][2] * c2));
-        m[1][2] = inverseDeterminant * ((-copy.m[3][0] * s5) + (copy.m[3][2] * s2) + (-copy.m[3][3] * s1));
-        m[1][3] = inverseDeterminant * ((copy.m[2][0] * s5)  + (copy.m[2][3] * s1) + (-copy.m[2][2] * s2));
-
-        m[2][0] = inverseDeterminant * ((copy.m[1][0] * c4)  + (copy.m[1][3] * c0) + (-copy.m[1][1] * c2));
-        m[2][1] = inverseDeterminant * ((-copy.m[0][0] * c4) + (copy.m[0][1] * c2) + (-copy.m[0][3] * c0));
-        m[2][2] = inverseDeterminant * ((copy.m[3][0] * s4)  + (copy.m[3][3] * s0) + (-copy.m[3][1] * s2));
-        m[2][3] = inverseDeterminant * ((-copy.m[2][0] * s4) + (copy.m[2][1] * s2) + (-copy.m[2][3] * s0));
-
-        m[3][0] = inverseDeterminant * ((-copy.m[1][0] * c3) + (copy.m[1][1] * c1) + (-copy.m[1][2] * c0));
-        m[3][1] = inverseDeterminant * ((copy.m[0][0] * c3)  + (copy.m[0][2] * c0) + (-copy.m[0][1] * c1));
-        m[3][2] = inverseDeterminant * ((-copy.m[3][0] * s3) + (copy.m[3][1] * s1) + (-copy.m[3][2] * s0));
-        m[3][3] = inverseDeterminant * ((copy.m[2][0] * s3)  + (copy.m[2][2] * s0) + (-copy.m[2][1] * s1));
+        
+        m_columns[0][0] = inverseDeterminant * ((copy[1][1] * c5)  + (copy[3][1] * c3) + (-copy[2][1] * c4));
+        m_columns[1][0] = inverseDeterminant * ((-copy[1][0] * c5) + (copy[2][0] * c4) + (-copy[3][0] * c3));
+        m_columns[2][0] = inverseDeterminant * ((copy[1][3] * s5)  + (copy[3][3] * s3) + (-copy[2][3] * s4));
+        m_columns[3][0] = inverseDeterminant * ((-copy[1][2] * s5) + (copy[2][2] * s4) + (-copy[3][2] * s3));
+        
+        m_columns[0][1] = inverseDeterminant * ((-copy[0][1] * c5) + (copy[2][1] * c2) + (-copy[3][1] * c1));
+        m_columns[1][1] = inverseDeterminant * ((copy[0][0] * c5)  + (copy[3][0] * c1) + (-copy[2][0] * c2));
+        m_columns[2][1] = inverseDeterminant * ((-copy[0][3] * s5) + (copy[2][3] * s2) + (-copy[3][3] * s1));
+        m_columns[3][1] = inverseDeterminant * ((copy[0][2] * s5)  + (copy[3][2] * s1) + (-copy[2][2] * s2));
+        
+        m_columns[0][2] = inverseDeterminant * ((copy[0][1] * c4)  + (copy[3][1] * c0) + (-copy[1][1] * c2));
+        m_columns[1][2] = inverseDeterminant * ((-copy[0][0] * c4) + (copy[1][0] * c2) + (-copy[3][0] * c0));
+        m_columns[2][2] = inverseDeterminant * ((copy[0][3] * s4)  + (copy[3][3] * s0) + (-copy[1][3] * s2));
+        m_columns[3][2] = inverseDeterminant * ((-copy[0][2] * s4) + (copy[1][2] * s2) + (-copy[3][2] * s0));
+        
+        m_columns[0][3] = inverseDeterminant * ((-copy[0][1] * c3) + (copy[1][1] * c1) + (-copy[2][1] * c0));
+        m_columns[1][3] = inverseDeterminant * ((copy[0][0] * c3)  + (copy[2][0] * c0) + (-copy[1][0] * c1));
+        m_columns[2][3] = inverseDeterminant * ((-copy[0][3] * s3) + (copy[1][3] * s1) + (-copy[2][3] * s0));
+        m_columns[3][3] = inverseDeterminant * ((copy[0][2] * s3)  + (copy[2][2] * s0) + (-copy[1][2] * s1));
 
         return true;
     }
@@ -377,10 +377,7 @@ namespace nes
     template <FloatingPointType Type>
     bool TMatrix4x4<Type>::IsIdentity() const
     {
-        return m[0][0] == 1.f && m[0][1] == 0.f && m[0][2] == 0.f && m[0][3] == 0.f
-            && m[1][0] == 0.f && m[1][1] == 1.f && m[1][2] == 0.f && m[1][3] == 0.f
-            && m[2][0] == 0.f && m[2][1] == 0.f && m[2][2] == 1.f && m[2][3] == 0.f
-            && m[3][0] == 0.f && m[3][1] == 0.f && m[3][2] == 0.f && m[3][3] == 1.f;
+        return *this == Identity();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -405,7 +402,7 @@ namespace nes
         {
             for (size_t j = 0; j < N; ++j)
             {
-                result.m[i][j] = m[j][i];
+                result[i][j] = this->m_columns[j][i];
             }
         }
         
@@ -416,25 +413,24 @@ namespace nes
     float TMatrix4x4<Type>::Determinant() const
     {
         // This implementation is from pbrt.
-        
         // Resources:
         // Page 162 of "3D Math Primer for Graphics and Game Development".
         // Page 27 of "Real-Time Collision Detection".
-        const float s0 = math::DifferenceOfProducts(m[0][0], m[1][1], m[1][0], m[0][1]);
-        const float s1 = math::DifferenceOfProducts(m[0][0], m[1][2], m[1][0], m[0][2]);
-        const float s2 = math::DifferenceOfProducts(m[0][0], m[1][3], m[1][0], m[0][3]);
-
-        const float s3 = math::DifferenceOfProducts(m[0][1], m[1][2], m[1][1], m[0][2]);
-        const float s4 = math::DifferenceOfProducts(m[0][1], m[1][3], m[1][1], m[0][3]);
-        const float s5 = math::DifferenceOfProducts(m[0][2], m[1][3], m[1][2], m[0][3]);
-
-        const float c0 = math::DifferenceOfProducts(m[2][0], m[3][1], m[3][0], m[2][1]);
-        const float c1 = math::DifferenceOfProducts(m[2][0], m[3][2], m[3][0], m[2][2]);
-        const float c2 = math::DifferenceOfProducts(m[2][0], m[3][3], m[3][0], m[2][3]);
-
-        const float c3 = math::DifferenceOfProducts(m[2][1], m[3][2], m[3][1], m[2][2]);
-        const float c4 = math::DifferenceOfProducts(m[2][1], m[3][3], m[3][1], m[2][3]);
-        const float c5 = math::DifferenceOfProducts(m[2][2], m[3][3], m[3][2], m[2][3]);
+        const float s0 = math::DifferenceOfProducts(m_columns[0][0], m_columns[1][1], m_columns[0][1], m_columns[1][0]);
+        const float s1 = math::DifferenceOfProducts(m_columns[0][0], m_columns[2][1], m_columns[0][1], m_columns[2][0]);
+        const float s2 = math::DifferenceOfProducts(m_columns[0][0], m_columns[3][1], m_columns[0][1], m_columns[3][0]);
+        
+        const float s3 = math::DifferenceOfProducts(m_columns[1][0], m_columns[2][1], m_columns[1][1], m_columns[2][0]);
+        const float s4 = math::DifferenceOfProducts(m_columns[1][0], m_columns[3][1], m_columns[1][1], m_columns[3][0]);
+        const float s5 = math::DifferenceOfProducts(m_columns[2][0], m_columns[3][1], m_columns[2][1], m_columns[3][0]);
+        
+        const float c0 = math::DifferenceOfProducts(m_columns[0][2], m_columns[1][3], m_columns[0][3], m_columns[1][2]);
+        const float c1 = math::DifferenceOfProducts(m_columns[0][2], m_columns[2][3], m_columns[0][3], m_columns[2][2]);
+        const float c2 = math::DifferenceOfProducts(m_columns[0][2], m_columns[3][3], m_columns[0][3], m_columns[3][2]);
+        
+        const float c3 = math::DifferenceOfProducts(m_columns[1][2], m_columns[2][3], m_columns[1][3], m_columns[2][2]);
+        const float c4 = math::DifferenceOfProducts(m_columns[1][2], m_columns[3][3], m_columns[1][3], m_columns[3][2]);
+        const float c5 = math::DifferenceOfProducts(m_columns[2][2], m_columns[3][3], m_columns[2][3], m_columns[3][2]);
             
         return (math::DifferenceOfProducts(s0, c5, s1, c4)
             + math::DifferenceOfProducts(s2, c3, -s3, c2)
@@ -449,11 +445,11 @@ namespace nes
     {
         for (size_t i = 0; i < N - 1; ++i)
         {
-            const Type squaredMag = GetAxis(static_cast<int>(i)).SquaredMagnitude();
+            const Type squaredMag = m_columns[i].SquaredMagnitude();
             const Type axisScaleFactor = squaredMag < math::PrecisionDelta<Type>() ? static_cast<Type>(1) : static_cast<Type>(1) / std::sqrt(squaredMag);
-            m[0][i] *= axisScaleFactor;
-            m[1][i] *= axisScaleFactor;
-            m[2][i] *= axisScaleFactor;
+            m_columns[i][0] *= axisScaleFactor;
+            m_columns[i][1] *= axisScaleFactor;
+            m_columns[i][2] *= axisScaleFactor;
         }
     }
 
@@ -467,15 +463,15 @@ namespace nes
 
         for (size_t i = 0; i < N - 1; ++i)
         {
-            const Type squaredMag = GetAxis(static_cast<int>(i)).SquaredMagnitude();
+            const Type squaredMag = m_columns[i].SquaredMagnitude();
             const Type axisScale = squaredMag < math::PrecisionDelta<Type>() ? static_cast<Type>(1) : std::sqrt(squaredMag);
             scale[i] = axisScale;
 
             // Remove scale from the axis:
             const Type invAxisScale = static_cast<Type>(1) / axisScale;
-            m[0][i] *= invAxisScale;
-            m[1][i] *= invAxisScale;
-            m[2][i] *= invAxisScale;
+            m_columns[i][0] *= invAxisScale;
+            m_columns[i][1] *= invAxisScale;
+            m_columns[i][2] *= invAxisScale;
         }
         
         return scale;
@@ -491,7 +487,7 @@ namespace nes
 
         for (size_t i = 0; i < N - 1; ++i)
         {
-            const Type squaredMag = GetAxis(static_cast<int>(i)).SquaredMagnitude();
+            const Type squaredMag = m_columns[i].SquaredMagnitude();
             const Type axisScale = squaredMag < math::PrecisionDelta<Type>() ? static_cast<Type>(1) : std::sqrt(squaredMag);
             scale[i] = axisScale;
         }
@@ -517,8 +513,8 @@ namespace nes
     template <FloatingPointType Type>
     TVector3<Type> TMatrix4x4<Type>::TransformPoint(const TVector3<Type>& point) const
     {
-        const Vector4 transformed = (*this * Vector4(point, static_cast<Type>(1)));
-        return Vector3(transformed.x, transformed.y, transformed.z);
+        const TVector4<Type> transformed = (*this * TVector4<Type>(point, static_cast<Type>(1)));
+        return TVector3<Type>(transformed.x, transformed.y, transformed.z);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -528,8 +524,8 @@ namespace nes
     template <FloatingPointType Type>
     TVector3<Type> TMatrix4x4<Type>::TransformVector(const TVector3<Type>& vector) const
     {
-        const Vector4 transformed = (*this * Vector4(vector, static_cast<Type>(0)));
-        return Vector3(transformed.x, transformed.y, transformed.z);
+        const TVector4<Type> transformed = (*this * TVector4<Type>(vector, static_cast<Type>(0)));
+        return TVector3<Type>(transformed.x, transformed.y, transformed.z);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -562,7 +558,7 @@ namespace nes
         {
             for (size_t j = 0; j < N; ++j)
             {
-                result += std::to_string(m[i][j]) + " ";
+                result += std::to_string(this->m_columns[j][i]) + " ";
             }
             
             result += "\n";
@@ -575,13 +571,10 @@ namespace nes
     TVector4<Type> operator*(const TMatrix4x4<Type>& matrix, const TVector4<Type>& vector)
     {
         TVector4<Type> result;
-        
-        // Column Orientation:
-        result[0] = (matrix.m[0][0] * vector[0]) + (matrix.m[0][1] * vector[1]) + (matrix.m[0][2] * vector[2]) + (matrix.m[0][3] * vector[3]);
-        result[1] = (matrix.m[1][0] * vector[0]) + (matrix.m[1][1] * vector[1]) + (matrix.m[1][2] * vector[2]) + (matrix.m[1][3] * vector[3]);
-        result[2] = (matrix.m[2][0] * vector[0]) + (matrix.m[2][1] * vector[1]) + (matrix.m[2][2] * vector[2]) + (matrix.m[2][3] * vector[3]);
-        result[3] = (matrix.m[3][0] * vector[0]) + (matrix.m[3][1] * vector[1]) + (matrix.m[3][2] * vector[2]) + (matrix.m[3][3] * vector[3]);
-        
+        result[0] = matrix[0][0] * vector[0] + matrix[1][0] * vector[1] + matrix[2][0] * vector[2] + matrix[3][0] * vector[3];
+        result[1] = matrix[0][1] * vector[0] + matrix[1][1] * vector[1] + matrix[2][1] * vector[2] + matrix[3][1] * vector[3];
+        result[2] = matrix[0][2] * vector[0] + matrix[1][2] * vector[1] + matrix[2][2] * vector[2] + matrix[3][2] * vector[3];
+        result[3] = matrix[0][3] * vector[0] + matrix[1][3] * vector[1] + matrix[2][3] * vector[2] + matrix[3][3] * vector[3];
         return result;
     }
 

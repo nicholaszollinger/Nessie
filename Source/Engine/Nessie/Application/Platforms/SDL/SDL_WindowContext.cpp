@@ -1,6 +1,7 @@
 ﻿// SDL_WindowContext.cpp
-
 #include "SDL_WindowContext.h"
+
+#ifdef NES_RENDER_API_SDL
 #include <SDL_render.h>
 
 namespace nes
@@ -30,3 +31,4 @@ namespace nes
         }
     }
 }
+#endif

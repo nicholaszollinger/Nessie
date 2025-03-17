@@ -1,5 +1,6 @@
 ﻿// EntityLayer.h
 #pragma once
+#include <functional>
 #include "Entity.h"
 
 #define NES_DEFINE_ENTITY_LAYER(layerTypename, entityTypename)    \
@@ -14,6 +15,17 @@ namespace nes
 {
     class Camera;
     class Event;
+    
+    struct EventHandler
+    {
+        std::function<void(Event& event)> m_callback;
+    };
+
+    struct TickFunction
+    {
+        // void* m_pOwner?
+        std::function<void(float deltaTime)> m_function;
+    };
 
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
@@ -27,6 +39,7 @@ namespace nes
         
     protected:
         Scene* m_pScene = nullptr;
+        std::vector<TickFunction> m_tickFunctions{};
         bool m_isBeingDestroyed = false;
         
     public:
@@ -38,6 +51,7 @@ namespace nes
         EntityLayer& operator=(EntityLayer&&) noexcept = delete;
 
         virtual void DestroyEntity(const LayerHandle& handle) = 0;
+        void RegisterTick(const TickFunction& function);
 
         [[nodiscard]] virtual TypeID        GetTypeID() const = 0;
         [[nodiscard]] virtual const char*   GetTypename() const = 0;
@@ -51,8 +65,9 @@ namespace nes
         virtual bool InitializeLayer() = 0;
         virtual void OnSceneBegin() = 0;
         virtual void OnEvent(Event& event) = 0;
+        virtual void PreRender(const Camera& sceneCamera) = 0;
         virtual void Render(const Camera& sceneCamera) = 0;
-        virtual void Tick(const double deltaTime) = 0;
+        virtual void Tick(const float deltaTime) = 0;
         virtual void OnLayerDestroyed() = 0;
 
         virtual bool LoadLayer(YAML::Node& layerNode) = 0;

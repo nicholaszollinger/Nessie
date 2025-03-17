@@ -1,5 +1,5 @@
 ﻿// SDL_Input.cpp
-
+#ifdef NES_WINDOW_API_SDL
 #include "SDL_Input.h"
 
 #include <SDL_keyboard.h>
@@ -213,7 +213,6 @@ namespace nes::SDL
     }
 }
 
-#ifdef NES_WINDOW_API_SDL
 namespace nes
 {
     bool InputManager::IsKeyDown_Impl([[maybe_unused]] void* pNativeWindow, const KeyCode key)

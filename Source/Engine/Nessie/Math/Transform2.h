@@ -52,26 +52,26 @@ namespace nes
         const float cos = std::cos(m_rotation);
         
         TMatrix2x2<Type> scaleMatrix{};
-        scaleMatrix.m[0][0] = m_scale.x;
-        scaleMatrix.m[1][1] = m_scale.y;
+        scaleMatrix[0][0] = m_scale.x;
+        scaleMatrix[1][1] = m_scale.y;
         
         TMatrix2x2<Type> rotationMatrix{};
-        rotationMatrix.m[0][0] = cos;
-        rotationMatrix.m[0][1] = -sin;
-        rotationMatrix.m[1][0] = sin;
-        rotationMatrix.m[1][1] = cos;
+        rotationMatrix[0][0] = cos;
+        rotationMatrix[1][0] = -sin;
+        rotationMatrix[0][1] = sin;
+        rotationMatrix[1][1] = cos;
         const TMatrix2x2<Type> scaleRotation = TMatrix2x2<Type>::Concatenate(scaleMatrix, rotationMatrix);
 
         // Z Axis rotation:
         TMatrix3x3<Type> result{};
-        result.m[0][0] = scaleRotation.m[0][0];
-        result.m[1][0] = scaleRotation.m[1][0];
-        result.m[0][1] = scaleRotation.m[0][1];
-        result.m[1][1] = scaleRotation.m[1][1];
+        result[0][0] = scaleRotation[0][0];
+        result[0][1] = scaleRotation[0][1];
+        result[1][0] = scaleRotation[1][0];
+        result[1][1] = scaleRotation[1][1];
 
         // Apply Translation
-        result.m[0][2] = m_location.x;
-        result.m[1][2] = m_location.y;
+        result[2][0] = m_location.x;
+        result[2][1] = m_location.y;
 
         return result;
     }

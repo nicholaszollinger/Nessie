@@ -38,14 +38,10 @@ namespace nes::math
     template <FloatingPointType Type>
     Type Orient3D(const TVector3<Type>& a, const TVector3<Type>& b, const TVector3<Type>& c, const TVector3<Type>& d)
     {
-        const Type elements[9] =
-        {
+        const TMatrix3x3<Type> mat(
             a.x - d.x, a.y - d.y, a.z - d.z,
             b.x - d.x, b.y - d.y, b.z - d.z,
-            c.x - d.x, c.y - d.y, c.z - d.z
-        };
-        
-        const TMatrix3x3<Type> mat(elements);
+            c.x - d.x, c.y - d.y, c.z - d.z);
         return mat.Determinant();
     }
     
@@ -66,14 +62,12 @@ namespace nes::math
         const auto bDiff = b - d;
         const auto cDiff = c - d;
         
-        const Type elements[9] =
-        {
-            aDiff.x, aDiff.y, aDiff.SquaredMagnitude(),
-            bDiff.x, bDiff.y, bDiff.SquaredMagnitude(),
-            cDiff.x, cDiff.y, cDiff.SquaredMagnitude(),
-        };
-
-        const TMatrix3x3<Type> mat(elements);
+        const TMatrix3x3<Type> mat
+            (
+                aDiff.x, aDiff.y, aDiff.SquaredMagnitude(),
+                bDiff.x, bDiff.y, bDiff.SquaredMagnitude(),
+                cDiff.x, cDiff.y, cDiff.SquaredMagnitude()
+            );
         const Type determinant = mat.Determinant();
 
         // If the determinant is 0, then the four points are co-circular.

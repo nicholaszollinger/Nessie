@@ -48,8 +48,8 @@ namespace nes
         Event() = default;
         virtual ~Event() = default;
 
-        void SetHandled();
-        [[nodiscard]] bool IsHandled() const;
+        void SetHandled() { m_isHandled = true; }
+        [[nodiscard]] bool IsHandled() const { return m_isHandled; }
         [[nodiscard]] virtual EventID GetEventID() const = 0;
         [[nodiscard]] virtual const char* GetName() const = 0;
     };

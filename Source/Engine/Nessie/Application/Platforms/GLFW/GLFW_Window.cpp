@@ -39,7 +39,6 @@ namespace nes
 #ifdef NES_RENDER_API_VULKAN
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 #endif
-
         // Set whether the Window is resizable or not.
         glfwWindowHint(GLFW_RESIZABLE, props.m_isResizable);
         
@@ -271,6 +270,5 @@ void GLFW_ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char*
 {
     NES_ERRORV("GLFW", "Error: ", error, " - ", description);
 }
-
 
 #endif
