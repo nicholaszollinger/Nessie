@@ -120,21 +120,21 @@ function d.Link(projectDir)
         libdirs 
         {
             -- vkBootstrap Debug folder
-            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\build\\Debug\\"
+            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Debug\\"
         }
 
     filter "configurations:Release"
         libdirs 
         {
             -- vkBootstrap Release folder
-            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\build\\Release\\"
+            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Release\\"
         }
 
     filter "configurations:Test"
         libdirs 
         {
             -- vkBootstrap Release folder
-            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\build\\Release\\"
+            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Release\\"
         }
 end
 

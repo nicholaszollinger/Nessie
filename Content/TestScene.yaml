@@ -18,7 +18,7 @@ Scene:
             Name: "Camera"
             IsEnabled: true
             SetActiveOnEnabled: true
-            PerspectiveFOV: 60 #Needs to be in radians... #60.0
+            PerspectiveFOV: 60
             PerspectiveNear: 0.1
             PerspectiveFar: 100.0
             OrthographicSize: 10.0
