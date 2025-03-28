@@ -41,7 +41,7 @@ namespace nes
         DerivedType*                                m_pParent = nullptr;
         EntityID                                    m_id{};
         LayerHandle                                 m_layerHandle{};
-        EntityLayer*                                 m_pLayer = nullptr;
+        EntityLayer*                                m_pLayer = nullptr;
         
     public:
         using BaseType = TEntity<DerivedType>;
@@ -357,24 +357,6 @@ namespace nes
         {
             pComponent->SetEnabled(false);
             pComponent->OnDestroy();
-        }
-    }
-
-    template <typename DerivedType>
-    void TEntity<DerivedType>::OnFinishDestroy()
-    {
-        NES_ASSERT(m_isMarkedForDestruction);
-
-        if (!GetLayer()->IsBeingDestroyed())
-        {
-            RemoveFromHierarchy();
-        }
-        
-        for (auto& pComponent : m_components)
-        {
-            // Remove the ownership, making the Component invalid.
-            pComponent->m_pOwner = nullptr;
-            pComponent.Reset();
         }
     }
 

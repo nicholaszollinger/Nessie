@@ -3,6 +3,7 @@
 #include <filesystem>
 #include <unordered_map>
 #include "Scene.h"
+#include "TickManager.h"
 #include "Core/Memory/StrongPtr.h"
 #include "Core/String/StringID.h"
 
@@ -31,6 +32,7 @@ namespace nes
         SceneMap m_sceneMap{};
         StrongPtr<Scene> m_pActiveScene = nullptr; // At the moment, we only have a single scene.
         StringID m_sceneToTransitionTo;
+        TickManager m_tickManager{};
 
     public:
         SceneManager() = default;

@@ -5,6 +5,7 @@
 #include "Core/Generic/Color.h"
 #include "Scene/EntityLayer.h"
 #include "Scene/EntityPool.h"
+#include "Scene/TickGroup.h"
 
 namespace nes
 {
@@ -49,6 +50,12 @@ namespace nes
         EntityPool m_entityPool;
         std::vector<EventHandler> m_eventHandlers{};
 
+        // Tick Groups
+        TickGroup m_prePhysicsTickGroup;
+        TickGroup m_physicsTickGroup;
+        TickGroup m_postPhysicsTickGroup;
+        TickGroup m_lateTickGroup;
+
         // Render Resources:
         std::vector<MeshComponent*> m_transparentMeshes;
         std::vector<MeshComponent*> m_opaqueMeshes;
@@ -60,13 +67,16 @@ namespace nes
         vk::Buffer m_cameraUniformBuffer;
         WorldRenderMode m_currentRenderMode = WorldRenderMode::Fill;
 
-        // TEMP:
+        // TEMP Editor Data:
         Entity3D* m_pSelectedEntity = nullptr;
         StrongPtr<Entity3DComponent> m_pSelectedComponent = nullptr;
         
     public:
         explicit World(Scene* pScene);
         StrongPtr<Entity3D> CreateEntity(const EntityID& id, const StringID& name);
+
+        void RegisterTickToWorldTickGroup(TickFunction* pFunction, const TickStage stage);
+        [[nodiscard]] TickGroup* GetTickGroup(const TickStage stage);
         
         virtual void DestroyEntity(const LayerHandle& handle) override;
         [[nodiscard]] virtual bool IsValidNode(const LayerHandle& handle) const override;
@@ -82,8 +92,8 @@ namespace nes
         virtual void PreRender(const Camera& sceneCamera) override;
         virtual void Render(const Camera& worldCamera) override;
         virtual void OnEvent(Event& event) override;
-        virtual void Tick(const float deltaTime) override;
         virtual bool LoadLayer(YAML::Node& layerNode) override;
+        virtual void OnPostTick() override;
 
         // TEMP:
         virtual void EditorRenderEntityHierarchy() override;

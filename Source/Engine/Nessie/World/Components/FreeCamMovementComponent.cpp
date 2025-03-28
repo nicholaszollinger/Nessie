@@ -12,33 +12,31 @@ namespace nes
     bool FreeCamMovementComponent::Init()
     {
         m_rotationEnabled = false;
-        return Entity3DComponent::Init();
+        auto* pWorld = GetOwner()->GetWorld();
+        pWorld->RegisterTickToWorldTickGroup(&m_tickFunction, TickStage::PrePhysics);
+        
+        return TickableEntity3DComponent::Init();
     }
 
     void FreeCamMovementComponent::OnEnabled()
     {
-        TickFunction tick;
-        tick.m_function = [this](const float deltaTime) -> void
-        {
-            ProcessCameraMovement(deltaTime);            
-        };
-
+        TickableEntity3DComponent::OnEnabled();
+        
+        // TODO: Refactor this for specific Input Registration.
         auto* pWorld = GetOwner()->GetWorld();
-        pWorld->RegisterTick(tick);
-
         EventHandler handler;
         handler.m_callback = [this](Event& event) -> void
         {
-            OnEvent(event);  
+             OnEvent(event);  
         };
         pWorld->RegisterEventHandler(handler);
     }
 
     void FreeCamMovementComponent::OnDisabled()
     {
-        // [TODO]: Unregister for Tick.
-        // Right now I am punting on this, no ticks will be unregistered
-        // in the lifetime of the application for now.
+        TickableEntity3DComponent::OnDisabled();
+        
+        // [TODO]: Unregister for Events.
     }
 
     void FreeCamMovementComponent::ProcessInput()
@@ -101,7 +99,7 @@ namespace nes
         }
     }
 
-    void FreeCamMovementComponent::ProcessCameraMovement(const float deltaTime)
+    void FreeCamMovementComponent::Tick(const float deltaTime)
     {
         ProcessInput();
         const Vector3 deltaPitchYawRoll = Vector3(m_inputRotation.x * m_turnSpeedPitch, m_inputRotation.y * m_turnSpeedYaw, 0.f) * deltaTime;
