@@ -47,14 +47,22 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Update the active Scene, then handle any scene transitions.
+    ///		@brief : Run a tick frame, then transition
     //----------------------------------------------------------------------------------------------------
     void SceneManager::Update(const double deltaRealTime)
     {
-        if (m_pActiveScene)
+        // Run each stage of the Tick:
+        // Right now this all runs synchronously.
         {
-            m_pActiveScene->Tick(deltaRealTime);
+            m_tickManager.BeginFrame(static_cast<float>(deltaRealTime));
+            m_tickManager.RunTickStage(TickStage::PrePhysics);
+            m_tickManager.RunTickStage(TickStage::Physics);
+            m_tickManager.RunTickStage(TickStage::PostPhysics);
+            m_tickManager.RunTickStage(TickStage::Late);
+            m_tickManager.EndFrame();
         }
+        
+        m_pActiveScene->OnPostTick();
 
         // If a World Transition is queued, transition to that World.
         if (IsTransitionQueued())

@@ -33,9 +33,7 @@ namespace nes
         {
             pLayer->OnSceneBegin();
         }
-
-        // m_isSimulating = true;?
-
+        
         return true;
     }
 
@@ -63,27 +61,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
-    ///		@brief : Ticks each layer in the World, from the bottom to the top of the Layer stack. 
-    ///		@param deltaRealTime : 
+    ///		@brief : Run any cleanup operations after Ticking has finished.  
     //----------------------------------------------------------------------------------------------------
-    void Scene::Tick(const double deltaRealTime)
+    void Scene::OnPostTick()
     {
-        if (UpdateTime(deltaRealTime))
-        {
-            // Run registered physics tick???
-        }
-
-        // [TODO]: Should these be managed by the Tick Functions?
         for (auto& pLayer : m_layerStack)
         {
-            pLayer->Tick(m_sceneDeltaTime);
+            pLayer->OnPostTick();
         }
-
-        // Process any destroyed entities as a result of the update:
-        // for (auto& pLayer : m_layerStack)
-        // {
-        //     pLayer->ProcessDestroyedEntities();
-        // }
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -138,44 +123,7 @@ namespace nes
     {
         m_layerStack.push_back(pLayer);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Updates the World Delta Time & Real Time, and checks if it's time for a Fixed Update.
-    ///		@param deltaRealTime : Real Time elapsed since the last frame.
-    ///		@returns : True if it's time for a Fixed Update, False otherwise.
-    //----------------------------------------------------------------------------------------------------
-    bool Scene::UpdateTime(const double deltaRealTime)
-    {
-        m_realTimeElapsed += deltaRealTime;
-        m_sceneDeltaTime = static_cast<float>(deltaRealTime) * m_worldTimeScale;
-        m_timeLeftForFixed -= deltaRealTime;
-
-        if (m_timeLeftForFixed < 0.0)
-        {
-            m_timeLeftForFixed = m_fixedTimeStep;
-            return true;
-        }
-
-        return false;
-    }
     
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //				
-    ///		@brief : Set the global timescale of the World.
-    ///		@param timeScale : Timescale to set. 1.0f is no scaling, 0.5f is half speed, 2.0f is double speed.
-    ///     @note : A timescale of 0 will make DeltaTime always equal to 0.
-    ///     @note : However, Fixed Updates are not effected by the timescale. If you want a fixed
-    ///     @note : system to be effected by the timescale, you must manually scale the fixed time step
-    ///     @note : in the system.
-    //----------------------------------------------------------------------------------------------------
-    void Scene::SetGlobalTimeScale(const float timeScale)
-    {
-        m_worldTimeScale = timeScale;
-    }
-
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Try to Load a scene from a filepath.
     //----------------------------------------------------------------------------------------------------

@@ -11,14 +11,62 @@ namespace nes
     World::World(Scene* pScene)
         : EntityLayer(pScene)
         , m_entityPool(this)
+        , m_prePhysicsTickGroup(TickStage::PrePhysics)
+        , m_physicsTickGroup(TickStage::Physics)
+        , m_postPhysicsTickGroup(TickStage::PostPhysics)
+        , m_lateTickGroup(TickStage::Late)
     {
-        //
+        m_prePhysicsTickGroup.SetDebugName("World PrePhysics Tick");
+        m_physicsTickGroup.SetDebugName("World Physics Tick");
+        m_postPhysicsTickGroup.SetDebugName("World PostPhysics Tick");
+        m_lateTickGroup.SetDebugName("World Late Tick");
     }
 
     StrongPtr<Entity3D> World::CreateEntity(const EntityID& id, const StringID& name)
     {
         StrongPtr<Entity3D> pActor = m_entityPool.CreateEntity(id, name);
         return pActor;
+    }
+
+    void World::RegisterTickToWorldTickGroup(TickFunction* pFunction, const TickStage stage)
+    {
+        switch (stage)
+        {
+            case TickStage::PrePhysics:
+                m_prePhysicsTickGroup.AddTickFunction(pFunction);
+                break;
+            
+            case TickStage::Physics:
+                m_physicsTickGroup.AddTickFunction(pFunction);
+                break;
+            
+            case TickStage::PostPhysics:
+                m_postPhysicsTickGroup.AddTickFunction(pFunction);
+                break;
+            
+            case TickStage::Late:
+                m_lateTickGroup.AddTickFunction(pFunction);
+                break;
+            
+            default:
+                NES_ERRORV("Attempted to register Tick to invalid World Tick Group!");
+                break;
+        }
+    }
+
+    TickGroup* World::GetTickGroup(const TickStage stage)
+    {
+        switch (stage)
+        {
+            case TickStage::PrePhysics:     return &m_prePhysicsTickGroup;
+            case TickStage::Physics:        return &m_physicsTickGroup;
+            case TickStage::PostPhysics:    return &m_postPhysicsTickGroup;
+            case TickStage::Late:           return &m_lateTickGroup;
+
+            default:
+                NES_ERRORV("World", "Attempted to get invalid World Tick Group!");
+                return nullptr;
+        }
     }
 
     // [TODO]: Can these be pushed up to the base layer?
@@ -76,6 +124,13 @@ namespace nes
 
     bool World::InitializeLayer()
     {
+        // Add Tick Groups:
+        auto& tickManager = TickManager::Get();
+        tickManager.RegisterTickGroup(&m_prePhysicsTickGroup);
+        tickManager.RegisterTickGroup(&m_physicsTickGroup);
+        tickManager.RegisterTickGroup(&m_postPhysicsTickGroup);
+        tickManager.RegisterTickGroup(&m_lateTickGroup);
+        
         for (auto& entity : m_entityPool)
         {
             if (!entity.Init())
@@ -95,6 +150,13 @@ namespace nes
 
     void World::OnLayerDestroyed()
     {
+        // Unregister Tick Groups:
+        auto& tickManager = TickManager::Get();
+        tickManager.UnregisterTickGroup(&m_prePhysicsTickGroup);
+        tickManager.UnregisterTickGroup(&m_physicsTickGroup);
+        tickManager.UnregisterTickGroup(&m_postPhysicsTickGroup);
+        tickManager.UnregisterTickGroup(&m_lateTickGroup);
+        
         m_entityPool.ClearPool();
         FreeRenderResources();
     }
@@ -177,18 +239,10 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Tick the World. 
+    ///		@brief : 
     //----------------------------------------------------------------------------------------------------
-    void World::Tick(const float deltaTime)
+    void World::OnPostTick()
     {
-        // [TODO]:
-        // Tick the Collision System...
-
-        for (const auto& [function] : m_tickFunctions)
-        {
-            function(deltaTime);
-        }
-        
         m_entityPool.ProcessDestroyedEntities();
     }
 

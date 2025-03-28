@@ -7,11 +7,11 @@ namespace nes
 {
     class Event;
     class Entity3D;
-
+    
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Actor Component for moving around in 3D space as a free cam.
     //----------------------------------------------------------------------------------------------------
-    class FreeCamMovementComponent : public Entity3DComponent
+    class FreeCamMovementComponent final : public TickableEntity3DComponent
     {
         NES_DEFINE_COMPONENT_TYPE(FreeCamMovementComponent)
         
@@ -38,6 +38,6 @@ namespace nes
 
         void ProcessInput();
         void OnEvent(Event& event);
-        void ProcessCameraMovement(const float deltaTime);
+        virtual void Tick(const float deltaTime);
     };
 }

@@ -20,13 +20,7 @@ namespace nes
     {
         std::function<void(Event& event)> m_callback;
     };
-
-    struct TickFunction
-    {
-        // void* m_pOwner?
-        std::function<void(float deltaTime)> m_function;
-    };
-
+    
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
@@ -39,7 +33,6 @@ namespace nes
         
     protected:
         Scene* m_pScene = nullptr;
-        std::vector<TickFunction> m_tickFunctions{};
         bool m_isBeingDestroyed = false;
         
     public:
@@ -51,7 +44,6 @@ namespace nes
         EntityLayer& operator=(EntityLayer&&) noexcept = delete;
 
         virtual void DestroyEntity(const LayerHandle& handle) = 0;
-        void RegisterTick(const TickFunction& function);
 
         [[nodiscard]] virtual TypeID        GetTypeID() const = 0;
         [[nodiscard]] virtual const char*   GetTypename() const = 0;
@@ -67,8 +59,8 @@ namespace nes
         virtual void OnEvent(Event& event) = 0;
         virtual void PreRender(const Camera& sceneCamera) = 0;
         virtual void Render(const Camera& sceneCamera) = 0;
-        virtual void Tick(const float deltaTime) = 0;
         virtual void OnLayerDestroyed() = 0;
+        virtual void OnPostTick() = 0;
 
         virtual bool LoadLayer(YAML::Node& layerNode) = 0;
         virtual void EditorRenderEntityHierarchy() = 0;
@@ -80,4 +72,27 @@ namespace nes
         TypeIsDerivedFrom<Type, EntityLayer>;
         ValidEntityType<typename Type::EntityType>;
     };
+
+    //----------------------------------------------------------------------------------------------------
+    //		NOTES:
+    //		
+    ///		@brief : 
+    //----------------------------------------------------------------------------------------------------
+    template <typename DerivedType>
+    void TEntity<DerivedType>::OnFinishDestroy()
+    {
+        NES_ASSERT(m_isMarkedForDestruction);
+
+        if (!GetLayer()->IsBeingDestroyed())
+        {
+            RemoveFromHierarchy();
+        }
+        
+        for (auto& pComponent : m_components)
+        {
+            // Remove the ownership, making the Component invalid.
+            pComponent->m_pOwner = nullptr;
+            pComponent.Reset();
+        }
+    }
 }
