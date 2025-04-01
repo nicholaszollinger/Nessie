@@ -141,5 +141,6 @@ namespace nes
         m_pTickGroup = nullptr;
         m_pNextTick = nullptr;
         m_relativeTickCooldown = 0.f;
+        m_lastTimeTicked = -1.f;
     }
 }

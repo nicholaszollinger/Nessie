@@ -13,6 +13,7 @@ namespace nes
     {
         m_rotationEnabled = false;
         auto* pWorld = GetOwner()->GetWorld();
+        //m_tickFunction.SetTickInterval(5.f);
         pWorld->RegisterTickToWorldTickGroup(&m_tickFunction, TickStage::PrePhysics);
         
         return TickableEntity3DComponent::Init();
@@ -101,6 +102,7 @@ namespace nes
 
     void FreeCamMovementComponent::Tick(const float deltaTime)
     {
+        //NES_LOG("Ticked. Delta Time: ", deltaTime);
         ProcessInput();
         const Vector3 deltaPitchYawRoll = Vector3(m_inputRotation.x * m_turnSpeedPitch, m_inputRotation.y * m_turnSpeedYaw, 0.f) * deltaTime;
         const Vector3 deltaMovement = m_inputMovement * (m_moveSpeed * deltaTime);

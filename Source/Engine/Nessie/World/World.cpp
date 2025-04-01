@@ -33,19 +33,19 @@ namespace nes
         switch (stage)
         {
             case TickStage::PrePhysics:
-                m_prePhysicsTickGroup.AddTickFunction(pFunction);
+                pFunction->RegisterTick(&m_prePhysicsTickGroup);
                 break;
             
             case TickStage::Physics:
-                m_physicsTickGroup.AddTickFunction(pFunction);
+                pFunction->RegisterTick(&m_physicsTickGroup);
                 break;
             
             case TickStage::PostPhysics:
-                m_postPhysicsTickGroup.AddTickFunction(pFunction);
+                pFunction->RegisterTick(&m_postPhysicsTickGroup);
                 break;
             
             case TickStage::Late:
-                m_lateTickGroup.AddTickFunction(pFunction);
+                pFunction->RegisterTick(&m_lateTickGroup);
                 break;
             
             default:
