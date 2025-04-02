@@ -61,10 +61,18 @@ namespace nes
         std::vector<MeshComponent*> m_opaqueMeshes;
         std::vector<std::shared_ptr<nes::RendererContext::GraphicsPipeline>> m_defaultMeshPipelines{};
         std::shared_ptr<nes::RendererContext::GraphicsPipeline> m_gridPipeline = nullptr;
+        std::shared_ptr<nes::RendererContext::GraphicsPipeline> m_skyboxPipeline = nullptr;
         std::vector<std::shared_ptr<Mesh>> m_meshAssets;
         std::vector<std::shared_ptr<Material>> m_materialAssets;
+        
         RendererContext::ShaderUniform m_cameraUniforms;
         vk::Buffer m_cameraUniformBuffer;
+        
+        RendererContext::ShaderUniform m_skyboxUniforms;
+        vk::Image m_skyboxCubeImage;
+        vk::ImageView m_skyboxCubeImageView;
+        vk::Sampler m_skyboxCubeSampler;
+        
         WorldRenderMode m_currentRenderMode = WorldRenderMode::Fill;
 
         // TEMP Editor Data:
@@ -113,6 +121,7 @@ namespace nes
 
         void CreateRenderResources();
         void FreeRenderResources();
+        void RenderSkybox();
         void RenderGrid();
     };
 

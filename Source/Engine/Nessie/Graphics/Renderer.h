@@ -75,6 +75,11 @@ namespace nes
         static void Draw(const vk::Buffer& vertexBuffer, const uint32_t vertexCount);
         static void Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance);
         static void DrawIndexed(const vk::Buffer& vertexBuffer, const vk::Buffer& indexBuffer, const uint32_t indexCount);
+
+        // Hack for now, until I properly delineate the API between the Context and the
+        // Renderer. This will be done later in the semester or the summer, most likely.
+        // For now, I am going to grab the wrapper directly.
+        static RendererContext& GetContext();
         
     protected:
         static Renderer& Instance();

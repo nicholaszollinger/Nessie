@@ -418,6 +418,13 @@ namespace nes
         commandBuffer.drawIndexed(indexCount, 1, 0, 0, 0);
     }
 
+    RendererContext& Renderer::GetContext()
+    {
+        auto* pContext = Renderer::Instance().m_pRenderContext;
+        NES_ASSERT(pContext != nullptr);
+        return *pContext;
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the static instance of the Renderer class. 
     //----------------------------------------------------------------------------------------------------

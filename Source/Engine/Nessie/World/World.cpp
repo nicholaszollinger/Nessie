@@ -6,6 +6,9 @@
 #include "Components/CameraComponent.h"
 #include "Components/FreeCamMovementComponent.h"
 
+// Hack to test stb_image
+#include "stb_image.h"
+
 namespace nes
 {
     World::World(Scene* pScene)
@@ -187,9 +190,6 @@ namespace nes
     
     void World::Render([[maybe_unused]] const Camera& worldCamera)
     {
-        // [TODO]: 
-        // Push the Camera uniforms for the Mesh Rendering.
-
         // TODO: This should be part of a RenderPass object.
         static constexpr vk::ClearValue kClearValues[] =
         {
@@ -203,6 +203,8 @@ namespace nes
 
         Renderer::BeginRenderPass(renderArea, kClearValues, _countof(kClearValues));
         {
+            RenderSkybox();
+            
             // Render all registered Renderables:
             auto pPipeline = GetDefaultMeshRenderPipeline();
 
@@ -220,9 +222,9 @@ namespace nes
                 m_transparentMeshes[i]->Render();
             }
 
+            RenderGrid();
             // [TODO]: I am manually rendering the Editor stuff here. It will be moved once I have time to implement
             // a RenderPass object. Right now, there is some issues with how they are setup in the RendererContext.
-            RenderGrid();
             EditorRenderEntityHierarchy();
         }
         Renderer::EndRenderPass();
@@ -836,6 +838,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void World::CreateRenderResources()
     {
+        // Camera Uniforms:
         m_cameraUniformBuffer = Renderer::CreateUniformBuffer(sizeof(SceneCameraUniforms));
         m_cameraUniforms = Renderer::CreateUniformForBuffer(SceneCameraUniforms::kBinding, m_cameraUniformBuffer, sizeof(SceneCameraUniforms));
         
@@ -916,11 +919,6 @@ namespace nes
         // Create the Grid Pipeline
         nes::GraphicsPipelineConfig gridPipelineConfig =
         {
-            // .m_shaderPushConstants =
-            // {
-            //     vk::PushConstantRange(vk::ShaderStageFlagBits::eAllGraphics, 0, sizeof(GeometryPushConstants)),
-            // },
-
             .m_shaderUniforms =
             {
                 m_cameraUniforms,
@@ -958,6 +956,94 @@ namespace nes
             },
         };
         m_gridPipeline = Renderer::CreatePipeline(gridPipelineConfig);
+
+        // Create the Skybox Assets
+        auto& context = Renderer::GetContext();
+        
+        m_skyboxCubeSampler = context.GetDevice().createSampler(
+            vk::SamplerCreateInfo()
+                .setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+                .setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+                .setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+                .setMinFilter(vk::Filter::eLinear)
+                .setMagFilter(vk::Filter::eLinear));
+
+        
+        constexpr const char* kSkyboxPaths[] =
+        {
+            "miramar_ft.png", // Front
+            "miramar_bk.png", // Back
+            "miramar_up.png", // Up
+            "miramar_dn.png", // Down
+            "miramar_rt.png", // Right
+            "miramar_lf.png", // Left
+        };
+
+        std::vector<uint8_t> cubeMapBytes{};
+        int width = 1024;
+        int height = 1024;
+        for (const auto& path : kSkyboxPaths)
+        {
+            std::string fullPath = NES_CONTENT_DIR;
+            fullPath += path;
+            
+            int channels;
+            const stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            
+            const uint8_t* pStart = static_cast<const uint8_t*>(pBytes);
+            const uint8_t* pEnd = &pStart[static_cast<uint32_t>(width * height * STBI_rgb_alpha)];
+            cubeMapBytes.insert(cubeMapBytes.end(), pStart, pEnd);
+        }
+
+        std::tie(m_skyboxCubeImage, m_skyboxCubeImageView) = context.CreateCubemapImageAndView(
+            {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}
+            , vk::Format::eR8G8B8A8Unorm // TODO: Check how Hazel handles this.
+            , cubeMapBytes.data(), cubeMapBytes.size());
+
+        m_skyboxUniforms = context.CreateUniformForImage(3, m_skyboxCubeImageView, m_skyboxCubeSampler);
+
+        // Skybox Pipeline
+        nes::GraphicsPipelineConfig skyboxPipelineConfig =
+        {
+            .m_vertexBindings =
+            {
+                vk::VertexInputBindingDescription()
+                    .setBinding(0)
+                    .setInputRate(vk::VertexInputRate::eVertex)
+                    .setStride(sizeof(nes::Vector3)),
+            },
+
+            .m_vertexAttributes =
+            {
+                vk::VertexInputAttributeDescription()
+                    .setLocation(0)
+                    .setBinding(0)
+                    .setFormat(vk::Format::eR32G32B32Sfloat)
+                    .setOffset(0),
+            },
+            
+            .m_shaderUniforms =
+            {
+                m_cameraUniforms,
+                m_skyboxUniforms,
+            },
+            
+            .m_shaderStages =
+            {
+                vk::PipelineShaderStageCreateInfo()
+                    .setStage(vk::ShaderStageFlagBits::eVertex)
+                    .setPName("main")
+                    .setModule(Renderer::GetShader("Skybox.vert")),
+                vk::PipelineShaderStageCreateInfo()
+                    .setStage(vk::ShaderStageFlagBits::eFragment)
+                    .setPName("main")
+                    .setModule(Renderer::GetShader("Skybox.frag")),
+            },
+
+        .m_polygonMode = vk::PolygonMode::eFill,
+        };
+        m_skyboxPipeline = Renderer::CreatePipeline(skyboxPipelineConfig);
+        
 
         // Create a default Cube Mesh.
         static constexpr Vector3 vertices[] =
@@ -1005,14 +1091,27 @@ namespace nes
             pMesh = nullptr;
         }
         
+        auto& context = Renderer::GetContext();
+        context.DestroyImageAndView(m_skyboxCubeImage, m_skyboxCubeImageView);
+        context.GetDevice().destroySampler(m_skyboxCubeSampler);
+        
         for (auto& pPipeline : m_defaultMeshPipelines)
         {
             Renderer::DestroyPipeline(pPipeline);
         }
         Renderer::DestroyPipeline(m_gridPipeline);
+        Renderer::DestroyPipeline(m_skyboxPipeline);
 
         Renderer::DestroyBuffer(m_cameraUniformBuffer);
         Renderer::DestroyUniform(m_cameraUniforms);
+        Renderer::DestroyUniform(m_skyboxUniforms);
+    }
+
+    void World::RenderSkybox()
+    {
+        Renderer::BindDescriptorSets(m_skyboxPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms, m_skyboxUniforms });
+        Renderer::BindGraphicsPipeline(m_skyboxPipeline);
+        Renderer::DrawIndexed(m_meshAssets[0]->GetVertexBuffer(), m_meshAssets[0]->GetIndexBuffer(), m_meshAssets[0]->GetIndexCount());
     }
 
     //----------------------------------------------------------------------------------------------------
