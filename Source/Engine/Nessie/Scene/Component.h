@@ -47,8 +47,8 @@ namespace nes
         virtual ~TComponent() = default;
         TComponent(const TComponent&) = delete;
         TComponent& operator=(const TComponent&) = delete;
-        TComponent(TComponent&&) = delete;
-        TComponent& operator=(TComponent&&) = delete;
+        TComponent(TComponent&&) noexcept = default;
+        TComponent& operator=(TComponent&&) noexcept = default;
         
         virtual void SetEnabled(const bool enabled);
         void SetName(const StringID& name) { m_name = name; }

@@ -570,7 +570,7 @@ namespace nes
 
         GetDevice().bindImageMemory(image, imageMemory, 0);
 
-        if (pInitialData && !UploadImageData(image, imageInfo.extent, pInitialData, initialDataSize))
+        if (pInitialData && !UploadImageData(image, imageInfo.extent, pInitialData, initialDataSize, imageInfo.arrayLayers))
         {
             GetDevice().destroyImage(image);
             GetDevice().freeMemory(imageMemory);
@@ -671,7 +671,8 @@ namespace nes
                 .setMipLevels(1)
                 .setArrayLayers(6)
                 .setFormat(format)
-                .setUsage(usage),
+                .setUsage(usage)
+                .setFlags(vk::ImageCreateFlagBits::eCubeCompatible),
             pInitialData,
             initialDataSize
         );
@@ -1032,7 +1033,7 @@ namespace nes
 
         auto initialUpdate = vk::WriteDescriptorSet()
             .setDescriptorCount(1)
-            .setDescriptorType(vk::DescriptorType::eUniformBuffer)
+            .setDescriptorType(vk::DescriptorType::eCombinedImageSampler)
             .setDstBinding(binding)
             .setDstSet(sets[0])
             .setImageInfo(imageInfo);
