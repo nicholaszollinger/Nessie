@@ -42,8 +42,8 @@ namespace nes
 
     void FreeCamMovementComponent::ProcessInput()
     {
-        m_inputMovement = Vector3::GetZeroVector();
-        m_inputRotation = Vector2::GetZeroVector();
+        m_inputMovement = Vector3::Zero();
+        m_inputRotation = Vector2::Zero();
 
         // Process Movement:
         if (nes::InputManager::IsKeyDown(nes::KeyCode::W))
@@ -126,7 +126,7 @@ namespace nes
             localLocation.y += deltaMovement.y;
 
             // Set the new Transform
-            pOwner->SetLocalTransform(localLocation, localRotation, Vector3::GetUnitVector());
+            pOwner->SetLocalTransform(localLocation, localRotation, Vector3::Unit());
         }
     }
 }

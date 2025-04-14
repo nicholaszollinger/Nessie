@@ -10,7 +10,6 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
     kind "ConsoleApp"
 
-    dependencyInjector.Include("BleachLeakDetector");
     dependencyInjector.Include("imgui");
     dependencyInjector.Include("yaml_cpp");
     dependencyInjector.Link("Nessie");

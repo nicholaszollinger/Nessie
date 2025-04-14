@@ -15,7 +15,7 @@ namespace nes
     struct TTransform2
     {
         TVector2<Type> m_location{};
-        TVector2<Type> m_scale = Vector2::GetUnitVector();
+        TVector2<Type> m_scale = Vector2::Unit();
         Type m_rotation = {}; // Angle, in Radians.
         
         constexpr TTransform2() = default;
@@ -24,7 +24,7 @@ namespace nes
         [[nodiscard]] TMatrix3x3<Type> ToMatrix() const;
     };
     
-    using Transform2D = TTransform2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Transform2D = TTransform2<NES_PRECISION_TYPE>;
 }
 
 namespace nes

@@ -97,7 +97,7 @@ namespace nes
             TVector4<Type>(mat3[0], static_cast<Type>(0)),
             TVector4<Type>(mat3[1], static_cast<Type>(0)),
             TVector4<Type>(mat3[2], static_cast<Type>(0)),
-            TVector4<Type>(TVector3<Type>::GetZeroVector(), static_cast<Type>(1)),
+            TVector4<Type>(TVector3<Type>::Zero(), static_cast<Type>(1)),
         }
     {
         //
@@ -162,7 +162,7 @@ namespace nes
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
-                return TVector4<Type>::GetZeroVector();
+                return TVector4<Type>::Zero();
         }
     }
 

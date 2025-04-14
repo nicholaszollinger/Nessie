@@ -72,7 +72,7 @@ namespace nes
 
     using Quatf = TQuaternion<float>;
     using Quatd = TQuaternion<double>;
-    using Quat = TQuaternion<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Quat = TQuaternion<NES_PRECISION_TYPE>;
 }
 
 namespace nes
@@ -591,7 +591,7 @@ namespace nes
     template <FloatingPointType Type>
     TVector3<Type> TQuaternion<Type>::RightVector() const
     {
-        return RotatedVector(TVector3<Type>::GetRightVector());
+        return RotatedVector(TVector3<Type>::Right());
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -613,7 +613,7 @@ namespace nes
         const float cosinePitch = (w * w) - (x * x) - (y * y) + (z * z);
         
         // Handle potential Gimbal Lock. We need to avoid atan2(0, 0).
-        if (TVector2<Type>(cosinePitch, sinePitch) == TVector2<Type>::GetZeroVector())
+        if (TVector2<Type>(cosinePitch, sinePitch) == TVector2<Type>::Zero())
         {
             return static_cast<Type>(2) * std::atan2(x, w);
         }
@@ -640,7 +640,7 @@ namespace nes
         const float cosineRoll = (w * w) + (x * x) - (y * y) - (z * z);
 
         // Handle potential Gimbal Lock.
-        if (TVector2<Type>(cosineRoll, sineRoll) == TVector2<Type>::GetZeroVector())
+        if (TVector2<Type>(cosineRoll, sineRoll) == TVector2<Type>::Zero())
         {
             return static_cast<Type>(0);
         }

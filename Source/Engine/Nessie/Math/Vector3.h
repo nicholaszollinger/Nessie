@@ -23,6 +23,10 @@ namespace nes
 
         constexpr bool operator==(const TVector3 right) const;
         constexpr bool operator!=(const TVector3 right) const { return !(*this == right); }
+        constexpr bool operator<(const TVector3 right) const;
+        constexpr bool operator>(const TVector3 right) const;
+        constexpr bool operator<=(const TVector3 right) const;
+        constexpr bool operator>=(const TVector3 right) const;
 
         constexpr TVector3 operator-() const;
         constexpr TVector3 operator+(const TVector3 right) const;
@@ -49,6 +53,8 @@ namespace nes
         constexpr TVector3& Normalize();
         constexpr TVector3 Normalized() const;
         constexpr TVector2<Type> GetXY() const { return TVector2<Type>(this->x, this->y); }
+        constexpr int GetHighestComponentIndex() const;
+        constexpr int GetLowestComponentIndex() const;
         template <ScalarType To> TVector3<To> CastTo() const;
         
         [[nodiscard]] std::string ToString() const;
@@ -56,20 +62,22 @@ namespace nes
         static constexpr Type Dot(const TVector3& a, const TVector3& b);
         static constexpr Type Distance(const TVector3& a, const TVector3& b);
         static constexpr Type DistanceSquared(const TVector3& a, const TVector3& b);
+        static constexpr TVector3 Min(const TVector3& a, const TVector3& b);
+        static constexpr TVector3 Max(const TVector3& a, const TVector3& b);
         static constexpr TVector3 Cross(const TVector3& a, const TVector3& b);
         static constexpr TVector3 Lerp(const TVector3 from, const TVector3 to, const float t);
         
         static float AngleBetweenVectors(const TVector3& a, const TVector3& b);
         static float AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
 
-        static constexpr TVector3 GetUnitVector()    { return TVector3(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
-        static constexpr TVector3 GetZeroVector()    { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector3 GetUpVector()      { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
-        static constexpr TVector3 GetRightVector()   { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector3 GetForwardVector() { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
-        static constexpr TVector3 GetYawAxis()       { return GetUpVector(); }
-        static constexpr TVector3 GetPitchAxis()     { return GetRightVector(); }
-        static constexpr TVector3 GetRollAxis()      { return GetForwardVector(); }
+        static constexpr TVector3 Unit()        { return TVector3(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
+        static constexpr TVector3 Zero()        { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector3 Up()          { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
+        static constexpr TVector3 Right()       { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector3 Forward()     { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
+        static constexpr TVector3 YawAxis()     { return Up(); }
+        static constexpr TVector3 PitchAxis()   { return Right(); }
+        static constexpr TVector3 RollAxis()    { return Forward(); }
     };
 
     template <ScalarType VecType>
@@ -82,7 +90,7 @@ namespace nes
     using Vector3d = TVector3<double>;
     using Vector3i = TVector3<int>;
     using Vector3u = TVector3<unsigned int>;
-    using Vector3 = TVector3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Vector3 = TVector3<NES_PRECISION_TYPE>;
 }
                                                      
 namespace nes
@@ -91,6 +99,42 @@ namespace nes
     constexpr bool TVector3<Type>::operator==(const TVector3 right) const
     {
         return x == right.x && y == right.y && z == right.z;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are less than the other vector's.  
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector3<Type>::operator<(const TVector3 right) const
+    {
+        return x < right.x && y < right.y && z < right.z;
+    }
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are greater than the other vector's.  
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector3<Type>::operator>(const TVector3 right) const
+    {
+        return x > right.x && y > right.y && z > right.z;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are less than or equal to the right.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector3<Type>::operator<=(const TVector3 right) const
+    {
+        return x >= right.x && y >= right.y && z >= right.z;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are greater than or equal to the right.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector3<Type>::operator>=(const TVector3 right) const
+    {
+        return x >= right.x && y >= right.y && z >= right.z;
     }
 
     template <ScalarType Type>
@@ -287,6 +331,24 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the index of the component with the highest value. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr int TVector3<Type>::GetHighestComponentIndex() const
+    {
+        return x > y ? (z > x ? 2 : 0) : (z > y ? 2 : 1);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the index of the component with the lowest value. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr int TVector3<Type>::GetLowestComponentIndex() const
+    {
+        return x < y ? (z < x ? 2 : 0) : (z < y ? 2 : 1);
+    }
+
+    //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns a Vector casted to another Scalar Type.
     ///		@tparam To : Type to cast each of this Vector's components to.
     //----------------------------------------------------------------------------------------------------
@@ -336,6 +398,32 @@ namespace nes
     {
         TVector3 diff = b - a;
         return diff.SquaredMagnitude();
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the minimum values of each of the components.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr TVector3<Type> TVector3<Type>::Min(const TVector3& a, const TVector3& b)
+    {
+        TVector3 result;
+        result.x = math::Min(a.x, b.x);
+        result.y = math::Min(a.y, b.y);
+        result.z = math::Min(a.z, b.z);
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the maximum values of each of the components.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr TVector3<Type> TVector3<Type>::Max(const TVector3& a, const TVector3& b)
+    {
+        TVector3 result;
+        result.x = math::Max(a.x, b.x);
+        result.y = math::Max(a.y, b.y);
+        result.z = math::Max(a.z, b.z);
+        return result;
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------

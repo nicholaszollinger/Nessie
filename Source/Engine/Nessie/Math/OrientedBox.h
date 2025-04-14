@@ -1,6 +1,6 @@
 ﻿// OBB.h
 #pragma once
-#include "Box.h"
+#include "AABox.h"
 
 namespace nes
 {
@@ -65,11 +65,11 @@ namespace nes
 
     using OBB2f = TOrientedBox2<float>;
     using OBB2d = TOrientedBox2<double>;
-    using OBB2D = TOrientedBox2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using OBB2D = TOrientedBox2<NES_PRECISION_TYPE>;
 
     using OBB3f = TOrientedBox3<float>;
     using OBB3d = TOrientedBox3<double>;
-    using OBB = TOrientedBox3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using OBB = TOrientedBox3<NES_PRECISION_TYPE>;
 }
 
 namespace nes
@@ -143,7 +143,7 @@ namespace nes
     constexpr TOrientedBox2<Type>::TOrientedBox2()
         : m_orientation()
         , m_center()
-        , m_extents(TVector2<Type>::GetUnitVector())
+        , m_extents(TVector2<Type>::Unit())
     {
         //
     }
@@ -283,7 +283,7 @@ namespace nes
     constexpr TOrientedBox3<Type>::TOrientedBox3()
         : m_orientation()
         , m_center()
-        , m_extents(TVector3<Type>::GetUnitVector())
+        , m_extents(TVector3<Type>::Unit())
     {
         //
     }

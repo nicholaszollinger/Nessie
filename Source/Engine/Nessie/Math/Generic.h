@@ -1,10 +1,14 @@
 // Generic.h
 #pragma once
 #include <cmath>
+#include "Core/Config.h"
 #include "Core/Generic/Concepts.h"
 
 namespace nes::math
 {
+    /// A Large floating point value which, when squared, is still much smaller than FLT_MAX.
+    static constexpr float kLargeFloat = 1.0e15f;
+    
     template <FloatingPointType Type = float>
     constexpr Type Pi()
     {
@@ -399,6 +403,39 @@ namespace nes::math
     bool IsInf(const FloatingPointType auto value)
     {
         return std::isinf(value);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: This could move to Platform.h?
+    /// @brief : Compute the number of trailing zero bits, or how many low bits are zero. 
+    //----------------------------------------------------------------------------------------------------
+    inline unsigned int CountTrailingZeros(const uint32_t value)
+    {
+    #if defined(NES_CPU_X86)
+        #if defined(NES_USE_TZCNT)
+            return _tzcnt_u32(value);
+        #elif defined(NES_COMPILER_MSVC)
+            if (value == 0)
+                return 32;
+            unsigned long result;
+            _BitScanForward(&result, value);
+            return static_cast<unsigned int>(result);
+        #else
+            if (value == 0)
+                return 32;
+            return __builtin_ctz(value);
+        #endif
+    #endif
+
+        // [TODO]: Handle other architectures.
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns true if the value is a power of two
+    //----------------------------------------------------------------------------------------------------
+    constexpr bool IsPowerOf2(const IntergralType auto value)
+    {
+        return value > 0 && (value & (value - 1)) == 0;
     }
 
     //----------------------------------------------------------------------------------------------------

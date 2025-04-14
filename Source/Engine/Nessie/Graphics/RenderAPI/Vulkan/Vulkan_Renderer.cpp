@@ -2,8 +2,8 @@
 #include "Core/Config.h"
 #ifdef NES_RENDER_API_VULKAN
 
+#include "Core/Memory/Memory.h"
 #include "Graphics/Renderer.h"
-#include "BleachNew.h"
 #include "Vulkan_ShaderLibrary.hpp"
 #include "Debug/CheckedCast.h"
 
@@ -37,7 +37,7 @@ namespace nes
                 );   
         };
 
-        m_pRenderContext = BLEACH_NEW(RendererContext());
+        m_pRenderContext = NES_NEW(RendererContext());
         if (!m_pRenderContext->Init(pWindow, appProperties, options))
         {
             NES_ERRORV("Renderer", "Failed to initialize Renderer! Failed to initialize RendererContext!");
@@ -64,7 +64,7 @@ namespace nes
             //std::filesystem::relative(std::filesystem::path(__FILE__).parent_path()).string(), // source file dir
         };
         
-        m_pShaderLibrary = BLEACH_NEW(GAP311::VulkanShaderLibrary());
+        m_pShaderLibrary = NES_NEW(GAP311::VulkanShaderLibrary());
         if (!m_pShaderLibrary->Initialize(m_pRenderContext->GetDevice(), shaderOptions))
         {
             NES_ERRORV("Graphics", "Failed to initialize Renderer! Failed to initializeShader Library!");
@@ -94,13 +94,13 @@ namespace nes
         if (m_pShaderLibrary != nullptr)
         {
             m_pShaderLibrary->Shutdown();
-            BLEACH_DELETE(m_pShaderLibrary);
+            NES_DELETE(m_pShaderLibrary);
             m_pShaderLibrary = nullptr;
         }
 
         // Render Context:
         m_pRenderContext->Shutdown();
-        BLEACH_DELETE(m_pRenderContext);
+        NES_DELETE(m_pRenderContext);
         m_pRenderContext = nullptr;
 
         // Null out the instance:

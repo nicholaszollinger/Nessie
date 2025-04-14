@@ -35,7 +35,7 @@ namespace nes
 
     using ConvexHull2f = TConvexHull2<float>;
     using ConvexHull2d = TConvexHull2<double>;
-    using ConvexHull2D = TConvexHull2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using ConvexHull2D = TConvexHull2<NES_PRECISION_TYPE>;
 }
 
 namespace nes

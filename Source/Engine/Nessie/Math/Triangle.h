@@ -89,11 +89,11 @@ namespace nes
 
     using Triangle2f = TTriangle2<float>;
     using Triangle2d = TTriangle2<double>;
-    using Triangle2D = TTriangle2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Triangle2D = TTriangle2<NES_PRECISION_TYPE>;
     
     using Triangle3f = TTriangle3<float>;
     using Triangle3d = TTriangle3<double>;
-    using Triangle = TTriangle3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Triangle = TTriangle3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

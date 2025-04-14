@@ -1,7 +1,6 @@
 // StackAllocator.cpp
-
 #include "StackAllocator.h"
-#include <BleachNew.h>
+#include "Memory.h"
 
 namespace nes
 {
@@ -39,7 +38,7 @@ namespace nes
     }
 
     StackAllocator::StackAllocator(const size_t stackSizeInBytes)
-        : m_pBuffer(BLEACH_NEW_ARRAY(std::byte, stackSizeInBytes))
+        : m_pBuffer(NES_NEW_ARRAY(std::byte, stackSizeInBytes))
         , m_pEnd(nullptr)
         , m_pCapacity(nullptr)
     {
@@ -75,7 +74,7 @@ namespace nes
 
     StackAllocator::~StackAllocator()
     {
-        BLEACH_DELETE_ARRAY(m_pBuffer);
+        NES_DELETE_ARRAY(m_pBuffer);
         m_pBuffer = nullptr;
         m_pEnd = nullptr;
         m_pCapacity = nullptr;

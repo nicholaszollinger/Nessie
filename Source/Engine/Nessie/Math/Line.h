@@ -14,11 +14,11 @@ namespace nes
     {
         /// Origin or Center point of a line. Really, this is an arbitrary point on an infinite line, but
         /// it can be useful to convert between lines and Rays.
-        TVector2<Type> m_origin = TVector2<Type>::GetZeroVector();
+        TVector2<Type> m_origin = TVector2<Type>::Zero();
 
         /// Normalized Direction of the Line, the "Slope". The Line will extend infinitely in this
         /// and the exact opposite direction.
-        TVector2<Type> m_direction = TVector2<Type>::GetRightVector();
+        TVector2<Type> m_direction = TVector2<Type>::Right();
 
         constexpr TLine2() = default;
         constexpr TLine2(const TVector2<Type>& origin, const TVector2<Type>& direction);
@@ -42,11 +42,11 @@ namespace nes
     {
         /// Origin or Center point of a line. Really, this is an arbitrary point on an infinite line, but
         /// it can be useful to convert between lines and Rays.
-        TVector3<Type> m_origin = TVector3<Type>::GetZeroVector();
+        TVector3<Type> m_origin = TVector3<Type>::Zero();
 
         /// Normalized Direction of the Line, the "Slope". The Line will extend infinitely in this
         /// and the exact opposite direction.
-        TVector3<Type> m_direction = TVector3<Type>::GetRightVector();
+        TVector3<Type> m_direction = TVector3<Type>::Right();
 
         constexpr TLine3() = default;
         constexpr TLine3(const TVector3<Type>& origin, const TVector3<Type>& direction);
@@ -62,11 +62,11 @@ namespace nes
     
     using Line2f = TLine2<float>;
     using Line2d = TLine2<double>;
-    using Line2D = TLine2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Line2D = TLine2<NES_PRECISION_TYPE>;
     
     using Line3f = TLine3<float>;
     using Line3d = TLine3<double>;
-    using Line = TLine3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Line = TLine3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

@@ -44,6 +44,7 @@ namespace nes
         constexpr Type ID() const;
         constexpr Type Generation() const;
         constexpr bool IsValid() const;
+        static constexpr Type MaxValue() { return kInitialGeneration - 1; }
 
         std::string ToString() const;
     };

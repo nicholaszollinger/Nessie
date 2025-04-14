@@ -217,7 +217,7 @@ namespace nes
     {
         if (ptr != nullptr)
         {
-            m_pRefCounter = BLEACH_NEW(internal::RefCounter<Type>(ptr));
+            m_pRefCounter = NES_NEW(internal::RefCounter<Type>(ptr));
             AddRef();
         }
     }
@@ -382,7 +382,7 @@ namespace nes
     template <typename ... Params> requires nes::ValidConstructorForType<Type, Params...>
     StrongPtr<Type> StrongPtr<Type>::Create(Params&&...params)
     {
-        internal::RefCounter<Type>* pRefCounter = BLEACH_NEW(internal::RefCounter<Type>(std::forward<Params>(params)...)); 
+        internal::RefCounter<Type>* pRefCounter = NES_NEW(internal::RefCounter<Type>(std::forward<Params>(params)...)); 
         return StrongPtr(pRefCounter);
     }
 
@@ -413,7 +413,7 @@ namespace nes
             // If there are no more references (weak or strong) to ReferenceCounter, delete it.
             if (m_pRefCounter->HasZeroReferences())
             {
-                BLEACH_DELETE(m_pRefCounter);
+                NES_DELETE(m_pRefCounter);
                 m_pRefCounter = nullptr;
             }
         }
@@ -643,7 +643,7 @@ namespace nes
             // If there are no more references (weak or strong) to ReferenceCounter, delete it.
             if (m_pRefCounter->HasZeroReferences())
             {
-                BLEACH_DELETE(m_pRefCounter);
+                NES_DELETE(m_pRefCounter);
                 m_pRefCounter = nullptr;
             }
         }

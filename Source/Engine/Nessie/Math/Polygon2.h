@@ -42,7 +42,7 @@ namespace nes
 
     using Polygon2f = TPolygon2<float>;
     using Polygon2d = TPolygon2<double>;
-    using Polygon2D = TPolygon2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Polygon2D = TPolygon2<NES_PRECISION_TYPE>;
 }
 
 namespace nes

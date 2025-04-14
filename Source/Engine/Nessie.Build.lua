@@ -46,7 +46,6 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     }
 
     dependencyInjector.AddFilesToProject("imgui");
-    dependencyInjector.AddFilesToProject("BleachLeakDetector");
     dependencyInjector.AddFilesToProject("stb");
     dependencyInjector.Link("yaml_cpp");
     dependencyInjector.Include("Assimp");

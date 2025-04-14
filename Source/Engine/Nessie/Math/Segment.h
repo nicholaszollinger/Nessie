@@ -59,11 +59,11 @@ namespace nes
     
     using Segment2f = TSegment2<float>;
     using Segment2d = TSegment2<double>;
-    using Segment2D = TSegment2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Segment2D = TSegment2<NES_PRECISION_TYPE>;
     
     using Segment3f = TSegment3<float>;
     using Segment3d = TSegment3<double>;
-    using Segment = TSegment3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Segment = TSegment3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

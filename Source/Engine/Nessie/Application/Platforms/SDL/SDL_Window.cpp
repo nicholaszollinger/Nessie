@@ -68,7 +68,7 @@ namespace nes
             return false;
         }
 
-        m_pWindowContext = BLEACH_NEW(SDL_WindowContext(app, pWindow, pRenderer));
+        m_pWindowContext = NES_NEW(SDL_WindowContext(app, pWindow, pRenderer));
 
         SDL_RendererInfo info;
         SDL_GetRendererInfo(pRenderer, &info);
@@ -211,7 +211,7 @@ namespace nes
         if (pContext)
         {
             // Deleting the Window Context will destroy the SDL Window and Renderer
-            BLEACH_DELETE(pContext);
+            NES_DELETE(pContext);
             m_pWindowContext = nullptr;
         }
 

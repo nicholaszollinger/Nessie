@@ -1,7 +1,5 @@
 ﻿// Sphere.h
 #pragma once
-#include "Box.h"
-#include "imgui_internal.h"
 #include "Vector3.h"
 
 namespace nes
@@ -92,11 +90,11 @@ namespace nes
 
     using Circlef = TSphere2<float>;
     using Circled = TSphere2<double>;
-    using Circle = TSphere2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Circle = TSphere2<NES_PRECISION_TYPE>;
 
     using Spheref = TSphere3<float>;
     using Sphered = TSphere3<double>;
-    using Sphere = TSphere3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Sphere = TSphere3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

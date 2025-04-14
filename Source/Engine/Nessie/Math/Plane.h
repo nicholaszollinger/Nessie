@@ -11,7 +11,7 @@ namespace nes
     struct TPlane
     {
         // Plane Normal. Any point "X" that is on the plane must satisfy Dot(m_normal, X) = m_distance;
-        TVector3<Type> m_normal = TVector3<Type>::GetUpVector();
+        TVector3<Type> m_normal = TVector3<Type>::Up();
         
         // Distance of the Plane from the origin.
         Type m_distance = {};
@@ -32,7 +32,7 @@ namespace nes
     
     using Planef = TPlane<float>;
     using Planed = TPlane<double>;
-    using Plane = TPlane<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Plane = TPlane<NES_PRECISION_TYPE>;
 }
 
 namespace nes

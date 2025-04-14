@@ -56,8 +56,8 @@ namespace nes
         const auto& worldTransformMatrix = GetOwner()->GetWorldTransformMatrix();
         const Mat4 orientationMatrix = math::ExtractMatrixRotation4x4(worldTransformMatrix);
         
-        const auto cameraForward = orientationMatrix.TransformVector(Vector3::GetForwardVector());
-        const auto cameraUp = orientationMatrix.TransformVector(Vector3::GetUpVector());
+        const auto cameraForward = orientationMatrix.TransformVector(Vector3::Forward());
+        const auto cameraUp = orientationMatrix.TransformVector(Vector3::Up());
         const Vector3 cameraPosition = math::XYZ(worldTransformMatrix[3]); 
         m_camera.LookAt(cameraPosition, cameraPosition + cameraForward, cameraUp);
     }
