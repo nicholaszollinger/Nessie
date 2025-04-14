@@ -9,7 +9,7 @@ namespace nes
     {
         TQuaternion<Type> m_orientation = TQuaternion<Type>::Identity();
         TVector3<Type> m_location{};
-        TVector3<Type> m_scale = Vector3::GetUnitVector();
+        TVector3<Type> m_scale = Vector3::Unit();
         
         constexpr TTransform3() = default;
         constexpr TTransform3(const TVector3<Type>& location, const TQuaternion<Type>& orientation, const TVector3<Type>& scale);
@@ -23,7 +23,7 @@ namespace nes
         [[nodiscard]] TMatrix4x4<Type> ToMatrix() const;
     };
 
-    using Transform = TTransform3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Transform = TTransform3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

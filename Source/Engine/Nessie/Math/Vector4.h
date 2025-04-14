@@ -21,6 +21,10 @@ namespace nes
         TVector4& operator=(const TVector3<Type>& vector3);
         constexpr bool operator==(const TVector4 right) const;
         constexpr bool operator!=(const TVector4 right) const { return !(*this == right); }
+        constexpr bool operator<(const TVector4 right) const;
+        constexpr bool operator>(const TVector4 right) const;
+        constexpr bool operator<=(const TVector4 right) const;
+        constexpr bool operator>=(const TVector4 right) const;
 
         constexpr TVector4 operator-() const;
         constexpr TVector4 operator+(const TVector4 right) const;
@@ -50,13 +54,15 @@ namespace nes
         [[nodiscard]] std::string ToString() const;
 
         static constexpr Type Dot(const TVector4& a, const TVector4& b);
-        static constexpr TVector4 Lerp(const TVector4 from, const TVector4 to, const float t);
+        static constexpr TVector4 Lerp(const TVector4& from, const TVector4& to, const float t);
+        static constexpr TVector4 Min(const TVector4& a, const TVector4& b);
+        static constexpr TVector4 Max(const TVector4& a, const TVector4& b);
         
-        static constexpr TVector4 GetUnitVector()    { return TVector4(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
-        static constexpr TVector4 GetZeroVector()    { return TVector4(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector4 GetUpVector()      { return TVector4(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
-        static constexpr TVector4 GetRightVector()   { return TVector4(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector4 GetForwardVector() { return TVector4(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
+        static constexpr TVector4 Unit()    { return TVector4(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
+        static constexpr TVector4 Zero()    { return TVector4(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector4 Up()      { return TVector4(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
+        static constexpr TVector4 Right()   { return TVector4(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector4 Forward() { return TVector4(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
     };
 
     template <ScalarType VecType>
@@ -66,7 +72,7 @@ namespace nes
     using Vector4d = TVector4<double>;
     using Vector4i = TVector4<int>;
     using Vector4u = TVector4<unsigned int>;
-    using Vector4  = TVector4<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Vector4  = TVector4<NES_PRECISION_TYPE>;
 
     template <ScalarType Type>
     constexpr TVector4<Type>::TVector4(const ScalarType auto x, const ScalarType auto y, const ScalarType auto z,
@@ -93,6 +99,42 @@ namespace nes
     constexpr bool TVector4<Type>::operator==(const TVector4 right) const
     {
         return x == right.x && y == right.y && z == right.z && w == right.w;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are less than the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector4<Type>::operator<(const TVector4 right) const
+    {
+        return x < right.x && y < right.y && z < right.z && w < right.w;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are greater than the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector4<Type>::operator>(const TVector4 right) const
+    {
+        return x > right.x && y > right.y && z > right.z && w > right.w;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are less than or equal to the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector4<Type>::operator<=(const TVector4 right) const
+    {
+        return x <= right.x && y <= right.y && z <= right.z && w <= right.w;
+    }
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are greater than or equal to the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector4<Type>::operator>=(const TVector4 right) const
+    {
+        return x >= right.x && y >= right.y && z >= right.z && w >= right.w;
     }
 
     template <ScalarType Type>
@@ -308,8 +350,36 @@ namespace nes
     ///		@returns : Linearly interpolated Vector.
     //-----------------------------------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr TVector4<Type> TVector4<Type>::Lerp(const TVector4 from, const TVector4 to, const float t)
+    constexpr TVector4<Type> TVector4<Type>::Lerp(const TVector4& from, const TVector4& to, const float t)
     {
         return from + ((to - from) * t);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the minimum values of each of the components.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr TVector4<Type> TVector4<Type>::Min(const TVector4& a, const TVector4& b)
+    {
+        TVector4 result;
+        result.x = math::Min(a.x, b.x);
+        result.y = math::Min(a.y, b.y);
+        result.z = math::Min(a.z, b.z);
+        result.w = math::Min(a.w, b.w);
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the maximum values of each of the components.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr TVector4<Type> TVector4<Type>::Max(const TVector4& a, const TVector4& b)
+    {
+        TVector4 result;
+        result.x = math::Max(a.x, b.x);
+        result.y = math::Max(a.y, b.y);
+        result.z = math::Max(a.z, b.z);
+        result.w = math::Max(a.w, b.w);
+        return result;
     }
 }

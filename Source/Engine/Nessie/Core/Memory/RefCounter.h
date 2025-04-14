@@ -1,7 +1,7 @@
 #pragma once
 // RefCounter.h
-#include <BleachNew.h>
 #include <cstdint>
+#include "Memory.h"
 #include "Debug/CheckedCast.h"
 
 namespace nes::internal
@@ -75,7 +75,7 @@ namespace nes::internal
     template <typename... Params> requires ValidConstructorForType<Type, Params...>
     RefCounter<Type>::RefCounter(Params&&... params)
     {
-        m_pObject = BLEACH_NEW(Type(std::forward<Params>(params)...));
+        m_pObject = NES_NEW(Type(std::forward<Params>(params)...));
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ namespace nes::internal
     void RefCounter<Type>::DestroyObject()
     {
         // Delete the object.
-        BLEACH_DELETE(m_pObject);
+        NES_DELETE(m_pObject);
         m_pObject = nullptr;
     }
 

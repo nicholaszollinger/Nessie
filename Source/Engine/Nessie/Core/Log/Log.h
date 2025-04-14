@@ -9,6 +9,14 @@
 #define NES_LOGGING_ENABLED 0
 #endif
 
+#if NES_LOGGING_ENABLED
+    #define NES_IF_LOGGING_ENABLED(...) __VA_ARGS__
+    #define NES_IF_LOGGING_DISABLED(...)
+#else
+    #define NES_IF_LOGGING_ENABLED(...)
+    #define NES_IF_LOGGING_DISABLED(...) __VA_ARGS__
+#endif
+
 //-----------------------------------------------------------------------------------------------------------------------------
 //		NOTES:
 //      To make the File Name pretty for Debugging Messages:

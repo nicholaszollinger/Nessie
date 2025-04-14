@@ -52,11 +52,11 @@ namespace nes
 
     using Capsule2f = TCapsule2<float>;
     using Capsule2d = TCapsule2<double>;
-    using Capsule2D = TCapsule2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Capsule2D = TCapsule2<NES_PRECISION_TYPE>;
     
     using Capsule3f = TCapsule3<float>;
     using Capsule3d = TCapsule3<double>;
-    using Capsule = TCapsule3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Capsule = TCapsule3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

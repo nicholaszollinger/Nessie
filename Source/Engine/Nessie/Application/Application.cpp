@@ -1,6 +1,6 @@
 // Application.cpp
 #include "Application.h"
-#include "BleachNew.h"
+#include "Core/Memory/Memory.h"
 
 namespace nes
 {
@@ -62,7 +62,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     Application::ExitCode Application::Init()
     {
-        BLEACH_INIT_LEAK_DETECTOR();
+        NES_INIT_LEAK_DETECTOR();
         Logger::Init(NES_LOG_DIR);
         
         const std::string logConfigDir = NES_CONFIG_DIR;
@@ -179,7 +179,7 @@ namespace nes
 
         NES_LOGV("Application", "Application Closed");
         Logger::Close();
-        BLEACH_DUMP_AND_DESTROY_LEAK_DETECTOR();
+        NES_DUMP_AND_DESTROY_LEAK_DETECTOR();
 
         // Set the Instance back to nullptr.
         s_pInstance = nullptr;

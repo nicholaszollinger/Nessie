@@ -1,7 +1,7 @@
 ﻿// IntersectionQueries2.h
 #pragma once
 
-#include "Math/Box.h"
+#include "Math/AABox2.h"
 #include "Math/Geometry.h"
 #include "Math/OrientedBox.h"
 #include "Math/Segment.h"
@@ -17,10 +17,10 @@ namespace nes::geo
     [[nodiscard]] bool SegmentIntersectsTriangle2(const TSegment2<Type>& segment, const TTriangle2<Type>& triangle, TVector2<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box);
+    [[nodiscard]] bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TAABox2<Type>& box);
     
     template <FloatingPointType Type>
-    [[nodiscard]] bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box, TVector2<Type>& intersectionPoint);
+    [[nodiscard]] bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TAABox2<Type>& box, TVector2<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
     [[nodiscard]] bool SphereIntersectsOBB2(const TSphere2<Type>& sphere, const TOrientedBox2<Type>& obb);
@@ -99,7 +99,7 @@ namespace nes::geo
 
         Type t;
         Type smallestT = std::numeric_limits<Type>::max();
-        TVector2<Type> closestPoint = TVector2<Type>::GetZeroVector();
+        TVector2<Type> closestPoint = TVector2<Type>::Zero();
         
         if (SegmentIntersectsSegment2(segment, ab, t, closestPoint))
         {
@@ -135,7 +135,7 @@ namespace nes::geo
     ///		@brief : Determines if a Circle intersects an AABB.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box)
+    bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TAABox2<Type>& box)
     {
         const Type sqrDist = box.SquaredDistanceToPoint(sphere.m_center);
         return sqrDist <= math::Squared(sphere.m_center);
@@ -146,7 +146,7 @@ namespace nes::geo
     ///         point will still represent the closest point on the AABB to the circle.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TBox2<Type>& box, TVector2<Type>& intersectionPoint)
+    bool SphereIntersectsAABB2(const TSphere2<Type>& sphere, const TAABox2<Type>& box, TVector2<Type>& intersectionPoint)
     {
         intersectionPoint = box.ClosestPointToPoint(sphere.m_center);
         const Type sqrDist = (intersectionPoint - sphere.m_center).SquaredMagnitude();

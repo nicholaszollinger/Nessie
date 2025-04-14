@@ -1,7 +1,7 @@
 ﻿// Ray.h
 #pragma once
 #include "Vector3.h"
-#include "MathUtils.h"
+#include "MathConfig.h"
 
 namespace nes
 {
@@ -53,11 +53,11 @@ namespace nes
 
     using Ray2f = TRay2<float>;
     using Ray2d = TRay2<double>;
-    using Ray2D = TRay2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Ray2D = TRay2<NES_PRECISION_TYPE>;
 
     using Ray3f = TRay3<float>;
     using Ray3d = TRay3<double>;
-    using Ray = TRay3<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Ray = TRay3<NES_PRECISION_TYPE>;
 }
 
 namespace nes

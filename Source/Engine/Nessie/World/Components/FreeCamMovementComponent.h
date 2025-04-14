@@ -15,8 +15,8 @@ namespace nes
     {
         NES_DEFINE_COMPONENT_TYPE(FreeCamMovementComponent)
         
-        Vector3 m_inputMovement = Vector3::GetZeroVector();
-        Vector2 m_inputRotation = Vector2::GetZeroVector();
+        Vector3 m_inputMovement = Vector3::Zero();
+        Vector2 m_inputRotation = Vector2::Zero();
         float m_moveSpeed = 10.f;
         float m_turnSpeedYaw = 30.f;
         float m_turnSpeedPitch = 20.f;

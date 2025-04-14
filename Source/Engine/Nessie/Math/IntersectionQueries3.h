@@ -34,19 +34,19 @@ namespace nes::geo
     [[nodiscard]] bool OBBIntersectsHalfspace(const TOrientedBox3<Type>& obb, TPlane<Type>& plane);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool AABBIntersectsPlane(const TBox3<Type>& box, const TPlane<Type>& plane);
+    [[nodiscard]] bool AABBIntersectsPlane(const TAABox3<Type>& box, const TPlane<Type>& plane);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool AABBInsidePlane(const TBox3<Type>& box, const TPlane<Type>& plane);
+    [[nodiscard]] bool AABBInsidePlane(const TAABox3<Type>& box, const TPlane<Type>& plane);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool AABBIntersectsHalfspace(const TBox3<Type>& box, const TPlane<Type>& plane);
+    [[nodiscard]] bool AABBIntersectsHalfspace(const TAABox3<Type>& box, const TPlane<Type>& plane);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TBox3<Type>& box);
+    [[nodiscard]] bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TAABox3<Type>& box);
     
     template <FloatingPointType Type>
-    [[nodiscard]] bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+    [[nodiscard]] bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
     [[nodiscard]] bool SphereIntersectsOBB(const TSphere3<Type>& sphere, const TOrientedBox3<Type>& obb);
@@ -61,7 +61,7 @@ namespace nes::geo
     [[nodiscard]] bool SphereIntersectsTriangle(const TSphere3<Type>& sphere, const TTriangle3<Type>& triangle, TVector3<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool AABBIntersectsTriangle(const TBox3<Type>& box, const TTriangle3<Type>& triangle);
+    [[nodiscard]] bool AABBIntersectsTriangle(const TAABox3<Type>& box, const TTriangle3<Type>& triangle);
 
     template <FloatingPointType Type>
     [[nodiscard]] bool OBBIntersectsTriangle(const TOrientedBox3<Type>& obb, const TTriangle3<Type>& triangle);
@@ -73,7 +73,7 @@ namespace nes::geo
     [[nodiscard]] bool SegmentIntersectsSphere(const TSegment3<Type>& segment, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool SegmentIntersectsAABB(const TSegment3<Type>& segment, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+    [[nodiscard]] bool SegmentIntersectsAABB(const TSegment3<Type>& segment, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint);
 
     //template <FloatingPointType Type>
     //[[nodiscard]] bool SegmentIntersectsOBB(const TSegment3<Type>& segment, const TOrientedBox2<Type>& obb, TVector3<Type>& intersectionPoint);
@@ -85,7 +85,7 @@ namespace nes::geo
     [[nodiscard]] bool LineIntersectsSphere(const TLine3<Type>& line, const TSphere3<Type>& sphere, TVector3<Type>& intersectionPoint);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool LineIntersectsAABB(const TLine3<Type>& line, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+    [[nodiscard]] bool LineIntersectsAABB(const TLine3<Type>& line, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint);
 
     //template <FloatingPointType Type>
     //[[nodiscard]] bool LineIntersectsOBB(const TLine3<Type>& line, const TOrientedBox3<Type>& obb, TVector3<Type>& intersectionPoint);
@@ -100,7 +100,7 @@ namespace nes::geo
     [[nodiscard]] bool RayIntersectsSphere(const TRay3<Type>& ray, const TSphere3<Type>& sphere);
 
     template <FloatingPointType Type>
-    [[nodiscard]] bool RayIntersectsAABB(const TRay3<Type>& ray, const TBox3<Type>& box, TVector3<Type>& intersectionPoint);
+    [[nodiscard]] bool RayIntersectsAABB(const TRay3<Type>& ray, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint);
 
     //template <FloatingPointType Type>
     //[[nodiscard]] bool RayIntersectsOBB(const TRay3<Type>& ray, const TOrientedBox3<Type>& obb, TVector3<Type>& intersectionPoint);
@@ -257,14 +257,15 @@ namespace nes::geo
     ///		@brief : Determines if the AABB intersects the plane. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool AABBIntersectsPlane(const TBox3<Type>& box, const TPlane<Type>& plane)
+    bool AABBIntersectsPlane(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
-        // Compute the projection interval radius of the OBB onto the Line(t) = obb.center + t * plane.normal
-        const Type radius = box.m_halfExtents[0] * math::Abs(plane.m_normal[0])
-            + box.m_halfExtents[1] * math::Abs(plane.m_normal[1])
-            + box.m_halfExtents[2] * math::Abs(plane.m_normal[2]);
+        // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
+        const TVector2<Type> extents = box.Extents();
+        const Type radius = extents[0] * math::Abs(plane.m_normal[0])
+            + extents[1] * math::Abs(plane.m_normal[1])
+            + extents[2] * math::Abs(plane.m_normal[2]);
 
-        const Type signedDistance = plane.SignedDistanceToPoint(box.m_center);
+        const Type signedDistance = plane.SignedDistanceToPoint(box.Center());
         
         // Intersection occurs when the signedDistance falls within the [-radius, +radius] interval.
         return math::Abs(signedDistance) <= radius;
@@ -274,14 +275,15 @@ namespace nes::geo
     ///		@brief : Determines if the AABB is fully behind (in the negative halfspace of) the plane.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool AABBInsidePlane(const TBox3<Type>& box, const TPlane<Type>& plane)
+    bool AABBInsidePlane(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
-        // Compute the projection interval radius of the OBB onto the Line(t) = obb.center + t * plane.normal
-        const Type radius = box.m_halfExtents[0] * math::Abs(plane.m_normal[0])
-            + box.m_halfExtents[1] * math::Abs(plane.m_normal[1])
-            + box.m_halfExtents[2] * math::Abs(plane.m_normal[2]);
+        // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
+        const TVector2<Type> extents = box.Extents();
+        const Type radius = extents[0] * math::Abs(plane.m_normal[0])
+            + extents[1] * math::Abs(plane.m_normal[1])
+            + extents[2] * math::Abs(plane.m_normal[2]);
 
-        const Type signedDistance = plane.SignedDistanceToPoint(box.m_center);
+        const Type signedDistance = plane.SignedDistanceToPoint(box.Center());
         return signedDistance <= -radius;
     }
 
@@ -291,14 +293,15 @@ namespace nes::geo
     ///             fully behind the plane, this will return true.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool AABBIntersectsHalfspace(const TBox3<Type>& box, const TPlane<Type>& plane)
+    bool AABBIntersectsHalfspace(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
-        // Compute the projection interval radius of the OBB onto the Line(t) = obb.center + t * plane.normal
-        const Type radius = box.m_halfExtents[0] * math::Abs(plane.m_normal[0])
-            + box.m_halfExtents[1] * math::Abs(plane.m_normal[1])
-            + box.m_halfExtents[2] * math::Abs(plane.m_normal[2]);
+        // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
+        const TVector2<Type> extents = box.Extents();
+        const Type radius = extents[0] * math::Abs(plane.m_normal[0])
+            + extents[1] * math::Abs(plane.m_normal[1])
+            + extents[2] * math::Abs(plane.m_normal[2]);
 
-        const Type signedDistance = plane.SignedDistanceToPoint(box.m_center);
+        const Type signedDistance = plane.SignedDistanceToPoint(box.Center());
         return signedDistance <= radius;
     }
 
@@ -306,7 +309,7 @@ namespace nes::geo
     ///		@brief : Determines if a Sphere intersects an AABB. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TBox3<Type>& box)
+    bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TAABox3<Type>& box)
     {
         const Type sqrDist = box.SquaredDistanceToPoint(sphere.m_center);
         return sqrDist <= math::Squared(sphere.m_radius);
@@ -318,7 +321,7 @@ namespace nes::geo
     ///             to the sphere.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    bool SphereIntersectsAABB(const TSphere3<Type>& sphere, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint)
     {
         intersectionPoint = box.ClosestPointToPoint(sphere.m_center);
         const Type sqrDist = (intersectionPoint - sphere.m_center).SquaredMagnitude();
@@ -390,14 +393,17 @@ namespace nes::geo
     ///		@brief : Determine if an AABB intersects with a Triangle.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool AABBIntersectsTriangle(const TBox3<Type>& box, const TTriangle3<Type>& triangle)
+    bool AABBIntersectsTriangle(const TAABox3<Type>& box, const TTriangle3<Type>& triangle)
     {
+        const auto center = box.Center();
+        const auto extents = box.Extents();
+        
         // Translate the triangle's vertices as conceptually moving the AABB to the origin.
         TVector3<Type> vertices[3]
         {
-            triangle.m_vertices[0] - box.m_center,  
-            triangle.m_vertices[1] - box.m_center,  
-            triangle.m_vertices[2] - box.m_center,  
+            triangle.m_vertices[0] - center,  
+            triangle.m_vertices[1] - center,  
+            triangle.m_vertices[2] - center,  
         };
 
         // Compute the Edge Vectors for the Triangle:
@@ -423,7 +429,7 @@ namespace nes::geo
         p0 = vertices[0].z * vertices[1].y - vertices[0].y * vertices[1].z;
         // p1 == p0
         p2 = vertices[2].y * -triEdges[0].z + vertices[2].z * triEdges[0].y;
-        radius = box.m_halfExtents[1] * math::Abs(triEdges[0].z) + box.m_halfExtents[2] * math::Abs(triEdges[0].y);
+        radius = extents[1] * math::Abs(triEdges[0].z) + extents[2] * math::Abs(triEdges[0].y);
         if (math::Max(-math::Max(p0, p2), math::Min(p0, p2)) > radius)
         {
             return false;
@@ -433,7 +439,7 @@ namespace nes::geo
         p0 = vertices[0].y * -triEdges[1].z + vertices[0].z * triEdges[1].y;
         p1 = vertices[1].y * -triEdges[1].z + vertices[1].z * triEdges[1].y;
         // p2 == p1
-        radius = box.m_halfExtents[1] * math::Abs(triEdges[1].z) + box.m_halfExtents[2] * math::Abs(triEdges[1].y);
+        radius = extents[1] * math::Abs(triEdges[1].z) + extents[2] * math::Abs(triEdges[1].y);
         if (math::Max(-math::Max(p0, p1), math::Min(p0, p1)) > radius)
         {
             return false;
@@ -443,7 +449,7 @@ namespace nes::geo
         p0 = vertices[0].y * vertices[2].z - vertices[0].z * vertices[2].y;
         p1 = vertices[1].y * -triEdges[2].z + vertices[1].z * triEdges[2].y;
         // p2 == p0
-        radius = box.m_halfExtents[1] * math::Abs(triEdges[2].z) + box.m_halfExtents[2] * math::Abs(triEdges[2].y);
+        radius = extents[1] * math::Abs(triEdges[2].z) + extents[2] * math::Abs(triEdges[2].y);
         if (math::Max(-math::Max(p0, p1), math::Min(p0, p1)) > radius)
         {
             return false;
@@ -453,7 +459,7 @@ namespace nes::geo
         p0 = vertices[0].x * vertices[1].z - vertices[0].z * vertices[1].x;
         // p1 == p0
         p2 = vertices[2].x * triEdges[0].z - vertices[2].z * triEdges[0].x;
-        radius = box.m_halfExtents[0] * math::Abs(triEdges[0].z) + box.m_halfExtents[2] * math::Abs(triEdges[0].x);
+        radius = extents[0] * math::Abs(triEdges[0].z) + extents[2] * math::Abs(triEdges[0].x);
         if (math::Max(-math::Max(p0, p2), math::Min(p0, p2)) > radius)
         {
             return false;
@@ -463,7 +469,7 @@ namespace nes::geo
         p0 = vertices[0].x * triEdges[1].z - vertices[0].z * triEdges[1].x;
         p1 = vertices[1].x * vertices[2].z - vertices[1].z * vertices[2].x;
         // p2 == p1
-        radius = box.m_halfExtents[0] * math::Abs(triEdges[1].z) + box.m_halfExtents[2] * math::Abs(triEdges[1].x);
+        radius = extents[0] * math::Abs(triEdges[1].z) + extents[2] * math::Abs(triEdges[1].x);
         if (math::Max(-math::Max(p0, p1), math::Min(p0, p1)) > radius)
         {
             return false;
@@ -473,7 +479,7 @@ namespace nes::geo
         p0 = vertices[0].z * vertices[2].x - vertices[0].x * vertices[2].z;
         p1 = vertices[1].x * triEdges[2].z - vertices[1].z * triEdges[2].x;
         // p2 == p0
-        radius = box.m_halfExtents[0] * math::Abs(triEdges[2].z) + box.m_halfExtents[2] * math::Abs(triEdges[2].x);
+        radius = extents[0] * math::Abs(triEdges[2].z) + extents[2] * math::Abs(triEdges[2].x);
         if (math::Max(-math::Max(p0, p1), math::Min(p0, p1)) > radius)
         {
             return false;
@@ -483,7 +489,7 @@ namespace nes::geo
         p0 = vertices[0].y * vertices[1].x - vertices[0].x * vertices[1].y;
         // p1 == p0
         p2 = vertices[2].y * triEdges[0].x - vertices[2].x * triEdges[0].y;
-        radius = box.m_halfExtents[0] * math::Abs(triEdges[0].y) + box.m_halfExtents[1] * math::Abs(triEdges[0].x);
+        radius = extents[0] * math::Abs(triEdges[0].y) + extents[1] * math::Abs(triEdges[0].x);
         if (math::Max(-math::Max(p0, p2), math::Min(p0, p2)) > radius)
         {
             return false;
@@ -493,7 +499,7 @@ namespace nes::geo
         p0 = vertices[0].y * triEdges[1].x - vertices[0].x * triEdges[1].y;
         p1 = vertices[1].y * vertices[2].x - vertices[1].x * vertices[2].y;
         // p2 == p1
-        radius = box.m_halfExtents[0] * math::Abs(triEdges[1].y) + box.m_halfExtents[1] * math::Abs(triEdges[1].x);
+        radius = extents[0] * math::Abs(triEdges[1].y) + extents[1] * math::Abs(triEdges[1].x);
         if (math::Max(-math::Max(p0, p1), math::Min(p0, p1)) > radius)
         {
             return false;
@@ -503,7 +509,7 @@ namespace nes::geo
         p0 = vertices[0].x * vertices[2].y - vertices[0].y * vertices[2].x;
         p1 = vertices[1].y * triEdges[2].x - vertices[1].x * triEdges[2].y;
         // p2 == p0
-        radius = box.m_halfExtents[0] * math::Abs(triEdges[2].y) + box.m_halfExtents[1] * math::Abs(triEdges[2].x);
+        radius = extents[0] * math::Abs(triEdges[2].y) + extents[1] * math::Abs(triEdges[2].x);
         if (math::Max(-math::Max(p0, p1), math::Min(p0, p1)) > radius)
         {
             return false;
@@ -512,22 +518,22 @@ namespace nes::geo
         // Test the 3 axes corresponding to the face normals of the box.
 
         // X
-        if (math::Max(vertices[0].x, vertices[1].x, vertices[2].x) < -box.m_halfExtents.x
-            || math::Min(vertices[0].x, vertices[1].x, vertices[2].x) > box.m_halfExtents.x)
+        if (math::Max(vertices[0].x, vertices[1].x, vertices[2].x) < -extents.x
+            || math::Min(vertices[0].x, vertices[1].x, vertices[2].x) > extents.x)
         {
             return false;
         }
 
         // Y
-        if (math::Max(vertices[0].y, vertices[1].y, vertices[2].y) < -box.m_halfExtents.y
-            || math::Min(vertices[0].y, vertices[1].y, vertices[2].y) > box.m_halfExtents.y)
+        if (math::Max(vertices[0].y, vertices[1].y, vertices[2].y) < -extents.y
+            || math::Min(vertices[0].y, vertices[1].y, vertices[2].y) > extents.y)
         {
             return false;
         }
 
         // Z
-        if (math::Max(vertices[0].z, vertices[1].z, vertices[2].z) < -box.m_halfExtents.z
-            || math::Min(vertices[0].z, vertices[1].z, vertices[2].z) > box.m_halfExtents.z)
+        if (math::Max(vertices[0].z, vertices[1].z, vertices[2].z) < -extents.z
+            || math::Min(vertices[0].z, vertices[1].z, vertices[2].z) > extents.z)
         {
             return false;
         }
@@ -806,14 +812,11 @@ namespace nes::geo
     ///             if valid.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool SegmentIntersectsAABB(const TSegment3<Type>& segment, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    bool SegmentIntersectsAABB(const TSegment3<Type>& segment, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint)
     {
         Type tMin = static_cast<Type>(0.f);
         Type tMax = segment.SquaredLength();
         const TVector3<Type> direction = segment.Direction();
-
-        const auto bMin = box.Min();
-        const auto bMax = box.Max();
 
         // For each slab (pair of 2 planes that make up opposing faces of the box)
         for (int i = 0; i < 3; ++i)
@@ -822,7 +825,7 @@ namespace nes::geo
             // within the slab:
             if (math::Abs(direction[i]) < math::PrecisionDelta())
             {
-                if (segment.m_start[i] < bMin[i] || segment.m_start[i] > bMax[i])
+                if (segment.m_start[i] < box.m_min[i] || segment.m_start[i] > box.m_max[i])
                 {
                     return false;
                 }
@@ -833,8 +836,8 @@ namespace nes::geo
                 // Compute the intersection t value of segment with
                 // the near and far plane of the slab
                 const Type ood = static_cast<Type>(1.f) / direction[i];
-                Type t1 = (bMin[i] - segment.m_start[i]) * ood;
-                Type t2 = (bMax[i] - segment.m_start[i]) * ood;
+                Type t1 = (box.m_min[i] - segment.m_start[i]) * ood;
+                Type t2 = (box.m_max[i] - segment.m_start[i]) * ood;
 
                 // Make t1 be the intersection with the near plane, t2 the far plane.
                 if (t1 > t2)
@@ -918,13 +921,10 @@ namespace nes::geo
     ///             if valid.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool LineIntersectsAABB(const TLine3<Type>& line, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    bool LineIntersectsAABB(const TLine3<Type>& line, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint)
     {
         Type tMin = std::numeric_limits<Type>::min();
         Type tMax = std::numeric_limits<Type>::max();
-
-        const auto bMin = box.Min();
-        const auto bMax = box.Max();
 
         // For each slab (pair of 2 planes that make up opposing faces of the box)
         for (int i = 0; i < 3; ++i)
@@ -933,7 +933,7 @@ namespace nes::geo
             // within the slab:
             if (math::Abs(line.m_direction[i]) < math::PrecisionDelta())
             {
-                if (line.m_origin[i] < bMin[i] || line.m_origin[i] > bMax[i])
+                if (line.m_origin[i] < box.m_min[i] || line.m_origin[i] > box.m_max[i])
                 {
                     return false;
                 }
@@ -944,8 +944,8 @@ namespace nes::geo
                 // Compute the intersection t value of line with
                 // the near and far plane of the slab
                 const Type ood = static_cast<Type>(1.f) / line.m_direction[i];
-                Type t1 = (bMin[i] - line.m_origin[i]) * ood;
-                Type t2 = (bMax[i] - line.m_origin[i]) * ood;
+                Type t1 = (box.m_min[i] - line.m_origin[i]) * ood;
+                Type t2 = (box.m_max[i] - line.m_origin[i]) * ood;
 
                 // Make t1 be the intersection with the near plane, t2 the far plane.
                 if (t1 > t2)
@@ -1077,13 +1077,10 @@ namespace nes::geo
     ///             if valid.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    bool RayIntersectsAABB(const TRay3<Type>& ray, const TBox3<Type>& box, TVector3<Type>& intersectionPoint)
+    bool RayIntersectsAABB(const TRay3<Type>& ray, const TAABox3<Type>& box, TVector3<Type>& intersectionPoint)
     {
         Type tMin = static_cast<Type>(0.f);
         Type tMax = std::numeric_limits<Type>::max();
-
-        const auto bMin = box.Min();
-        const auto bMax = box.Max();
 
         // For each slab (pair of 2 planes that make up opposing faces of the box)
         for (int i = 0; i < 3; ++i)
@@ -1092,7 +1089,7 @@ namespace nes::geo
             // within the slab:
             if (math::Abs(ray.m_direction[i]) < math::PrecisionDelta())
             {
-                if (ray.m_origin[i] < bMin[i] || ray.m_origin[i] > bMax[i])
+                if (ray.m_origin[i] < box.m_min[i] || ray.m_origin[i] > box.m_max[i])
                 {
                     return false;
                 }
@@ -1103,8 +1100,8 @@ namespace nes::geo
                 // Compute the intersection t value of ray with
                 // the near and far plane of the slab
                 const Type ood = static_cast<Type>(1.f) / ray.m_direction[i];
-                Type t1 = (bMin[i] - ray.m_origin[i]) * ood;
-                Type t2 = (bMax[i] - ray.m_origin[i]) * ood;
+                Type t1 = (box.m_min[i] - ray.m_origin[i]) * ood;
+                Type t2 = (box.m_max[i] - ray.m_origin[i]) * ood;
 
                 // Make t1 be the intersection with the near plane, t2 the far plane.
                 if (t1 > t2)

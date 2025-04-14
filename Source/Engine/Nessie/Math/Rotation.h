@@ -52,8 +52,13 @@ namespace nes
 
         static void ClampAxis(Type& angle);
         static void NormalizeAxis(Type& angle);
+        static constexpr TRotation<Type> Identity() { return TRotation<Type>(0, 0, 0); }
     };
 
+    using Rotationf = TRotation<float>;
+    using Rotationd = TRotation<double>;
+    using Rotation = TRotation<NES_PRECISION_TYPE>;
+    
     template <FloatingPointType Type>
     constexpr TRotation<Type>::TRotation(const Type pitch, const Type yaw, const Type roll)
         : m_pitch(pitch)
@@ -213,7 +218,4 @@ namespace nes
             angle -= static_cast<Type>(360.0);
     }
 
-    using Rotationf = TRotation<float>;
-    using Rotationd = TRotation<double>;
-    using Rotation = TRotation<NES_MATH_DEFAULT_REAL_TYPE>;
 }

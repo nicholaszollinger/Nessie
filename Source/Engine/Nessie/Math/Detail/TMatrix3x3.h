@@ -335,7 +335,7 @@ namespace nes
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
-                return TVector3<Type>::GetZeroVector();
+                return TVector3<Type>::Zero();
         }
     }
 

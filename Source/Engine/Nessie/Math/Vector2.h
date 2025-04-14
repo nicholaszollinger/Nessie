@@ -1,7 +1,7 @@
 #pragma once
 // Vector2.h
 #include "Generic.h"
-#include "MathUtils.h"
+#include "MathConfig.h"
 #include "Core/Generic/Concepts.h"
 #include "Debug/Assert.h"
 
@@ -18,8 +18,12 @@ namespace nes
         constexpr TVector2(const ScalarType auto x, const ScalarType auto y) : x(static_cast<Type>(x)), y(static_cast<Type>(y)) {}
         explicit constexpr TVector2(const Type uniformValue) : x(uniformValue), y(uniformValue) {}
 
-        constexpr bool operator==(const TVector2 right) const;
-        constexpr bool operator!=(const TVector2 right) const { return !(*this == right); }
+        constexpr bool operator==(const TVector2& right) const;
+        constexpr bool operator!=(const TVector2& right) const { return !(*this == right); }
+        constexpr bool operator<(const TVector2& right) const;
+        constexpr bool operator>(const TVector2& right) const;
+        constexpr bool operator<=(const TVector2& right) const;
+        constexpr bool operator>=(const TVector2& right) const;
 
         constexpr TVector2 operator-() const;
         constexpr TVector2 operator+(const TVector2 right) const;
@@ -60,11 +64,13 @@ namespace nes
         static constexpr Type Dot(const TVector2& a, const TVector2& b);
         static constexpr Type Distance(const TVector2& a, const TVector2& b);
         static constexpr Type DistanceSquared(const TVector2& a, const TVector2& b);
+        static constexpr TVector2 Min(const TVector2& a, const TVector2& b);
+        static constexpr TVector2 Max(const TVector2& a, const TVector2& b);
         
-        static constexpr TVector2 GetUnitVector()   { return TVector2(static_cast<Type>(1), static_cast<Type>(1)); }
-        static constexpr TVector2 GetZeroVector()   { return TVector2(static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector2 GetUpVector()     { return TVector2(static_cast<Type>(0), static_cast<Type>(1)); }
-        static constexpr TVector2 GetRightVector()  { return TVector2(static_cast<Type>(1), static_cast<Type>(0)); }
+        static constexpr TVector2 Unit()   { return TVector2(static_cast<Type>(1), static_cast<Type>(1)); }
+        static constexpr TVector2 Zero()   { return TVector2(static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector2 Up()     { return TVector2(static_cast<Type>(0), static_cast<Type>(1)); }
+        static constexpr TVector2 Right()  { return TVector2(static_cast<Type>(1), static_cast<Type>(0)); }
     };
 
     template <ScalarType VecType>
@@ -74,13 +80,13 @@ namespace nes
     using Vector2d = TVector2<double>;
     using Vector2i = TVector2<int>;
     using Vector2u = TVector2<unsigned int>;
-    using Vector2 = TVector2<NES_MATH_DEFAULT_REAL_TYPE>;
+    using Vector2 = TVector2<NES_PRECISION_TYPE>;
 }
 
 namespace nes
 {
     template <ScalarType Type>
-    constexpr bool TVector2<Type>::operator==(const TVector2 right) const
+    constexpr bool TVector2<Type>::operator==(const TVector2& right) const
     {
         if constexpr (std::is_floating_point_v<Type>)
         {
@@ -92,6 +98,42 @@ namespace nes
         {
             return x == right.x && y == right.y;
         }
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are less than the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector2<Type>::operator<(const TVector2& right) const
+    {
+        return x < right.x && y < right.y;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are greater than the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector2<Type>::operator>(const TVector2& right) const
+    {
+        return x > right.x && y > right.y;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are less than or equal to the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector2<Type>::operator<=(const TVector2& right) const
+    {
+        return x <= right.x && y <= right.y;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : True if all components are greater than or equal to the right's.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr bool TVector2<Type>::operator>=(const TVector2& right) const
+    {
+        return x >= right.x && y >= right.y;
     }
 
     template <ScalarType Type>
@@ -336,6 +378,30 @@ namespace nes
     {
         const TVector2 diff = b - a;
         return diff.SquaredMagnitude();
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the minimum values of each of the components.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr TVector2<Type> TVector2<Type>::Min(const TVector2& a, const TVector2& b)
+    {
+        TVector2 result;
+        result.x = math::Min(a.x, b.x);
+        result.y = math::Min(a.y, b.y);
+        return result;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the maximum values of each of the components.
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    constexpr TVector2<Type> TVector2<Type>::Max(const TVector2& a, const TVector2& b)
+    {
+        TVector2 result;
+        result.x = math::Max(a.x, b.x);
+        result.y = math::Max(a.y, b.y);
+        return result;
     }
 
     //----------------------------------------------------------------------------------------------------
