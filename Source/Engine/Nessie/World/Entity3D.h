@@ -3,6 +3,7 @@
 #include "Core/Events/MulticastDelegate.h"
 #include "Math/Rotation.h"
 #include "Math/Transform.h"
+#include "Physics/Body/Body.h"
 #include "Scene/Entity.h"
 
 namespace nes
@@ -25,6 +26,8 @@ namespace nes
         WorldTransformUpdatedEvent m_onWorldTransformUpdated{};
         Mat4 m_worldTransformMatrix{};
         bool m_worldTransformNeedsUpdate = false;
+
+        BodyID m_bodyID{}; // The ID of the Physics Body of this Entity.
 
     public:
         void Rotate(const float angle, const Vector3& axis);
@@ -62,9 +65,11 @@ namespace nes
     protected:
         virtual bool Init() override;
         virtual void OnParentSet(Entity3D* pParent) override;
-        
+
         void MarkWorldTransformDirty();
         void UpdateWorldTransform(Entity3D* pParent, const Matrix4x4& localTransform);
         void PropagateTransformUpdateToChildren();
+        
+        void RebuildPhysicsBody();
     };
 }

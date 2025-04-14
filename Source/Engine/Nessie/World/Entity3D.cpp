@@ -1,8 +1,9 @@
 ﻿// Entity3D.cpp
 #include "Entity3D.h"
-#include "BleachNew.h"
+#include "Core/Memory/Memory.h"
 #include "Components/Entity3DComponent.h"
 #include "Math/VectorConversions.h"
+#include "Physics/Components/ShapeComponent.h"
 #include "Scene/EntityLayer.h"
 #include "World/World.h"
 
@@ -15,6 +16,9 @@ namespace nes
 
     bool Entity3D::Init()
     {
+        std::vector<StrongPtr<ShapeComponent>> physicsShapes{};
+        physicsShapes.reserve(m_components.size());
+        
         for (auto& pComponent : m_components)
         {
             if (!pComponent->Init())
@@ -24,6 +28,15 @@ namespace nes
             }
         }
 
+        if (!physicsShapes.empty())
+        {
+            // If there is more than 1 Physics Shape, then the Body needs to build a CompoundShape.
+            if (physicsShapes.size() > 1)
+            {
+                
+            }
+        }
+        
         m_isInitialized = true;
         
         return true;
@@ -140,7 +153,7 @@ namespace nes
     void Entity3D::SetWorldLocation(const Vector3& location)
     {
         // Get our current parent location:
-        Vector3 parentLocation = Vector3::GetZeroVector();
+        Vector3 parentLocation = Vector3::Zero();
         if (m_pParent)
         {
             // Update the Parent, if necessary:
@@ -182,7 +195,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void Entity3D::SetWorldScale(const Vector3& scale)
     {
-        Vector3 parentScale = Vector3::GetUnitVector();
+        Vector3 parentScale = Vector3::Unit();
         if (m_pParent)
         {
             // Update the Parent, if necessary:
@@ -411,4 +424,33 @@ namespace nes
     {
         return checked_cast<World*>(GetLayer());
     }
+
+    void Entity3D::RebuildPhysicsBody()
+    {
+        // World* pWorld = GetWorld();
+        // //PhysicsSystem* pPhysicsSystem = pWorld->GetPhysicsSystem();
+        //
+        // // Collect Physics Shapes attached to this Body.
+        // std::vector<StrongPtr<ShapeComponent>> physicsShapes{};
+        // physicsShapes.reserve(m_components.size());
+        //
+        // for (auto& pComponent : m_components)
+        // {
+        //     if (auto pShape = Cast<ShapeComponent>(pComponent))
+        //     {
+        //         physicsShapes.push_back(pShape);
+        //     }
+        // }
+        //
+        // if (!physicsShapes.empty())
+        // {
+        //     // If there is more than 1 Physics Shape, then the Body needs to build a CompoundShape.
+        //     if (physicsShapes.size() > 1)
+        //     {
+        //         
+        //     }
+        // }
+        
+    }
+
 }
