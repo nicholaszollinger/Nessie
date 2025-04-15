@@ -1,8 +1,6 @@
 ﻿// QuadTree.cpp
 #include "QuadTree.h"
 
-#include "imgui_internal.h"
-#include "stb_image.h"
 #include "Application/Application.h"
 
 namespace nes
@@ -988,6 +986,55 @@ namespace nes
         }
         
         return maxDepth + 1;
+    }
+
+    template <typename Visitor>
+    void QuadTree::WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor)
+    {
+        // [TODO]: In progress.
+        const RootNode& rootNode = GetCurrentRoot();
+
+        NodeID nodeStack[kStackSize];
+        nodeStack[0] = rootNode.GetNodeID();
+        int top = 0;
+        do
+        {
+            // Check if the Node is a Body:
+            NodeID childNodeID = nodeStack[top];
+            if (childNodeID.IsBody())
+            {
+                const BodyID bodyID = childNodeID.GetBodyID();
+                const CollisionLayer layer = trackers[bodyID.GetIndex()].m_collisionLayer;
+                if (layer != kInvalidCollisionLayer && layerFilter.ShouldCollide(layer))
+                {
+                    // Visit Body:
+                    visitor.VisitBody(bodyID, top);
+                    if (visitor.ShouldAbort())
+                        break;
+                }
+            }
+
+            else if (childNodeID.IsValid())
+            {
+                // Check if stack can hold more Nodes
+                if (top + 4 < kStackSize)
+                {
+                    const Node& node = m_pAllocator->Get(childNodeID.GetNodeIndex());
+                    //NES_ASSERT(IsAligned)
+
+                    // Load the bounds of the 4 children:
+                    // [TODO]: 
+                }
+
+                else
+                {
+                    NES_ASSERTV(false, "Stack full!\n"
+                                    "This must be a very deep tree. Are you batch adding bodies? Or adding them one at a time?"
+                                    "If you add one at a time, you need to call OptimizeBroadPhase to rebuild the tree.");
+                }
+            }
+        }
+        while (top >= 0);
     }
 
 #if NES_LOGGING_ENABLED

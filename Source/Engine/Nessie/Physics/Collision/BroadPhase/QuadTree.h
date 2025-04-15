@@ -125,7 +125,7 @@ namespace nes
             
             std::atomic<BroadPhaseLayer::Type> m_broadPhaseLayer = static_cast<BroadPhaseLayer::Type>(kInvalidBroadPhaseLayer);
             std::atomic<CollisionLayer> m_collisionLayer = kInvalidCollisionLayer;
-            std::atomic<uint32_t> m_bodyLocation{ kInvalidBodyLocation };
+            std::atomic<uint32_t> m_bodyLocation{ kInvalidBodyLocation }; // Location of the Body in the Quadtree.
             
             BodyTracker() = default;
             BodyTracker(const BodyTracker& other);
@@ -141,7 +141,7 @@ namespace nes
         struct AddState
         {
             NodeID  m_leafID = NodeID::InvalidID();
-            AABox     m_leafBounds{};
+            AABox   m_leafBounds{};
         };
 
     private:
@@ -231,15 +231,18 @@ namespace nes
         void MarkNodeAndParentsChanged(uint32_t nodeIndex);
         void WidenAndMarkNodeAndParentsChanged(uint32_t nodeIndex, const AABox& newBounds);
 
-        uint32_t AllocateNode(bool isChanged);
-        bool TryInsertLeaf(BodyTrackerArray& trackers, int nodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
-        bool TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32_t>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
-        NodeID BuildTree(const BodyArray& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds);
+        uint32_t    AllocateNode(bool isChanged);
+        bool        TryInsertLeaf(BodyTrackerArray& trackers, int nodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
+        bool        TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32_t>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
+        NodeID      BuildTree(const BodyArray& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds);
         
         static void Partition(NodeID* nodeIDs, Vector3* nodeCenters, int number, int& outMidPoint);
         static void Partition4(NodeID* nodeIDs, Vector3* nodeCenters, int begin, int end, int* outSplitIndices);
         
         uint32_t GetMaxTreeDepth(const NodeID nodeID) const;
+
+        template <typename Visitor>
+        NES_INLINE void WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor);
 
 #ifdef NES_DEBUG
         void ValidateTree(const BodyArray& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const;

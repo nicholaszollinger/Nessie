@@ -3,9 +3,10 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 
 # Physics Branch
 **This branch should not be used yet! This is currently under-development!*
+
 I am working toward implementing essentially "Jolt Physics Lite" - a multithreaded, 3D physics simulation. I am trying to streamline the 
 implementation as much as I can and use my own core systems to support it (Debugging, Memory allocation, Math classes, etc).
-[Jolt Physics Github](https://github.com/jrouwe/JoltPhysics)
+- [Jolt Physics Github](https://github.com/jrouwe/JoltPhysics)
 
 *(Side note: It is cool to see that we reference the same textbook that I have been using this semester)*
 
