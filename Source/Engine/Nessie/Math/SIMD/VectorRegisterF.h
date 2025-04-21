@@ -1,0 +1,185 @@
+﻿// VectorRegisterF.h
+#pragma once
+#include "Math/MathTypes.h"
+
+namespace nes
+{
+    // enum class SwizzleValue : uint32_t
+    // {
+    //     Swizzle_X = 0,
+    //     Swizzle_Y, 
+    //     Swizzle_Z,
+    //     Swizzle_W,
+    // };
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Register containing 4 floats. 
+    //----------------------------------------------------------------------------------------------------
+    struct VectorRegisterF
+    {
+#if defined(NES_USE_SSE)
+        using Type = __m128;
+#else
+        using Type = struct { float m_data[4]; };
+#endif
+
+        union
+        {
+            Type    m_value;
+            float   m_f32[4];
+        };
+
+        VectorRegisterF() = default;
+        VectorRegisterF(const VectorRegisterF&) = default;
+        VectorRegisterF& operator=(const VectorRegisterF&) = default;
+
+        /// Construct from a register value.
+        NES_INLINE VectorRegisterF(const Type& value) : m_value(value) {}
+
+        /// Construct from 4 floats.
+        NES_INLINE VectorRegisterF(const float x, const float y, const float z, const float w);
+
+        NES_INLINE bool             operator==(const VectorRegisterF& other) const;
+        NES_INLINE bool             operator!=(const VectorRegisterF& other) const { return !(*this == other); }
+        NES_INLINE VectorRegisterF  operator+(const VectorRegisterF& other) const;
+        NES_INLINE VectorRegisterF& operator+=(const VectorRegisterF& other);
+        NES_INLINE VectorRegisterF  operator*(const float value) const;
+        NES_INLINE VectorRegisterF& operator*=(const float value);
+        NES_INLINE VectorRegisterF  operator*(const VectorRegisterF other) const;
+        NES_INLINE VectorRegisterF& operator*=(const VectorRegisterF other);
+        NES_INLINE float&           operator[](const uint32_t index);
+        NES_INLINE float            operator[](const uint32_t index) const;
+        
+        NES_INLINE float GetX() const;
+        NES_INLINE float GetY() const;
+        NES_INLINE float GetZ() const;
+        NES_INLINE float GetW() const;
+        
+        NES_INLINE void Set(const float x, const float y, const float z, const float w) { *this = VectorRegisterF(x, y, z, w); }
+        NES_INLINE void SetX(const float value)                                         { m_f32[0] = value; }
+        NES_INLINE void SetY(const float value)                                         { m_f32[1] = value; }
+        NES_INLINE void SetZ(const float value)                                         { m_f32[2] = value; }
+        NES_INLINE void SetW(const float value)                                         { m_f32[3] = value; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : To "Swizzle" a vector means to set the components equal the specified component value of the passed
+        ///     in swizzle argument. For example: Swizzle<0, 0, 1, 1>() will set the XY components equal to
+        ///     the current X value, and the ZW components equal to the current Y value.
+        /// @note : All Swizzle arguments must be in the range [0, 3].
+        //----------------------------------------------------------------------------------------------------
+        template <uint32_t SwizzleX, uint32_t SwizzleY, uint32_t SwizzleZ, uint32_t SwizzleW>
+        NES_INLINE VectorRegisterF Swizzle() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Convert each float component to an integer. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterUint ConvertToInt() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Reinterpret float vector register as an Integer register. Doesn't change the bits.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterUint ReinterpretAsInt() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to this register's X Component. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterF SplatX() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to this register's Y Component. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterF SplatY() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to this register's Z Component. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterF SplatZ() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to this register's W Component. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterF SplatW() const;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to zero. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Zero();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to one. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Unit();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a register with all components equal to Nan. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Nan();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Stores the single value into each component.
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Replicate(const float value);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Load 4 floats into a Register.
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Load(const float* pValues);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Store the register's value into 4 floats.
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE void Store(const VectorRegisterF& vec, float* pOutValues);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the minimum value of each of the components.
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Min(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the maximum value of each of the components.
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterF Max(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise logical Or.
+        //----------------------------------------------------------------------------------------------------        
+        static NES_INLINE VectorRegisterF Or(const VectorRegisterF& a, const VectorRegisterF& b);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise logical And.
+        //----------------------------------------------------------------------------------------------------        
+        static NES_INLINE VectorRegisterF And(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise logical Xor.
+        //----------------------------------------------------------------------------------------------------        
+        static NES_INLINE VectorRegisterF Xor(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise equal operation. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterUint Equals(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise Greater-than operation. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterUint Greater(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise Greater-than or equal operation. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterUint GreaterOrEqual(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise Less-than operation. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterUint Less(const VectorRegisterF& a, const VectorRegisterF& b);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Component-wise Less-than or equal operation. 
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE VectorRegisterUint LesserOrEqual(const VectorRegisterF& a, const VectorRegisterF& b);
+    };
+}
+
+#include "VectorRegisterF.inl"

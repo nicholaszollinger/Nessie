@@ -46,4 +46,4 @@
     inline constexpr Enum operator^=(Enum& left, const Enum right)                          \
     {                                                                                       \
         return left = left ^ right;                                                         \
-    }   
+    }

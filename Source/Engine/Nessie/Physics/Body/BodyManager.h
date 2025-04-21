@@ -33,16 +33,24 @@ namespace nes
         BodyStats m_stats;
         
     public:
+        BodyManager() = default;
         BodyManager(const BodyManager&) = delete;
         BodyManager& operator=(const BodyManager&) = delete;
         BodyManager(BodyManager&&) noexcept = delete;
         BodyManager& operator=(BodyManager&&) noexcept = delete;
 
-        Body* CreateBody(const BodyCreateInfo& createInfo) const;
-        void AddBody(Body* pBody);
-        void RemoveBody(Body* pBody);
-        void DestroyBody(Body* body) const;
+        void Init(uint32_t maxBodies, uint32_t numBodyMutexes, const BroadPhaseLayerInterface& interface);
 
-        const BodyStats& GetStats() const;
+        Body*               CreateBody(const BodyCreateInfo& createInfo) const;
+        void                AddBody(Body* pBody);
+        void                RemoveBody(Body* pBody);
+        void                DestroyBody(Body* body) const;
+        void                LockAllBodies();
+        void                UnlockAllBodies();
+        uint32_t            GetNumActiveBodies() const;
+        const BodyArray&    GetBodies() const               { return m_bodies; }
+        BodyArray&          GetBodies()                     { return m_bodies; }
+        uint32_t            GetMaxBodies() const            { return static_cast<uint32_t>(m_bodies.capacity());}
+        const BodyStats&    GetStats() const;
     };
 }

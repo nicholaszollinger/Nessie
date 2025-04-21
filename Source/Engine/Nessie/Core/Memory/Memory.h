@@ -78,9 +78,9 @@ void operator delete[](void* pMemory, const char*, int);
     NES_INLINE void* operator new[] (size_t size, std::align_val_t alignment)                                 { return NES_ALIGNED_ALLOC(size, static_cast<size_t>(alignment)); } \
     NES_INLINE void  operator delete[] (void* pPtr, [[maybe_unused]] std::align_val_t alignment) noexcept     { NES_ALIGNED_FREE(pPtr); } \
     NES_INLINE void* operator new ([[maybe_unused]] size_t size, void* pPtr) noexcept                         { return pPtr; } \
-    NES_INLINE void  operator delete ([[maybe_unused]] size_t size, [[maybe_unused]] void* pPlace) noexcept   { /* Do nothing */ } \
+    NES_INLINE void  operator delete ([[maybe_unused]] void *pPtr, [[maybe_unused]] void* pPlace) noexcept    { /* Do nothing */ } \
     NES_INLINE void* operator new[] ([[maybe_unused]] size_t size, void* pPtr) noexcept                       { return pPtr; } \
-    NES_INLINE void  operator delete[] ([[maybe_unused]] size_t size, [[maybe_unused]] void* pPlace) noexcept { /* Do nothing */ }
+    NES_INLINE void  operator delete[] ([[maybe_unused]] void *pPtr, [[maybe_unused]] void* pPlace) noexcept  { /* Do nothing */ }
 
 #else
 #define NES_INIT_LEAK_DETECTOR() void(0)

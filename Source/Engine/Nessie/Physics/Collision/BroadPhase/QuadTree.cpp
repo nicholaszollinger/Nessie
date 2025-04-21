@@ -2,50 +2,25 @@
 #include "QuadTree.h"
 
 #include "Application/Application.h"
+#include "Math/VectorRegister.h"
+#include "Math/SIMD/AABoxSIMD.h"
 
 namespace nes
 {
-    constexpr QuadTree::NodeID QuadTree::NodeID::FromBodyID(const BodyID id)
-    {
-        NodeID nodeID(id.GetIndexAndGeneration());
-        NES_ASSERT(nodeID.IsBody());
-        return nodeID;
-    }
-
-    constexpr QuadTree::NodeID QuadTree::NodeID::FromNodeIndex(const uint32_t index)
-    {
-        NES_ASSERT((index & kIsNode) == 0);
-        return NodeID(index | kIsNode);
-    }
-
     QuadTree::Node::Node(const bool isChanged)
         : m_isChanged(isChanged)
     {
-        // [TODO]: VectorRegister class for simd operations.
         // Initialize the Node bounds to have the min and max positions
         // switched, ensuring that no collision can occur with this Node.
-        // Vector4 val = Vector4::Replicate(math::kLargeFloat);
-        // val.StoreFloat4(static_cast<Float4*>(&m_boundsMinX));
-        // val.StoreFloat4(static_cast<Float4*>(&m_boundsMinY));
-        // val.StoreFloat4(static_cast<Float4*>(&m_boundsMinZ));
-        // val = Vector4::Replicate(-math::kLargeFloat);
-        // val.StoreFloat4(static_cast<Float4*>(&m_boundsMaxX));
-        // val.StoreFloat4(static_cast<Float4*>(&m_boundsMaxY));
-        // val.StoreFloat4(static_cast<Float4*>(&m_boundsMaxZ));
+        VectorRegister val = VectorRegister::Replicate(math::kLargeFloat);
+        VectorRegister::Store(val, reinterpret_cast<float*>(&m_minX));
+        VectorRegister::Store(val, reinterpret_cast<float*>(&m_minY));
+        VectorRegister::Store(val, reinterpret_cast<float*>(&m_minZ));
         
-        for (int i = 0; i < 4; ++i)
-        {
-            m_minX[i] = math::kLargeFloat;
-            m_minY[i] = math::kLargeFloat;
-            m_minZ[i] = math::kLargeFloat;
-        }
-        
-        for (int i = 0; i < 4; ++i)
-        {
-            m_maxX[i] = -math::kLargeFloat;
-            m_maxY[i] = -math::kLargeFloat;
-            m_maxZ[i] = -math::kLargeFloat;
-        }
+        val = VectorRegister::Replicate(-math::kLargeFloat);
+        VectorRegister::Store(val, reinterpret_cast<float*>(&m_maxX));
+        VectorRegister::Store(val, reinterpret_cast<float*>(&m_maxY));
+        VectorRegister::Store(val, reinterpret_cast<float*>(&m_maxZ));
         
         // Reset child NodeIDs.
         m_childNodeIDs[0] = NodeID::InvalidID();
@@ -293,7 +268,7 @@ namespace nes
 
             // Build the new Tree:
             AABox rootBounds;
-            rootNodeID = BuildTree(bodies, outTrackers, pNodeIDs, numNodeIDs, kMaxDepthMarkChanged, rootBounds);
+            rootNodeID = BuildTree(bodies, outTrackers, pNodeIDs, static_cast<int>(numNodeIDs), kMaxDepthMarkChanged, rootBounds);
 
             // For a single Body we allocate a new Root Node.
             if (rootNodeID.IsBody())
@@ -375,7 +350,7 @@ namespace nes
         for (;;)
         {
             // Check if we can insert the body in the root:
-            if (TryInsertLeaf(trackers, rootNode.m_index, state.m_leafID, state.m_leafBounds, numBodies))
+            if (TryInsertLeaf(trackers, static_cast<int>(rootNode.m_index), state.m_leafID, state.m_leafBounds, numBodies))
                 return;
 
             // Check if we can create a new root:
@@ -449,7 +424,7 @@ namespace nes
 
             // Then we make the bounding box invalid - no queries can find this Node anymore.
             Node& node = m_pAllocator->Get(nodeIndex);
-            node.InvalidateChildBounds(childNodeIndex);
+            node.InvalidateChildBounds(static_cast<int>(childNodeIndex));
 
             // Finally, we reset the child ID, this makes the Node available for adds again.
             node.m_childNodeIDs[childNodeIndex] = NodeID::InvalidID();
@@ -484,7 +459,7 @@ namespace nes
 
             // Widen the bounds for the Node
             Node& node = m_pAllocator->Get(nodeIndex);
-            if (node.EncapsulateChildBounds(childNodeIndex, newBounds))
+            if (node.EncapsulateChildBounds(static_cast<int>(childNodeIndex), newBounds))
             {
                 // If changed, our tree needs to be updated, and we need to walk up the
                 // tree and widen all parents.
@@ -493,6 +468,76 @@ namespace nes
             }
             
         }
+    }
+
+    void QuadTree::CastRay([[maybe_unused]] const RayCast& ray, [[maybe_unused]] RayCastBodyCollector& collector, [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    {
+        NES_ASSERTV(false, "Not implemented yet!"); 
+    }
+
+    void QuadTree::CastAABox([[maybe_unused]] const AABoxCast& box, [[maybe_unused]] CastShapeBodyCollector& collector, [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    {
+        NES_ASSERTV(false, "Not implemented yet!");
+    }
+
+    void QuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
+    {
+        class Visitor
+        {
+            const AABox& m_box;
+            CollideShapeBodyCollector& m_collector;
+
+        public:
+            NES_INLINE explicit Visitor(const AABox& box, CollideShapeBodyCollector& collector) : m_box(box), m_collector(collector) {}
+
+            NES_INLINE bool ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
+
+            /// Returns true if this node / body should be visited, false if no hit can be generated.
+            NES_INLINE bool ShouldVisitNode([[maybe_unused]] int stackTop) const
+            {
+                return true;
+            }
+
+            NES_INLINE int VisitNodes(const VectorRegister& boundsMinX, const VectorRegister& boundsMinY, const VectorRegister& boundsMinZ, const VectorRegister& boundsMaxX, const VectorRegister& boundsMaxY, const VectorRegister& boundsMaxZ, VectorRegisterUint& childNodeIDs, [[maybe_unused]] const int stackTop) const
+            {
+                const VectorRegisterUint hitting = math::AABoxVs4AABox(m_box, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                return VectorRegisterUint::CountAndSortTrues(hitting, childNodeIDs);
+            }
+
+            NES_INLINE void VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
+            {
+                // Store the potential hit with the body.
+                m_collector.AddHit(id);
+            }
+        };
+        
+        Visitor visitor(box, collector);
+        WalkTree(layerFilter, trackers, visitor);
+    }
+
+    void QuadTree::CollideSphere([[maybe_unused]] const Vector3& center, [[maybe_unused]] const float radius, [[maybe_unused]] CollideShapeBodyCollector& collector,
+        [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    {
+        NES_ASSERTV(false, "Not implemented yet!"); 
+    }
+
+    void QuadTree::CollidePoint([[maybe_unused]] const Vector3& point, [[maybe_unused]] CollideShapeBodyCollector& collector,
+        [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    {
+        NES_ASSERTV(false, "Not implemented yet!"); 
+    }
+
+    void QuadTree::CollideOrientedBox([[maybe_unused]] const OrientedBox& box, [[maybe_unused]] CollideShapeBodyCollector& collector,
+        [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    {
+        NES_ASSERTV(false, "Not implemented yet!"); 
+    }
+
+    void QuadTree::FindCollidingPairs([[maybe_unused]] const BodyArray& bodies, [[maybe_unused]] const BodyID* activeBodiesArray,
+        [[maybe_unused]] const int numActiveBodies, [[maybe_unused]] float speculativeContactDistance, [[maybe_unused]] BodyPairCollector& collector,
+        [[maybe_unused]] const CollisionLayerPairFilter& layerFilter) const
+    {
+        NES_ASSERTV(false, "Not implemented yet!"); 
     }
 
     AABox QuadTree::GetBounds() const
@@ -670,7 +715,7 @@ namespace nes
                     SetBodyLocation(trackers, leafID.GetBodyID(), nodeIndex, childIndex);
 
                 // Now set the bounding box making the child valid for queries
-                node.SetChildBounds(childIndex, leafBounds);
+                node.SetChildBounds(static_cast<int>(childIndex), leafBounds);
 
                 // Widen the bounds for our parents too
                 WidenAndMarkNodeAndParentsChanged(nodeIndex, leafBounds);
@@ -989,9 +1034,8 @@ namespace nes
     }
 
     template <typename Visitor>
-    void QuadTree::WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor)
+    void QuadTree::WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor) const
     {
-        // [TODO]: In progress.
         const RootNode& rootNode = GetCurrentRoot();
 
         NodeID nodeStack[kStackSize];
@@ -1007,6 +1051,7 @@ namespace nes
                 const CollisionLayer layer = trackers[bodyID.GetIndex()].m_collisionLayer;
                 if (layer != kInvalidCollisionLayer && layerFilter.ShouldCollide(layer))
                 {
+                    // [TODO]: Stat tracking.
                     // Visit Body:
                     visitor.VisitBody(bodyID, top);
                     if (visitor.ShouldAbort())
@@ -1020,10 +1065,22 @@ namespace nes
                 if (top + 4 < kStackSize)
                 {
                     const Node& node = m_pAllocator->Get(childNodeID.GetNodeIndex());
-                    //NES_ASSERT(IsAligned)
-
+                    //NES_ASSERT(IsAligned())
+                    
                     // Load the bounds of the 4 children:
-                    // [TODO]: 
+                    VectorRegister boundsMinX = VectorRegister::Load(reinterpret_cast<const float*>(node.m_minX)); 
+                    VectorRegister boundsMinY = VectorRegister::Load(reinterpret_cast<const float*>(node.m_minY)); 
+                    VectorRegister boundsMinZ = VectorRegister::Load(reinterpret_cast<const float*>(node.m_minZ));
+                    VectorRegister boundsMaxX = VectorRegister::Load(reinterpret_cast<const float*>(node.m_maxX)); 
+                    VectorRegister boundsMaxY = VectorRegister::Load(reinterpret_cast<const float*>(node.m_maxY)); 
+                    VectorRegister boundsMaxZ = VectorRegister::Load(reinterpret_cast<const float*>(node.m_maxZ));
+
+                    // Load the Child IDs.
+                    VectorRegisterUint childIDs = VectorRegisterUint::Load(reinterpret_cast<const uint32_t*>(node.m_childNodeIDs));
+
+                    const int numResults = visitor.VisitNodes(boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ, childIDs, top);
+                    VectorRegisterUint::Store(childIDs, reinterpret_cast<uint32_t*>(&nodeStack[top]));
+                    top += numResults;
                 }
 
                 else
@@ -1033,8 +1090,16 @@ namespace nes
                                     "If you add one at a time, you need to call OptimizeBroadPhase to rebuild the tree.");
                 }
             }
+
+            // Fetch the next node until we find one that the visitor wants to see.
+            do
+            {
+                --top;
+            } while (top >= 0 && !visitor.ShouldVisitNode(top));
         }
         while (top >= 0);
+
+        // [TODO]: Stat tracking.
     }
 
 #if NES_LOGGING_ENABLED
@@ -1070,7 +1135,7 @@ namespace nes
             NES_ASSERT(current.m_parentNodeIndex == kInvalidNodeIndex || m_pAllocator->Get(current.m_parentNodeIndex).m_isChanged || !node.m_isChanged);
 
             // Loop childen
-            for (uint32_t i = 0; i < 4; ++i)
+            for (int i = 0; i < 4; ++i)
             {
                 NodeID childNodeID = node.m_childNodeIDs[i];
                 if (childNodeID.IsValid())
@@ -1099,7 +1164,7 @@ namespace nes
                         uint32_t childIndex;
                         GetBodyLocation(trackers, childNodeID.GetBodyID(), currentNodeIndex, childIndex);
                         NES_ASSERT(currentNodeIndex == current.m_nodeIndex);
-                        NES_ASSERT(childIndex == i);
+                        NES_ASSERT(static_cast<int>(childIndex) == i);
 
                         // Validate that the body cached bounds still match the actual bounds
                         const Body *body = bodies[childNodeID.GetBodyID().GetIndex()];

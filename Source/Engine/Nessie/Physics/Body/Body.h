@@ -4,6 +4,7 @@
 #include "DOF.h"
 #include "Core/Generic/GenerationalID.h"
 #include "Math/AABox.h"
+#include "Math/Bit.h"
 #include "Math/Matrix.h"
 #include "Physics/Collision/CollisionLayer.h"
 #include "Physics/Collision/BroadPhase/BroadPhaseLayer.h"
@@ -55,11 +56,23 @@ namespace nes
     {
         friend class BodyManager;
 
+        enum class Flags : uint8_t
+        {
+            IsSensor                        = math::BitVal(0), /// If this Body is a Sensor. A Sensor will receive collision callbacks, but not cause collision responses.
+            CollideKinematicVsNonDynamic    = math::BitVal(1), /// If kinematic objects can generate contact points against other kinematic or static objects.
+            IsInBroadPhase                  = math::BitVal(2), /// Set this bit to indicate that the body is in the broadphase
+            InvalidateContactCache          = math::BitVal(3), /// Set this bit to indicate that all collision caches for this body are invalid. Will be reset on the next simulation step. 
+            UseManifoldReduction            = math::BitVal(4), /// Set this bit to indicate that this body can use manifold reduction.
+            ApplyGyroscopicForce            = math::BitVal(5), /// Set this bit to indicate that the gyroscopic force should be applied to this Body (AKA Dzhanibekov effect, see https://en.wikipedia.org/wiki/Tennis_racket_theorem)
+            EnhancedInternalEdgeRemoval     = math::BitVal(6), /// Set this bit to indicate that enhance internal edge removal should be used for this Body
+        };
+
         AABox m_bounds{}; // World space bounding box of the Body.
         BodyID m_id;
         CollisionLayer m_collisionLayer = kInvalidCollisionLayer;
         BroadPhaseLayer m_broadPhaseLayer = kInvalidBroadPhaseLayer;
         BodyMotionType m_motionType = BodyMotionType::Static;
+        std::atomic<uint8_t> m_flags = 0;
         
     public:
         Body() = default; 
@@ -87,8 +100,25 @@ namespace nes
         bool            IsDynamic() const;
         bool            CanSleep() const;
         bool            IsSleeping() const;
-        bool            IsSensor() const;
         bool            IsActive() const;
+        NES_INLINE bool IsSensor() const                            { return (m_flags.load(std::memory_order::relaxed) & static_cast<uint8_t>(Flags::IsSensor)) != 0; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check to see if this Body has been added to the physics system. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE bool IsInBroadPhase() const                      { return (m_flags.load(std::memory_order::relaxed) & static_cast<uint8_t>(Flags::IsInBroadPhase)) != 0; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check to see if this Body has been changed in sucha a way that the collision cache should
+        ///     be considered invalid for any Body interacting with this Body.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE bool IsCollisionCacheInvalid() const             { return (m_flags.load(std::memory_order::relaxed) & static_cast<uint8_t>(Flags::InvalidateContactCache)) != 0; }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set whether this Body is in the Broadphase.
+        /// @note : Should only be called by the BroadPhase!
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE void SetInBroadPhaseInternal(const bool isInBroadPhase);
 
 #ifdef NES_LOGGING_ENABLED
         void ValidateCachedBounds() const;

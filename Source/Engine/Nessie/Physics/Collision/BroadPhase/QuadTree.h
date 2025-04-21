@@ -1,6 +1,7 @@
 ﻿// QuadTree.h
 #pragma once
 #include "BroadPhase.h"
+#include "BroadPhase.h"
 #include "Core/Memory/FixedSizedFreeList.h"
 #include "Core/Thread/Atomics.h"
 #include "Physics/Body/BodyManager.h"
@@ -37,8 +38,18 @@ namespace nes
         public:
             constexpr NodeID() = default;
             static constexpr NodeID InvalidID() { return NodeID(kInvalidNodeIndex); }
-            static constexpr NodeID FromBodyID(const BodyID id);
-            static constexpr NodeID FromNodeIndex(const uint32_t index);
+            static constexpr NodeID FromBodyID(const BodyID id)
+            {
+                NodeID nodeID(id.GetIndexAndGeneration());
+                NES_ASSERT(nodeID.IsBody());
+                return nodeID;
+            }
+            
+            static constexpr NodeID FromNodeIndex(const uint32_t index)
+            {
+                NES_ASSERT((index & kIsNode) == 0);
+                return NodeID(index | kIsNode);
+            }
 
             constexpr bool operator==(const BodyID& bodyID) const { return m_id == bodyID.GetIndexAndGeneration(); }
             constexpr bool operator==(const NodeID& nodeID) const { return m_id == nodeID.m_id; }
@@ -181,6 +192,7 @@ namespace nes
         //struct Stats{};
         
     public:
+        QuadTree() = default;
         QuadTree(const QuadTree&) = delete;
         QuadTree& operator=(const QuadTree&) = delete;
         ~QuadTree();
@@ -202,13 +214,13 @@ namespace nes
         void RemoveBodies(const BodyArray& bodies, BodyTrackerArray& trackers, const BodyID* bodyIDArray, const int number);
         void NotifyBodiesAABBChanged(const BodyArray& bodies, const BodyTrackerArray& trackers, const BodyID* bodyIDArray, int number);
         
-        //void CastRay() const;
-        //void CastAABB() const;
-        //void CollideAABB() const;
-        //void CollideSphere() const;
-        //void CollidePoint() const;
-        //void ColliderOrientedBox() const;
-        //void FindCollidingPairs(const BodyArray& bodies, const BodyID* activeBodiesArray, const int numActiveBodies, float speculativeContactDistance, )
+        void CastRay(const RayCast& ray, RayCastBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void CollideSphere(const Vector3& center, const float radius, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void CollidePoint(const Vector3& point, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void FindCollidingPairs(const BodyArray& bodies, const BodyID* activeBodiesArray, const int numActiveBodies, float speculativeContactDistance, BodyPairCollector& collector, const CollisionLayerPairFilter& layerFilter) const;
         
         AABox GetBounds() const;
         
@@ -242,7 +254,7 @@ namespace nes
         uint32_t GetMaxTreeDepth(const NodeID nodeID) const;
 
         template <typename Visitor>
-        NES_INLINE void WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor);
+        NES_INLINE void WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor) const;
 
 #ifdef NES_DEBUG
         void ValidateTree(const BodyArray& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const;

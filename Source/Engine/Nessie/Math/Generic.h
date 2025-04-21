@@ -3,6 +3,7 @@
 #include <cmath>
 #include "Core/Config.h"
 #include "Core/Generic/Concepts.h"
+#include "Debug/Assert.h"
 
 namespace nes::math
 {
@@ -404,7 +405,7 @@ namespace nes::math
     {
         return std::isinf(value);
     }
-
+    
     //----------------------------------------------------------------------------------------------------
     // [TODO]: This could move to Platform.h?
     /// @brief : Compute the number of trailing zero bits, or how many low bits are zero. 
@@ -436,6 +437,33 @@ namespace nes::math
     constexpr bool IsPowerOf2(const IntergralType auto value)
     {
         return value > 0 && (value & (value - 1)) == 0;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Check if the value is aligned to the passed in alignment. 
+    //----------------------------------------------------------------------------------------------------
+    template <typename Type>
+    inline bool IsAligned(Type value, const uint64_t alignment)
+    {
+        NES_ASSERT(IsPowerOf2(alignment));
+        return (static_cast<uint64_t>(value) & (alignment - 1)) == 0; 
+    }
+
+    inline unsigned int CountBits(uint32_t value)
+    {
+    #if defined(NES_COMPILER_MSVC)
+        #if defined(NES_USE_SSE4_2)
+            return _mm_popcnt_u32(value);
+        #else
+            value = value - ((value >> 1) & 0x55555555);
+            value = (value & 0x33333333) + ((value >> 2) & 0x33333333);
+            value = (value + (value >> 4)) & 0x0F0F0F0F;
+            return  (value * 0x01010101) >> 24;
+        #endif
+        
+    #else
+        #error "Unhandled compiler for CountBits()!"
+    #endif
     }
 
     //----------------------------------------------------------------------------------------------------

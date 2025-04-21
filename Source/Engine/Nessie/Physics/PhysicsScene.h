@@ -1,29 +1,16 @@
 ﻿// PhysicsScene.h
 #pragma once
+#include "PhysicsSettings.h"
 #include "PhysicsUpdateErrorCodes.h"
 #include "Body/BodyManager.h"
+#include "Collision/BroadPhase/BroadPhase.h"
 #include "Constraints/ConstraintManager.h"
+#include "Core/Memory/StackAllocator.h"
 #include "Scene/TickFunction.h"
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Settings for the Physics Simulation. 
-    //----------------------------------------------------------------------------------------------------
-    struct GlobalPhysicsSettings
-    {
-        float m_penetrationFactor = 0.02f;
-
-        /// Time before a Body is allowed to go to sleep.
-        float m_timeBeforeSleep = 0.5f;
-
-        /// To detect if a Body is sleeping, we use 3 points:
-        /// - The center of mass.
-        /// - The centers of the faces of the bounding box that are furthest away from the center.
-        /// The movement of these points is tracked and if the velocity of all 3 points is lower than this value,
-        /// the Body is allowed to go to sleep. Must be a positive number. (unit: m/s)
-        float m_pointVelocitySleepThreshold = 0.03f;
-    };
+    class PhysicsStepListener;
     
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Class that runs physics simulation for all registered Bodies.   
@@ -31,34 +18,163 @@ namespace nes
     class PhysicsScene
     {
         friend class SceneManager; // Or just the World?
-        static constexpr uint32_t kMaxBodies = BodyID::kMaxBodyIndex + 1;
+        
+    public:
+        /// Maximum value that is supported.
+        static constexpr uint32_t kMaxBodiesLimit = BodyID::kMaxBodyIndex + 1;
+        //static constexpr uint32_t kMaxBodyPairsLimit = ContactConstraintManager::kMaxBodyPairsLimit;
+        //static constexpr uint32_t kMaxContactConstraintsLimit = ContactConstraints::kMaxContactConstraintsLimit;
+        
+        struct CreateInfo
+        {
+            /// Maps Collision layers to the Broadphase Layers.
+            /// The instance needs to stay around for the duration of the program.
+            const BroadPhaseLayerInterface* m_pLayerInterface;
 
+            /// Filter function that is used to determine if a Collision Layer collides with a certain broad phase layer.
+            /// The instance needs to stay around for the duration of the program.
+            const CollisionVsBroadPhaseLayerFilter* m_pCollisionVsBroadPhaseLayerFilter;
+
+            /// Filter function that is used to determine if two Collision Layers should collide.
+            /// The instance needs to stay around for the duration of the program.
+            const CollisionLayerPairFilter* m_pCollisionLayerPairFilter;
+            
+            /// Maximum number of Bodies that is supported.
+            uint32_t m_maxBodies;
+            
+            /// Number of Body Mutexes to use. Should be a power of 2 in the range [1, 64]. Use 0 to auto detect.
+            uint32_t m_numBodyMutexes = 0;
+            
+            /// Maximum number of Body Pairs to process (anything else will fall through the world). This number should
+            /// generally be much higher than the max amount of contact points as there will be lots of bodies close
+            /// that are not actually touching.
+            uint32_t m_maxNumBodyPairs;
+
+            /// Maximum amount of contact constraints to process (anything else will fall through the world).
+            uint32_t m_maxNumContactConstraints;
+        };
+        
+    private:
+        /// Number of constraints to process at once in JobDetermineActiveConstraints().
+        static constexpr int kDetermineActiveConstraintsBatchSize = 64;
+        
+        /// Number of constraints to process at once in JobSetupVelocityConstraints(). We want a low number
+        /// of threads working on this so we take fairly large batches.
+        static constexpr int kSetupVelocityConstraintsBatchSize = 256;
+
+        /// Number of bodies to process at once in JobApplyGravity().
+        static constexpr int kApplyGravityBatchSize = 64;
+        
+        /// Number of active bodies to test for collisions per batch. 
+        static constexpr int kActiveBodiesBatchSize = 16;
+
+        /// Number of active bodies to integrate velocities for, per batch.
+        static constexpr int kIntegrateVelocityBatchSize = 64;
+
+        /// Number of contacts that need to queued before another narrow phase job is started.
+        static constexpr int kNarrowPhaseBatchSize = 16;
+
+        /// Number of continuous collision shape casts that need to be queued before another job is started.
+        static constexpr int kNumCCDBodiesPerJob = 4;
+        
+        /// The Broadphase does quick collision detection between body pairs.
+        BroadPhase* m_pBroadphase = nullptr;
+
+        // [TODO]: 
+        /// Narrow Phase Query interface
+        //NarrowPhaseQuery m_narrowPhaseQueryNoLock;
+        //NarrowPhaseQuery m_narrowPhaseQueryLocking;
+
+        /// Broadphase layer filter that decides if two objects can collide.
+        const CollisionVsBroadPhaseLayerFilter* m_pCollisionVsBroadPhaseLayerFilter = nullptr;
+
+        /// Collision layer filter that decides if two objects can collide.
+        const CollisionLayerPairFilter* m_pCollisionLayerPairFilter = nullptr;
+
+        /// Simulation Settings.
         GlobalPhysicsSettings m_settings;
-        BodyManager m_bodyManager;
-        ConstraintManager m_constraintManager;
+
+        /// Keeps track of the Bodies in the Scene.
+        BodyManager m_bodyManager{};
+
+        // [TODO]:
+        /// Body Locking Interfaces
+        //BodyLockInterfaceNoLock m_bodyLockInterfaceNoLock     { m_bodyManager };
+        //BodyLockInterfaceLocking m_bodyLockInterfaceLocking   { m_bodyManager };
+
+        // [TODO]:
+        /// Body Interfaces
+        //BodyInterface m_bodyInterfaceNoLock;
+        //BodyInterface m_bodyInterfaceLocking;
+
+        // [TODO]:
+        /// The contact manager resolves all contacts during a simulation step.
+        // ContactConstraintsManager m_contactManager;
+
+        /// All non-contact constraints.
+        ConstraintManager m_constraintManager{};
+        
+        // [TODO]:
+        /// Keeps track of connected bodies and build islands for multithreaded velocity/position update.
+        // IslandBuilder m_islandBuilder;
+
+        // [TODO]:
+        /// Will split large islands into smaller groups of bodies that can be processed in parallel.
+        // LargeIslandSplitter m_largeIslandSplitter;
+
+        /// Mutex for protecting m_stepListeners.
+        std::mutex m_stepListenersMutex;
+
+        /// List of physics step listeners.
+        using StepListeners = std::vector<PhysicsStepListener*>;
+        StepListeners m_stepListeners;
+
+        /// Global gravity value for the Physics Scene.
         Vector3 m_gravity = Vector3(0.0f, -9.81f, 0.0f);
+
+        /// Previous frame's delta time of one sub step to allow scaling previous frame's constraint impulses.
+        float m_previousStepDeltaTime = 0.0f;
     
     public:
+        PhysicsScene();
+        ~PhysicsScene();
         PhysicsScene(const PhysicsScene&) = delete;
         PhysicsScene& operator=(const PhysicsScene&) = delete;
         PhysicsScene(PhysicsScene&&) = delete;
         PhysicsScene& operator=(PhysicsScene&&) = delete;
 
+        void Init(const CreateInfo& createInfo);
+
+        // Bodies:
         Body* CreateBody();
         //void AddBody(const BodyID& bodyID, BodyActivation)
 
-        // Constraints
+        // Constraints:
         void AddConstraint(Constraint* pConstraint);
         void AddConstraints(Constraint** constraintsArray, const int numConstraints);
         void RemoveConstraint(Constraint* pConstraint);
         void RemoveConstraints(Constraint** constraintsArray, const int numConstraints);
 
-        // Raycast into the System:
-        //bool CastRay();
-        //bool CastShape();
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Access to the broadphase interface that allows coarse collision queries.
+        //----------------------------------------------------------------------------------------------------
+        const BroadPhaseQuery&          GetBroadPhaseQuery() const                          { return *m_pBroadphase; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Optimize the Broadphase. This is needed only if you've added many bodies prior to calling
+        /// Update() for the first time. Don't call this every frame as Update() spreads out the same work over
+        /// multiple frames.
+        /// @note : Don't call this function while bodies are being modified from another thread.
+        //----------------------------------------------------------------------------------------------------
+        void                            OptimizeBroadPhase();
+
+        
+        void                            SetSettings(const GlobalPhysicsSettings& settings)  { m_settings = settings; }
+        const GlobalPhysicsSettings&    GetSettings() const                                 { return m_settings; } 
+    
         
     private:
-        PhysicsUpdateErrorCode Update(const float deltaTime /*, int collisionSteps, TempAllocator* pTempAllocator, JobSystem* pJobSystem*/);
+        PhysicsUpdateErrorCode Update(const float deltaTime,int collisionSteps, StackAllocator* pAllocator/*, JobSystem* pJobSystem*/);
 
         // [TODO]: 
         // Physics Step Jobs:

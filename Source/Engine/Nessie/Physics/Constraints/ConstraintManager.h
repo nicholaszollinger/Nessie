@@ -19,6 +19,7 @@ namespace nes
         ConstraintsArray m_constraints{};
 
     public:
+        ConstraintManager() = default;
         ConstraintManager(const ConstraintManager&) = delete;
         ConstraintManager& operator=(const ConstraintManager&) = delete;
         ConstraintManager(ConstraintManager&&) noexcept = delete;

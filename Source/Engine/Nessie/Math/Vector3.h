@@ -89,7 +89,7 @@ namespace nes
     using Vector3f = TVector3<float>;
     using Vector3d = TVector3<double>;
     using Vector3i = TVector3<int>;
-    using Vector3u = TVector3<unsigned int>;
+    using Vector3u = TVector3<uint32_t>;
     using Vector3 = TVector3<NES_PRECISION_TYPE>;
 }
                                                      

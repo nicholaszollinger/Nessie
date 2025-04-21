@@ -20,7 +20,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     {
 		projectDir
 	}
-   
+
     defines 
     {
         "YAML_CPP_STATIC_DEFINE"
@@ -28,12 +28,17 @@ function p.ConfigureProject(projectDir, dependencyInjector)
         , "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\""
 		, "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\""
     }
-    
+
     -- Set the Render API based on the Project Settings:
     p.SetRenderAPI(projectDir, dependencyInjector);
 
     filter {}
-    
+
+    disablewarnings
+    {
+        "4324", -- "'X' : structure was padded due to alignment specifier"
+    }
+
     files
     {
         projectDir .. "**.h",

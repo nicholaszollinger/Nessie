@@ -1,8 +1,6 @@
 ﻿// BroadPhaseLayer.h
 #pragma once
-#include <compare>
 #include <cstdint>
-
 #include "Physics/Collision/CollisionLayer.h"
 
 namespace nes
@@ -32,7 +30,13 @@ namespace nes
         constexpr BroadPhaseLayer(const BroadPhaseLayer&) = default;
         BroadPhaseLayer& operator=(const BroadPhaseLayer&) = default;
 
-        constexpr auto operator<=>(const BroadPhaseLayer& other) const = default;
+        constexpr bool operator==(const BroadPhaseLayer& other) const { return m_value == other.m_value; }
+        constexpr bool operator!=(const BroadPhaseLayer& other) const { return m_value != other.m_value; }
+        constexpr bool operator< (const BroadPhaseLayer& other) const { return m_value <  other.m_value; }
+        constexpr bool operator> (const BroadPhaseLayer& other) const { return m_value >  other.m_value; }
+        constexpr bool operator<=(const BroadPhaseLayer& other) const { return m_value <= other.m_value; }
+        constexpr bool operator>=(const BroadPhaseLayer& other) const { return m_value >= other.m_value; }
+        
         explicit constexpr operator Type() const { return m_value; }
 
         [[nodiscard]] Type GetValue() const { return m_value; }
@@ -40,10 +44,23 @@ namespace nes
 
     static constexpr BroadPhaseLayer kInvalidBroadPhaseLayer(0xff);
 
-    // class BroadPhaseLayerManager
-    // {
-    //       
-    // };
+    class BroadPhaseLayerInterface
+    {
+    public:
+        BroadPhaseLayerInterface() = default;
+        BroadPhaseLayerInterface(const BroadPhaseLayerInterface&) = delete;
+        BroadPhaseLayerInterface& operator=(const BroadPhaseLayerInterface&) = delete;
+        virtual ~BroadPhaseLayerInterface() = default;
+
+        /// Return the number of BroadPhase layer that there are.
+        virtual unsigned int GetNumBroadPhaseLayers() const = 0;
+
+        /// Convert a Collision Layer to the corresponding BroadPhase Layer
+        virtual BroadPhaseLayer GetBroadPhaseLayer(const CollisionLayer layer) const = 0;
+
+        // [TODO]: In Debug Mode only:
+        // const char* GetBroadPhaseLayerName(const BroadPhaseLayer layer) const = 0;
+    };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Base class used to test if a Body can collide with a Broadphase Layer. Use when finding
@@ -54,7 +71,7 @@ namespace nes
     public:
         virtual ~CollisionVsBroadPhaseLayerFilter() = default;
 
-        virtual bool ShouldCollide([[maybe_unused]] const CollisionLayer collisionLayer, [[maybe_unused]] const BroadPhaseLayer broadPhaseLayer) { return true; }
+        virtual bool ShouldCollide([[maybe_unused]] const CollisionLayer collisionLayer, [[maybe_unused]] const BroadPhaseLayer broadPhaseLayer) const { return true; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -65,6 +82,7 @@ namespace nes
     class BroadPhaseLayerFilter
     {
     public:
+        BroadPhaseLayerFilter() = default;
         BroadPhaseLayerFilter(const BroadPhaseLayerFilter&) = delete;
         BroadPhaseLayerFilter& operator=(const BroadPhaseLayerFilter&) = delete;
         virtual ~BroadPhaseLayerFilter() = default;
@@ -73,6 +91,6 @@ namespace nes
         /// @brief : Function to filter out Broadphase Layers when doing collision query test. Return tru to allow
         ///     testing against Bodies with this Layer.
         //----------------------------------------------------------------------------------------------------
-        virtual bool ShouldCollide([[maybe_unused]] const BroadPhaseLayer& inLayer) { return true; }
+        virtual bool ShouldCollide([[maybe_unused]] const BroadPhaseLayer& inLayer) const { return true; }
     };
 }
