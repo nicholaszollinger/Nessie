@@ -562,7 +562,7 @@ namespace nes
             // Select the first component if available.
             auto& components = entity.GetComponents();
             if (!components.empty())
-                m_pSelectedComponent = components[0];
+                m_pSelectedComponent = components[0].Cast<Entity3DComponent>();
         }
 
         if (nodeOpen)
