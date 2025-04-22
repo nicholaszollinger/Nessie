@@ -310,7 +310,7 @@ namespace nes
     template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     StrongPtr<Type>& StrongPtr<Type>::operator=(const StrongPtr<OtherType>& other)
     {
-        if (*this != other)
+        if (this != &other)
         {
             if (m_pRefCounter != nullptr)
             {
@@ -331,7 +331,7 @@ namespace nes
     template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
     StrongPtr<Type>& StrongPtr<Type>::operator=(StrongPtr<OtherType>&& other) noexcept
     {
-        if (*this != other)
+        if (this != &other)
         {
             if (m_pRefCounter != nullptr)
             {
