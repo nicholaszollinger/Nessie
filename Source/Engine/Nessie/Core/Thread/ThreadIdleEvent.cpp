@@ -18,7 +18,7 @@ namespace nes
     ///		@brief : Signal that the associated thread is now idle. This will release any processes that are blocked in the WaitForIdle
     ///             function.
     //-----------------------------------------------------------------------------------------------------------------------------
-    void ThreadIdleEvent::Signal()
+    void ThreadIdleEvent::SignalIdle()
     {
         m_mutex.lock();
         m_isIdle = true;

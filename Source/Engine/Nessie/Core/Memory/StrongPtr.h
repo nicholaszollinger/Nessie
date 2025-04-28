@@ -20,10 +20,10 @@ namespace nes
 
         // RefCounter construction of a StrongPtr is private. You must use the Create function.
         StrongPtr(internal::RefCounter<Type>* pRefCounter);
-        StrongPtr(Type* ptr);
 
     public:
         StrongPtr() = default;
+        StrongPtr(Type* ptr);
         StrongPtr(std::nullptr_t) : StrongPtr() {}
         StrongPtr(const StrongPtr& other);
         StrongPtr(StrongPtr&& other) noexcept;
@@ -53,11 +53,10 @@ namespace nes
         [[nodiscard]] bool operator!=(const StrongPtr<Type>& other) const { return !(*this == other); }
 
         void Reset();
-        [[nodiscard]] Type*         Get()             { return m_pRefCounter->Get(); }
-        [[nodiscard]] const Type*   Get() const { return m_pRefCounter->Get(); }
-        [[nodiscard]] uint32_t      GetRefCount() const { return m_pRefCounter ? m_pRefCounter->GetRefCount() : 0; }
-        [[nodiscard]] uint32_t      GetWeakCount() const { return m_pRefCounter ? m_pRefCounter->GetWeakCount() : 0; }
-        [[nodiscard]] bool          IsValid() const { return m_pRefCounter != nullptr; }
+        [[nodiscard]] Type*         Get() const             { return m_pRefCounter->Get(); }
+        [[nodiscard]] uint32_t      GetRefCount() const     { return m_pRefCounter ? m_pRefCounter->GetRefCount() : 0; }
+        [[nodiscard]] uint32_t      GetWeakCount() const    { return m_pRefCounter ? m_pRefCounter->GetWeakCount() : 0; }
+        [[nodiscard]] bool          IsValid() const         { return m_pRefCounter != nullptr; }
 
         template <typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         StrongPtr<OtherType> Cast() const;
@@ -207,10 +206,7 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
     ///		@brief : Construct the StrongPtr with a raw pointer to the Type.
-    ///		@param ptr : 
     //----------------------------------------------------------------------------------------------------
     template <typename Type>
     StrongPtr<Type>::StrongPtr(Type* ptr)

@@ -42,11 +42,10 @@ namespace nes::internal
         template<typename OtherType> requires nes::TypeIsBaseOrDerived<Type, OtherType>
         const RefCounter<OtherType>& Cast() const;
 
-        [[nodiscard]] Type* Get() { return m_pObject; }
-        [[nodiscard]] const Type* Get() const { return m_pObject; }
-        [[nodiscard]] uint32_t GetRefCount() const { return m_refCount; }
-        [[nodiscard]] uint32_t GetWeakCount() const { return m_weakCount; }
-        [[nodiscard]] bool HasZeroReferences() const { return m_refCount == 0 && m_weakCount == 0; }
+        [[nodiscard]] Type* Get() const                 { return m_pObject; }
+        [[nodiscard]] uint32_t GetRefCount() const      { return m_refCount; }
+        [[nodiscard]] uint32_t GetWeakCount() const     { return m_weakCount; }
+        [[nodiscard]] bool HasZeroReferences() const    { return m_refCount == 0 && m_weakCount == 0; }
 
     private:
         void DestroyObject();

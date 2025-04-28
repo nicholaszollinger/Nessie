@@ -15,6 +15,8 @@ namespace nes::memory::internal
     void    AlignedFree(void* pMemory);
 }
 
+#define NES_STACK_ALLOCATE(size) alloca(size)
+
 #if !defined(NES_DISABLE_CUSTOM_ALLOCATOR) && defined(NES_DEBUG)
 namespace nes::memory::internal
 {
