@@ -2,6 +2,7 @@
 #pragma once
 #include "Collision/BroadPhase/BroadPhase.h"
 #include "Core/Config.h"
+#include "Core/Jobs/JobSystem.h"
 #include "Core/Memory/STLStackAllocator.h"
 #include "Math/Vector3.h"
 
@@ -9,9 +10,6 @@ namespace nes
 {
     class PhysicsScene;
     class Constraint;
-
-    // [TEMP]: This will be defined by the Job System.
-    using JobHandle = uint32_t;
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Information maintained during the PhysicsScene::Update(). 
@@ -155,8 +153,8 @@ namespace nes
 
         PhysicsScene*           m_pScene = nullptr;
         StackAllocator*         m_pAllocator = nullptr;
-        //JobSystem*              m_pJobSystem = nullptr;
-        //JobSystem::Barrier      m_barrier;
+        JobSystem*              m_pJobSystem = nullptr;
+        JobBarrier*             m_pBarrier = nullptr;
         float                   m_stepDeltaTime = 0.f;
         float                   m_warmStartImpulseRatio = 0.f;
         std::atomic<uint32_t>   m_errors = 0;
@@ -171,6 +169,6 @@ namespace nes
         explicit PhysicsUpdateContext(StackAllocator& allocator);
         ~PhysicsUpdateContext();
 
-        int GetMaxConcurrency() const { return kMaxConcurrency; /**return math::Min(kMaxConcurrency, m_pJobSystem->GetMaxConcurrency()); */}
+        int GetMaxConcurrency() const { return math::Min(kMaxConcurrency, m_pJobSystem->GetMaxConcurrency()); }
     };
 }

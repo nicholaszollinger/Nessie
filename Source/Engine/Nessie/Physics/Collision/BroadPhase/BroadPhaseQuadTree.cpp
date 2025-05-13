@@ -26,7 +26,7 @@ namespace nes
         //m_lockContext = pBodyManager;
 #endif
 
-        m_maxBodies = m_pBodyManager->GetMaxBodies();
+        m_maxBodies = m_pBodyManager->GetMaxNumBodies();
 
         // Initialize Tracking Data
         m_trackers.resize(m_maxBodies);
@@ -143,8 +143,8 @@ namespace nes
         if (number <= 0)
             return nullptr;
 
-        const BodyArray& bodies = m_pBodyManager->GetBodies();
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        const BodyVector& bodies = m_pBodyManager->GetBodies();
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // 'New' is overriden in layer state.
         // - TODO: I don't have the debug operations set up when overriding...
@@ -214,8 +214,8 @@ namespace nes
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
         std::shared_lock lock(m_updateMutex);
 
-        BodyArray& bodies = m_pBodyManager->GetBodies();
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        BodyVector& bodies = m_pBodyManager->GetBodies();
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         LayerState* pLayerStates = static_cast<LayerState*>(addState);
         NES_ASSERT(pLayerStates != nullptr);
@@ -236,7 +236,7 @@ namespace nes
                     NES_ASSERT(m_trackers[index].m_broadPhaseLayer == broadPhaseLayer);
                     NES_ASSERT(m_trackers[index].m_collisionLayer == bodies[index]->GetCollisionLayer());
                     NES_ASSERT(!bodies[index]->IsInBroadPhase()); // They shouldn't have this flag set yet.
-                    bodies[index]->SetInBroadPhaseInternal(true);
+                    bodies[index]->Internal_SetInBroadPhase(true);
                 }
             }
         }
@@ -253,8 +253,8 @@ namespace nes
             return;
         }
 
-        NES_IF_LOGGING_ENABLED(const BodyArray& bodies = m_pBodyManager->GetBodies());
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_IF_LOGGING_ENABLED(const BodyVector& bodies = m_pBodyManager->GetBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         LayerState* pLayerStates = static_cast<LayerState*>(addState);
         NES_ASSERT(pLayerStates != nullptr);
@@ -295,8 +295,8 @@ namespace nes
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
         std::shared_lock lock(m_updateMutex);
 
-        const BodyArray& bodies = m_pBodyManager->GetBodies();
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        const BodyVector& bodies = m_pBodyManager->GetBodies();
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
         
         // Sort the bodies by BroadPhaseLayer.
         const Body* const* pBodiesPtr = bodies.data();
@@ -334,7 +334,7 @@ namespace nes
 
                 // Mark removed from the BroadPhase
                 NES_ASSERT(bodies[index]->IsInBroadPhase());
-                bodies[index]->SetInBroadPhaseInternal(false);
+                bodies[index]->Internal_SetInBroadPhase(false);
             }
 
             // Repeat for the next layer:
@@ -355,8 +355,8 @@ namespace nes
         //else
             //NES_ASSERT(m_updateMutex.is_locked());
 
-        const BodyArray& bodies = m_pBodyManager->GetBodies();
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        const BodyVector& bodies = m_pBodyManager->GetBodies();
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         const Tracker* pTrackers = m_trackers.data();
         QuickSort(pBodies, pBodies + number, [pTrackers](BodyID left, BodyID right)
@@ -395,8 +395,8 @@ namespace nes
             return;
 
         // First sort the bodies that actually changed layer to the beginning of the array.
-        const BodyArray& bodies = m_pBodyManager->GetBodies();
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        const BodyVector& bodies = m_pBodyManager->GetBodies();
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         for (BodyID* pBodyID = pBodies + number - 1; pBodyID >= pBodies; --pBodyID)
         {
@@ -433,7 +433,7 @@ namespace nes
     void BroadPhaseQuadTree::CastRay(const RayCast& ray, RayCastBodyCollector& collector,
         const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -463,7 +463,7 @@ namespace nes
     void BroadPhaseQuadTree::CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector,
         const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
         
         // Loop over all layers and test the ones that could hit.
         for (BroadPhaseLayer::Type i = 0; i < static_cast<BroadPhaseLayer::Type>(m_numLayers); ++i)
@@ -481,7 +481,7 @@ namespace nes
     void BroadPhaseQuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector,
                                           const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -503,7 +503,7 @@ namespace nes
         CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter,
         const CollisionLayerFilter& collisionLayerFilter) const
     {
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -524,7 +524,7 @@ namespace nes
     void BroadPhaseQuadTree::CollidePoint(const Vector3& point, CollideShapeBodyCollector& collector,
         const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -545,7 +545,7 @@ namespace nes
     void BroadPhaseQuadTree::CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector,
         const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -567,8 +567,8 @@ namespace nes
         float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter,
         const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const
     {
-        const BodyArray& bodies = m_pBodyManager->GetBodies();
-        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxBodies());
+        const BodyVector& bodies = m_pBodyManager->GetBodies();
+        NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // Note that we don't take any locks at this point. We know that the tree is not going to be swapped or deleted
         // while finding collision pairs due to the way the jobs are scheduled in PhysicsScene::Update.

@@ -3,7 +3,7 @@
 #include "Core/Events/MulticastDelegate.h"
 #include "Math/Rotation.h"
 #include "Math/Transform.h"
-#include "Physics/Body/Body.h"
+#include "Physics/Body/BodyID.h"
 #include "Scene/Entity.h"
 
 namespace nes

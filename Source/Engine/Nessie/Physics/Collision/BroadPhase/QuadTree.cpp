@@ -169,7 +169,7 @@ namespace nes
         }
     }
 
-    void QuadTree::UpdatePrepare(const BodyArray& bodies, BodyTrackerArray& outTrackers, UpdateState& outState,
+    void QuadTree::UpdatePrepare(const BodyVector& bodies, BodyTrackerArray& outTrackers, UpdateState& outState,
         bool doFullRebuild)
     {
         // Assert we have no nodes pending deletion, this means DiscardOldTree wasn't called yet
@@ -292,7 +292,7 @@ namespace nes
         outState.m_rootNodeID = rootNodeID;
     }
 
-    void QuadTree::UpdateFinalize([[maybe_unused]] const BodyArray& bodies, [[maybe_unused]] const BodyTrackerArray& trackers, const UpdateState& state)
+    void QuadTree::UpdateFinalize([[maybe_unused]] const BodyVector& bodies, [[maybe_unused]] const BodyTrackerArray& trackers, const UpdateState& state)
     {
         // Tree Building is complete, now we switch the old with the new tree.
         uint32_t newRootIndex = m_rootNodeIndex ^ 1;
@@ -313,7 +313,7 @@ namespace nes
 #endif
     }
 
-    void QuadTree::AddBodiesPrepare(const BodyArray& bodies, BodyTrackerArray& trackers, BodyID* bodyIDArray,
+    void QuadTree::AddBodiesPrepare(const BodyVector& bodies, BodyTrackerArray& trackers, BodyID* bodyIDArray,
         const int number, AddState& outState)
     {
         // Assert sane input
@@ -401,7 +401,7 @@ namespace nes
         m_pAllocator->DestructBatch(freeBatch);
     }
 
-    void QuadTree::RemoveBodies([[maybe_unused]] const BodyArray& bodies, BodyTrackerArray& trackers, const BodyID* bodyIDArray,
+    void QuadTree::RemoveBodies([[maybe_unused]] const BodyVector& bodies, BodyTrackerArray& trackers, const BodyID* bodyIDArray,
         const int number)
     {
         NES_ASSERT(bodyIDArray != nullptr);
@@ -437,7 +437,7 @@ namespace nes
         m_numBodies -= number;
     }
 
-    void QuadTree::NotifyBodiesAABBChanged(const BodyArray& bodies, const BodyTrackerArray& trackers,
+    void QuadTree::NotifyBodiesAABBChanged(const BodyVector& bodies, const BodyTrackerArray& trackers,
         const BodyID* bodyIDArray, const int number)
     {
         NES_ASSERT(bodyIDArray != nullptr);
@@ -533,7 +533,7 @@ namespace nes
         NES_ASSERTV(false, "Not implemented yet!"); 
     }
 
-    void QuadTree::FindCollidingPairs([[maybe_unused]] const BodyArray& bodies, [[maybe_unused]] const BodyID* activeBodiesArray,
+    void QuadTree::FindCollidingPairs([[maybe_unused]] const BodyVector& bodies, [[maybe_unused]] const BodyID* activeBodiesArray,
         [[maybe_unused]] const int numActiveBodies, [[maybe_unused]] float speculativeContactDistance, [[maybe_unused]] BodyPairCollector& collector,
         [[maybe_unused]] const CollisionLayerPairFilter& layerFilter) const
     {
@@ -584,7 +584,7 @@ namespace nes
         trackers[bodyID.GetIndex()].m_bodyLocation = BodyTracker::kInvalidBodyLocation;
     }
 
-    AABox QuadTree::GetNodeOrBodyBounds(const BodyArray& bodies, NodeID nodeID) const
+    AABox QuadTree::GetNodeOrBodyBounds(const BodyVector& bodies, NodeID nodeID) const
     {
         if (nodeID.IsNode())
         {
@@ -781,7 +781,7 @@ namespace nes
         return false;
     }
 
-    QuadTree::NodeID QuadTree::BuildTree(const BodyArray& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds)
+    QuadTree::NodeID QuadTree::BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds)
     {
         // Trivial case: No Bodies in the tree
         if (number == 0)
@@ -821,11 +821,6 @@ namespace nes
             uint32_t m_depth;           /// Depth of this node in the tree.
             Vector3  m_boundsMin;       /// Bounding box min, accumulated while iterating over children.
             Vector3  m_boundsMax;       /// Bounding box max, accumulated while iterating over children.
-
-            /// This padding value is here because my Vector3 class is different from Jolt's.
-            /// In Jolt, Vec3 is a register class with 4 floats.
-            /// When I implement the register Vector class, I will change it over to that. 
-            uint64_t m_padding;
         };
         static_assert(sizeof(StackEntry) == 64);
         StackEntry stack[kStackSize / 4]; // We don't process 4 ata time in this loop but 1, so the stack can be 4x as small.
@@ -1103,7 +1098,7 @@ namespace nes
     }
 
 #if NES_LOGGING_ENABLED
-    void QuadTree::ValidateTree(const BodyArray& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const
+    void QuadTree::ValidateTree(const BodyVector& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const
     {
         NES_ASSERT(nodeIndex != kInvalidNodeIndex);
 
@@ -1168,7 +1163,7 @@ namespace nes
 
                         // Validate that the body cached bounds still match the actual bounds
                         const Body *body = bodies[childNodeID.GetBodyID().GetIndex()];
-                        body->ValidateCachedBounds();
+                        body->Internal_ValidateCachedBounds();
 
                         // Validate that the node bounds are bigger or equal to the body bounds
                         AABox bodyBounds;

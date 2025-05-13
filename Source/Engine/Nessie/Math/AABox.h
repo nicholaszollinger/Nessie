@@ -36,7 +36,7 @@ namespace nes
         constexpr bool operator!=(const TAABox3& other) const { return !(*this == other); }
         
         constexpr TVector3<Type>    Center() const;
-        constexpr TVector3<Type>    Extents() const;
+        constexpr TVector3<Type>    GetExtent() const;
         constexpr TVector3<Type>    Size() const;
         constexpr TVector3<Type>    ClosestPointToPoint(const TVector3<Type>& queryPoint) const;
         constexpr Type              Volume() const;
@@ -46,13 +46,17 @@ namespace nes
         constexpr bool              Intersects(const TAABox3& other) const;
         constexpr bool              Contains(const TAABox3& other) const;
         constexpr bool              Contains(const Vector3& queryPoint) const;
-        
+
+        void                        Translate(const Vector3& translation);
+        TAABox3                     Scaled(const Vector3& scale) const;
+        TAABox3                     Transformed(const Mat4& transform) const;
         void                        GrowToEncapsulate(const TAABox3<Type>& box);
         void                        GrowToEncapsulate(const TVector3<Type>& point);
 
         /// Returns an invalid Axis Aligned Bounding Box. The Min and Max are set so that no intersection is possible.
         static constexpr TAABox3    Invalid() { return TAABox3(TVector3<Type>::Zero(), TVector3<Type>(static_cast<Type>(-math::kLargeFloat))); }
         static constexpr TAABox3    FromCenterAndExtents(const TVector3<Type>& center, const TVector3<Type>& extents);
+        static constexpr TAABox3    FromTwoPoints(const TVector3<Type>& pointA, const TVector3<Type>& pointB);
         static void                 Transform(const TAABox3& original, const TMatrix4x4<Type>& transform, TAABox3& result);
         
         std::string                 ToString() const;
@@ -218,7 +222,7 @@ namespace nes
     /// @brief : Get the extents of the bounding box (half of the size). 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TAABox3<Type>::Extents() const
+    constexpr TVector3<Type> TAABox3<Type>::GetExtent() const
     {
         return static_cast<Type>(0.5f) * (m_max - m_min);
     }
@@ -317,6 +321,48 @@ namespace nes
         result.m_min = center - extents;
         result.m_max = center + extents;
         return result;
+    }
+
+    template <FloatingPointType Type>
+    constexpr TAABox3<Type> TAABox3<Type>::FromTwoPoints(const TVector3<Type>& pointA, const TVector3<Type>& pointB)
+    {
+        return TAABox3<Type>(TVector3<Type>::Min(pointA, pointB), TVector3<Type>::Max(pointA, pointB));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Translate the box. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void TAABox3<Type>::Translate(const Vector3& translation)
+    {
+        m_min += translation;
+        m_max += translation;
+    }
+
+    template <FloatingPointType Type>
+    TAABox3<Type> TAABox3<Type>::Scaled(const Vector3& scale) const
+    {
+        return TAABox3::FromTwoPoints(m_min * scale, m_max * scale);
+    }
+
+    template <FloatingPointType Type>
+    TAABox3<Type> TAABox3<Type>::Transformed(const Mat4& transform) const
+    {
+        Vector3 newMax;
+        Vector3 newMin = newMax = transform.GetTranslation();
+
+        for (int c = 0; c < 3; ++c)
+        {
+            Vector3 col = transform.GetColumn3(c);
+
+            Vector3 a = col * m_min[c];
+            Vector3 b = col * m_max[c];
+
+            newMin += Vector3::Min(a, b);
+            newMax += Vector3::Max(a, b);
+        }
+
+        return TAABox3<Type>(newMin, newMax);
     }
 
     //----------------------------------------------------------------------------------------------------

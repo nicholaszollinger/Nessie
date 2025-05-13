@@ -10,6 +10,8 @@ namespace nes
     template<ScalarType Type>
     struct TVector2
     {
+        static constexpr size_t N = 2;
+        
         Type x{};
         Type y{};
 

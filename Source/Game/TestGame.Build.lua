@@ -30,8 +30,10 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 		projectCore.SolutionDir .. "\\Config\\**.*",
         projectCore.SolutionDir .. "\\*" .. projectCore.ProjectFileExtension;
         projectDir .. "**.h",
+        projectDir .. "**.hpp",
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",
+        projectDir .. "**.inl",
     }
 end
 

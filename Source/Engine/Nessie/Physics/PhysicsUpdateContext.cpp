@@ -4,7 +4,7 @@
 
 namespace nes
 {
-    PhysicsUpdateContext::Step::CCDBody::CCDBody(BodyID bodyID1, const Vector3& deltaPos, const float linearCastThresholdSqr, float maxPenetration)
+    PhysicsUpdateContext::Step::CCDBody::CCDBody(BodyID bodyID1, const Vector3& deltaPos, const float linearCastThresholdSqr, const float maxPenetration)
         : m_deltaPosition(deltaPos)
         , m_bodyID1(bodyID1)
         , m_linearCastThresholdSqr(linearCastThresholdSqr)

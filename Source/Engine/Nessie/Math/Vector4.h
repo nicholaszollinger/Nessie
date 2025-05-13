@@ -2,11 +2,15 @@
 #pragma once
 #include "Vector3.h"
 
+// [TODO]: Combine with VectorRegisterF.
+
 namespace nes
 {
     template <ScalarType Type>
     struct TVector4
     {
+        static constexpr size_t N = 4;
+        
         Type x{};
         Type y{};
         Type z{};

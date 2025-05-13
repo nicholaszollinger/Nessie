@@ -253,7 +253,7 @@ namespace nes
         else
         {
             handle = LayerHandle(m_entities.size());
-            m_entities.emplace_back(MakeStrong<Type>()); // Create a new, invalid, default Entity instance.
+            m_entities.emplace_back(Create<Type>()); // Create a new, invalid, default Entity instance.
         }
 
         return handle;
@@ -270,7 +270,7 @@ namespace nes
         , m_pEnd(entityArray.data() + entityArray.size())
     {
         // The starting index may be invalid. I need to increment until I have a valid entity.
-        while (m_pPtr != m_pEnd && !m_pPtr->IsValid())
+        while (m_pPtr != m_pEnd && m_pPtr->Get() == nullptr)
         {
             ++m_pPtr;
         }
@@ -286,7 +286,7 @@ namespace nes
 
         // If the Ptr is valid but the Entity is not, then
         // continue incrementing until we find a valid Entity or the end.
-        while (m_pPtr != m_pEnd && !m_pPtr->IsValid())
+        while (m_pPtr != m_pEnd && m_pPtr->Get() != nullptr)
         {
             ++m_pPtr;
         }
@@ -304,7 +304,7 @@ namespace nes
 
         // If the Ptr is valid but the Entity is not, then
         // continue decrementing until we find a valid Entity or the beginning.
-        while (m_pPtr != m_pBegin && !m_pPtr->IsValid())
+        while (m_pPtr != m_pBegin && m_pPtr->Get() != nullptr)
         {
             --m_pPtr;
         }
@@ -315,14 +315,14 @@ namespace nes
     template <typename Type>
     Type& TEntityPool<Type>::Iterator::operator*() const
     {
-        NES_ASSERT(m_pPtr != nullptr && m_pPtr->IsValid());
+        NES_ASSERT(m_pPtr != nullptr && m_pPtr->Get() != nullptr);
         return *(*m_pPtr);
     }
 
     template <typename Type>
     StrongPtr<Type> TEntityPool<Type>::Iterator::operator->() const
     {
-        NES_ASSERT(m_pPtr != nullptr && m_pPtr->IsValid());
+        NES_ASSERT(m_pPtr != nullptr && m_pPtr->Get() != nullptr);
         return *m_pPtr;
     }
 

@@ -50,6 +50,11 @@ namespace nes
         static constexpr float kShouldEarlyOutFraction = std::numeric_limits<float>::min();
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Traits to use for CollidePoint.
+    //----------------------------------------------------------------------------------------------------
+    using CollisionCollectorTraitsCollidePoint = CollisionCollectorTraitsCollideShape;
+
     template <typename Type>
     concept ValidCollisionCollectorTraitsType = requires()
     {
@@ -81,7 +86,7 @@ namespace nes
         virtual ~CollisionCollector() = default;
 
         template <typename ResultTypeArg2>
-        explicit CollisionCollector(const CollisionCollector<ResultTypeArg2, TraitsType>& other);
+        explicit CollisionCollector(const CollisionCollector<ResultTypeArg2, TraitsType>& other) : m_earlyOutFraction(other.m_earlyOutFraction), m_pContext(other.m_pContext) {}
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : If you want to reuse this Collector, call Reset before performing another Query.
@@ -125,12 +130,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update the early out fraction (should get lower than the stored value). 
         //----------------------------------------------------------------------------------------------------
-        void                    UpdateEarlyOutFraction(const float fraction);
+        void                    UpdateEarlyOutFraction(const float fraction) { NES_ASSERT(fraction <= m_earlyOutFraction);  m_earlyOutFraction = fraction; };
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Reset the early out fraction to a specified value.
         //----------------------------------------------------------------------------------------------------
-        void                    ResetEarlyOutFraction(const float fraction = TraitsType::kInitialEarlyOutFraction);
+        void                    ResetEarlyOutFraction(const float fraction = TraitsType::kInitialEarlyOutFraction) { m_earlyOutFraction = fraction; };
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Force the collision detection algorithm to terminate as soon as possible. Call this from
@@ -153,7 +158,7 @@ namespace nes
         /// @brief : Get the current early out value but make sure it's bigger than zero. This is used for
         ///     shape casting as negative values are used for penetration.
         //----------------------------------------------------------------------------------------------------
-        float                   GetPositiveEarlyOutFraction() const;
+        float                   GetPositiveEarlyOutFraction() const { return std::max(FLT_MIN, m_earlyOutFraction); }
     };
 
     //----------------------------------------------------------------------------------------------------

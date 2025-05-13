@@ -1,10 +1,12 @@
 ﻿// PhysicsScene.h
 #pragma once
 #include "PhysicsSettings.h"
+#include "PhysicsUpdateContext.h"
 #include "PhysicsUpdateErrorCodes.h"
 #include "Body/BodyManager.h"
 #include "Collision/BroadPhase/BroadPhase.h"
 #include "Constraints/ConstraintManager.h"
+#include "Core/Jobs/JobSystem.h"
 #include "Core/Memory/StackAllocator.h"
 #include "Scene/TickFunction.h"
 
@@ -55,6 +57,9 @@ namespace nes
         };
         
     private:
+        using StepListeners = std::vector<PhysicsStepListener*>;
+        //using ContactAllocator = ContactConstraintManager::ContactAllocator; 
+        
         /// Number of constraints to process at once in JobDetermineActiveConstraints().
         static constexpr int kDetermineActiveConstraintsBatchSize = 64;
         
@@ -126,7 +131,6 @@ namespace nes
         std::mutex m_stepListenersMutex;
 
         /// List of physics step listeners.
-        using StepListeners = std::vector<PhysicsStepListener*>;
         StepListeners m_stepListeners;
 
         /// Global gravity value for the Physics Scene.
@@ -143,17 +147,17 @@ namespace nes
         PhysicsScene(PhysicsScene&&) = delete;
         PhysicsScene& operator=(PhysicsScene&&) = delete;
 
-        void Init(const CreateInfo& createInfo);
+        void                            Init(const CreateInfo& createInfo);
 
         // Bodies:
-        Body* CreateBody();
+        Body*                           CreateBody();
         //void AddBody(const BodyID& bodyID, BodyActivation)
 
         // Constraints:
-        void AddConstraint(Constraint* pConstraint);
-        void AddConstraints(Constraint** constraintsArray, const int numConstraints);
-        void RemoveConstraint(Constraint* pConstraint);
-        void RemoveConstraints(Constraint** constraintsArray, const int numConstraints);
+        void                            AddConstraint(Constraint* pConstraint);
+        void                            AddConstraints(Constraint** constraintsArray, const int numConstraints);
+        void                            RemoveConstraint(Constraint* pConstraint);
+        void                            RemoveConstraints(Constraint** constraintsArray, const int numConstraints);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access to the broadphase interface that allows coarse collision queries.
@@ -174,9 +178,44 @@ namespace nes
     
         
     private:
-        PhysicsUpdateErrorCode Update(const float deltaTime,int collisionSteps, StackAllocator* pAllocator/*, JobSystem* pJobSystem*/);
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Runs the simulation.
+        ///     The World steps for a total of deltaTime seconds. This is divided in collisionSteps iterations.
+        ///     Each iteration consists of collision detection followed by an integration step.
+        ///     This function internally spawns jobs using the pJobSystem and waits for them to complete, so no
+        ///     jobs will be running when this function returns.
+        ///     The stack allocator is used, for example, to store a list of bodies that are in contact, how they
+        ///     form islands together and the data to solve contacts between bodies. At the end of the function,
+        ///     all allocated memory will have been freed.
+        //----------------------------------------------------------------------------------------------------
+        PhysicsUpdateErrorCode          Update(const float deltaTime,int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
+        
+        // Job Entry Points.
+        void                            JobStepListeners(PhysicsUpdateContext::Step* pStep);
+        void                            JobDetermineActiveConstraints(PhysicsUpdateContext::Step* pStep) const;
+        void                            JobApplyGravity(const PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        void                            JobSetupVelocityContstraints(float deltaTime, PhysicsUpdateContext::Step* pStep) const;
+        void                            JobBuildIslandsFromConstraints(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        void                            JobFindCollisions(PhysicsUpdateContext::Step* pStep, const int jobIndex);
+        void                            JobFinalizeIslands(PhysicsUpdateContext* pContext);
+        void                            JobBodySetIslandIndex();
+        void                            JobSolveVelocityConstraints(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        void                            JobPreIntegrateVelocity(const PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        void                            JobPostIntegrateVelocity(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep) const;
+        void                            JobFindCCDContacts(const PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        void                            JobResolveCCDContacts(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        void                            JobContactRemovedCallbacks(const PhysicsUpdateContext::Step* pStep);
+        void                            JobSolvePositionConstraints(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep);
+        // Ignoring Soft Body for now.
+        //void        JobSoftBodyPrepare(PhysicsUpdateContext *pContext, PhysicsUpdateContext::Step *pStep);
+        //void        JobSoftBodyCollide(PhysicsUpdateContext *pContext) const;
+        //void        JobSoftBodySimulate(PhysicsUpdateContext *pContext, uint32_t threadIndex) const;
+        //void        JobSoftBodyFinalize(PhysicsUpdateContext *pContext);
 
-        // [TODO]: 
-        // Physics Step Jobs:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Tries to spawn a new FindCollisions job if max concurrency hasn't been reached yet. 
+        //----------------------------------------------------------------------------------------------------
+        void        TrySpawnJobFindCollisions(PhysicsUpdateContext::Step* pStep) const;
+        
     };
 }

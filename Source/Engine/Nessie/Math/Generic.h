@@ -432,11 +432,45 @@ namespace nes::math
     }
 
     //----------------------------------------------------------------------------------------------------
+    // [TODO]: This could move to Platform.h?
+    /// @brief : Compute the number of leading zero bits, or how many high bits are zero. 
+    //----------------------------------------------------------------------------------------------------
+    inline unsigned int CountLeadingZeros(const uint32_t value)
+    {
+    #if defined(NES_CPU_X86)
+        #if defined(NES_USE_LZCNT)
+                return _lzcnt_u32(value);
+        #elif defined(NES_COMPILER_MSVC)
+                if (value == 0)
+                    return 32;
+                unsigned long result;
+                _BitScanReverse(&result, value);
+                return 31 - static_cast<unsigned int>(result);
+        #else
+                if (value == 0)
+                    return 32;
+                return __builtin_clz(value);
+        #endif
+    #endif
+
+        // [TODO]: Handle other architectures.
+    }
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Returns true if the value is a power of two
     //----------------------------------------------------------------------------------------------------
     constexpr bool IsPowerOf2(const IntergralType auto value)
     {
         return value > 0 && (value & (value - 1)) == 0;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Get the next higher power of 2 of a value, or the value itself if it is already a power
+    ///     of 2. 
+    //----------------------------------------------------------------------------------------------------
+    inline uint32_t GetNextPowerOf2(const uint32_t value)
+    {
+        return value <= 1? static_cast<uint32_t>(1) : static_cast<uint32_t>(1) << (32 - CountLeadingZeros(value - 1));
     }
 
     //----------------------------------------------------------------------------------------------------

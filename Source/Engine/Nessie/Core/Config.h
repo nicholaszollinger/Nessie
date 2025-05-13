@@ -28,6 +28,8 @@
 
 // Use "Trailing Zero Count" instruction.
 #define NES_USE_TZCNT
+// Use "Leading Zero Count" instruction.
+#define NES_USE_LZCNT
 
 // Macro to get the current function name.
 #if defined(NES_COMPILER_MSVC)

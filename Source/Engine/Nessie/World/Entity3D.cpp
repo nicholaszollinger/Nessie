@@ -279,7 +279,7 @@ namespace nes
         m_scale = worldScale / parentScale;
 
         // Compose our world matrix:
-        m_worldTransformMatrix = math::MakeTranslationMatrix(worldLocation) * math::ToMat4(worldRotation) * math::MakeScaleMatrix(worldScale);
+        m_worldTransformMatrix = math::MakeTranslationMatrix4(worldLocation) * math::ToMat4(worldRotation) * math::MakeScaleMatrix(worldScale);
         
         m_worldTransformNeedsUpdate = false;
         m_onWorldTransformUpdated.Broadcast();

@@ -506,7 +506,7 @@ namespace nes
                 {
                     for (auto& pConstComp : m_pSelectedEntity->GetComponents())
                     {
-                        StrongPtr<Entity3DComponent> pComponent = pConstComp;
+                        StrongPtr<Entity3DComponent> pComponent = Cast<Entity3DComponent>(pConstComp);
                         EditorDrawComponentNode(pComponent);
                     }
 
@@ -562,7 +562,7 @@ namespace nes
             // Select the first component if available.
             auto& components = entity.GetComponents();
             if (!components.empty())
-                m_pSelectedComponent = components[0].Cast<Entity3DComponent>();
+                m_pSelectedComponent = Cast<Entity3DComponent>(components[0]);
         }
 
         if (nodeOpen)

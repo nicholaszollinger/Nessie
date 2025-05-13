@@ -5,14 +5,20 @@
 namespace nes::math
 {
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeTranslationMatrix(const TVector3<Type>& translation);
+    TMatrix4x4<Type> MakeTranslationMatrix4(const TVector3<Type>& translation);
 
     template <FloatingPointType Type>
-    TMatrix3x3<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation);
+    TMatrix3x3<Type> MakeRotationMatrix3(const TQuaternion<Type>& orientation);
     
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation);
+    TMatrix4x4<Type> MakeRotationMatrix4(const TQuaternion<Type>& orientation);
 
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> MakeRotationTranslationMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& rotation);
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> MakeInverseRotationTranslationMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& rotation);
+    
     template <FloatingPointType Type>
     TMatrix4x4<Type> MakeScaleMatrix(const TVector3<Type>& scale);
 
@@ -41,7 +47,7 @@ namespace nes::math
     ///		@brief : Create a Translation Matrix from a 3D Translation. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeTranslationMatrix(const TVector3<Type>& translation)
+    TMatrix4x4<Type> MakeTranslationMatrix4(const TVector3<Type>& translation)
     {
         TMatrix4x4<Type> result = TMatrix4x4<Type>::Identity();
         result[3] = TVector4<Type>(translation, static_cast<Type>(1));
@@ -52,7 +58,7 @@ namespace nes::math
     ///		@brief : Create an Orientation Matrix from a quaternion.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix3x3<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation)
+    TMatrix3x3<Type> MakeRotationMatrix3(const TQuaternion<Type>& orientation)
     {
         return ToMat3<Type>(orientation);
     }
@@ -61,11 +67,27 @@ namespace nes::math
     ///		@brief : Create an Orientation Matrix from a Quaternion Orientation. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    TMatrix4x4<Type> MakeRotationMatrix(const TQuaternion<Type>& orientation)
+    TMatrix4x4<Type> MakeRotationMatrix4(const TQuaternion<Type>& orientation)
     {
         return ToMat4<Type>(orientation);
     }
-    
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> MakeRotationTranslationMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& rotation)
+    {
+        TMatrix4x4<Type> result = MakeRotationMatrix4(rotation);
+        result[3] = TVector4<Type>(translation, static_cast<Type>(1));
+        return result;
+    }
+
+    template <FloatingPointType Type>
+    TMatrix4x4<Type> MakeInverseRotationTranslationMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& rotation)
+    {
+        TMatrix4x4<Type> result = MakeRotationMatrix4(rotation.Conjugate());
+        result[3] = (-result.TransformVector(translation)); 
+        return result;
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Make a Scale Matrix from a 3D Scale factor.
     //----------------------------------------------------------------------------------------------------
@@ -159,7 +181,7 @@ namespace nes::math
     TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TRotation<Type>& rotation,
         const TVector3<Type>& scale)
     {
-        return MakeTranslationMatrix(translation) * ToMat4(rotation) * MakeScaleMatrix(scale);
+        return MakeTranslationMatrix4(translation) * ToMat4(rotation) * MakeScaleMatrix(scale);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -169,6 +191,6 @@ namespace nes::math
     TMatrix4x4<Type> ComposeTransformMatrix(const TVector3<Type>& translation, const TQuaternion<Type>& orientation,
         const TVector3<Type>& scale)
     {
-        return MakeTranslationMatrix(translation) * ToMat4(orientation) * MakeScaleMatrix(scale);
+        return MakeTranslationMatrix4(translation) * ToMat4(orientation) * MakeScaleMatrix(scale);
     }
 }

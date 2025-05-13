@@ -1,7 +1,5 @@
 ﻿// PhysicsScene.cpp
 #include "PhysicsScene.h"
-
-#include "PhysicsUpdateContext.h"
 #include "Collision/BroadPhase/BroadPhaseQuadTree.h"
 
 namespace nes
@@ -28,7 +26,7 @@ namespace nes
         m_bodyManager.Init(maxBodies, createInfo.m_numBodyMutexes, *createInfo.m_pLayerInterface);
         
         // Create the Broadphase.
-        // [TODO]: The idea is that the Broadphase class can be modified in the future, but for now,
+        // [LATER]: The idea is that the Broadphase class can be modified in the future, but for now,
         // I am going to force the use of the QuadTree version.
         m_pBroadphase = NES_NEW(BroadPhaseQuadTree());
         m_pBroadphase->Init(&m_bodyManager, *createInfo.m_pLayerInterface);
@@ -81,7 +79,7 @@ namespace nes
         m_pBroadphase->Optimize();
     }
 
-    PhysicsUpdateErrorCode PhysicsScene::Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator/*, JobSystem* pJobSystem*/)
+    PhysicsUpdateErrorCode PhysicsScene::Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem)
     {
         NES_ASSERT(m_pBroadphase != nullptr);
         NES_ASSERT(collisionSteps > 0);
@@ -117,14 +115,16 @@ namespace nes
 
         // Create the Context used for passing information between Jobs:
         PhysicsUpdateContext context = PhysicsUpdateContext(*pAllocator);
-        // [TODO]: Job System:
         context.m_pScene = this;
+        context.m_pJobSystem = pJobSystem;
+        context.m_pBarrier = pJobSystem->CreateBarrier();
+        //context.m_pIslandBuilder = &m_islandBuilder;
         context.m_stepDeltaTime = stepDeltaTime;
         context.m_warmStartImpulseRatio = warmStartImpulseRatio;
         context.m_steps.resize(collisionSteps);
 
         // Allocate space for body pairs
-        //NES_ASSERT(context.m_pBodyPairs == nullptr);
+        NES_ASSERT(context.m_pBodyPairs == nullptr);
         //context.m_pBodyPairs = static_cast<BodyPair*>(pAllocator->Allocate(sizeof(BodyPair) * m_settings.m_maxInFlightBodyPairs));
 
         // Lock all bodies for write:
@@ -132,12 +132,53 @@ namespace nes
         m_bodyManager.LockAllBodies();
         m_pBroadphase->LockModifications();
 
-        //const int maxConcurrency = context.GetMaxConcurrency();
+        const int maxConcurrency = context.GetMaxConcurrency();
 
+        // [TODO]: 
         // Calculate how many step listener jobs we need to spawn:
-        //const int numStepListenerJobs = m_stepListeners.empty()? 0 : math::Max(static_cast<int>(m_stepListeners.size()) / m_settings.m_stepListenersBatchSize / m_settings.m_stepListenersBatchesPerJob, maxConcurrency);
+        [[maybe_unused]] const int numStepListenerJobs = m_stepListeners.empty()? 0 : math::Max(static_cast<int>(m_stepListeners.size()) / m_settings.m_stepListenersBatchSize / m_settings.m_stepListenersBatchesPerJob, maxConcurrency);
 
+        // [TODO]: Calculate more Job counts...
+        // [TODO]: 
+        const int numFindCollisionsJobs = 0;
+        
         // [TODO]: Build and Run Jobs:
+        {
+            // [TODO]: Scoped Profile: "Build Jobs"
+
+            for (int stepIndex = 0; stepIndex < collisionSteps; ++stepIndex)
+            {
+                const bool isFirstStep = stepIndex == 0;
+                const bool isLastStep = stepIndex == collisionSteps - 1;
+
+                PhysicsUpdateContext::Step& step = context.m_steps[stepIndex];
+                step.m_pContext = &context;
+                step.m_isFirst = isFirstStep;
+                step.m_isLast = isLastStep;
+
+                // Create Job to do the broadphase finalization.
+                // This job must finish before integrating velocities. Until then the positions will not be updated nor will
+                // bodies be added or removed.
+                // Dependencies: All Find Collision Jobs, Broadphase Prepare, Finish Building Jobs 
+                step.m_broadPhaseFinalize = pJobSystem->CreateJob("Update Broadphase Finalize", [&context, &step]()
+                {
+                    // Validate that all find collision jobs have stopped.
+                    NES_ASSERT(step.m_activeFindCollisionJobs.load(std::memory_order_relaxed) == 0);
+
+                    // Finalize the Broadphase update:
+                    context.m_pScene->m_pBroadphase->UpdateFinalize(step.m_broadPhaseUpdateState);
+
+                    // Signal that it is done.
+                    step.m_preIntegrateVelocity.RemoveDependency();
+                }, numFindCollisionsJobs + 2);
+
+                // The immediate jobs below are only immediate for the first step - then all finished jobs will
+                // kick them off for the next step
+                [[maybe_unused]] int previousStepDependencyCount = isFirstStep? 0 : 1;
+
+                // [TODO]: ...
+            }
+        }
         
         // Report any accumulated errors:
         const auto errors = static_cast<PhysicsUpdateErrorCode>(context.m_errors.load(std::memory_order_acquire));

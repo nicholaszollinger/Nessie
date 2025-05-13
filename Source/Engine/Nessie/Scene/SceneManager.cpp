@@ -25,7 +25,7 @@ namespace nes
         {
             StringID sceneName = sceneNode["Name"].as<std::string>();
             std::filesystem::path scenePath = sceneNode["Path"].as<std::string>();
-            m_sceneMap.emplace(sceneName, SceneData(scenePath, StrongPtr<Scene>::Create()));
+            m_sceneMap.emplace(sceneName, SceneData(scenePath, Create<Scene>()));
         }
 
         // Get the Start Scene info:
@@ -136,7 +136,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the Active World.
     //----------------------------------------------------------------------------------------------------
-    WeakPtr<Scene> SceneManager::GetActiveScene()
+    StrongPtr<Scene> SceneManager::GetActiveScene()
     {
         return Application::Get().GetSceneManager().m_pActiveScene;
     }

@@ -3,12 +3,18 @@
 #include "Generic.h"
 #include "Vector2.h"
 #include "Core/String/FormatString.h"
+#include "Detail/Swizzle.h"
+
+// [TODO]: Combine with VectorRegisterF.
 
 namespace nes
 {
+    
     template <ScalarType Type>
-    struct TVector3
+    struct alignas (NES_VECTOR_ALIGNMENT) TVector3
     {
+        static constexpr size_t N = 3;
+        
         Type x{};
         Type y{};
         Type z{};
@@ -19,65 +25,80 @@ namespace nes
         constexpr TVector3(const TVector2<Type>& vector2, const Type z = 0) : x(vector2.x), y(vector2.y), z(z) {}
         explicit constexpr TVector3(const Type uniformValue) : x(uniformValue), y(uniformValue), z(uniformValue) {}
         
-        TVector3& operator=(const TVector2<Type>& vector2);
+        TVector3&                   operator=(const TVector2<Type>& vector2);
 
-        constexpr bool operator==(const TVector3 right) const;
-        constexpr bool operator!=(const TVector3 right) const { return !(*this == right); }
-        constexpr bool operator<(const TVector3 right) const;
-        constexpr bool operator>(const TVector3 right) const;
-        constexpr bool operator<=(const TVector3 right) const;
-        constexpr bool operator>=(const TVector3 right) const;
+        constexpr bool              operator==(const TVector3 right) const;
+        constexpr bool              operator!=(const TVector3 right) const { return !(*this == right); }
+        constexpr bool              operator<(const TVector3 right) const;
+        constexpr bool              operator>(const TVector3 right) const;
+        constexpr bool              operator<=(const TVector3 right) const;
+        constexpr bool              operator>=(const TVector3 right) const;
 
-        constexpr TVector3 operator-() const;
-        constexpr TVector3 operator+(const TVector3 right) const;
-        constexpr TVector3 operator-(const TVector3 right) const;
-        constexpr TVector3 operator*(const TVector3 right) const;
-        constexpr TVector3 operator/(const TVector3 right) const;
-        constexpr TVector3 operator*(const ScalarType auto scalar) const;
-        constexpr TVector3 operator/(const ScalarType auto scalar) const;
+        constexpr TVector3          operator-() const;
+        constexpr TVector3          operator+(const TVector3 right) const;
+        constexpr TVector3          operator-(const TVector3 right) const;
+        constexpr TVector3          operator*(const TVector3 right) const;
+        constexpr TVector3          operator/(const TVector3 right) const;
+        constexpr TVector3          operator*(const ScalarType auto scalar) const;
+        constexpr TVector3          operator/(const ScalarType auto scalar) const;
 
-        TVector3& operator-();
-        TVector3& operator+=(const TVector3 right);
-        TVector3& operator-=(const TVector3 right);
-        TVector3& operator*=(const TVector3 right);
-        TVector3& operator*=(const ScalarType auto scalar);
-        TVector3& operator/=(const ScalarType auto scalar);
+        TVector3&                   operator-();
+        TVector3&                   operator+=(const TVector3 right);
+        TVector3&                   operator-=(const TVector3 right);
+        TVector3&                   operator*=(const TVector3 right);
+        TVector3&                   operator*=(const ScalarType auto scalar);
+        TVector3&                   operator/=(const ScalarType auto scalar);
         
-        constexpr Type& operator[](const size_t index);
-        constexpr Type operator[](const size_t index) const;
+        constexpr Type&             operator[](const size_t index);
+        constexpr Type              operator[](const size_t index) const;
         
-        Type Magnitude() const;
-        constexpr Type SquaredMagnitude() const;
-        constexpr Type Dot(const TVector3& right) const;
-        constexpr TVector3 Cross(const TVector3& right) const;
-        constexpr TVector3& Normalize();
-        constexpr TVector3 Normalized() const;
-        constexpr TVector2<Type> GetXY() const { return TVector2<Type>(this->x, this->y); }
-        constexpr int GetHighestComponentIndex() const;
-        constexpr int GetLowestComponentIndex() const;
-        template <ScalarType To> TVector3<To> CastTo() const;
-        
-        [[nodiscard]] std::string ToString() const;
+        Type                        Magnitude() const;
+        constexpr Type              SquaredMagnitude() const;
+        constexpr Type              Dot(const TVector3& right) const;
+        constexpr TVector3          Cross(const TVector3& right) const;
+        constexpr TVector3&         Normalize();
+        constexpr TVector3          Normalized() const;
+        constexpr TVector3          GetReciprocal() const                   { return Unit() / *this;}
+        constexpr TVector2<Type>    GetXY() const                           { return TVector2<Type>(this->x, this->y); }
+        constexpr int               GetHighestComponentIndex() const;
+        constexpr int               GetLowestComponentIndex() const;
+        TVector3                    Sqrt() const;
+        TVector3                    Abs() const;
+        TVector3                    GetSign() const;
+        bool                        IsNaN() const;
+        bool                        IsClose(const TVector3& other, const float maxDistSqr = 1.0e-12f) const;
+        bool                        IsNearZero(float maxDistSqr = 1.0e-12f) const;
 
-        static constexpr Type Dot(const TVector3& a, const TVector3& b);
-        static constexpr Type Distance(const TVector3& a, const TVector3& b);
-        static constexpr Type DistanceSquared(const TVector3& a, const TVector3& b);
-        static constexpr TVector3 Min(const TVector3& a, const TVector3& b);
-        static constexpr TVector3 Max(const TVector3& a, const TVector3& b);
-        static constexpr TVector3 Cross(const TVector3& a, const TVector3& b);
-        static constexpr TVector3 Lerp(const TVector3 from, const TVector3 to, const float t);
+        template <Swizzle X, Swizzle Y, Swizzle Z>
+        TVector3                    Swizzle() const;
         
-        static float AngleBetweenVectors(const TVector3& a, const TVector3& b);
-        static float AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
+        template <ScalarType To>
+        TVector3<To>                CastTo() const;
+        
+        [[nodiscard]] std::string   ToString() const;
 
-        static constexpr TVector3 Unit()        { return TVector3(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
-        static constexpr TVector3 Zero()        { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector3 Up()          { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
-        static constexpr TVector3 Right()       { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector3 Forward()     { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
-        static constexpr TVector3 YawAxis()     { return Up(); }
-        static constexpr TVector3 PitchAxis()   { return Right(); }
-        static constexpr TVector3 RollAxis()    { return Forward(); }
+        static constexpr Type       Dot(const TVector3& a, const TVector3& b);
+        static constexpr Type       Distance(const TVector3& a, const TVector3& b);
+        static constexpr Type       DistanceSquared(const TVector3& a, const TVector3& b);
+        static constexpr TVector3   Min(const TVector3& a, const TVector3& b);
+        static constexpr TVector3   Max(const TVector3& a, const TVector3& b);
+        //static VectorRegisterUint   Less(const TVector3& a, const TVector3& b);
+        static constexpr TVector3   Cross(const TVector3& a, const TVector3& b);
+        static constexpr TVector3   Lerp(const TVector3 from, const TVector3 to, const float t);
+        static constexpr TVector3   Replicate(const Type value);
+        
+        static float                AngleBetweenVectors(const TVector3& a, const TVector3& b);
+        static float                AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
+
+        static constexpr TVector3   Unit()        { return TVector3(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
+        static constexpr TVector3   Zero()        { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector3   Up()          { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
+        static constexpr TVector3   Right()       { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector3   Forward()     { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
+        static constexpr TVector3   YawAxis()     { return Up(); }
+        static constexpr TVector3   PitchAxis()   { return Right(); }
+        static constexpr TVector3   RollAxis()    { return Forward(); }
+
     };
 
     template <ScalarType VecType>
@@ -85,6 +106,12 @@ namespace nes
 
     template <FloatingPointType Type>
     Type ScalarTripleProduct(const TVector3<Type>& u, const TVector3<Type>& v, const TVector3<Type>& w);
+
+    template <FloatingPointType Type>
+    bool IsLeftHanded(const TVector3<Type>& x, const TVector3<Type>& y, const TVector3<Type>& z)
+    {
+        return ScalarTripleProduct(x, y, z) < 0.f;
+    }
 
     using Vector3f = TVector3<float>;
     using Vector3d = TVector3<double>;
@@ -346,6 +373,86 @@ namespace nes
     constexpr int TVector3<Type>::GetLowestComponentIndex() const
     {
         return x < y ? (z < x ? 2 : 0) : (z < y ? 2 : 1);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Component-wise Square root. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector3<Type> TVector3<Type>::Sqrt() const
+    {
+        return TVector3<Type>(std::sqrt(x), std::sqrt(y), std::sqrt(z));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Component-wise Abs(). 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector3<Type> TVector3<Type>::Abs() const
+    {
+        return TVector3<Type>(math::Abs(x), math::Abs(y), math::Abs(z));
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns the sign (-1.0, or 1.0) of each component in a vector.  
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector3<Type> TVector3<Type>::GetSign() const
+    {
+        return Vector3(std::signbit(x)? -1.0f : 1.0f,
+                std::signbit(y)? -1.0f : 1.0f,
+                std::signbit(z)? -1.0f : 1.0f);
+    }
+
+    template <ScalarType Type>
+    bool TVector3<Type>::IsClose(const TVector3& other, const float maxDistSqr) const
+    {
+        return (other - *this).SquaredMagnitude() < maxDistSqr;
+    }
+
+    template <ScalarType Type>
+    bool TVector3<Type>::IsNearZero(float maxDistSqr) const
+    {
+        return SquaredMagnitude() <= maxDistSqr;
+    }
+
+    // template <ScalarType Type>
+    // VectorRegisterUint TVector3<Type>::Less(const TVector3& a, const TVector3& b)
+    // {
+    //     uint32_t z = a.z < b.z? 0xffffffffu : 0;
+    //     return UVec4(a.x < b.x? 0xffffffffu : 0,
+    //                  a.y < b.y? 0xffffffffu : 0,
+    //                  z,
+    //                  z);
+    // }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Tests if the vector contains any NaN components. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    bool TVector3<Type>::IsNaN() const
+    {
+        return math::IsNan(x) || math::IsNan(y) || math::IsNan(z);
+    }
+
+    template <ScalarType Type>
+    template <Swizzle X, Swizzle Y, Swizzle Z>
+    TVector3<Type> TVector3<Type>::Swizzle() const
+    {
+        static_assert(static_cast<size_t>(X) < 3, "Swizzle X must be less than 3");
+        static_assert(static_cast<size_t>(Y) < 3, "Swizzle X must be less than 3");
+        static_assert(static_cast<size_t>(Z) < 3, "Swizzle X must be less than 3");
+
+        // [TODO]: SIMD version
+        auto& vec = *this;
+        return TVector3(vec[static_cast<size_t>(X)], vec[static_cast<size_t>(Y)], vec[static_cast<size_t>(Z)]);
+    }
+
+    template <ScalarType Type>
+    constexpr TVector3<Type> TVector3<Type>::Replicate(const Type value)
+    {
+        // [TODO]: SIMD version.
+        return TVector3<Type>(value, value, value);
     }
 
     //----------------------------------------------------------------------------------------------------

@@ -61,7 +61,7 @@ namespace nes
             ~JobHandle() = default;
             JobHandle(const JobHandle&) = default;
             JobHandle(JobHandle&& handle) noexcept : StrongPtr<Job>(std::move(handle)) { }
-            explicit JobHandle(Job* pJob) : StrongPtr<Job>(pJob) {}
+            explicit JobHandle(Job* pJob);
 
             JobHandle& operator=(const JobHandle&) = default;
             JobHandle& operator=(JobHandle&& handle) noexcept = default;
@@ -135,7 +135,6 @@ namespace nes
             virtual void        AddJobs(const JobHandle* pHandles, const uint32_t numHandles) = 0;
         
         protected:
-            
             //----------------------------------------------------------------------------------------------------
             /// @brief : Called by a Job to mark that it is finished. 
             //----------------------------------------------------------------------------------------------------
@@ -149,7 +148,7 @@ namespace nes
         ///     - Jobs are queued for execution as soon as their dependency count reaches 0.
         ///     - Jobs are freed as soon as their reference count reaches 0.
         //----------------------------------------------------------------------------------------------------
-        class Job
+        class Job final : public RefTarget<Job>
         {
         public:
             /// Value for m_numDependencies when the Job is executing.

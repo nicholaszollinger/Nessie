@@ -36,6 +36,9 @@ namespace nes
     template <typename Type>
     concept EnumType = std::is_enum_v<Type>;
 
+    template <typename Type>
+    concept DefaultConstructibleType = std::is_default_constructible_v<Type>;
+
     template <typename Type, typename...ConstructorParams>
     concept ValidConstructorForType = requires(ConstructorParams&&...params)
     {

@@ -3,6 +3,16 @@
 
 namespace nes
 {
+    //static_assert(std::is_base_of_v<RefTarget<JobSystem::Job>, JobSystem::Job>, "Job is not setup correctly...");
+    //static_assert(nes::TypeIsDerivedFrom<JobSystem::Job, RefTarget<JobSystem::Job>>, "Job is not setup correctly...");
+    
+    JobSystem::JobHandle::JobHandle(Job* pJob)
+        : StrongPtr<JobSystem::Job>(pJob)
+    {
+        //
+    }
+
+    
     void JobSystem::JobHandle::RemoveDependencies(const JobHandle* pHandles, const uint32_t numHandles, const int count)
     {
         NES_ASSERT(pHandles != nullptr);
@@ -62,7 +72,7 @@ namespace nes
     {
         const uint32_t oldValue = m_numDependencies.fetch_sub(count, std::memory_order_release);
         const uint32_t newValue = oldValue - count;
-        NES_ASSERT(oldValue > newValue, "Removed more dependencies than were set for Job!");
+        NES_ASSERTV(oldValue > newValue, "Removed more dependencies than were set for Job!");
         
         return newValue == 0;
     }
@@ -79,7 +89,7 @@ namespace nes
         if (m_barrier.compare_exchange_strong(barrier, reinterpret_cast<intptr_t>(pBarrier), std::memory_order_relaxed))
             return true;
 
-        NES_ASSERT(barrier == kBarrierDoneState, "A job can only belong to one barrier!");
+        NES_ASSERTV(barrier == kBarrierDoneState, "A job can only belong to one barrier!");
         return false;
     }
 

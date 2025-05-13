@@ -205,14 +205,14 @@ namespace nes
         ///     Bodies have been modified. UpdatePrepare() will build the tree, and UpdateFinalize() will lock the
         ///     root of the tree shortly and swap the trees, then afterward clean up temporary data structures. 
         //----------------------------------------------------------------------------------------------------
-        void UpdatePrepare(const BodyArray& bodies, BodyTrackerArray& outTrackers, UpdateState& outState, bool doFullRebuild);
-        void UpdateFinalize(const BodyArray& bodies, const BodyTrackerArray& trackers, const UpdateState& state);
+        void UpdatePrepare(const BodyVector& bodies, BodyTrackerArray& outTrackers, UpdateState& outState, bool doFullRebuild);
+        void UpdateFinalize(const BodyVector& bodies, const BodyTrackerArray& trackers, const UpdateState& state);
 
-        void AddBodiesPrepare(const BodyArray& bodies, BodyTrackerArray& trackers, BodyID* bodyIDArray, const int number, AddState& outState);
+        void AddBodiesPrepare(const BodyVector& bodies, BodyTrackerArray& trackers, BodyID* bodyIDArray, const int number, AddState& outState);
         void AddBodiesFinalize(BodyTrackerArray& trackers, int numBodies, const AddState& state);
         void AddBodiesAbort(BodyTrackerArray& trackers, const AddState& state);
-        void RemoveBodies(const BodyArray& bodies, BodyTrackerArray& trackers, const BodyID* bodyIDArray, const int number);
-        void NotifyBodiesAABBChanged(const BodyArray& bodies, const BodyTrackerArray& trackers, const BodyID* bodyIDArray, int number);
+        void RemoveBodies(const BodyVector& bodies, BodyTrackerArray& trackers, const BodyID* bodyIDArray, const int number);
+        void NotifyBodiesAABBChanged(const BodyVector& bodies, const BodyTrackerArray& trackers, const BodyID* bodyIDArray, int number);
         
         void CastRay(const RayCast& ray, RayCastBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
@@ -220,7 +220,7 @@ namespace nes
         void CollideSphere(const Vector3& center, const float radius, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void CollidePoint(const Vector3& point, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
-        void FindCollidingPairs(const BodyArray& bodies, const BodyID* activeBodiesArray, const int numActiveBodies, float speculativeContactDistance, BodyPairCollector& collector, const CollisionLayerPairFilter& layerFilter) const;
+        void FindCollidingPairs(const BodyVector& bodies, const BodyID* activeBodiesArray, const int numActiveBodies, float speculativeContactDistance, BodyPairCollector& collector, const CollisionLayerPairFilter& layerFilter) const;
         
         AABox GetBounds() const;
         
@@ -239,14 +239,14 @@ namespace nes
         const RootNode& GetCurrentRoot() const { return m_rootNodes[m_rootNodeIndex]; }
         RootNode&       GetCurrentRoot()       { return m_rootNodes[m_rootNodeIndex]; }
 
-        AABox GetNodeOrBodyBounds(const BodyArray& bodies, NodeID nodeID) const;
+        AABox GetNodeOrBodyBounds(const BodyVector& bodies, NodeID nodeID) const;
         void MarkNodeAndParentsChanged(uint32_t nodeIndex);
         void WidenAndMarkNodeAndParentsChanged(uint32_t nodeIndex, const AABox& newBounds);
 
         uint32_t    AllocateNode(bool isChanged);
         bool        TryInsertLeaf(BodyTrackerArray& trackers, int nodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
         bool        TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32_t>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
-        NodeID      BuildTree(const BodyArray& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds);
+        NodeID      BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds);
         
         static void Partition(NodeID* nodeIDs, Vector3* nodeCenters, int number, int& outMidPoint);
         static void Partition4(NodeID* nodeIDs, Vector3* nodeCenters, int begin, int end, int* outSplitIndices);
@@ -257,7 +257,7 @@ namespace nes
         NES_INLINE void WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor) const;
 
 #ifdef NES_DEBUG
-        void ValidateTree(const BodyArray& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const;
+        void ValidateTree(const BodyVector& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const;
 #endif
     };
 }

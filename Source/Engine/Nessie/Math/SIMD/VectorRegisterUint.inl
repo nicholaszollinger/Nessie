@@ -101,6 +101,11 @@ namespace nes
         return GetTrues() == 0b1111;
     }
 
+    inline bool VectorRegisterUint::TestAnyXYZTrue() const
+    {
+        return (GetTrues() & 0b111) == 0b111;
+    }
+
     VectorRegisterF VectorRegisterUint::ConvertToFloat() const
     {
 #if defined(NES_USE_SSE)

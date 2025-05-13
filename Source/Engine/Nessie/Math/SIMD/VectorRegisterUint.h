@@ -1,7 +1,7 @@
 ﻿// VectorRegisterUint.h
 #pragma once
 #include <cstdint>
-#include "Math/SIMD/VectorRegisterF.h"
+#include "Math/MathTypes.h"
 
 namespace nes
 {
@@ -70,6 +70,11 @@ namespace nes
         /// @brief : Check if all components are true. True is when the hightest bit of a component is set. 
         //----------------------------------------------------------------------------------------------------
         NES_INLINE bool TestAllTrue() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if any of the X, Y, or Z components are true. True is when the hightest bit of a component is set. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE bool TestAnyXYZTrue() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Convert each int component to a float. 

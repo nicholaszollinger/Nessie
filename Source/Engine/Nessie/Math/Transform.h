@@ -74,7 +74,7 @@ namespace nes
     {
         const TMatrix4x4<Type> scale = math::MakeScaleMatrix(m_scale);
         const TMatrix4x4<Type> rotation = math::ToMat4(m_orientation);
-        const TMatrix4x4<Type> translation = math::MakeTranslationMatrix(m_location);
+        const TMatrix4x4<Type> translation = math::MakeTranslationMatrix4(m_location);
         return translation * rotation * scale;
     }
 }

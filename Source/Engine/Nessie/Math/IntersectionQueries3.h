@@ -260,7 +260,7 @@ namespace nes::geo
     bool AABBIntersectsPlane(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
-        const TVector2<Type> extents = box.Extents();
+        const TVector2<Type> extents = box.GetExtent();
         const Type radius = extents[0] * math::Abs(plane.m_normal[0])
             + extents[1] * math::Abs(plane.m_normal[1])
             + extents[2] * math::Abs(plane.m_normal[2]);
@@ -278,7 +278,7 @@ namespace nes::geo
     bool AABBInsidePlane(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
-        const TVector2<Type> extents = box.Extents();
+        const TVector2<Type> extents = box.GetExtent();
         const Type radius = extents[0] * math::Abs(plane.m_normal[0])
             + extents[1] * math::Abs(plane.m_normal[1])
             + extents[2] * math::Abs(plane.m_normal[2]);
@@ -296,7 +296,7 @@ namespace nes::geo
     bool AABBIntersectsHalfspace(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
-        const TVector2<Type> extents = box.Extents();
+        const TVector2<Type> extents = box.GetExtent();
         const Type radius = extents[0] * math::Abs(plane.m_normal[0])
             + extents[1] * math::Abs(plane.m_normal[1])
             + extents[2] * math::Abs(plane.m_normal[2]);
@@ -396,7 +396,7 @@ namespace nes::geo
     bool AABBIntersectsTriangle(const TAABox3<Type>& box, const TTriangle3<Type>& triangle)
     {
         const auto center = box.Center();
-        const auto extents = box.Extents();
+        const auto extents = box.GetExtent();
         
         // Translate the triangle's vertices as conceptually moving the AABB to the origin.
         TVector3<Type> vertices[3]

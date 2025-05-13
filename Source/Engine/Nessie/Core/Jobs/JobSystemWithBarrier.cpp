@@ -32,7 +32,6 @@ namespace nes
                 shouldSignalSemaphore = true;
                 ++m_numLeftToAcquire;
             }
-
             
             // Add the Job to our Job list.
             pJob->AddRef();
