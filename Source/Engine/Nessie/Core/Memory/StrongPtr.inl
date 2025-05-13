@@ -20,7 +20,7 @@ namespace nes
     template <typename Type>
     StrongPtr<Type>::StrongPtr(Type* ptr)// requires nes::TypeIsDerivedFrom<Type, RefTarget<Type>>
     {
-        static_assert(nes::TypeIsDerivedFrom<Type, RefTarget<Type>>, "Only Types that inherit from RefTarget can assign a raw pointer to a StrongPtr, because they"
+        static_assert(IsRefTargetType<Type>, "Only Types that inherit from RefTarget can assign a raw pointer to a StrongPtr, because they"
                                                                      "manage their ref count on the object itself.");
         m_pRefCounter = ptr;
         AddRef();
@@ -89,7 +89,7 @@ namespace nes
     {
         if (m_pRefCounter != nullptr && m_pRefCounter->RemoveRef())
         {
-            if constexpr (!nes::TypeIsDerivedFrom<Type, RefTarget<Type>>)
+            if constexpr (!IsRefTargetType<Type>)
             {
                 // We only delete in the case of an external RefCounter object.
                 // Removing the last reference of a RefTarget will delete the object
@@ -216,7 +216,7 @@ namespace nes
     {
         if (m_pRefCounter != nullptr && m_pRefCounter->RemoveRef())
         {
-            if constexpr (!nes::TypeIsDerivedFrom<Type, RefTarget<Type>>)
+            if constexpr (!IsRefTargetType<Type>)
             {
                 // We only delete in the case of an external RefCounter object.
                 // Removing the last reference of a RefTarget will delete the object
@@ -233,7 +233,7 @@ namespace nes
     {
         ObjectType* pObject = NES_NEW(ObjectType(std::forward<CtorParams>(params)...)); 
         StrongPtr<ObjectType> result;
-        if constexpr (nes::TypeIsDerivedFrom<ObjectType, RefTarget<ObjectType>>)
+        if constexpr (IsRefTargetType<ObjectType>)
         {
             // The RefCounter is the actual object.
             result.m_pRefCounter = std::move(pObject);
@@ -257,7 +257,7 @@ namespace nes
         if (!ptr)
             return nullptr;
 
-        if constexpr (nes::TypeIsDerivedFrom<From, RefTarget<From>>)
+        if constexpr (IsRefTargetType<From>)
         {
             auto* pCastedType = checked_cast<To*>(ptr.m_pRefCounter);
             
@@ -269,7 +269,8 @@ namespace nes
 
         else
         {
-            auto* pCastedCounter = checked_cast<internal::RefCounter<To>*>(ptr.m_pRefCounter);
+            internal::RefCounter<From>* pFromRefCounter = checked_cast<internal::RefCounter<From>*>(ptr.m_pRefCounter);
+            internal::RefCounter<To>* pCastedCounter = pFromRefCounter->template GetAs<To>();
 
             StrongPtr<To> result;
             result.m_pRefCounter = pCastedCounter;
@@ -284,7 +285,7 @@ namespace nes
         if (!ptr)
             return nullptr;
 
-        if constexpr (nes::TypeIsDerivedFrom<From, RefTarget<From>>)
+        if constexpr (IsRefTargetType<From>)
         {
             const auto* pCastedType = checked_cast<const To*>(ptr.m_pRefCounter);
             
@@ -296,7 +297,8 @@ namespace nes
 
         else
         {
-            const auto* pCastedCounter = checked_cast<const internal::RefCounter<To>*>(ptr.m_pRefCounter);
+            internal::RefCounter<From>* pFromRefCounter = checked_cast<internal::RefCounter<From>*>(ptr.m_pRefCounter);
+            internal::RefCounter<To>* pCastedCounter = pFromRefCounter->template GetAs<To>();
 
             ConstStrongPtr<To> result;
             result.m_pRefCounter = pCastedCounter;

@@ -73,6 +73,9 @@ namespace nes::internal
     public:
         explicit RefCounter(Type*&& pObject) : m_pObject(std::move(pObject)) { }
 
+        template <typename To>
+        RefCounter<To>* GetAs();
+
     private:
         virtual void*       GetObject() override                { return m_pObject; }
         virtual const void* GetObject() const override          { return m_pObject; }
@@ -91,7 +94,7 @@ namespace nes
     class RefTarget : public internal::RefCounterBase
     {
     public:
-        using Type = Derived;
+        using RefTargetDerivedType = Derived;
 
         RefTarget() = default;
         RefTarget(const RefTarget&)             { /* Do not copy over the ref count! */ }
@@ -101,6 +104,13 @@ namespace nes
         virtual void*       GetObject() override final                  { return this; }
         virtual const void* GetObject() const override final            { return this; }
         virtual void        ReleaseObject() const override;
+    };
+
+    template <typename Type>
+    concept IsRefTargetType = requires(Type value)
+    {
+        TypeIsDerivedFrom<Type, internal::RefCounterBase>;
+        TypeIsDerivedFrom<typename Type::RefTargetDerivedType, internal::RefCounterBase>;
     };
 }
 

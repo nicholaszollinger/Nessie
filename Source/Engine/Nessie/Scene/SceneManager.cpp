@@ -38,6 +38,12 @@ namespace nes
 
         StringID startSceneName = startScene["Runtime"].as<std::string>();
         NES_ASSERT(m_sceneMap.contains(startSceneName));
+
+        if (!m_tickManager.Init())
+        {
+            NES_ERRORV("SceneManager", "Failed to initialize tick manager!");
+            return false;
+        }
         
         // Create/Load the start scene:
         m_sceneToTransitionTo = startSceneName;
@@ -100,6 +106,7 @@ namespace nes
         }
         
         m_sceneMap.clear();
+        m_tickManager.Shutdown();
     }
 
     void SceneManager::PreRender()

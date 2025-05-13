@@ -98,7 +98,6 @@ namespace nes
         static constexpr TVector3   YawAxis()     { return Up(); }
         static constexpr TVector3   PitchAxis()   { return Right(); }
         static constexpr TVector3   RollAxis()    { return Forward(); }
-
     };
 
     template <ScalarType VecType>

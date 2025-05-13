@@ -982,17 +982,23 @@ namespace nes
         std::vector<uint8_t> cubeMapBytes{};
         int width = 1024;
         int height = 1024;
+        std::array<void*, 6> imagePointers{};
+        int i = 0;
+        
         for (const auto& path : kSkyboxPaths)
         {
             std::string fullPath = NES_CONTENT_DIR;
             fullPath += path;
             
             int channels;
-            const stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+            imagePointers[i] = pBytes;
             
             const uint8_t* pStart = static_cast<const uint8_t*>(pBytes);
             const uint8_t* pEnd = &pStart[static_cast<uint32_t>(width * height * STBI_rgb_alpha)];
             cubeMapBytes.insert(cubeMapBytes.end(), pStart, pEnd);
+            ++i;
         }
 
         std::tie(m_skyboxCubeImage, m_skyboxCubeImageView) = context.CreateCubemapImageAndView(
@@ -1002,6 +1008,12 @@ namespace nes
 
         m_skyboxUniforms = context.CreateUniformForImage(3, m_skyboxCubeImageView, m_skyboxCubeSampler);
 
+        // Free the image data.
+        for (auto* image : imagePointers)
+        {
+            stbi_image_free(image);
+        }
+        
         // Skybox Pipeline
         nes::GraphicsPipelineConfig skyboxPipelineConfig =
         {

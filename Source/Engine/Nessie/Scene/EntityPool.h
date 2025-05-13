@@ -286,7 +286,7 @@ namespace nes
 
         // If the Ptr is valid but the Entity is not, then
         // continue incrementing until we find a valid Entity or the end.
-        while (m_pPtr != m_pEnd && m_pPtr->Get() != nullptr)
+        while (m_pPtr != m_pEnd && m_pPtr->Get() == nullptr)
         {
             ++m_pPtr;
         }
@@ -304,7 +304,7 @@ namespace nes
 
         // If the Ptr is valid but the Entity is not, then
         // continue decrementing until we find a valid Entity or the beginning.
-        while (m_pPtr != m_pBegin && m_pPtr->Get() != nullptr)
+        while (m_pPtr != m_pBegin && m_pPtr->Get() == nullptr)
         {
             --m_pPtr;
         }

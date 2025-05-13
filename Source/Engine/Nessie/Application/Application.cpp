@@ -107,14 +107,14 @@ namespace nes
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize InputManager!");
             return ExitCode::FatalError;
         }
-
+        
         // Create the Renderer
         if (!m_renderer.Init(&m_window, m_properties))
         {
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the Renderer!");
             return ExitCode::FatalError;
         }
-
+        
         // Scene Manager
         if (!m_sceneManager.Init(settingsFile))
         {
@@ -137,12 +137,12 @@ namespace nes
             
             // [TODO]: Sync with the Render Thread.
             // [TODO]: Sync with the Resource Thread.
-
+        
             // Update:
             ProcessAppEvents();
             m_inputManager.Update(deltaTime);
             m_sceneManager.Update(deltaTime);
-
+        
             // Submitting to Renderer:
             if (m_renderer.BeginFrame())
             {
