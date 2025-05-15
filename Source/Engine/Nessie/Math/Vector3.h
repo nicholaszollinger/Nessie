@@ -4,6 +4,7 @@
 #include "Vector2.h"
 #include "Core/String/FormatString.h"
 #include "Detail/Swizzle.h"
+#include "Math/Float3.h"
 
 // [TODO]: Combine with VectorRegisterF.
 
@@ -65,9 +66,14 @@ namespace nes
         TVector3                    Sqrt() const;
         TVector3                    Abs() const;
         TVector3                    GetSign() const;
+        TVector3                    NormalizedOr(const TVector3& inZeroValue) const;
+        TVector3                    GetNormalizedPerpendicular() const;
         bool                        IsNaN() const;
         bool                        IsClose(const TVector3& other, const float maxDistSqr = 1.0e-12f) const;
         bool                        IsNearZero(float maxDistSqr = 1.0e-12f) const;
+        void                        StoreFloat3(Float3* pValue) const        { pValue->x = x; pValue->y = y; pValue->z = z; }
+        float                       ReduceMin() const;
+        
 
         template <Swizzle X, Swizzle Y, Swizzle Z>
         TVector3                    Swizzle() const;
@@ -76,7 +82,7 @@ namespace nes
         TVector3<To>                CastTo() const;
         
         [[nodiscard]] std::string   ToString() const;
-
+        
         static constexpr Type       Dot(const TVector3& a, const TVector3& b);
         static constexpr Type       Distance(const TVector3& a, const TVector3& b);
         static constexpr Type       DistanceSquared(const TVector3& a, const TVector3& b);
@@ -90,14 +96,18 @@ namespace nes
         static float                AngleBetweenVectors(const TVector3& a, const TVector3& b);
         static float                AngleBetweenVectorsDegrees(const TVector3& a, const TVector3& b);
 
+        
+        static constexpr TVector3   AxisX()       { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
+        static constexpr TVector3   AxisY()       { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
+        static constexpr TVector3   AxisZ()       { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
         static constexpr TVector3   Unit()        { return TVector3(static_cast<Type>(1), static_cast<Type>(1), static_cast<Type>(1)); }
         static constexpr TVector3   Zero()        { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector3   Up()          { return TVector3(static_cast<Type>(0), static_cast<Type>(1), static_cast<Type>(0)); }
-        static constexpr TVector3   Right()       { return TVector3(static_cast<Type>(1), static_cast<Type>(0), static_cast<Type>(0)); }
-        static constexpr TVector3   Forward()     { return TVector3(static_cast<Type>(0), static_cast<Type>(0), static_cast<Type>(1)); }
-        static constexpr TVector3   YawAxis()     { return Up(); }
-        static constexpr TVector3   PitchAxis()   { return Right(); }
-        static constexpr TVector3   RollAxis()    { return Forward(); }
+        static constexpr TVector3   Up()          { return AxisY(); }
+        static constexpr TVector3   Right()       { return AxisX(); }
+        static constexpr TVector3   Forward()     { return AxisZ(); }
+        static constexpr TVector3   YawAxis()     { return AxisY(); }
+        static constexpr TVector3   PitchAxis()   { return AxisX(); }
+        static constexpr TVector3   RollAxis()    { return AxisZ(); }
     };
 
     template <ScalarType VecType>
@@ -403,6 +413,34 @@ namespace nes
                 std::signbit(z)? -1.0f : 1.0f);
     }
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Normalize vector or return inZeroValue if the length of the vector is zero
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    TVector3<Type> TVector3<Type>::NormalizedOr(const TVector3& inZeroValue) const
+    {
+        float lengthSqr = SquaredMagnitude();
+        if (lengthSqr < FLT_MAX)
+            return inZeroValue;
+
+        return *this / std::sqrt(lengthSqr);
+    }
+
+    template <ScalarType Type>
+    TVector3<Type> TVector3<Type>::GetNormalizedPerpendicular() const
+    {
+        if (math::Abs(x) > math::Abs(y))
+        {
+            const float length = std::sqrt(x * x + z * z);
+            return Vector3(z, 0.f, -x) / length;
+        }
+        else
+        {
+            const float length = std::sqrt(y * y + z * z);
+            return Vector3(0.f, z, -y) / length;
+        }
+    }
+
     template <ScalarType Type>
     bool TVector3<Type>::IsClose(const TVector3& other, const float maxDistSqr) const
     {
@@ -432,6 +470,17 @@ namespace nes
     bool TVector3<Type>::IsNaN() const
     {
         return math::IsNan(x) || math::IsNan(y) || math::IsNan(z);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Get the lowest value between the X, Y and Z components. 
+    //----------------------------------------------------------------------------------------------------
+    template <ScalarType Type>
+    float TVector3<Type>::ReduceMin() const
+    {
+        TVector3 vec = Min(*this, Swizzle<Swizzle::Y, Swizzle::Unused, Swizzle::Z>());
+        vec = Min(vec, Swizzle<Swizzle::Z, Swizzle::Unused, Swizzle::Unused>());
+        return vec.x;
     }
 
     template <ScalarType Type>

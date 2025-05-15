@@ -75,6 +75,11 @@ namespace nes
         /// @brief : Check if any of the X, Y, or Z components are true. True is when the hightest bit of a component is set. 
         //----------------------------------------------------------------------------------------------------
         NES_INLINE bool TestAnyXYZTrue() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if each of the X, Y, or Z components are true. True is when the hightest bit of a component is set. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE bool TestAllXYZTrue() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Convert each int component to a float. 

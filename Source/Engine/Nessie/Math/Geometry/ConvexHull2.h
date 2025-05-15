@@ -1,11 +1,8 @@
 ﻿// ConvexHull2.h
 #pragma once
 #include <algorithm>
-#include <complex.h>
-
-#include "Geometry.h"
-#include "imgui_internal.h"
-#include "Vector2.h"
+#include "Math/Geometry.h"
+#include "Math/Vector2.h"
 
 namespace nes
 {

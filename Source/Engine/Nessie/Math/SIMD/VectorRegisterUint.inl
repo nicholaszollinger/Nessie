@@ -103,6 +103,11 @@ namespace nes
 
     inline bool VectorRegisterUint::TestAnyXYZTrue() const
     {
+        return (GetTrues() & 0b111) != 0;
+    }
+
+    inline bool VectorRegisterUint::TestAllXYZTrue() const
+    {
         return (GetTrues() & 0b111) == 0b111;
     }
 

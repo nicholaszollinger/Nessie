@@ -16,6 +16,18 @@ namespace nes
     #endif
     }
 
+    inline VectorRegisterF::VectorRegisterF(const Vector3& vec)
+    {
+#if defined(NES_USE_SSE)
+        m_value = _mm_set_ps(vec.z, vec.z, vec.y, vec.x);
+#else
+        m_f32[0] = vec.x;
+        m_f32[1] = vec.y;
+        m_f32[2] = vec.z;
+        m_f32[3] = vec.z;
+#endif
+    }
+
     bool VectorRegisterF::operator==(const VectorRegisterF& other) const
     {
         return Equals(*this, other).TestAllTrue();
@@ -64,6 +76,15 @@ namespace nes
 #endif
     }
 
+    inline VectorRegisterF VectorRegisterF::operator-() const
+    {
+#if defined(NES_USE_SSE)
+        return _mm_sub_ps(_mm_setzero_ps(), m_value);
+#else
+        return VectorRegisterF(-m_f32[0], -m_f32[1], -m_f32[2], -m_f32[3]);
+#endif
+    }
+
     VectorRegisterF& VectorRegisterF::operator-=(const VectorRegisterF& other)
     {
 #if defined(NES_USE_SSE)
@@ -95,7 +116,7 @@ namespace nes
     VectorRegisterF& VectorRegisterF::operator*=(const float value)
     {
     #if defined(NES_USE_SSE)
-        m_value = _mm_add_ps(m_value, _mm_set1_ps(value));
+        m_value = _mm_mul_ps(m_value, _mm_set1_ps(value));
     #else
         m_f32[0] *= value;
         m_f32[1] *= value;
@@ -170,6 +191,35 @@ namespace nes
 #endif
         return *this;
     }
+    
+    inline VectorRegisterF VectorRegisterF::operator/(const float value) const
+    {
+#if defined(NES_USE_SSE)
+        return _mm_div_ps(m_value, _mm_set1_ps(value));
+#else
+        return VectorRegisterF
+        (
+            m_f32[0] / value,
+            m_f32[1] / value,
+            m_f32[2] / value,
+            m_f32[3] / value
+        );
+#endif
+    }
+
+    inline VectorRegisterF& VectorRegisterF::operator/=(const float value)
+    {
+#if defined(NES_USE_SSE)
+        m_value = _mm_div_ps(m_value, _mm_set1_ps(value));
+#else
+        m_f32[0] /= value;
+        m_f32[1] /= value;
+        m_f32[2] /= value;
+        m_f32[3] /= value;
+#endif
+
+        return *this;
+    }
 
     float& VectorRegisterF::operator[](const uint32_t index)
     {
@@ -207,23 +257,23 @@ namespace nes
         return m_f32[3];
     }
 
-    template <uint32_t SwizzleX, uint32_t SwizzleY, uint32_t SwizzleZ, uint32_t SwizzleW>
+    template <Swizzle X, Swizzle Y, Swizzle Z, Swizzle W>
     VectorRegisterF VectorRegisterF::Swizzle() const
     {
-        static_assert(SwizzleX < 4, "SwizzleX value must be in range [0, 3]!");
-        static_assert(SwizzleY < 4, "SwizzleY value must be in range [0, 3]!");
-        static_assert(SwizzleZ < 4, "SwizzleZ value must be in range [0, 3]!");
-        static_assert(SwizzleW < 4, "SwizzleW value must be in range [0, 3]!");
+        static_assert(X <= Swizzle::W, "Swizzle X value must be in range [0, 3]!");
+        static_assert(Y <= Swizzle::W, "Swizzle Y value must be in range [0, 3]!");
+        static_assert(Z <= Swizzle::W, "Swizzle Z value must be in range [0, 3]!");
+        static_assert(W <= Swizzle::W, "Swizzle W value must be in range [0, 3]!");
 
 #if defined(NES_USE_SSE)
-        return _mm_shuffle_ps(m_value, m_value, _MM_SHUFFLE(SwizzleW, SwizzleZ, SwizzleY, SwizzleX));
+        return _mm_shuffle_ps(m_value, m_value, _MM_SHUFFLE(static_cast<int>(W), static_cast<int>(Z), static_cast<int>(Y), static_cast<int>(X)));
 #else
         return VectorRegister4
         (
-            m_f32[SwizzleX],
-            m_f32[SwizzleY],
-            m_f32[SwizzleZ],
-            m_f32[SwizzleW]
+            m_f32[static_cast<int>(X)],
+            m_f32[static_cast<int>(Y)],
+            m_f32[static_cast<int>(Z)],
+            m_f32[static_cast<int>(W)]
         );
 #endif
     }
@@ -268,6 +318,18 @@ namespace nes
         return _mm_cvtss_f32(_mm_dp_ps(m_value, m_value, 0x7f));
 #else
         return (m_f32[0] * m_f32[0]) + (m_f32[1] * m_f32[1]) + (m_f32[2] * m_f32[2]);
+#endif
+    }
+
+    inline int VectorRegisterF::GetSignBits() const
+    {
+#if defined(NES_USE_SSE)
+        return _mm_movemask_ps(m_value);
+#else
+        return (std::signbit(m_f32[0])? 1 : 0)
+            | (std::signbit(m_f32[1])? 2 : 0)
+            | (std::signbit(m_f32[2])? 4 : 0)
+            | (std::signbit(m_f32[3])? 8 : 0);
 #endif
     }
 
@@ -352,6 +414,42 @@ namespace nes
             m_f32[3],
             m_f32[3]
         );
+#endif
+    }
+
+    inline float VectorRegisterF::Dot(const VectorRegisterF& other) const
+    {
+    #if defined(NES_USE_SSE)
+            return _mm_cvtss_f32(_mm_dp_ps(m_value, other.m_value, 0x7f));
+    #else
+            float dot = 0.0f;
+            for (int i = 0; i < 3; i++)
+                dot += m_f32[i] * other.m_f32[i];
+            return dot;
+    #endif
+    }
+
+    inline VectorRegisterF VectorRegisterF::DotV(const VectorRegisterF& other) const
+    {
+#if defined(NES_USE_SSE)
+        return _mm_dp_ps(m_value, other.m_value, 0x7f);
+#else
+        float dot = 0.0f;
+        for (int i = 0; i < 3; i++)
+            dot += m_f32[i] * other.m_f32[i];
+        return VectorRegisterF::Replicate(dot);
+#endif
+    }
+
+    inline VectorRegisterF VectorRegisterF::DotV4(const VectorRegisterF& other) const
+    {
+#if defined(NES_USE_SSE)
+        return _mm_dp_ps(m_value, other.m_value, 0x7f);
+#else
+        float dot = 0.0f;
+        for (int i = 0; i < 3; i++)
+            dot += m_f32[i] * other.m_f32[i];
+        return VectorRegisterF::Replicate(dot);
 #endif
     }
 

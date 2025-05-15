@@ -71,7 +71,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Settings to be passed with a shape cast. 
     //----------------------------------------------------------------------------------------------------
-    struct ShapeCastSettings
+    struct ShapeCastSettings : public CollideShapeSettingsBase
     {
         /// How backfacing triangles should be treated. Should we report back facing hits for triangle based shapes, e.g.
         /// MeshShape/HeightFieldShape?

@@ -480,7 +480,7 @@ namespace nes::math
     inline bool IsAligned(Type value, const uint64_t alignment)
     {
         NES_ASSERT(IsPowerOf2(alignment));
-        return (static_cast<uint64_t>(value) & (alignment - 1)) == 0; 
+        return (reinterpret_cast<uint64_t>(value) & (alignment - 1)) == 0; 
     }
 
     inline unsigned int CountBits(uint32_t value)

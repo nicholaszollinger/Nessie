@@ -189,7 +189,7 @@ namespace nes
             
             default:
                 NES_ASSERTV(false, "Invalid Axis request!");
-                return TVector4<Type>::Zero();
+                return TVector3<Type>::Zero();
         }
     }
 

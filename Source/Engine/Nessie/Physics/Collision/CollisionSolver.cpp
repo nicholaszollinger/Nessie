@@ -37,7 +37,7 @@ namespace nes
         s_collideShapeFunctions[static_cast<int>(type1)][static_cast<int>(type2)] = function; 
     }
 
-    void CollisionSolver::RegisterCollideShape(const ShapeSubType type1, const ShapeSubType type2, const CastShape& function)
+    void CollisionSolver::RegisterCastShape(const ShapeSubType type1, const ShapeSubType type2, const CastShape& function)
     {
         s_castShapeFunctions[static_cast<int>(type1)][static_cast<int>(type2)] = function;
     }

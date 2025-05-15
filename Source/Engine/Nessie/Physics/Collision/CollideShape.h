@@ -3,6 +3,7 @@
 #include "BackFaceMode.h"
 #include "ActiveEdgeMode.h"
 #include "CollectFacesMode.h"
+#include "Core/StaticArray.h"
 #include "Math/Vector3.h"
 #include "Physics/PhysicsSettings.h"
 #include "Physics/Body/BodyID.h"
@@ -20,8 +21,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct CollideShapeResult
     {
-        // [TODO]: This should be a fixed_vector class.
-        using Face = std::vector<Vector3>;
+        using Face = StaticArray<Vector3, 32>;
         
         Vector3     m_contactPointOn1;
         Vector3     m_contactPointOn2;
@@ -30,10 +30,10 @@ namespace nes
         SubShapeID  m_subShapeID1;
         SubShapeID  m_subShapeID2;
         BodyID      m_bodyID2;
-        Face        m_shape1Face;
-        Face        m_shape2Face;
+        Face        m_shape1Face{};
+        Face        m_shape2Face{};
         
-        CollideShapeResult() { m_shape1Face.reserve(32); m_shape2Face.reserve(32); }
+        CollideShapeResult() = default;
         
         CollideShapeResult(const Vector3& contactPoint1, const Vector3& contactPoint2, const Vector3& penetrationAxis, const float penetrationDepth, const SubShapeID& subShapeID1, const SubShapeID& subShapeID2, const BodyID& bodyID2)
             : m_contactPointOn1(contactPoint1)
@@ -44,8 +44,7 @@ namespace nes
             , m_subShapeID2(subShapeID2)
             , m_bodyID2(bodyID2)
         {
-            m_shape1Face.reserve(32);
-            m_shape2Face.reserve(32);
+            //
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -76,7 +75,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Base Settings to be passed with a collision query. 
     //----------------------------------------------------------------------------------------------------
-    struct CollideSettingsBase
+    struct CollideShapeSettingsBase
     {
         /// How active edges (edges that a moving object should bump into) are handled
         ActiveEdgeMode				m_activeEdgeMode				= ActiveEdgeMode::CollideOnlyWithActive;
@@ -100,12 +99,12 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Settings to be passed with a collision query. 
     //----------------------------------------------------------------------------------------------------
-    struct CollideShapeSettings : public CollideSettingsBase
+    struct CollideShapeSettings : public CollideShapeSettingsBase
     {
         /// When > 0, contacts in the vicinity of the query shape can be found. All nearest contacts that are
         /// not further away than this distance will be found. Note that in this case CollideShapeResult::m_penetrationDepth
         /// can become negative to indicate that objects are not overlapping. (unit: meter)
-        float                       m_maxSeparationAxis = 0.f;
+        float                       m_maxSeparationDistance = 0.f;
 
         /// How backfacing triangles should be treated
         BackFaceMode                m_backFaceMode = BackFaceMode::IgnoreBackFaces;

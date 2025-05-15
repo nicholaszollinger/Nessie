@@ -1,17 +1,10 @@
 ﻿// VectorRegisterF.h
 #pragma once
 #include "Math/MathTypes.h"
+#include "Math/Detail/Swizzle.h"
 
 namespace nes
 {
-    // enum class SwizzleValue : uint32_t
-    // {
-    //     Swizzle_X = 0,
-    //     Swizzle_Y, 
-    //     Swizzle_Z,
-    //     Swizzle_W,
-    // };
-    
     //----------------------------------------------------------------------------------------------------
     // [TODO]: This class might be put into the Vector3 and Vector4 classes to unify the API. Right now they
     //      are disconnected and they shouldn't be really.
@@ -41,11 +34,14 @@ namespace nes
         /// Construct from 4 floats.
         NES_INLINE VectorRegisterF(const float x, const float y, const float z, const float w);
 
+        NES_INLINE VectorRegisterF(const Vector3& vec);
+
         NES_INLINE bool             operator==(const VectorRegisterF& other) const;
         NES_INLINE bool             operator!=(const VectorRegisterF& other) const { return !(*this == other); }
         NES_INLINE VectorRegisterF  operator+(const VectorRegisterF& other) const;
         NES_INLINE VectorRegisterF& operator+=(const VectorRegisterF& other);
         NES_INLINE VectorRegisterF  operator-(const VectorRegisterF& other) const;
+        NES_INLINE VectorRegisterF  operator-() const;
         NES_INLINE VectorRegisterF& operator-=(const VectorRegisterF& other);
         NES_INLINE VectorRegisterF  operator*(const float value) const;
         NES_INLINE VectorRegisterF& operator*=(const float value);
@@ -53,6 +49,8 @@ namespace nes
         NES_INLINE VectorRegisterF& operator*=(const VectorRegisterF other);
         NES_INLINE VectorRegisterF  operator/(const VectorRegisterF other) const;
         NES_INLINE VectorRegisterF& operator/=(const VectorRegisterF other);
+        NES_INLINE VectorRegisterF  operator/(const float value) const;
+        NES_INLINE VectorRegisterF& operator/=(const float value);
         NES_INLINE float&           operator[](const uint32_t index);
         NES_INLINE float            operator[](const uint32_t index) const;
         friend NES_INLINE VectorRegisterF operator*(const float value, const VectorRegisterF& vec);
@@ -86,7 +84,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the squared length (or squared magnitude) of the vector. 
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE float                    SquaredLength() const;   
+        NES_INLINE float                    SquaredLength() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Stores if X is negative in bit 0, Y in bit 1, Z in bit 2, and W in bit 3.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE int                      GetSignBits() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : To "Swizzle" a vector means to set the components equal the specified component value of the passed
@@ -94,7 +97,7 @@ namespace nes
         ///     the current X value, and the ZW components equal to the current Y value.
         /// @note : All Swizzle arguments must be in the range [0, 3].
         //----------------------------------------------------------------------------------------------------
-        template <uint32_t SwizzleX, uint32_t SwizzleY, uint32_t SwizzleZ, uint32_t SwizzleW>
+        template <Swizzle X, Swizzle Y, Swizzle Z, Swizzle W>
         NES_INLINE VectorRegisterF          Swizzle() const;
 
         //----------------------------------------------------------------------------------------------------
@@ -126,6 +129,21 @@ namespace nes
         /// @brief : Returns a register with all components equal to this register's W Component. 
         //----------------------------------------------------------------------------------------------------
         NES_INLINE VectorRegisterF          SplatW() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Dot Product. 
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE float                    Dot(const VectorRegisterF& other) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Dot Product using the X, Y, Z components.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterF          DotV(const VectorRegisterF& other) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Dot Product using the X, Y, Z and W components.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE VectorRegisterF          DotV4(const VectorRegisterF& other) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns a register with all components equal to zero. 

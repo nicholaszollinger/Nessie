@@ -2,6 +2,7 @@
 #pragma once
 #include "Matrix.h"
 #include "Vector3.h"
+#include "SIMD/VectorRegisterF.h"
 
 namespace nes
 {
@@ -39,19 +40,25 @@ namespace nes
         constexpr TVector3<Type>    GetExtent() const;
         constexpr TVector3<Type>    Size() const;
         constexpr TVector3<Type>    ClosestPointToPoint(const TVector3<Type>& queryPoint) const;
-        constexpr Type              Volume() const;
+        constexpr Type              GetVolume() const;
         constexpr Type              SquaredDistanceToPoint(const TVector3<Type>& queryPoint) const;
         Type                        DistanceToPoint(const TVector3<Type>& queryPoint) const;
         constexpr bool              HasValidDimensions() const;
+        constexpr bool              IsValid() const;
         constexpr bool              Intersects(const TAABox3& other) const;
         constexpr bool              Contains(const TAABox3& other) const;
         constexpr bool              Contains(const Vector3& queryPoint) const;
+        
+        TVector3<Type>              GetSupport(const Vector3& direction) const;
+        template <typename VertexArray>
+        void                        GetSupportingFace(const Vector3& direction, VertexArray& outVertices) const;
 
         void                        Translate(const Vector3& translation);
         TAABox3                     Scaled(const Vector3& scale) const;
         TAABox3                     Transformed(const Mat4& transform) const;
         void                        GrowToEncapsulate(const TAABox3<Type>& box);
         void                        GrowToEncapsulate(const TVector3<Type>& point);
+        void                        ExpandBy(const TVector3<Type>& distance);
 
         /// Returns an invalid Axis Aligned Bounding Box. The Min and Max are set so that no intersection is possible.
         static constexpr TAABox3    Invalid() { return TAABox3(TVector3<Type>::Zero(), TVector3<Type>(static_cast<Type>(-math::kLargeFloat))); }
@@ -239,7 +246,7 @@ namespace nes
     ///		@brief : Returns the Volume of the Box.
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr Type TAABox3<Type>::Volume() const
+    constexpr Type TAABox3<Type>::GetVolume() const
     {
         const auto size = Size();
         return size.x * size.y * size.z;
@@ -253,7 +260,16 @@ namespace nes
     {
         return m_min <= m_max;
     }
-    
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Check that the bounding box's min <= max. 
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    constexpr bool TAABox3<Type>::IsValid() const
+    {
+        return m_min <= m_max;
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns true if the two Boxes intersect. 
     //----------------------------------------------------------------------------------------------------
@@ -329,6 +345,86 @@ namespace nes
         return TAABox3<Type>(TVector3<Type>::Min(pointA, pointB), TVector3<Type>::Max(pointA, pointB));
     }
 
+    template <FloatingPointType Type>
+    TVector3<Type> TAABox3<Type>::GetSupport(const Vector3& direction) const
+    {
+        const VectorRegisterF result = VectorRegisterF::Select(m_max, m_min, VectorRegisterF::Less(direction, VectorRegisterF::Zero()));
+        return TVector3<Type>(result.GetX(), result.GetY(), result.GetZ());
+    }
+
+    template <FloatingPointType Type>
+    template <typename VertexArray>
+    void TAABox3<Type>::GetSupportingFace(const Vector3& direction, VertexArray& outVertices) const
+    {
+        outVertices.resize(4);
+
+        int axis = direction.Abs().GetHighestComponentIndex();
+        if (direction[axis] < 0.0f)
+        {
+            switch (axis)
+            {
+                case 0:
+                {
+                    outVertices[0] = Vector3(m_max.x, m_min.y, m_min.z);
+                    outVertices[1] = Vector3(m_max.x, m_max.y, m_min.z);
+                    outVertices[2] = Vector3(m_max.x, m_max.y, m_max.z);
+                    outVertices[3] = Vector3(m_max.x, m_min.y, m_max.z);
+                    break;
+                }
+                    
+                case 1:
+                {
+                    outVertices[0] = Vector3(m_min.x, m_max.y, m_min.z);
+                    outVertices[1] = Vector3(m_min.x, m_max.y, m_max.z);
+                    outVertices[2] = Vector3(m_max.x, m_max.y, m_max.z);
+                    outVertices[3] = Vector3(m_max.x, m_max.y, m_min.z);
+                    break;
+                }
+
+                case 2:
+                {
+                    outVertices[0] = Vector3(m_min.x, m_min.y, m_max.z);
+                    outVertices[1] = Vector3(m_max.x, m_min.y, m_max.z);
+                    outVertices[2] = Vector3(m_max.x, m_max.y, m_max.z);
+                    outVertices[3] = Vector3(m_min.x, m_max.y, m_max.z);
+                    break;
+                }
+            }
+        }
+        else
+        {
+            switch (axis)
+            {
+                case 0:
+                {
+                    outVertices[0] = Vector3(m_min.x, m_min.y, m_min.z);
+                    outVertices[1] = Vector3(m_min.x, m_min.y, m_max.z);
+                    outVertices[2] = Vector3(m_min.x, m_max.y, m_max.z);
+                    outVertices[3] = Vector3(m_min.x, m_max.y, m_min.z);
+                    break;
+                }
+
+                case 1:
+                {
+                    outVertices[0] = Vector3(m_min.x, m_min.y, m_min.z);
+                    outVertices[1] = Vector3(m_max.x, m_min.y, m_min.z);
+                    outVertices[2] = Vector3(m_max.x, m_min.y, m_max.z);
+                    outVertices[3] = Vector3(m_min.x, m_min.y, m_max.z);
+                    break;
+                }
+
+                case 2:
+                {
+                    outVertices[0] = Vector3(m_min.x, m_min.y, m_min.z);
+                    outVertices[1] = Vector3(m_min.x, m_max.y, m_min.z);
+                    outVertices[2] = Vector3(m_max.x, m_max.y, m_min.z);
+                    outVertices[3] = Vector3(m_max.x, m_min.y, m_min.z);
+                    break;
+                }
+            }
+        }
+    }
+
     //----------------------------------------------------------------------------------------------------
     /// @brief : Translate the box. 
     //----------------------------------------------------------------------------------------------------
@@ -383,6 +479,16 @@ namespace nes
     {
         m_min = TVector3<Type>::Min(m_min, point);
         m_max = TVector3<Type>::Max(m_max, point);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Widen the box on both sides by the given distance.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    void TAABox3<Type>::ExpandBy(const TVector3<Type>& distance)
+    {
+        m_min -= distance;
+        m_max += distance;
     }
 
     //----------------------------------------------------------------------------------------------------

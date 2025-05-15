@@ -2,6 +2,7 @@
 #pragma once
 #include "Math/Vector3.h"
 #include "Math/SIMD/VectorRegisterUint.h"
+#include "Physics/PhysicsSettings.h"
 
 namespace nes::ScaleHelpers
 {
@@ -29,10 +30,27 @@ namespace nes::ScaleHelpers
         const VectorRegisterF absReg(std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), std::abs(scale.z));
         return VectorRegisterF::Less(absReg, VectorRegisterF::Replicate(kMinScale)).TestAnyXYZTrue();
     }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Test if a scale flips an object inside out (which requires flipping all normals and polygon windings.
+    //----------------------------------------------------------------------------------------------------
+    inline bool IsInsideOut(const Vector3& scale)
+    {
+        const VectorRegisterF reg (scale.x, scale.y, scale.z, scale.z);
+        return (math::CountBits(VectorRegisterF::Less(reg, VectorRegisterF::Zero()).GetTrues() & 0x7) & 1) != 0;
+    }
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Ensure that the scale for each component is at least kMinScale
     //----------------------------------------------------------------------------------------------------
     inline Vector3 MakeNonZeroScale(const Vector3& scale) { return scale.GetSign() * Vector3::Max(scale.Abs(), Vector3::Replicate(kMinScale)); }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Get the scaled convex radius of an object. 
+    //----------------------------------------------------------------------------------------------------
+    inline float   ScaleConvexRadius(const float convexRadius, const Vector3& scale)
+    {
+        return math::Min(convexRadius * scale.Abs().ReduceMin(), physics::kDefaultConvexRadius);
+    }
     
 }

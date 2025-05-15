@@ -2,6 +2,7 @@
 #pragma once
 #include <cstdint>
 #include "Core/Result.h"
+#include "Core/StaticArray.h"
 #include "Core/Generic/Color.h"
 #include "Core/Memory/StrongPtr.h"
 #include "Math/AABox.h"
@@ -25,8 +26,9 @@ namespace nes
     class SubShapeIDCreator;
     class SubShapeID;
     class TransformedShape;
-    class Plane;
-
+    // [TODO]: Declaration conflict.
+    //class Plane;
+    
     using CastRayCollector = CollisionCollector<RayCastResult, CollisionCollectorTraitsCastRay>;
     using CastShapeCollector = CollisionCollector<ShapeCastResult, CollisionCollectorTraitsCastShape>;
     using CollidePointCollector = CollisionCollector<CollidePointResult, CollisionCollectorTraitsCollidePoint>;
@@ -151,7 +153,7 @@ namespace nes
     class Shape : public RefTarget<Shape>
     {
     public:
-        using SupportingFace = std::array<Vector3, 32>;
+        using SupportingFace = StaticArray<Vector3, 32>;
         using ShapeResult = ShapeSettings::ShapeResult;
 
         //----------------------------------------------------------------------------------------------------
@@ -169,7 +171,7 @@ namespace nes
         
     public:
         Shape(const ShapeType type, const ShapeSubType subType) : m_shapeType(type), m_subShapeType(subType) {}
-        Shape(const ShapeType type, const ShapeSubType subType, const ShapeSettings& settings) : m_userData(settings.m_userData), m_shapeType(type), m_subShapeType(subType) {}
+        Shape(const ShapeType type, const ShapeSubType subType, const ShapeSettings& settings, [[maybe_unused]] ShapeResult &outResult) : m_userData(settings.m_userData), m_shapeType(type), m_subShapeType(subType) {}
         Shape(const Shape&) = delete;
         Shape(Shape&&) noexcept = default;
         Shape& operator=(const Shape&) = delete;
@@ -256,7 +258,7 @@ namespace nes
         ///	@param outVertices : The resulting face. The returned face can be empty if the shape doesn't have
         ///     polygons to return (e.g. because it's a sphere). The face will be returned in world space. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, [[maybe_unused]] const Vector3& direction, [[maybe_unused]] const Vector3& scale, [[maybe_unused]] const Mat4& centerOfMassTransform, [[maybe_unused]] SupportingFace &outVertices) const { /* Nothing */ }
+        virtual void            GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, [[maybe_unused]] const Vector3& direction, [[maybe_unused]] const Vector3& scale, [[maybe_unused]] const Mat4& centerOfMassTransform, [[maybe_unused]] SupportingFace& outVertices) const { /* Nothing */ }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the user data of a particular sub shape ID. Corresponds to the value stored in Shape::GetUserData()
