@@ -3,15 +3,11 @@
 
 namespace nes
 {
-    //static_assert(std::is_base_of_v<RefTarget<JobSystem::Job>, JobSystem::Job>, "Job is not setup correctly...");
-    //static_assert(nes::TypeIsDerivedFrom<JobSystem::Job, RefTarget<JobSystem::Job>>, "Job is not setup correctly...");
-    
     JobSystem::JobHandle::JobHandle(Job* pJob)
         : StrongPtr<JobSystem::Job>(pJob)
     {
         //
     }
-
     
     void JobSystem::JobHandle::RemoveDependencies(const JobHandle* pHandles, const uint32_t numHandles, const int count)
     {
@@ -51,16 +47,10 @@ namespace nes
     {
         //
     }
-
-    void JobSystem::Job::AddRef()
+    
+    void JobSystem::Job::ReleaseObjectImpl(Job* pThisObject) const
     {
-        m_referenceCount.fetch_add(1, std::memory_order_relaxed);
-    }
-
-    void JobSystem::Job::RemoveRef()
-    {
-        if (m_referenceCount.fetch_sub(1, std::memory_order_acq_rel) == 1)
-            m_pJobSystem->FreeJob(this);
+        m_pJobSystem->FreeJob(pThisObject);
     }
 
     void JobSystem::Job::AddDependency(const int count)

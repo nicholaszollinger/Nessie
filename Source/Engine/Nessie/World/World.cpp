@@ -8,9 +8,19 @@
 
 // Hack to test stb_image
 #include "stb_image.h"
+#include "Physics/Collision/Shapes/BoxShape.h"
+#include "Physics/Collision/Shapes/EmptyShape.h"
 
 namespace nes
 {
+    //-----------------------------------------------------------------------------------------------
+    // [TEMP]: Physics System Config Variables 
+    //-----------------------------------------------------------------------------------------------
+    static constexpr unsigned kNumBodies                = 10240;
+    static constexpr unsigned kNumBodyMutexes           = 0; // Autodetect
+    static constexpr unsigned kMaxBodyPairs             = 65636;
+    static constexpr unsigned kMaxContactConstraints    = 20480;
+    
     World::World(Scene* pScene)
         : EntityLayer(pScene)
         , m_entityPool(this)
@@ -23,6 +33,9 @@ namespace nes
         m_physicsTickGroup.SetDebugName("World Physics Tick");
         m_postPhysicsTickGroup.SetDebugName("World PostPhysics Tick");
         m_lateTickGroup.SetDebugName("World Late Tick");
+
+        m_pPhysicsAllocator = NES_NEW(StackAllocator(static_cast<size_t>(32 * 1024 * 1024)));
+        m_pJobSystem = NES_NEW(JobSystemThreadPool(physics::kMaxPhysicsJobs, physics::kMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1));
     }
 
     StrongPtr<Entity3D> World::CreateEntity(const EntityID& id, const StringID& name)
@@ -127,12 +140,39 @@ namespace nes
 
     bool World::InitializeLayer()
     {
+        // [TODO]: This should be moved.
+        // Register Shape functions
+        EmptyShape::Register();
+        BoxShape::Register();
+        
         // Add Tick Groups:
         auto& tickManager = TickManager::Get();
         tickManager.RegisterTickGroup(&m_prePhysicsTickGroup);
         tickManager.RegisterTickGroup(&m_physicsTickGroup);
         tickManager.RegisterTickGroup(&m_postPhysicsTickGroup);
         tickManager.RegisterTickGroup(&m_lateTickGroup);
+
+        // Create the Physics Scene
+        m_pPhysicsScene = NES_NEW(PhysicsScene());
+        PhysicsScene::CreateInfo physicsCreateInfo;
+        physicsCreateInfo.m_maxBodies = kNumBodies;
+        physicsCreateInfo.m_numBodyMutexes = kNumBodyMutexes;
+        physicsCreateInfo.m_maxNumBodyPairs = kMaxBodyPairs;
+        physicsCreateInfo.m_maxNumContactConstraints = kMaxContactConstraints;
+        physicsCreateInfo.m_pCollisionLayerPairFilter = &m_layerPairFilter;
+        physicsCreateInfo.m_pCollisionVsBroadPhaseLayerFilter = &m_layerVsBroadPhaseFilter;
+        physicsCreateInfo.m_pLayerInterface = &m_broadPhaseLayerInterface;
+        m_pPhysicsScene->Init(physicsCreateInfo);
+        
+        m_pPhysicsScene->SetSettings(m_physicsSettings);
+        
+        // Set up the Physics Tick
+        m_physicsTick.SetTickInterval(1.f / 60.f);
+        m_physicsTick.m_pAllocator = m_pPhysicsAllocator;
+        m_physicsTick.m_pPhysicsScene = m_pPhysicsScene;
+        m_physicsTick.m_pJobSystem = m_pJobSystem;
+        m_physicsTick.m_collisionSteps = 1;
+        m_physicsTick.RegisterTick(&m_physicsTickGroup);
         
         for (auto& entity : m_entityPool)
         {
@@ -159,9 +199,15 @@ namespace nes
         tickManager.UnregisterTickGroup(&m_physicsTickGroup);
         tickManager.UnregisterTickGroup(&m_postPhysicsTickGroup);
         tickManager.UnregisterTickGroup(&m_lateTickGroup);
+
+        // Shutdown Physics
+        NES_DELETE(m_pPhysicsScene);
         
         m_entityPool.ClearPool();
         FreeRenderResources();
+
+        NES_DELETE(m_pJobSystem);
+        NES_DELETE(m_pPhysicsAllocator);
     }
 
     void World::PreRender(const Camera& sceneCamera)

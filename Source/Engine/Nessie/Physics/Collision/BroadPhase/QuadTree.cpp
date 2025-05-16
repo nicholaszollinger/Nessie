@@ -95,6 +95,14 @@ namespace nes
         return wasChanged;
     }
 
+    QuadTree::BodyTracker::BodyTracker(const BodyTracker& other)
+        : m_broadPhaseLayer(other.m_broadPhaseLayer.load())
+        , m_collisionLayer(other.m_collisionLayer.load())
+        , m_bodyLocation(other.m_bodyLocation.load())
+    {
+        //
+    }
+
     const AABox QuadTree::kInvalidBounds(Vector3(math::kLargeFloat), Vector3(-math::kLargeFloat));
 
     QuadTree::~QuadTree()

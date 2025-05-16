@@ -23,7 +23,7 @@ namespace nes
     {
         friend class PhysicsScene;
         using BodyMutexes = MutexArray<std::shared_mutex>;
-
+    
     public:
         /// Bodies are protected using an array of mutexes (so a fixed number, not 1 per body). Each set bit in this mask
         /// indicates a locked index.
@@ -40,7 +40,30 @@ namespace nes
             uint32_t m_numActiveKinematicBodies = 0;
         };
 
+        // [TODO]: 
+        // //----------------------------------------------------------------------------------------------------
+        // /// @brief : Per Thread override of the locked state, to be used by PhysicsSystem only!!! 
+        // //----------------------------------------------------------------------------------------------------
+        // struct Internal_GrantActiveBodiesAccess
+        // {
+        //     // inline Internal_GrantActiveBodiesAccess(bool allowActivation, bool allowDeactivation)
+        //     // {
+        //     //     NES_ASSERT(!GetOverrideAllowActivation());
+        //     //     SetOverrideAllowActivation(allowActivation);
+        //     //
+        //     //     NES_ASSERT(!GetOverrideAllowDeactivation());
+        //     //     SetOverrideAllowDeactivation(allowDeactivation);
+        //     // }
+        //     //
+        //     // inline ~Internal_GrantActiveBodiesAccess()
+        //     // {
+        //     //     SetOverrideAllowActivation(false);
+        //     //     SetOverrideAllowDeactivation(false);
+        //     // }
+        // };
+        
     private:
+        
         /// Value that indicates that there are no more freed body IDs.
         static constexpr uintptr_t          kBodyIDFreeListEnd = ~static_cast<uintptr_t>(0);
         

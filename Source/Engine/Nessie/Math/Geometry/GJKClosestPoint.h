@@ -139,27 +139,27 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the max length of valid points in m_y 
         //----------------------------------------------------------------------------------------------------
-        inline float    GetMaxYLengthSqr() const;
+        float           GetMaxYLengthSqr() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Remove points that are not in the set. Only updates m_y. 
         //----------------------------------------------------------------------------------------------------
-        inline void     UpdatePointSetY(uint32_t set);
+        void            UpdatePointSetY(uint32_t set);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Remove points that are not in the set. Only updates m_p. 
         //----------------------------------------------------------------------------------------------------
-        inline void     UpdatePointSetP(uint32_t set);
+        void            UpdatePointSetP(uint32_t set);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Remove points that are not in the set. Only updates m_p and m_q. 
         //----------------------------------------------------------------------------------------------------
-        inline void     UpdatePointSetPQ(uint32_t set);
+        void            UpdatePointSetPQ(uint32_t set);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Remove points that are not in the set. Updates m_y, m_p and m_q. 
         //----------------------------------------------------------------------------------------------------
-        inline void     UpdatePointSetYPQ(uint32_t set);
+        void            UpdatePointSetYPQ(uint32_t set);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculate the closest points on A and B.

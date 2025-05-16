@@ -72,7 +72,7 @@ namespace nes
         public:
             AtomicNodeID() = default;
             explicit AtomicNodeID(const NodeID id) : m_id(id.m_id) {}
-            AtomicNodeID& operator=(const NodeID& id);
+            inline void operator=(const NodeID& id) { m_id = id.m_id; }
 
             operator NodeID() const { return NodeID(m_id); }
             bool operator==(const BodyID& bodyID) const     { return m_id == bodyID.GetIndexAndGeneration(); }

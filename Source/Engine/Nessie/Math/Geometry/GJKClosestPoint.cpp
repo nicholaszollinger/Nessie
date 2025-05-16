@@ -2,7 +2,6 @@
 #include "GJKClosestPoint.h"
 
 #include "ClosestPoint.h"
-#include "imgui_internal.h"
 #include "Math/Bit.h"
 
 namespace nes

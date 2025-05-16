@@ -166,21 +166,11 @@ namespace nes
             JobSystem*              m_pJobSystem = nullptr;   /// The JobSystem that owns this Job.
             JobFunction             m_function = nullptr;     /// The functor to be executed.
             std::atomic<uint32_t>   m_numDependencies = 0;    /// The number of Jobs that must be executed before this one.
-            std::atomic<uint32_t>   m_referenceCount = 0;     /// The number of references to this Job. 
+            //std::atomic<uint32_t>   m_referenceCount = 0;     /// The number of references to this Job. 
             std::atomic<intptr_t>   m_barrier = 0;            /// Equal to the numerical value of the pointer to the Barrier (can be null), or kBarrierDoneState to denote that the Barrier is done.
 
         public:
             Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32_t numDependencies);
-            
-            //----------------------------------------------------------------------------------------------------
-            /// @brief : Add a Reference to this Job, keeping it from being freed.
-            //----------------------------------------------------------------------------------------------------
-            void            AddRef();
-
-            //----------------------------------------------------------------------------------------------------
-            /// @brief : Remove a Reference to this Job. Once all references are removed, the Job will be freed by JobSystem::FreeJob();
-            //----------------------------------------------------------------------------------------------------
-            void            RemoveRef();
             
             //----------------------------------------------------------------------------------------------------
             /// @brief : Add a number of dependencies to this Job.
@@ -224,6 +214,12 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             JobSystem*      GetJobSystem() const    { return m_pJobSystem; }
             const char*     GetName() const         { return m_name; }
+
+        private:
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : `Releasing` the Job object calls JobSystem::Free() 
+            //----------------------------------------------------------------------------------------------------
+            virtual void ReleaseObjectImpl(Job* pThisObject) const override;
         };
 
     public:

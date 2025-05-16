@@ -103,7 +103,17 @@ namespace nes
     private:
         virtual void*       GetObject() override final                  { return this; }
         virtual const void* GetObject() const override final            { return this; }
-        virtual void        ReleaseObject() const override;
+        virtual void        ReleaseObject() const override final;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Release the Ref Target Object. By default, this calls delete on the pointer.
+        ///	@param pThisObject : This is the 'this' pointer for this object! You can call delete in this function,
+        ///     but make sure to not do anything else with this pointer if you do!
+        //----------------------------------------------------------------------------------------------------
+        virtual void        ReleaseObjectImpl(RefTargetDerivedType* pThisObject) const
+        {
+            NES_DELETE(pThisObject);
+        }
     };
 
     template <typename Type>

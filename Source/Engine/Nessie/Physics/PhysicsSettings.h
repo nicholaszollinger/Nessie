@@ -31,7 +31,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Settings for the Physics Simulation. All distances are in meters unless otherwise specified.
     //----------------------------------------------------------------------------------------------------
-    struct GlobalPhysicsSettings
+    struct PhysicsSettings
     {
         NES_OVERRIDE_NEW_DELETE
 

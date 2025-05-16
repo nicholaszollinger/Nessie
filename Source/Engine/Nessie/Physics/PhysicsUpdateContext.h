@@ -2,6 +2,7 @@
 #pragma once
 #include "Collision/BroadPhase/BroadPhase.h"
 #include "Core/Config.h"
+#include "Core/StaticArray.h"
 #include "Core/Jobs/JobSystem.h"
 #include "Core/Memory/STLStackAllocator.h"
 #include "Math/Vector3.h"
@@ -25,17 +26,34 @@ namespace nes
             /// (Need to add thread index * m_maxBodyPairsQueue and modulo m_maxBodyPairsPerQueue).
             std::atomic<uint32_t> m_writeIndex{ 0 };
             /// Moved to own cache line to avoid conflicts with consumer jobs.
-            uint8_t m_padding1[NES_CACHE_LINE_SIZE - sizeof(std::atomic<uint32_t>)];
+            uint8_t m_padding1[NES_CACHE_LINE_SIZE - sizeof(std::atomic<uint32_t>)]{};
 
             /// Next index to read in m_bodyPair array.
             /// (Need to add thread index * m_maxBodyPairsQueue and modulo m_maxBodyPairsPerQueue).
             std::atomic<uint32_t> m_readIndex{ 0 };
             /// Moved to own cache line to avoid conflicts with consumer jobs.
-            uint8_t m_padding2[NES_CACHE_LINE_SIZE - sizeof(std::atomic<uint32_t>)];
+            uint8_t m_padding2[NES_CACHE_LINE_SIZE - sizeof(std::atomic<uint32_t>)]{};
+
+            BodyPairQueue() = default;
+            BodyPairQueue(const BodyPairQueue& other)
+                : m_writeIndex(other.m_writeIndex.load())
+                , m_readIndex(other.m_readIndex.load())
+            {
+                //
+            }
+            BodyPairQueue& operator=(const BodyPairQueue& other)
+            {
+                if (this != &other)
+                {
+                    m_writeIndex = other.m_writeIndex.load();
+                    m_readIndex = other.m_readIndex.load();
+                }
+                return *this;
+            };
         };
 
-        using BodyPairQueues = std::array<BodyPairQueue, kMaxConcurrency>;
-        using JobHandleArray = std::array<JobHandle, kMaxConcurrency>;
+        using BodyPairQueues = StaticArray<BodyPairQueue, kMaxConcurrency>;
+        using JobHandleArray = StaticArray<JobHandle, kMaxConcurrency>;
         using JobMask = uint32_t;
 
         //----------------------------------------------------------------------------------------------------
@@ -93,7 +111,8 @@ namespace nes
             uint8_t m_padding6[NES_CACHE_LINE_SIZE - sizeof(std::atomic<uint32_t>)];    /// Padding to avoid sharing cache line with the next atomic.
 
             BodyPairQueues m_bodyPairQueues;                                            /// Queues in which to put body pairs that need to be tested by the narrow phase.
-
+            uint32_t       m_maxBodyPairsPerQueue;                                      /// Amount of body pairs that we can queue per queue.
+            
             std::atomic<JobMask> m_activeFindCollisionJobs;                             /// A bitmask that indicates which jobs are still active.
 
             std::atomic<unsigned int> m_numBodyPairs { 0 };                       /// The number of Body Pairs found during this Step. This is used to size the Contact Cache in the next step. 

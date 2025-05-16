@@ -53,12 +53,20 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             /// @brief : Check if a triangle is facing 'position'. 
             //----------------------------------------------------------------------------------------------------
-            inline bool IsFacing(const Vector3& position) const;
+            inline bool IsFacing(const Vector3& position) const
+            {
+                NES_ASSERT(!m_isRemoved);
+                return m_normal.Dot(position - m_centroid) > 0.0f;
+            }
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Check if the triangle is facing the origin. 
             //----------------------------------------------------------------------------------------------------
-            inline bool IsFacingOrigin() const;
+            inline bool IsFacingOrigin() const
+            {
+                NES_ASSERT(!m_isRemoved);
+                return m_normal.Dot(m_centroid) > 0.0f;
+            }
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Get the next edge of edge index.

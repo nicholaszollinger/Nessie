@@ -19,7 +19,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class PhysicsScene
     {
-        friend class SceneManager; // Or just the World?
+        friend class World;
         
     public:
         /// Maximum value that is supported.
@@ -97,10 +97,10 @@ namespace nes
         const CollisionLayerPairFilter* m_pCollisionLayerPairFilter = nullptr;
 
         /// Simulation Settings.
-        GlobalPhysicsSettings m_settings;
+        PhysicsSettings m_settings;
 
         /// Keeps track of the Bodies in the Scene.
-        BodyManager m_bodyManager{};
+        BodyManager         m_bodyManager{};
 
         // [TODO]:
         /// Body Locking Interfaces
@@ -117,7 +117,7 @@ namespace nes
         // ContactConstraintsManager m_contactManager;
 
         /// All non-contact constraints.
-        ConstraintManager m_constraintManager{};
+        ConstraintManager   m_constraintManager{};
         
         // [TODO]:
         /// Keeps track of connected bodies and build islands for multithreaded velocity/position update.
@@ -128,16 +128,16 @@ namespace nes
         // LargeIslandSplitter m_largeIslandSplitter;
 
         /// Mutex for protecting m_stepListeners.
-        std::mutex m_stepListenersMutex;
+        std::mutex          m_stepListenersMutex;
 
         /// List of physics step listeners.
-        StepListeners m_stepListeners;
+        StepListeners       m_stepListeners;
 
         /// Global gravity value for the Physics Scene.
-        Vector3 m_gravity = Vector3(0.0f, -9.81f, 0.0f);
+        Vector3             m_gravity = Vector3(0.0f, -9.81f, 0.0f);
 
         /// Previous frame's delta time of one sub step to allow scaling previous frame's constraint impulses.
-        float m_previousStepDeltaTime = 0.0f;
+        float               m_previousStepDeltaTime = 0.0f;
     
     public:
         PhysicsScene();
@@ -173,8 +173,8 @@ namespace nes
         void                            OptimizeBroadPhase();
 
         
-        void                            SetSettings(const GlobalPhysicsSettings& settings)  { m_settings = settings; }
-        const GlobalPhysicsSettings&    GetSettings() const                                 { return m_settings; } 
+        void                            SetSettings(const PhysicsSettings& settings)  { m_settings = settings; }
+        const PhysicsSettings&    GetSettings() const                                 { return m_settings; } 
     
         
     private:
@@ -188,7 +188,7 @@ namespace nes
         ///     form islands together and the data to solve contacts between bodies. At the end of the function,
         ///     all allocated memory will have been freed.
         //----------------------------------------------------------------------------------------------------
-        PhysicsUpdateErrorCode          Update(const float deltaTime,int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
+        PhysicsUpdateErrorCode          Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
         
         // Job Entry Points.
         void                            JobStepListeners(PhysicsUpdateContext::Step* pStep);
@@ -215,7 +215,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Tries to spawn a new FindCollisions job if max concurrency hasn't been reached yet. 
         //----------------------------------------------------------------------------------------------------
-        void        TrySpawnJobFindCollisions(PhysicsUpdateContext::Step* pStep) const;
+        void                            TrySpawnJobFindCollisions(PhysicsUpdateContext::Step* pStep) const;
         
     };
 }

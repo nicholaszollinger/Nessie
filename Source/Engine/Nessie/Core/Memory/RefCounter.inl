@@ -43,6 +43,10 @@ namespace nes
     template <typename Derived>
     void RefTarget<Derived>::ReleaseObject() const
     {
-        NES_DELETE(static_cast<const Derived*>(this));
+        // This is a bit sketch, but I needed to have a non-const pointer for the JobSystem::Job
+        // class to call into FreeJob().
+        const Derived* pConstThis = static_cast<const Derived*>(this);
+        Derived* pThis = const_cast<Derived*>(pConstThis);
+        ReleaseObjectImpl(pThis);
     }
 }

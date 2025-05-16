@@ -143,18 +143,6 @@ namespace nes
 
     NES_PRECISE_MATH_END
 
-    inline bool EPAConvexHullBuilder::Triangle::IsFacing(const Vector3& position) const
-    {
-        NES_ASSERT(!m_isRemoved);
-        return m_normal.Dot(position - m_centroid) > 0.0f;
-    }
-
-    inline bool EPAConvexHullBuilder::Triangle::IsFacingOrigin() const
-    {
-        NES_ASSERT(!m_isRemoved);
-        return m_normal.Dot(m_centroid) > 0.0f;
-    }
-
     inline void EPAConvexHullBuilder::TriangleFactory::Clear()
     {
         m_pNextFree = nullptr;

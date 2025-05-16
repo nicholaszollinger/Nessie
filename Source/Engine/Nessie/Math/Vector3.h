@@ -453,16 +453,6 @@ namespace nes
         return SquaredMagnitude() <= maxDistSqr;
     }
 
-    // template <ScalarType Type>
-    // VectorRegisterUint TVector3<Type>::Less(const TVector3& a, const TVector3& b)
-    // {
-    //     uint32_t z = a.z < b.z? 0xffffffffu : 0;
-    //     return UVec4(a.x < b.x? 0xffffffffu : 0,
-    //                  a.y < b.y? 0xffffffffu : 0,
-    //                  z,
-    //                  z);
-    // }
-
     //----------------------------------------------------------------------------------------------------
     /// @brief : Tests if the vector contains any NaN components. 
     //----------------------------------------------------------------------------------------------------
