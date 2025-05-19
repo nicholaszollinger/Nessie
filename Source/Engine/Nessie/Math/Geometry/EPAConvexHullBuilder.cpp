@@ -302,7 +302,7 @@ namespace nes
 
     void EPAConvexHullBuilder::FreeTriangle(Triangle* pTriangle)
     {
-#ifdef NES_LOGGING_ENABLED
+#if NES_LOGGING_ENABLED
         NES_ASSERT(pTriangle->m_isRemoved);
         for (const Edge& edge : pTriangle->m_edges)
         {

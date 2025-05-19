@@ -34,9 +34,9 @@ namespace nes
             outDiagonal[i] = eigenValue[indices[i]];
         }
 
-        // [TODO]: Should I verify that this is a left-handed result?
-        //if (outRotation.GetAxis(Axis::X).Cross(outRotation.GetAxis(Axis::Y)).Dot(outRotation.GetAxis(Axis::Z)) < 0.f))
-        // outRotation[3] = -outRotation[3];
+        // Make sure the result is left-handed.
+        if (!IsLeftHanded(outRotation.GetAxis(Axis::X), outRotation.GetAxis(Axis::Y), outRotation.GetAxis(Axis::Z)))
+            outRotation[3] = -outRotation[3];
 
 #if NES_LOGGING_ENABLED
         // Validate that the solution is correct, for each axis we want to make sure that the differnet in inertia is

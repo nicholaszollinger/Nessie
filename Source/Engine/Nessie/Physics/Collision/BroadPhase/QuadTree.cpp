@@ -642,7 +642,7 @@ namespace nes
 
             // Get the parent
             uint32_t parentNodeIndex = node.m_parentNodeIndex;
-            if (parentNodeIndex != kInvalidNodeIndex)
+            if (parentNodeIndex == kInvalidNodeIndex)
                 break;
 
             // Find out which child of the parent that this node is in.

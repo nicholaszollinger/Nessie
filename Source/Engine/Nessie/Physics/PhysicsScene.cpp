@@ -35,45 +35,29 @@ namespace nes
 
         // Init Islands Builder
 
-        // Init the Body Interface...
+        // Init the Body Interface
+        m_bodyInterfaceLocking.Internal_Init(m_bodyLockInterfaceLocking, m_bodyManager, *m_pBroadphase);
+        m_bodyInterfaceNoLock.Internal_Init(m_bodyLockInterfaceNoLock, m_bodyManager, *m_pBroadphase);
 
         // [TODO]: 
         // Init the NarrowPhase Query
     }
-
-    Body* PhysicsScene::CreateBody()
-    {
-        // [TODO]: 
-        return nullptr;
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Add a Constraint to the Scene. 
-    //----------------------------------------------------------------------------------------------------
+    
     void PhysicsScene::AddConstraint(Constraint* pConstraint)
     {
         m_constraintManager.Add(&pConstraint, 1);
     }
 
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Add an array of Constraints to the Scene. 
-    //----------------------------------------------------------------------------------------------------
     void PhysicsScene::AddConstraints(Constraint** constraintsArray, const int numConstraints)
     {
         m_constraintManager.Add(constraintsArray, numConstraints);
     }
     
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Remove a Constraint from the Scene
-    //----------------------------------------------------------------------------------------------------
     void PhysicsScene::RemoveConstraint(Constraint* pConstraint)
     {
         m_constraintManager.Remove(&pConstraint, 1);
     }
 
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Remove an array of constraints to the Scene. 
-    //----------------------------------------------------------------------------------------------------
     void PhysicsScene::RemoveConstraints(Constraint** constraintsArray, const int numConstraints)
     {
         m_constraintManager.Remove(constraintsArray, numConstraints);
@@ -85,12 +69,13 @@ namespace nes
         m_pBroadphase->Optimize();
     }
 
-    PhysicsUpdateErrorCode PhysicsScene::Update(const float deltaTime, const int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem)
+    PhysicsUpdateErrorCode PhysicsScene::Update([[maybe_unused]] const float deltaTime, [[maybe_unused]] const int collisionSteps, [[maybe_unused]] StackAllocator* pAllocator, JobSystem* pJobSystem)
     {
         NES_ASSERT(m_pBroadphase != nullptr);
         NES_ASSERT(collisionSteps > 0);
         NES_ASSERT(deltaTime > 0.0f);
 
+        // [TEMP]: This is a test case:  
         int value = 0;
         auto testJob = pJobSystem->CreateJob("Test Job", [&value]()
         {
@@ -224,67 +209,83 @@ namespace nes
         return PhysicsUpdateErrorCode::None;
     }
 
-    void PhysicsScene::JobStepListeners(PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobStepListeners([[maybe_unused]] PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobDetermineActiveConstraints(PhysicsUpdateContext::Step* pStep) const
+    void PhysicsScene::JobDetermineActiveConstraints([[maybe_unused]] PhysicsUpdateContext::Step* pStep) const
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobApplyGravity(const PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobApplyGravity([[maybe_unused]] const PhysicsUpdateContext* pContext,[[maybe_unused]]  PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobSetupVelocityContstraints(float deltaTime, PhysicsUpdateContext::Step* pStep) const
+    void PhysicsScene::JobSetupVelocityContstraints([[maybe_unused]] float deltaTime,[[maybe_unused]]  PhysicsUpdateContext::Step* pStep) const
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobBuildIslandsFromConstraints(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobBuildIslandsFromConstraints([[maybe_unused]] PhysicsUpdateContext* pContext,[[maybe_unused]]  PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobFindCollisions(PhysicsUpdateContext::Step* pStep, const int jobIndex)
+    void PhysicsScene::JobFindCollisions([[maybe_unused]] PhysicsUpdateContext::Step* pStep, [[maybe_unused]] const int jobIndex)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobFinalizeIslands(PhysicsUpdateContext* pContext)
+    void PhysicsScene::JobFinalizeIslands([[maybe_unused]] PhysicsUpdateContext* pContext)
     {
+        // [TODO]: 
     }
 
     void PhysicsScene::JobBodySetIslandIndex()
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobSolveVelocityConstraints(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobSolveVelocityConstraints([[maybe_unused]] PhysicsUpdateContext* pContext, [[maybe_unused]] PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobPreIntegrateVelocity(const PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobPreIntegrateVelocity([[maybe_unused]] const PhysicsUpdateContext* pContext, [[maybe_unused]] PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobPostIntegrateVelocity(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep) const
+    void PhysicsScene::JobPostIntegrateVelocity([[maybe_unused]] PhysicsUpdateContext* pContext, [[maybe_unused]] PhysicsUpdateContext::Step* pStep) const
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobFindCCDContacts(const PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobFindCCDContacts([[maybe_unused]] const PhysicsUpdateContext* pContext, [[maybe_unused]] PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobResolveCCDContacts(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobResolveCCDContacts([[maybe_unused]] PhysicsUpdateContext* pContext, [[maybe_unused]] PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobContactRemovedCallbacks(const PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobContactRemovedCallbacks([[maybe_unused]] const PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::JobSolvePositionConstraints(PhysicsUpdateContext* pContext, PhysicsUpdateContext::Step* pStep)
+    void PhysicsScene::JobSolvePositionConstraints([[maybe_unused]] PhysicsUpdateContext* pContext, [[maybe_unused]] PhysicsUpdateContext::Step* pStep)
     {
+        // [TODO]: 
     }
 
-    void PhysicsScene::TrySpawnJobFindCollisions(PhysicsUpdateContext::Step* pStep) const
+    void PhysicsScene::TrySpawnJobFindCollisions([[maybe_unused]] PhysicsUpdateContext::Step* pStep) const
     {
+        // [TODO]: 
     }
 }

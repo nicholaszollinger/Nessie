@@ -7,6 +7,11 @@
 #endif
 
 //---------------------------------------------------------------------------------------------------------------------
+// The following is from Rez Graham's Bleach Leak Detector. It will save a string record for each memory allocation so that
+// the output message when there are memory leaks will tell you exactly where the allocation occurred.
+//---------------------------------------------------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------------------------------------------------
 // Memory debugging.  We maintain two hash maps, one for all the records keyed by address and one to keep track of 
 // the incremental ids, keyed by source hash.  The source hash is the hash of the filename and line number.  When an 
 // allocation happens, we generate a new record and insert it into the records hash and then increment the count for 
@@ -56,6 +61,7 @@
         #endif
     #endif
 
+    
     namespace nes::memory::internal
     {
         using Filename = std::string;
@@ -257,7 +263,7 @@
             if (g_pMemoryDebugger)
                 g_pMemoryDebugger->RemoveRecord(pPtr);
         }
-    }  // end namespace BleachNewInternal
+    }
 
 #else  // !ENABLED_MEMORY_DEBUGGING
 
@@ -266,20 +272,23 @@
 //---------------------------------------------------------------------------------------------------------------------
 namespace nes::memory::internal
 {
-        void InitLeakDetector()
-        {
-        #if defined(NES_PLATFORM_WINDOWS)
-            _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-        #endif
-        }
+    void InitLeakDetector()
+    {
+    #if defined(NES_PLATFORM_WINDOWS)
+        _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    #endif
+    }
 
-        void DumpAndDestroyLeakDetector() {}
-        static void DumpMemoryRecords() {}
-        static void AddRecord(void*, const char*, int, uint64_t = 0) {}
-        static void RemoveRecord(void*) {}
+    void DumpAndDestroyLeakDetector() {}
+
+#if NES_LOGGING_ENABLED
+    static void AddRecord(void*, const char*, int, uint64_t = 0) {}
+    static void RemoveRecord(void*) {}
+#endif
+
 }
 
-#endif  // ENABLE_BLEACH_ALLOCATION_TRACKING
+#endif  // ENABLED_MEMORY_DEBUGGING
 
 
 namespace nes::memory::internal

@@ -1,19 +1,22 @@
 // CollisionGroup.h
 #pragma once
 #include <cstdint>
+#include "GroupFilter.h"
 
 namespace nes
 {
-    class GroupFilter;
-
     //----------------------------------------------------------------------------------------------------
-    //	TODO:
-    //  I need to look at this class in addition to the CollisionLayer values to see if I want to change
-    //  this system. Seems like a lot of the same kind of mechanisms/data.
+    // [TODO]: 
+    // I need to look at this class in addition to the CollisionLayer values to see if I want to change
+    // this system. Seems like a lot of the same kind of mechanisms/data.
     //
-    //  This class seems to be the "serializable" data for objects. 
+    // [TODO]: 
+    // This class seems to be the "serializable" data for objects. I need the serialize interface.
     //
-    /// @brief :  
+    /// @brief : Two objects can collide with each other if:
+    ///     - Both don't have a group filter
+    ///     - The first group says that the objects can collide
+    ///     - Or if there's no filter for the first object, the second group filter says that the objects can collide.
     //----------------------------------------------------------------------------------------------------
     class CollisionGroup
     {
@@ -25,7 +28,7 @@ namespace nes
         static constexpr SubGroupID kInvalidSubGroup    = ~static_cast<SubGroupID>(0);
 
     private:
-        const GroupFilter*          m_pFilter = nullptr;
+        ConstStrongPtr<GroupFilter> m_pFilter{};
         GroupID                     m_groupID = kInvalidGroup;
         SubGroupID                  m_subGroupID = kInvalidSubGroup;
 
@@ -40,10 +43,9 @@ namespace nes
         const GroupFilter*  GetGroupFilter() const                      { return m_pFilter; }
         GroupID             GetGroupID() const                          { return m_groupID; }
         SubGroupID          GetSubGroupID() const                       { return m_subGroupID; }
-
-        // [TODO]: 
+        
         bool                CanCollide(const CollisionGroup& other) const;
         
-        static constexpr CollisionGroup Invalid() { return {}; }
+        static const CollisionGroup s_Invalid;
     };
 }

@@ -91,11 +91,6 @@ namespace nes
         }
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize all collision functions with a function that asserts and returns no collision. 
-        //----------------------------------------------------------------------------------------------------
-        static void Internal_Init();
-
-        //----------------------------------------------------------------------------------------------------
         /// @brief : Register a collide shape function in the collision table.
         //----------------------------------------------------------------------------------------------------
         static void RegisterCollideShape(const ShapeSubType type1, const ShapeSubType type2, const CollideShape& function);
@@ -116,5 +111,10 @@ namespace nes
         ///     back, can be registered if the collision function only exists the other way around.
         //----------------------------------------------------------------------------------------------------
         static void ReversedCastShape(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vector3& scale, const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize all collision functions with a function that asserts and returns no collision. 
+        //----------------------------------------------------------------------------------------------------
+        static void Internal_Init();
     };
 }

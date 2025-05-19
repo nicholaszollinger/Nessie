@@ -5,11 +5,11 @@
 #include "Application/Application.h"
 #include "Components/CameraComponent.h"
 #include "Components/FreeCamMovementComponent.h"
+#include "Physics/Collision/Shapes/BoxShape.h"
+#include "Physics/Collision/Shapes/EmptyShape.h"
 
 // Hack to test stb_image
 #include "stb_image.h"
-#include "Physics/Collision/Shapes/BoxShape.h"
-#include "Physics/Collision/Shapes/EmptyShape.h"
 
 namespace nes
 {
@@ -173,6 +173,13 @@ namespace nes
         m_physicsTick.m_pJobSystem = m_pJobSystem;
         m_physicsTick.m_collisionSteps = 1;
         m_physicsTick.RegisterTick(&m_physicsTickGroup);
+
+        // [TEMP]: 
+        // Add a body to the System???
+        auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
+        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vector3(20, 1, 1)), Vector3(0, 10, 0), Quat::Identity(), BodyMotionType::Dynamic, PhysicsLayers::kMoving), BodyActivationMode::Activate);
+
+        bodyInterface.SetPosition(m_testID, Vector3(0.f), BodyActivationMode::LeaveAsIs);
         
         for (auto& entity : m_entityPool)
         {
@@ -201,7 +208,14 @@ namespace nes
         tickManager.UnregisterTickGroup(&m_lateTickGroup);
 
         // Shutdown Physics
-        NES_DELETE(m_pPhysicsScene);
+        if (m_pPhysicsScene)
+        {
+            auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
+            bodyInterface.RemoveBody(m_testID);
+            bodyInterface.DestroyBody(m_testID);
+            
+            NES_DELETE(m_pPhysicsScene);
+        }
         
         m_entityPool.ClearPool();
         FreeRenderResources();

@@ -88,6 +88,15 @@ namespace nes
         outResult.Set(this);
     }
 
+    BoxShape::BoxShape(const Vector3& halfExtent, const float convexRadius)
+        : ConvexShape(ShapeSubType::Box)
+        , m_halfExtent(halfExtent)
+        , m_convexRadius(convexRadius)
+    {
+        NES_ASSERT(convexRadius >= 0.f);
+        NES_ASSERT(halfExtent.ReduceMin() >= convexRadius);
+    }
+
     AABox BoxShape::GetLocalBounds() const
     {
         return AABox(-m_halfExtent, m_halfExtent);
@@ -105,7 +114,7 @@ namespace nes
         return props;
     }
 
-    Vector3 BoxShape::GetSurfaceNormal(const SubShapeID& subShapeID, const Vector3& localSurfacePosition) const
+    Vector3 BoxShape::GetSurfaceNormal([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& localSurfacePosition) const
     {
         NES_ASSERTV(subShapeID.IsEmpty(), "Invalid subshape ID");
 
@@ -230,7 +239,7 @@ namespace nes
         return nullptr;
     }
 
-    void BoxShape::GetSupportingFace(const SubShapeID& subShapeID, const Vector3& direction, const Vector3& scale,
+    void BoxShape::GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& direction, const Vector3& scale,
         const Mat4& centerOfMassTransform, SupportingFace& outVertices) const
     {
         NES_ASSERTV(subShapeID.IsEmpty(), "Invalid subshape ID");

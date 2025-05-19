@@ -6,6 +6,9 @@ namespace nes
 {
     class BodyID;
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Base class for the Listener that will be notified whenever a body is activated or deactivated.
+    //----------------------------------------------------------------------------------------------------
     class BodyActivationListener
     {
     public:

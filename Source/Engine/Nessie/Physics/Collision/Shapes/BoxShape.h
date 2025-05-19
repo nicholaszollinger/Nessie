@@ -37,6 +37,7 @@ namespace nes
     public:
         BoxShape() : ConvexShape(ShapeSubType::Box) {}
         BoxShape(const BoxShapeSettings& settings, ShapeResult& outResult);
+        BoxShape(const Vector3& halfExtent, float convexRadius = physics::kDefaultConvexRadius);
         
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::GetLocalBounds()

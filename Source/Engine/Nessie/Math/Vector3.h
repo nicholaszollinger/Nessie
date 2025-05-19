@@ -161,7 +161,7 @@ namespace nes
     template <ScalarType Type>
     constexpr bool TVector3<Type>::operator<=(const TVector3 right) const
     {
-        return x >= right.x && y >= right.y && z >= right.z;
+        return x <= right.x && y <= right.y && z <= right.z;
     }
 
     //----------------------------------------------------------------------------------------------------

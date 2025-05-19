@@ -68,11 +68,15 @@ namespace nes
         virtual ~Body() = default;
         Body(const Body&) = delete;
         Body& operator=(const Body&) = delete;
+
+    public:
+        /// A Dummy body that can be used by constraints to attach a constraint to the world instead of another body.
+        static Body             s_fixedToWorld;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the ID of the Body.
         //----------------------------------------------------------------------------------------------------
-        inline BodyID           GetID() const                                           { return m_id; }
+        inline const BodyID&    GetID() const                                           { return m_id; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get this body's current world position. 
@@ -376,7 +380,7 @@ namespace nes
         inline void             AddImpulse(const Vector3& impulse, const Vector3& position);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Add angular impulse to in world space (unit: N m s).
+        /// @brief : Add angular impulse to this body in world space (unit: N m s).
         ///     If you want the body to wake up when it is sleeping, use BodyInterface::AddAngularImpulse instead.
         //----------------------------------------------------------------------------------------------------
         inline void             AddAngularImpulse(const Vector3& angularImpulse);
@@ -494,10 +498,7 @@ namespace nes
         BodyCreateInfo          GetBodyCreateInfo() const;
 
         // [TODO]: SoftBody version of above.
-
-        /// A Dummy body that can be used by constraints to attach a constraint to the world instead of another body.
-        static Body             s_fixedToWorld;
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Helper function for BroadPhase::FindCollidingPairs that returns true when two bodies can
         ///     collide. It assumes that body 1 is dynamic and active and guarantees that if body1 collides with

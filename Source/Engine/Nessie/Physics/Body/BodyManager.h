@@ -2,15 +2,12 @@
 #pragma once
 #include <shared_mutex>
 #include "Body.h"
+#include "BodyActivationMode.h"
 #include "Core/Thread/MutexArray.h"
 
 namespace nes
 {
-    enum class AddBodyActivationMode
-    {   
-        Activate,    /// Activate the Body, making it part of the simulation.
-        LeaveAsIs,   /// Leave the activation state as it is. This will not deactivate an active body!
-    };
+    
 
     using BodyVector = std::vector<Body*>;
     using BodyIDVector = std::vector<BodyID>;
@@ -69,7 +66,7 @@ namespace nes
         
         /// Bit that indicates a pointer in m_bodies is actually the index of the next freed body. We use the
         /// lowest bit because we know that bodies are 16 byte aligned so that addresses will never end in 1 bit.
-        static constexpr uintptr_t          kIsFreedBody = ~static_cast<uintptr_t>(1);
+        static constexpr uintptr_t          kIsFreedBody = static_cast<uintptr_t>(1);
 
         /// Amount of bits to shift to get an index to the next freed body.
         static constexpr unsigned           kFreedBodyIndexShift = 1;

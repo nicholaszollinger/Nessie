@@ -22,8 +22,6 @@ namespace nes
         Point,
         FillRectangleNV,
     };
-
-    
     
     //----------------------------------------------------------------------------------------------------
     ///		@brief : A World manages the 3D space of a Scene. 
@@ -83,6 +81,9 @@ namespace nes
         BroadPhaseLayerInterfaceTest m_broadPhaseLayerInterface{};
         CollisionVsBroadPhaseLayerFilterTest m_layerVsBroadPhaseFilter{};
         CollisionLayerPairFilterTest m_layerPairFilter{};
+
+        // [TEMP]: 
+        BodyID m_testID;
 
         // Render Resources:
         std::vector<MeshComponent*> m_transparentMeshes;

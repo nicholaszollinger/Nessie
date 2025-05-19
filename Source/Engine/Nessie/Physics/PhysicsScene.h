@@ -3,27 +3,28 @@
 #include "PhysicsSettings.h"
 #include "PhysicsUpdateContext.h"
 #include "PhysicsUpdateErrorCodes.h"
+#include "Body/BodyInterface.h"
+#include "Body/BodyLockInterface.h"
 #include "Body/BodyManager.h"
 #include "Collision/BroadPhase/BroadPhase.h"
 #include "Constraints/ConstraintManager.h"
 #include "Core/Jobs/JobSystem.h"
 #include "Core/Memory/StackAllocator.h"
-#include "Scene/TickFunction.h"
 
 namespace nes
 {
     class PhysicsStepListener;
     
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Class that runs physics simulation for all registered Bodies.   
+    ///	@brief : Class that runs physics simulation for all registered Bodies.   
     //----------------------------------------------------------------------------------------------------
     class PhysicsScene
     {
         friend class World;
         
     public:
-        /// Maximum value that is supported.
-        static constexpr uint32_t kMaxBodiesLimit = BodyID::kMaxBodyIndex + 1;
+        /// Maximum number of bodies that is supported.
+        static constexpr uint32_t   kMaxBodiesLimit = BodyID::kMaxBodyIndex + 1;
         //static constexpr uint32_t kMaxBodyPairsLimit = ContactConstraintManager::kMaxBodyPairsLimit;
         //static constexpr uint32_t kMaxContactConstraintsLimit = ContactConstraints::kMaxContactConstraintsLimit;
         
@@ -61,29 +62,29 @@ namespace nes
         //using ContactAllocator = ContactConstraintManager::ContactAllocator; 
         
         /// Number of constraints to process at once in JobDetermineActiveConstraints().
-        static constexpr int kDetermineActiveConstraintsBatchSize = 64;
+        static constexpr int        kDetermineActiveConstraintsBatchSize = 64;
         
         /// Number of constraints to process at once in JobSetupVelocityConstraints(). We want a low number
         /// of threads working on this so we take fairly large batches.
-        static constexpr int kSetupVelocityConstraintsBatchSize = 256;
+        static constexpr int        kSetupVelocityConstraintsBatchSize = 256;
 
         /// Number of bodies to process at once in JobApplyGravity().
-        static constexpr int kApplyGravityBatchSize = 64;
+        static constexpr int        kApplyGravityBatchSize = 64;
         
         /// Number of active bodies to test for collisions per batch. 
-        static constexpr int kActiveBodiesBatchSize = 16;
+        static constexpr int        kActiveBodiesBatchSize = 16;
 
         /// Number of active bodies to integrate velocities for, per batch.
-        static constexpr int kIntegrateVelocityBatchSize = 64;
+        static constexpr int        kIntegrateVelocityBatchSize = 64;
 
         /// Number of contacts that need to queued before another narrow phase job is started.
-        static constexpr int kNarrowPhaseBatchSize = 16;
+        static constexpr int        kNarrowPhaseBatchSize = 16;
 
         /// Number of continuous collision shape casts that need to be queued before another job is started.
-        static constexpr int kNumCCDBodiesPerJob = 4;
+        static constexpr int        kNumCCDBodiesPerJob = 4;
         
         /// The Broadphase does quick collision detection between body pairs.
-        BroadPhase* m_pBroadphase = nullptr;
+        BroadPhase*                 m_pBroadphase = nullptr;
 
         // [TODO]: 
         /// Narrow Phase Query interface
@@ -97,27 +98,25 @@ namespace nes
         const CollisionLayerPairFilter* m_pCollisionLayerPairFilter = nullptr;
 
         /// Simulation Settings.
-        PhysicsSettings m_settings;
+        PhysicsSettings             m_settings;
 
         /// Keeps track of the Bodies in the Scene.
-        BodyManager         m_bodyManager{};
-
-        // [TODO]:
+        BodyManager                 m_bodyManager{};
+        
         /// Body Locking Interfaces
-        //BodyLockInterfaceNoLock m_bodyLockInterfaceNoLock     { m_bodyManager };
-        //BodyLockInterfaceLocking m_bodyLockInterfaceLocking   { m_bodyManager };
-
-        // [TODO]:
+        BodyLockInterfaceNoLock     m_bodyLockInterfaceNoLock     { m_bodyManager };
+        BodyLockInterfaceLocking    m_bodyLockInterfaceLocking   { m_bodyManager };
+        
         /// Body Interfaces
-        //BodyInterface m_bodyInterfaceNoLock;
-        //BodyInterface m_bodyInterfaceLocking;
+        BodyInterface               m_bodyInterfaceNoLock;
+        BodyInterface               m_bodyInterfaceLocking;
 
         // [TODO]:
         /// The contact manager resolves all contacts during a simulation step.
         // ContactConstraintsManager m_contactManager;
 
         /// All non-contact constraints.
-        ConstraintManager   m_constraintManager{};
+        ConstraintManager           m_constraintManager{};
         
         // [TODO]:
         /// Keeps track of connected bodies and build islands for multithreaded velocity/position update.
@@ -128,16 +127,16 @@ namespace nes
         // LargeIslandSplitter m_largeIslandSplitter;
 
         /// Mutex for protecting m_stepListeners.
-        std::mutex          m_stepListenersMutex;
+        std::mutex                  m_stepListenersMutex;
 
         /// List of physics step listeners.
-        StepListeners       m_stepListeners;
+        StepListeners               m_stepListeners;
 
         /// Global gravity value for the Physics Scene.
-        Vector3             m_gravity = Vector3(0.0f, -9.81f, 0.0f);
+        Vector3                     m_gravity = Vector3(0.0f, -9.81f, 0.0f);
 
         /// Previous frame's delta time of one sub step to allow scaling previous frame's constraint impulses.
-        float               m_previousStepDeltaTime = 0.0f;
+        float                       m_previousStepDeltaTime = 0.0f;
     
     public:
         PhysicsScene();
@@ -146,17 +145,61 @@ namespace nes
         PhysicsScene& operator=(const PhysicsScene&) = delete;
         PhysicsScene(PhysicsScene&&) = delete;
         PhysicsScene& operator=(PhysicsScene&&) = delete;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the listener that is notified whenever a body is activated or deactivated.
+        //----------------------------------------------------------------------------------------------------
+        void                            SetBodyActivationListener(BodyActivationListener* pListener)    { m_bodyManager.SetBodyActivationListener(pListener); }
 
-        void                            Init(const CreateInfo& createInfo);
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the listener that is notified whenever a body is activated or deactivated.
+        //----------------------------------------------------------------------------------------------------
+        BodyActivationListener*         GetBodyActivationListener() const                               { return m_bodyManager.GetBodyActivationListener(); }
 
-        // Bodies:
-        Body*                           CreateBody();
-        //void AddBody(const BodyID& bodyID, BodyActivation)
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Body Interface. This interface allows you to create, remove bodies from the simulation
+        ///     as well as change their properties.
+        //----------------------------------------------------------------------------------------------------
+        const BodyInterface&            GetBodyInterface() const                                        { return m_bodyInterfaceLocking; }
 
-        // Constraints:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Body Interface. This interface allows you to create, remove bodies from the simulation
+        ///     as well as change their properties.
+        //----------------------------------------------------------------------------------------------------
+        BodyInterface&                  GetBodyInterface()                                              { return m_bodyInterfaceLocking; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Body Interface. This interface allows you to create, remove bodies from the simulation
+        ///     as well as change their properties.
+        /// @note : This version does not lock the bodies, use with great care!
+        //----------------------------------------------------------------------------------------------------
+        const BodyInterface&            GetBodyInterfaceNoLock() const                                  { return m_bodyInterfaceNoLock; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Body Interface. This interface allows you to create, remove bodies from the simulation
+        ///     as well as change their properties.
+        /// @note : This version does not lock the bodies, use with great care!
+        //----------------------------------------------------------------------------------------------------
+        BodyInterface&                  GetBodyInterfaceNoLock()                                        { return m_bodyInterfaceNoLock; }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Add a Constraint to the Scene. 
+        //----------------------------------------------------------------------------------------------------
         void                            AddConstraint(Constraint* pConstraint);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Add an array of Constraints to the Scene. 
+        //----------------------------------------------------------------------------------------------------
         void                            AddConstraints(Constraint** constraintsArray, const int numConstraints);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Remove a Constraint from the Scene
+        //----------------------------------------------------------------------------------------------------
         void                            RemoveConstraint(Constraint* pConstraint);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Remove an array of constraints to the Scene. 
+        //----------------------------------------------------------------------------------------------------
         void                            RemoveConstraints(Constraint** constraintsArray, const int numConstraints);
 
         //----------------------------------------------------------------------------------------------------
@@ -172,12 +215,22 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                            OptimizeBroadPhase();
 
-        
-        void                            SetSettings(const PhysicsSettings& settings)  { m_settings = settings; }
-        const PhysicsSettings&    GetSettings() const                                 { return m_settings; } 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the Physics Settings that govern the simulation. 
+        //----------------------------------------------------------------------------------------------------
+        void                            SetSettings(const PhysicsSettings& settings)        { m_settings = settings; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Physics Settings that govern the simulation.
+        //----------------------------------------------------------------------------------------------------
+        const PhysicsSettings&          GetSettings() const                                 { return m_settings; } 
     
-        
     private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize the Physics Scene. Must be called before using the scene. 
+        //----------------------------------------------------------------------------------------------------
+        void                            Init(const CreateInfo& createInfo);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Runs the simulation.
         ///     The World steps for a total of deltaTime seconds. This is divided in collisionSteps iterations.

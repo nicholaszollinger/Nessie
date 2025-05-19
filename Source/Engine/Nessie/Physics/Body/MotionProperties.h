@@ -39,7 +39,7 @@ namespace nes
         // 1st Cache line.
         Vector3             m_linearVelocity        = Vector3::Zero();          /// World space linear velocity of the center of mass (m/s)
         Vector3             m_angularVelocity       = Vector3::Zero();          /// World space angular velocity (rad/s)
-        Vector3             m_inverseInertiaDiagonal    = Vector3::Zero();          /// Diagonal of inverse inertia matrix: (D)
+        Vector3             m_inverseInertiaDiagonal = Vector3::Zero();         /// Diagonal of inverse inertia matrix: (D)
         Quat                m_inertiaRotation       = Quat::Identity();         /// Rotation (R) that takes inverse inertia diagonal to local space: IBody^-1 = R * D * R^-1
 
         // 2nd Cache line
@@ -50,12 +50,12 @@ namespace nes
         float               m_angularDamping        = 0.f;                      /// Angular damping: dw/dt = -c * w. c must be between [0, 1] but is usually close to 0.
         float               m_maxLinearVelocity     = 0.f;                      /// Maximum linear velocity that this body can reach (m/s).
         float               m_maxAngularVelocity    = 0.f;                      /// Maximum angular velocity that this body can reach (rad/s).
-        float               m_gravityScale         = 1.f;                      /// Factor to multiply gravity with.
+        float               m_gravityScale         = 1.f;                       /// Factor to multiply gravity with.
         uint32_t            m_indexInActiveBodies   = kInactiveIndex;           /// If the body is active, this is the index in the active body list or kInactiveIndex if it is not active.
         uint32_t            m_islandIndex           = kInactiveIndex;           /// Index of the Island that this body is a part of. When the body has not yet been updated or is not active, this equals kInactiveIndex.
 
         BodyMotionQuality   m_motionQuality         = BodyMotionQuality::Discrete;  /// Motion quality, or how well it detects collisions at high velocity.
-        bool                m_canSleep         = true;                         /// If this body can go to sleep.
+        bool                m_canSleep         = true;                              /// If this body can go to sleep.
         AllowedDOFs         m_allowedDoFs           = AllowedDOFs::All;             /// Allowed degrees of freedom for this body.
         uint8_t             m_numVelocityStepsOverride = 0;                         /// Used only when this Body is dynamic and colliding. Override for the number of solver velocity iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
         uint8_t             m_numPositionStepsOverride = 0;                         /// Used only when this Body is dynamic and colliding. Override for the number of solver position iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
@@ -180,7 +180,7 @@ namespace nes
         inline float                GetGravityScale() const                             { return m_gravityScale; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the value to scale gravity by. (1 = normal gravity, 0 = no gravity).
+        /// @brief : Set the value to scale gravity by. (1 = normal gravity, 0 = no gravity).
         //----------------------------------------------------------------------------------------------------
         inline void                 SetGravityScale(const float scale)                  { m_gravityScale = scale; }
 

@@ -704,7 +704,7 @@ namespace nes
 
         // Push the ID onto the free list.
         m_bodies[index] = reinterpret_cast<Body*>(m_bodyIDFreeListStart);
-        m_bodyIDFreeListStart = (reinterpret_cast<uintptr_t>(m_bodies[index]) << kFreedBodyIndexShift) | kIsFreedBody;
+        m_bodyIDFreeListStart = (static_cast<uintptr_t>(index) << kFreedBodyIndexShift) | kIsFreedBody;
 
         return pBody;
     }
@@ -720,6 +720,7 @@ namespace nes
         }
     }
 
+#if NES_LOGGING_ENABLED
     void BodyManager::ValidateFreeList() const
     {
         // Check that the free list is correct.
@@ -732,4 +733,6 @@ namespace nes
 
         NES_ASSERT(m_numBodies == static_cast<uint32_t>(m_bodies.size() - numFreed));
     }
+#endif
+    
 }

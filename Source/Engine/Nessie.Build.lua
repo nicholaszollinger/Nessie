@@ -16,6 +16,8 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     language "C++"
     cppdialect "C++20"
 
+    filter {}
+    
     includedirs
     {
 		projectDir
@@ -31,8 +33,6 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     -- Set the Render API based on the Project Settings:
     p.SetRenderAPI(projectDir, dependencyInjector);
-
-    filter {}
 
     disablewarnings
     {

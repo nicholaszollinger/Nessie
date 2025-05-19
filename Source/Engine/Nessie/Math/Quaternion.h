@@ -1,6 +1,6 @@
 ﻿// Quaternion.h
 #pragma once
-#include "Vector3.h"
+#include "Vector4.h"
 
 // Great GDC Talk on Quaternions: https://www.youtube.com/watch?v=en2QcehKJd8
 
@@ -60,6 +60,7 @@ namespace nes
         [[nodiscard]] std::string ToString() const;
 
         bool IsNaN() const;
+        bool IsClose(const TQuaternion& other, float maxDistSqr = 1.0e-12f) const;
         
         static TQuaternion Pow(const TQuaternion& q, const float exponent);
         static TQuaternion Log(const TQuaternion& q);
@@ -674,6 +675,14 @@ namespace nes
     bool TQuaternion<Type>::IsNaN() const
     {
         return math::IsNan(x) || math::IsNan(y) || math::IsNan(z) || math::IsNan(w);
+    }
+
+    template <FloatingPointType Type>
+    bool TQuaternion<Type>::IsClose(const TQuaternion& other, float maxDistSqr) const
+    {
+        TVector4<Type> thisVec(x, y, z, w);
+        TVector4<Type> otherVec(other.x, other.y, other.z, other.w);
+        return (thisVec - otherVec).SquaredMagnitude() <= maxDistSqr;
     }
 
     //----------------------------------------------------------------------------------------------------

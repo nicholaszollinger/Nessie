@@ -82,10 +82,14 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    //	NOTES:
-    //		
-    /// @brief : 
-    ///	@tparam Type : 
+    /// @brief : A Const Strong Pointer maintains ownership over a const reference to the object it points to.
+    ///     When there are no more references to the object, it will be deleted. If you wish to manually delete the object
+    ///     later, then you can call SetEmbedded() which will keep the object in memory even if the
+    ///     ref count hits zero, but it is on you to properly free the memory.
+    ///
+    ///     StrongPtrs can be promoted to ConstStrongPtrs, but not the other way around.
+    ///
+    ///	@tparam Type : Type that this Pointer points to.
     //----------------------------------------------------------------------------------------------------
     template <typename Type>
     class ConstStrongPtr
@@ -100,7 +104,7 @@ namespace nes
         ConstStrongPtr(ConstStrongPtr&& other) noexcept;
         ConstStrongPtr(const StrongPtr<Type>& other);
         ConstStrongPtr(StrongPtr<Type>&& other) noexcept;
-        ConstStrongPtr(const Type* pObject) requires nes::TypeIsDerivedFrom<Type, RefTarget<Type>>;
+        ConstStrongPtr(const Type* pObject);
         ~ConstStrongPtr()                                                                   { RemoveRef(); }
         
         /// Assignment Operators

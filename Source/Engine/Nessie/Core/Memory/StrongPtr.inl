@@ -130,8 +130,10 @@ namespace nes
     }
 
     template <typename Type>
-    ConstStrongPtr<Type>::ConstStrongPtr(const Type* pObject) requires nes::TypeIsDerivedFrom<Type, RefTarget<Type>>
+    ConstStrongPtr<Type>::ConstStrongPtr(const Type* pObject)
     {
+        static_assert(IsRefTargetType<Type>, "Only Types that inherit from RefTarget can assign a raw pointer to a ConstStrongPtr, because they"
+                                                                     "manage their ref count on the object itself.");
         m_pRefCounter = pObject;
         AddRef();
     }
