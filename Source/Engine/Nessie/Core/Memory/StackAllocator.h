@@ -33,17 +33,17 @@ namespace nes
         StackAllocator& operator=(StackAllocator&& right) noexcept;
         ~StackAllocator();
 
-        void* Alloc(const size_t size, const size_t alignment = kDefaultAlignment);
-        void Free(std::byte*& pPtr, const size_t count);
+        void* Allocate(const size_t size, const size_t alignment = kDefaultAlignment);
+        void Free(std::byte* pPtr, const size_t count);
         void FreeToMarker(const Marker marker);
         void FreeAll() { m_pEnd = m_pBuffer; }
 
-        [[nodiscard]] Marker PlaceMarker() const;
-        [[nodiscard]] size_t Size() const { return m_pEnd - m_pBuffer; }
-        [[nodiscard]] size_t Capacity() const { return m_pCapacity - m_pBuffer; }
-        [[nodiscard]] size_t RemainingCapacity() const { return m_pCapacity - m_pEnd; }
-        [[nodiscard]] bool IsEmpty() const { return m_pBuffer == m_pEnd; }
-        [[nodiscard]] bool IsFull() const { return m_pEnd == m_pCapacity; }
+        [[nodiscard]] Marker    PlaceMarker() const;
+        [[nodiscard]] size_t    Size() const                { return m_pEnd - m_pBuffer; }
+        [[nodiscard]] size_t    Capacity() const            { return m_pCapacity - m_pBuffer; }
+        [[nodiscard]] size_t    RemainingCapacity() const   { return m_pCapacity - m_pEnd; }
+        [[nodiscard]] bool      IsEmpty() const             { return m_pBuffer == m_pEnd; }
+        [[nodiscard]] bool      IsFull() const              { return m_pEnd == m_pCapacity; }
     };
 
     //----------------------------------------------------------------------------------------------------

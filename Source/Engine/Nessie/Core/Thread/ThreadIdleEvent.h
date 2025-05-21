@@ -21,7 +21,7 @@ namespace nes
         explicit ThreadIdleEvent(const bool startIdle = true) : m_isIdle(startIdle) {}
 
         void Resume();
-        void Signal();
+        void SignalIdle();
         void WaitForIdle();
     };
 }

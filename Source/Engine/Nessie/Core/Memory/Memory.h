@@ -4,6 +4,12 @@
 #include <vcruntime_new.h>
 #include "Core/Config.h"
 
+//----------------------------------------------------------------------------------------------------
+/// @brief : Macro to toggle recording allocations as they happen in order to print out each missed allocation
+///     at the call to NES_DUMP_AND_DESTROY_LEAK_DETECTOR(). Very expensive.
+//----------------------------------------------------------------------------------------------------
+#define NES_ENABLE_ALLOCATION_TRACKING 0
+
 //#define NES_DISABLE_CUSTOM_ALLOCATOR
 namespace nes::memory::internal
 {
@@ -15,7 +21,10 @@ namespace nes::memory::internal
     void    AlignedFree(void* pMemory);
 }
 
+#define NES_STACK_ALLOCATE(size) alloca(size)
+
 #if !defined(NES_DISABLE_CUSTOM_ALLOCATOR) && defined(NES_DEBUG)
+
 namespace nes::memory::internal
 {
     /// Leak Detector management
@@ -31,14 +40,17 @@ namespace nes::memory::internal
 
 /// Debug new/delete operators
 void* operator new(size_t size, const char* filename, int lineNum);
+void operator delete(void* pMemory);
 void operator delete(void* pMemory, const char*, int);
 
 /// Debug aligned new/delete operators
 void* operator new(size_t size, std::align_val_t alignment, const char* filename, int lineNum);
+void operator delete(void* pMemory, std::align_val_t alignment);
 void operator delete(void* pMemory, std::align_val_t alignment, const char*, int);
 
 /// Debug array new/delete operators
 void* operator new[](size_t size, const char* filename, int lineNum);
+void operator delete[](void* pMemory);
 void operator delete[](void* pMemory, const char*, int);
 
 //----------------------------------------------------------------------------------------------------
@@ -78,9 +90,9 @@ void operator delete[](void* pMemory, const char*, int);
     NES_INLINE void* operator new[] (size_t size, std::align_val_t alignment)                                 { return NES_ALIGNED_ALLOC(size, static_cast<size_t>(alignment)); } \
     NES_INLINE void  operator delete[] (void* pPtr, [[maybe_unused]] std::align_val_t alignment) noexcept     { NES_ALIGNED_FREE(pPtr); } \
     NES_INLINE void* operator new ([[maybe_unused]] size_t size, void* pPtr) noexcept                         { return pPtr; } \
-    NES_INLINE void  operator delete ([[maybe_unused]] size_t size, [[maybe_unused]] void* pPlace) noexcept   { /* Do nothing */ } \
+    NES_INLINE void  operator delete ([[maybe_unused]] void *pPtr, [[maybe_unused]] void* pPlace) noexcept    { /* Do nothing */ } \
     NES_INLINE void* operator new[] ([[maybe_unused]] size_t size, void* pPtr) noexcept                       { return pPtr; } \
-    NES_INLINE void  operator delete[] ([[maybe_unused]] size_t size, [[maybe_unused]] void* pPlace) noexcept { /* Do nothing */ }
+    NES_INLINE void  operator delete[] ([[maybe_unused]] void *pPtr, [[maybe_unused]] void* pPlace) noexcept  { /* Do nothing */ }
 
 #else
 #define NES_INIT_LEAK_DETECTOR() void(0)

@@ -1,6 +1,6 @@
 ﻿// Quaternion.h
 #pragma once
-#include "Vector3.h"
+#include "Vector4.h"
 
 // Great GDC Talk on Quaternions: https://www.youtube.com/watch?v=en2QcehKJd8
 
@@ -33,6 +33,8 @@ namespace nes
         constexpr TQuaternion operator*(const ScalarType auto scalar) const;
         constexpr TQuaternion& operator*=(const ScalarType auto scalar);
 
+        TVector3<Type> operator*(const TVector3<Type>& vector) const;
+
         Type ToAngle() const;
         Type Magnitude() const;
         constexpr Type SquaredMagnitude() const;
@@ -56,6 +58,9 @@ namespace nes
         Type Yaw() const;
         Type Roll() const;
         [[nodiscard]] std::string ToString() const;
+
+        bool IsNaN() const;
+        bool IsClose(const TQuaternion& other, float maxDistSqr = 1.0e-12f) const;
         
         static TQuaternion Pow(const TQuaternion& q, const float exponent);
         static TQuaternion Log(const TQuaternion& q);
@@ -221,6 +226,15 @@ namespace nes
         return *this;
     }
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Rotate a vector by this quaternion.
+    //----------------------------------------------------------------------------------------------------
+    template <FloatingPointType Type>
+    TVector3<Type> TQuaternion<Type>::operator*(const TVector3<Type>& other) const
+    {
+        return RotatedVector(other);    
+    }
+    
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Get the Angle represented by this Quaternion. 
     //----------------------------------------------------------------------------------------------------
@@ -655,6 +669,20 @@ namespace nes
     std::string TQuaternion<Type>::ToString() const
     {
         return CombineIntoString("Axis: ", RotationAxis().ToString(), ", Angle: ", math::RadiansToDegrees<Type>() * ToAngle());
+    }
+
+    template <FloatingPointType Type>
+    bool TQuaternion<Type>::IsNaN() const
+    {
+        return math::IsNan(x) || math::IsNan(y) || math::IsNan(z) || math::IsNan(w);
+    }
+
+    template <FloatingPointType Type>
+    bool TQuaternion<Type>::IsClose(const TQuaternion& other, float maxDistSqr) const
+    {
+        TVector4<Type> thisVec(x, y, z, w);
+        TVector4<Type> otherVec(other.x, other.y, other.z, other.w);
+        return (thisVec - otherVec).SquaredMagnitude() <= maxDistSqr;
     }
 
     //----------------------------------------------------------------------------------------------------

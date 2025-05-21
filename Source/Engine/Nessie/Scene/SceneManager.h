@@ -23,15 +23,15 @@ namespace nes
 
         struct SceneData
         {
-            std::filesystem::path m_scenePath;   // Path to the scene on disk...
-            StrongPtr<Scene> m_pScene = nullptr; // Scene Resource. 
+            std::filesystem::path m_scenePath{};   // Path to the scene on disk...
+            StrongPtr<Scene> m_pScene{};           // Scene Resource.
         };
         
         using SceneMap = std::unordered_map<StringID, SceneData, StringIDHasher>;
 
         SceneMap m_sceneMap{};
-        StrongPtr<Scene> m_pActiveScene = nullptr; // At the moment, we only have a single scene.
-        StringID m_sceneToTransitionTo;
+        StrongPtr<Scene> m_pActiveScene{}; // At the moment, we only have a single scene.
+        StringID m_sceneToTransitionTo{};
         TickManager m_tickManager{};
 
     public:
@@ -43,7 +43,7 @@ namespace nes
         SceneManager& operator=(SceneManager&&) noexcept = delete;
         
         static void QueueSceneTransition(const StringID& sceneName);
-        static WeakPtr<Scene> GetActiveScene();
+        static StrongPtr<Scene> GetActiveScene();
         static bool IsTransitionQueued();
     
     private:

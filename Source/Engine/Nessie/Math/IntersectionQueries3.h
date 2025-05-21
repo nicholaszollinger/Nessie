@@ -211,9 +211,9 @@ namespace nes::geo
     bool OBBIntersectsPlane(const TOrientedBox3<Type>& obb, TPlane<Type>& plane)
     { 
         // Compute the projection interval radius of the OBB onto the Line(t) = obb.center + t * plane.normal
-        const Type radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(0)))
-                            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(1)))
-                            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(2)));
+        const Type radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(0)))
+                            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(1)))
+                            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(2)));
 
         const Type signedDistance = plane.SignedDistanceToPoint(obb.m_center);
         
@@ -228,9 +228,9 @@ namespace nes::geo
     bool OBBInsidePlane(const TOrientedBox3<Type>& obb, TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the OBB onto the Line(t) = obb.center + t * plane.normal
-        const Type radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(0)))
-                            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(1)))
-                            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(2)));
+        const Type radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(0)))
+                            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(1)))
+                            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(2)));
 
         const Type signedDistance = plane.SignedDistanceToPoint(obb.m_center);
         return signedDistance <= -radius;
@@ -245,9 +245,9 @@ namespace nes::geo
     bool OBBIntersectsHalfspace(const TOrientedBox3<Type>& obb, TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the OBB onto the Line(t) = obb.center + t * plane.normal
-        const Type radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(0)))
-                            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(1)))
-                            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(2)));
+        const Type radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(0)))
+                            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(1)))
+                            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(plane.m_normal, obb.m_localOrientation.GetAxis(2)));
 
         const Type signedDistance = plane.SignedDistanceToPoint(obb.m_center);
         return signedDistance <= radius;
@@ -260,7 +260,7 @@ namespace nes::geo
     bool AABBIntersectsPlane(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
-        const TVector2<Type> extents = box.Extents();
+        const TVector2<Type> extents = box.GetExtent();
         const Type radius = extents[0] * math::Abs(plane.m_normal[0])
             + extents[1] * math::Abs(plane.m_normal[1])
             + extents[2] * math::Abs(plane.m_normal[2]);
@@ -278,7 +278,7 @@ namespace nes::geo
     bool AABBInsidePlane(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
-        const TVector2<Type> extents = box.Extents();
+        const TVector2<Type> extents = box.GetExtent();
         const Type radius = extents[0] * math::Abs(plane.m_normal[0])
             + extents[1] * math::Abs(plane.m_normal[1])
             + extents[2] * math::Abs(plane.m_normal[2]);
@@ -296,7 +296,7 @@ namespace nes::geo
     bool AABBIntersectsHalfspace(const TAABox3<Type>& box, const TPlane<Type>& plane)
     {
         // Compute the projection interval radius of the AABB onto the Line(t) = box.center + t * plane.normal
-        const TVector2<Type> extents = box.Extents();
+        const TVector2<Type> extents = box.GetExtent();
         const Type radius = extents[0] * math::Abs(plane.m_normal[0])
             + extents[1] * math::Abs(plane.m_normal[1])
             + extents[2] * math::Abs(plane.m_normal[2]);
@@ -396,7 +396,7 @@ namespace nes::geo
     bool AABBIntersectsTriangle(const TAABox3<Type>& box, const TTriangle3<Type>& triangle)
     {
         const auto center = box.Center();
-        const auto extents = box.Extents();
+        const auto extents = box.GetExtent();
         
         // Translate the triangle's vertices as conceptually moving the AABB to the origin.
         TVector3<Type> vertices[3]
@@ -594,9 +594,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -607,9 +607,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -620,9 +620,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -633,9 +633,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -646,9 +646,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -659,9 +659,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -672,9 +672,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -685,9 +685,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -698,9 +698,9 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
-            + obb.m_extents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
-            + obb.m_extents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
+        radius = obb.m_halfExtents[0] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[0], axis))
+            + obb.m_halfExtents[1] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[1], axis))
+            + obb.m_halfExtents[2] * math::Abs(TVector3<Type>::Dot(obb.m_orientation[2], axis));
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -712,7 +712,7 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[0];
+        radius = obb.m_halfExtents[0];
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -722,7 +722,7 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[1];
+        radius = obb.m_halfExtents[1];
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;
@@ -732,7 +732,7 @@ namespace nes::geo
         p0 = TVector3<Type>::Dot(vertices[0], axis);
         p1 = TVector3<Type>::Dot(vertices[1], axis);
         p2 = TVector3<Type>::Dot(vertices[2], axis);
-        radius = obb.m_extents[2];
+        radius = obb.m_halfExtents[2];
         if (math::Max(p0, p1, p2) < -radius || math::Min(p0, p1, p2) > radius)
         {
             return false;

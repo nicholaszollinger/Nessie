@@ -28,6 +28,8 @@
 
 // Use "Trailing Zero Count" instruction.
 #define NES_USE_TZCNT
+// Use "Leading Zero Count" instruction.
+#define NES_USE_LZCNT
 
 // Macro to get the current function name.
 #if defined(NES_COMPILER_MSVC)
@@ -60,6 +62,18 @@
 #else
     #define NES_IF_DEBUG(...)
     #define NES_IF_NOT_DEBUG(...) __VA_ARGS__ 
+#endif
+
+// Multithreading Configuration 
+// Define to force single threaded applications.
+//#define NES_FORCE_SINGLE_THREADED
+
+#ifdef NES_FORCE_SINGLE_THREADED
+    #define NES_IF_SINGLE_THREADED(...) __VA_ARGS__
+    #define NES_IF_MULTITHREADED(...)
+#else
+    #define NES_IF_SINGLE_THREADED(...)
+    #define NES_IF_MULTITHREADED(...) __VA_ARGS__
 #endif
 
 /// SDL

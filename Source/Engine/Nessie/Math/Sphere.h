@@ -83,6 +83,8 @@ namespace nes
         
         constexpr bool Intersects(const TSphere3& other) const;
         constexpr bool ContainsPoint(const TVector3<Type>& point) const;
+
+        void EncapsulatePoint(const TVector3<Type>& point);
         
         static constexpr Type Volume(const Type radius);
         static constexpr Type SurfaceArea(const Type radius);
@@ -301,6 +303,12 @@ namespace nes
     TSphere3<Type>::TSphere3(const TVector3<Type>* points, const size_t count)
     {
         math::RitterBoundingSphere3(*this, points, count);
+    }
+
+    template <FloatingPointType Type>
+    void TSphere3<Type>::EncapsulatePoint(const TVector3<Type>& point)
+    {
+        math::GrowSphereToContainPoint3(*this, point);
     }
 
     //----------------------------------------------------------------------------------------------------

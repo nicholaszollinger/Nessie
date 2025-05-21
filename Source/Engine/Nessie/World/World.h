@@ -1,8 +1,11 @@
 ﻿// World.h
 #pragma once
 #include "Entity3D.h"
+#include "PhysicsLayers.h"
 #include "Components/MeshComponent.h"
 #include "Core/Generic/Color.h"
+#include "Core/Jobs/JobSystemThreadPool.h"
+#include "Physics/PhysicsScene.h"
 #include "Scene/EntityLayer.h"
 #include "Scene/EntityPool.h"
 #include "Scene/TickGroup.h"
@@ -34,6 +37,19 @@ namespace nes
             Mat4 m_projectionMatrix = Mat4::Identity();
             Mat4 m_viewMatrix = Mat4::Identity();
         };
+
+        struct PhysicsTick final : public TickFunction
+        {
+            PhysicsScene*   m_pPhysicsScene     = nullptr;
+            StackAllocator* m_pAllocator        = nullptr;
+            JobSystem*      m_pJobSystem        = nullptr;
+            int             m_collisionSteps    = 1;
+        
+            virtual void ExecuteTick(const TickDeltaTime& deltaTime) override
+            {
+                m_pPhysicsScene->Update(deltaTime.m_deltaTime, m_collisionSteps, m_pAllocator, m_pJobSystem);
+            }
+        };
         
     public:
         struct GeometryPushConstants
@@ -49,12 +65,25 @@ namespace nes
         using EntityPool = TEntityPool<Entity3D>;
         EntityPool m_entityPool;
         std::vector<EventHandler> m_eventHandlers{};
-
+        
         // Tick Groups
         TickGroup m_prePhysicsTickGroup;
         TickGroup m_physicsTickGroup;
         TickGroup m_postPhysicsTickGroup;
         TickGroup m_lateTickGroup;
+
+        // Physics
+        PhysicsScene*       m_pPhysicsScene     = nullptr;
+        PhysicsSettings     m_physicsSettings;
+        PhysicsTick         m_physicsTick;
+        StackAllocator*     m_pPhysicsAllocator = nullptr;
+        JobSystem*          m_pJobSystem        = nullptr;
+        BroadPhaseLayerInterfaceTest m_broadPhaseLayerInterface{};
+        CollisionVsBroadPhaseLayerFilterTest m_layerVsBroadPhaseFilter{};
+        CollisionLayerPairFilterTest m_layerPairFilter{};
+
+        // [TEMP]: 
+        BodyID m_testID;
 
         // Render Resources:
         std::vector<MeshComponent*> m_transparentMeshes;

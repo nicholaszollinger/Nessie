@@ -150,9 +150,9 @@ namespace nes
         if (auto worldNode = layers["World"])
         {
             // A EntityLayerFactory should handle creating the EntityLayer.
-            StrongPtr<World> pWorld = StrongPtr<World>::Create(this);
+            StrongPtr<World> pWorld = Create<World>(this);
             
-            StrongPtr<EntityLayer> pLayer = pWorld.Cast<EntityLayer>();
+            StrongPtr<EntityLayer> pLayer = Cast<EntityLayer>(pWorld);
             pLayer->LoadLayer(worldNode);
             PushLayer(pLayer);
         }

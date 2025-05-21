@@ -76,6 +76,7 @@ namespace nes
         StrongPtr<Type> GetComponent();
 
         [[nodiscard]] const std::vector<StrongPtr<BaseComponentType>>&  GetComponents() const { return m_components; }
+        [[nodiscard]] std::vector<StrongPtr<BaseComponentType>>&  GetComponents()       { return m_components; }
         [[nodiscard]] DerivedType*                      GetParent() const               { return m_pParent; }
         [[nodiscard]] const std::vector<DerivedType*>&  GetChildren() const             { return m_children; }
         [[nodiscard]] EntityLayer*                      GetLayer() const                { return m_pLayer; }
@@ -284,7 +285,7 @@ namespace nes
     template <typename Type> requires TypeIsDerivedFrom<Type, TComponent<DerivedType>>
     StrongPtr<Type> TEntity<DerivedType>::AddComponent(const StringID& name)
     {
-        StrongPtr<Type> pComponent = MakeStrong<Type>();
+        StrongPtr<Type> pComponent = Create<Type>();
 
         BaseComponentType* pBaseComponent = static_cast<BaseComponentType*>(pComponent.Get());  
         pBaseComponent->m_pOwner = static_cast<DerivedType*>(this);

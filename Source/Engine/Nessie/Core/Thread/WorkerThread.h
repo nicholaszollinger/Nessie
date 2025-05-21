@@ -124,7 +124,7 @@ namespace nes
             m_isTerminated = true;
 
             // Signal to any waiting external threads that this thread is done.
-            m_idleEvent.Signal();
+            m_idleEvent.SignalIdle();
 
             // Notify the worker thread.
             m_wakeCondition.notify_all();
@@ -216,7 +216,7 @@ namespace nes
             m_idleEvent.Resume();
 
             // While we have instructions available,
-            while(!m_instructionQueue.empty())
+            while (!m_instructionQueue.empty())
             {
                 InstructionType instruction = m_instructionQueue.front();
                 m_instructionQueue.pop();
@@ -238,6 +238,6 @@ namespace nes
     template <EnumType InstructionType>
     void WorkerThread<InstructionType>::SignalIdle()
     {
-        m_idleEvent.Signal();
+        m_idleEvent.SignalIdle();
     }
 }

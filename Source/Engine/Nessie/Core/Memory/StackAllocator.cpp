@@ -80,7 +80,7 @@ namespace nes
         m_pCapacity = nullptr;
     }
 
-    void* StackAllocator::Alloc(const size_t size, const size_t alignment)
+    void* StackAllocator::Allocate(const size_t size, const size_t alignment)
     {
         NES_ASSERTV(size > 0, "Size must be greater than zero!");
 
@@ -104,17 +104,14 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
     ///		@brief : Free memory off the top stack.
     ///		@param pPtr : Ptr to the memory we want to free.
     ///		@param count : Size of the memory we want to free.
     //----------------------------------------------------------------------------------------------------
-    void StackAllocator::Free(std::byte*& pPtr, const size_t count)
+    void StackAllocator::Free([[maybe_unused]] std::byte* pPtr, const size_t count)
     {
         NES_ASSERTV(count > Size(), "Attempting to free more memory than what is currently allocated!");
         m_pEnd -= count;
-        pPtr = nullptr;
     }
 
     //----------------------------------------------------------------------------------------------------

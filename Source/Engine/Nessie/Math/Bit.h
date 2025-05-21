@@ -2,7 +2,7 @@
 // Bit.h
 #include "Core/Generic/Concepts.h"
 
-namespace nmath
+namespace nes::math
 {
     constexpr auto BitVal(const std::integral auto n)
     {

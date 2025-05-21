@@ -2,6 +2,7 @@
 #pragma once
 #include "Core/Generic/Concepts.h"
 #include "Core/Generic/TypeInfo.h"
+#include "Core/Memory/StrongPtr.h"
 #include "Core/String/StringID.h"
 #include "Debug/Assert.h"
 
@@ -25,7 +26,7 @@ namespace nes
     ///		@tparam NodeType : Type of Node that this class of Components can attach to.
     //----------------------------------------------------------------------------------------------------
     template <typename NodeType>
-    class TComponent
+    class TComponent : public RefTarget<TComponent<NodeType>>
     {
     public:
         using OwnerType = NodeType;

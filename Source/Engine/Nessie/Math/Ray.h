@@ -20,12 +20,12 @@ namespace nes
         constexpr bool operator==(const TRay2<Type>& other) const;
         constexpr bool operator!=(const TRay2<Type>& other) const { return !(*this == other); }
 
-        constexpr TVector2<Type> PositionAlongRay(const Type distance);
-        Type DistanceToPoint(const TVector2<Type>& point) const;
-        constexpr Type SquaredDistanceToPoint(const TVector2<Type>& point) const;
-        constexpr TVector2<Type> ClosestPointToPoint(const TVector2<Type>& point) const;
+        constexpr TVector2<Type>    PositionAlongRay(const Type distance);
+        Type                        DistanceToPoint(const TVector2<Type>& point) const;
+        constexpr Type              SquaredDistanceToPoint(const TVector2<Type>& point) const;
+        constexpr TVector2<Type>    ClosestPointToPoint(const TVector2<Type>& point) const;
 
-        std::string ToString() const;
+        std::string                 ToString() const;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -43,12 +43,15 @@ namespace nes
         constexpr bool operator==(const TRay3& other) const;
         constexpr bool operator!=(const TRay3& other) const { return !(*this == other); }
 
-        constexpr TVector3<Type> PositionAlongRay(const Type distance);
-        Type DistanceToPoint(const TVector3<Type>& point) const;
-        constexpr Type SquaredDistanceToPoint(const TVector3<Type>& point) const;
-        constexpr TVector3<Type> ClosestPointToPoint(const TVector3<Type>& point) const;
+        constexpr TVector3<Type>    PositionAlongRay(const Type distance);
+        Type                        DistanceToPoint(const TVector3<Type>& point) const;
+        constexpr Type              SquaredDistanceToPoint(const TVector3<Type>& point) const;
+        constexpr TVector3<Type>    ClosestPointToPoint(const TVector3<Type>& point) const;
 
-        std::string ToString() const;
+        TRay3                       Transformed(const TMatrix4x4<Type>& transform) const;
+        TRay3                       Translated(const TVector3<Type>& translation) const;
+
+        std::string                 ToString() const;
     };
 
     using Ray2f = TRay2<float>;
@@ -220,6 +223,20 @@ namespace nes
 
         // Otherwise return the point that is the projected distance along the ray.
         return m_origin + (m_direction * projectedDistance);
+    }
+
+    template <FloatingPointType Type>
+    TRay3<Type> TRay3<Type>::Transformed(const TMatrix4x4<Type>& transform) const
+    {
+        TVector3<Type> rayOrigin = transform.TransformPoint(m_origin);
+        TVector3<Type> direction(transform.TransformPoint(m_origin + m_direction) - rayOrigin);
+        return TRay3<Type>(rayOrigin, direction);
+    }
+
+    template <FloatingPointType Type>
+    TRay3<Type> TRay3<Type>::Translated(const TVector3<Type>& translation) const
+    {
+        return TRay3<Type>(translation + m_origin, m_direction);
     }
 
     template <FloatingPointType Type>

@@ -25,7 +25,7 @@ namespace nes
         {
             StringID sceneName = sceneNode["Name"].as<std::string>();
             std::filesystem::path scenePath = sceneNode["Path"].as<std::string>();
-            m_sceneMap.emplace(sceneName, SceneData(scenePath, StrongPtr<Scene>::Create()));
+            m_sceneMap.emplace(sceneName, SceneData(scenePath, Create<Scene>()));
         }
 
         // Get the Start Scene info:
@@ -38,6 +38,12 @@ namespace nes
 
         StringID startSceneName = startScene["Runtime"].as<std::string>();
         NES_ASSERT(m_sceneMap.contains(startSceneName));
+
+        if (!m_tickManager.Init())
+        {
+            NES_ERRORV("SceneManager", "Failed to initialize tick manager!");
+            return false;
+        }
         
         // Create/Load the start scene:
         m_sceneToTransitionTo = startSceneName;
@@ -100,6 +106,7 @@ namespace nes
         }
         
         m_sceneMap.clear();
+        m_tickManager.Shutdown();
     }
 
     void SceneManager::PreRender()
@@ -136,7 +143,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the Active World.
     //----------------------------------------------------------------------------------------------------
-    WeakPtr<Scene> SceneManager::GetActiveScene()
+    StrongPtr<Scene> SceneManager::GetActiveScene()
     {
         return Application::Get().GetSceneManager().m_pActiveScene;
     }

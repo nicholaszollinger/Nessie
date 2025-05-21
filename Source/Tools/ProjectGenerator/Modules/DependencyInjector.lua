@@ -62,7 +62,7 @@ function m.Link(targetName)
         if (target.ConfigureProject ~= nil) then
             dependson(targetName);
         end
-
+        
         return true;
     end
 

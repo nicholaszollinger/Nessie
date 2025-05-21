@@ -5,12 +5,22 @@
 #include "Application/Application.h"
 #include "Components/CameraComponent.h"
 #include "Components/FreeCamMovementComponent.h"
+#include "Physics/Collision/Shapes/BoxShape.h"
+#include "Physics/Collision/Shapes/EmptyShape.h"
 
 // Hack to test stb_image
 #include "stb_image.h"
 
 namespace nes
 {
+    //-----------------------------------------------------------------------------------------------
+    // [TEMP]: Physics System Config Variables 
+    //-----------------------------------------------------------------------------------------------
+    static constexpr unsigned kNumBodies                = 10240;
+    static constexpr unsigned kNumBodyMutexes           = 0; // Autodetect
+    static constexpr unsigned kMaxBodyPairs             = 65636;
+    static constexpr unsigned kMaxContactConstraints    = 20480;
+    
     World::World(Scene* pScene)
         : EntityLayer(pScene)
         , m_entityPool(this)
@@ -23,6 +33,9 @@ namespace nes
         m_physicsTickGroup.SetDebugName("World Physics Tick");
         m_postPhysicsTickGroup.SetDebugName("World PostPhysics Tick");
         m_lateTickGroup.SetDebugName("World Late Tick");
+
+        m_pPhysicsAllocator = NES_NEW(StackAllocator(static_cast<size_t>(32 * 1024 * 1024)));
+        m_pJobSystem = NES_NEW(JobSystemThreadPool(physics::kMaxPhysicsJobs, physics::kMaxPhysicsBarriers, std::thread::hardware_concurrency() - 1));
     }
 
     StrongPtr<Entity3D> World::CreateEntity(const EntityID& id, const StringID& name)
@@ -127,12 +140,46 @@ namespace nes
 
     bool World::InitializeLayer()
     {
+        // [TODO]: This should be moved.
+        // Register Shape functions
+        EmptyShape::Register();
+        BoxShape::Register();
+        
         // Add Tick Groups:
         auto& tickManager = TickManager::Get();
         tickManager.RegisterTickGroup(&m_prePhysicsTickGroup);
         tickManager.RegisterTickGroup(&m_physicsTickGroup);
         tickManager.RegisterTickGroup(&m_postPhysicsTickGroup);
         tickManager.RegisterTickGroup(&m_lateTickGroup);
+
+        // Create the Physics Scene
+        m_pPhysicsScene = NES_NEW(PhysicsScene());
+        PhysicsScene::CreateInfo physicsCreateInfo;
+        physicsCreateInfo.m_maxBodies = kNumBodies;
+        physicsCreateInfo.m_numBodyMutexes = kNumBodyMutexes;
+        physicsCreateInfo.m_maxNumBodyPairs = kMaxBodyPairs;
+        physicsCreateInfo.m_maxNumContactConstraints = kMaxContactConstraints;
+        physicsCreateInfo.m_pCollisionLayerPairFilter = &m_layerPairFilter;
+        physicsCreateInfo.m_pCollisionVsBroadPhaseLayerFilter = &m_layerVsBroadPhaseFilter;
+        physicsCreateInfo.m_pLayerInterface = &m_broadPhaseLayerInterface;
+        m_pPhysicsScene->Init(physicsCreateInfo);
+        
+        m_pPhysicsScene->SetSettings(m_physicsSettings);
+        
+        // Set up the Physics Tick
+        m_physicsTick.SetTickInterval(1.f / 60.f);
+        m_physicsTick.m_pAllocator = m_pPhysicsAllocator;
+        m_physicsTick.m_pPhysicsScene = m_pPhysicsScene;
+        m_physicsTick.m_pJobSystem = m_pJobSystem;
+        m_physicsTick.m_collisionSteps = 1;
+        m_physicsTick.RegisterTick(&m_physicsTickGroup);
+
+        // [TEMP]: 
+        // Add a body to the System???
+        auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
+        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vector3(20, 1, 1)), Vector3(0, 10, 0), Quat::Identity(), BodyMotionType::Dynamic, PhysicsLayers::kMoving), BodyActivationMode::Activate);
+
+        bodyInterface.SetPosition(m_testID, Vector3(0.f), BodyActivationMode::LeaveAsIs);
         
         for (auto& entity : m_entityPool)
         {
@@ -159,9 +206,22 @@ namespace nes
         tickManager.UnregisterTickGroup(&m_physicsTickGroup);
         tickManager.UnregisterTickGroup(&m_postPhysicsTickGroup);
         tickManager.UnregisterTickGroup(&m_lateTickGroup);
+
+        // Shutdown Physics
+        if (m_pPhysicsScene)
+        {
+            auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
+            bodyInterface.RemoveBody(m_testID);
+            bodyInterface.DestroyBody(m_testID);
+            
+            NES_DELETE(m_pPhysicsScene);
+        }
         
         m_entityPool.ClearPool();
         FreeRenderResources();
+
+        NES_DELETE(m_pJobSystem);
+        NES_DELETE(m_pPhysicsAllocator);
     }
 
     void World::PreRender(const Camera& sceneCamera)
@@ -506,7 +566,7 @@ namespace nes
                 {
                     for (auto& pConstComp : m_pSelectedEntity->GetComponents())
                     {
-                        StrongPtr<Entity3DComponent> pComponent = pConstComp;
+                        StrongPtr<Entity3DComponent> pComponent = Cast<Entity3DComponent>(pConstComp);
                         EditorDrawComponentNode(pComponent);
                     }
 
@@ -562,7 +622,7 @@ namespace nes
             // Select the first component if available.
             auto& components = entity.GetComponents();
             if (!components.empty())
-                m_pSelectedComponent = components[0];
+                m_pSelectedComponent = Cast<Entity3DComponent>(components[0]);
         }
 
         if (nodeOpen)
@@ -982,17 +1042,23 @@ namespace nes
         std::vector<uint8_t> cubeMapBytes{};
         int width = 1024;
         int height = 1024;
+        std::array<void*, 6> imagePointers{};
+        int i = 0;
+        
         for (const auto& path : kSkyboxPaths)
         {
             std::string fullPath = NES_CONTENT_DIR;
             fullPath += path;
             
             int channels;
-            const stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+
+            imagePointers[i] = pBytes;
             
             const uint8_t* pStart = static_cast<const uint8_t*>(pBytes);
             const uint8_t* pEnd = &pStart[static_cast<uint32_t>(width * height * STBI_rgb_alpha)];
             cubeMapBytes.insert(cubeMapBytes.end(), pStart, pEnd);
+            ++i;
         }
 
         std::tie(m_skyboxCubeImage, m_skyboxCubeImageView) = context.CreateCubemapImageAndView(
@@ -1002,6 +1068,12 @@ namespace nes
 
         m_skyboxUniforms = context.CreateUniformForImage(3, m_skyboxCubeImageView, m_skyboxCubeSampler);
 
+        // Free the image data.
+        for (auto* image : imagePointers)
+        {
+            stbi_image_free(image);
+        }
+        
         // Skybox Pipeline
         nes::GraphicsPipelineConfig skyboxPipelineConfig =
         {

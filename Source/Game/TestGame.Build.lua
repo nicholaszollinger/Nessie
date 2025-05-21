@@ -24,14 +24,22 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     defines { "YAML_CPP_STATIC_DEFINE" }
 
     filter {}
+
+    disablewarnings
+    {
+        "4324", -- "'X' : structure was padded due to alignment specifier"
+    }
+
     
     files
     {
 		projectCore.SolutionDir .. "\\Config\\**.*",
         projectCore.SolutionDir .. "\\*" .. projectCore.ProjectFileExtension;
         projectDir .. "**.h",
+        projectDir .. "**.hpp",
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",
+        projectDir .. "**.inl",
     }
 end
 
