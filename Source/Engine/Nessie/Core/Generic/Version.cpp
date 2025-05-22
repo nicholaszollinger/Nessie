@@ -1,46 +1,44 @@
 // Version.cpp
-
 #include "Version.h"
 
 namespace nes
 {
-    static constexpr uint32_t kVariantOffset = 29U;
-    static constexpr uint32_t kMajorOffset   = 22U;
-    static constexpr uint32_t kMinorOffset   = 12U;
-    static constexpr uint32_t kPatchOffset   = 0U;
+    static constexpr uint32 kVariantOffset = 29U;
+    static constexpr uint32 kMajorOffset   = 22U;
+    static constexpr uint32 kMinorOffset   = 12U;
+    static constexpr uint32 kPatchOffset   = 0U;
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      This is taken from Vulkan's MAKE_VERSION macro, so that it is compatible.
-    //
-    ///		@brief : Creates a version number from the given parameters.
+    // This is taken from Vulkan's MAKE_VERSION macro so that it is compatible.
+    // 
+    ///	@brief : Creates a version number from the given parameters.
     //----------------------------------------------------------------------------------------------------
-    static constexpr uint32_t MakeVersion(const uint32_t variant, const uint32_t major, const uint32_t minor, const uint32_t patch)
+    static constexpr uint32 MakeVersion(const uint32 variant, const uint32 major, const uint32 minor, const uint32 patch)
     {
-        return (static_cast<uint32_t>(variant) << kVariantOffset)
-            | (static_cast<uint32_t>(major) << kMajorOffset)
-            | (static_cast<uint32_t>(minor) << kMinorOffset)
-            | static_cast<uint32_t>(patch) << kPatchOffset;
+        return (static_cast<uint32>(variant) << kVariantOffset)
+            | (static_cast<uint32>(major) << kMajorOffset)
+            | (static_cast<uint32>(minor) << kMinorOffset)
+            | static_cast<uint32>(patch) << kPatchOffset;
     }
 
 
-    Version::Version(uint32_t major, uint32_t minor, uint32_t patch, const uint32_t variant)
+    Version::Version(const uint32 major, const uint32 minor, const uint32 patch, const uint32 variant)
         : m_value(MakeVersion(variant, major, minor, patch))
     {
         //
     }
 
-    uint32_t Version::Major() const
+    uint32 Version::Major() const
     {
         return (m_value >> kMajorOffset) & 0x3FF;
     }
 
-    uint32_t Version::Minor() const
+    uint32 Version::Minor() const
     {
         return (m_value >> kMinorOffset) & 0x3FF;
     }
 
-    uint32_t Version::Patch() const
+    uint32 Version::Patch() const
     {
         return (m_value >> kPatchOffset) & 0xFFF;
     }
@@ -58,8 +56,8 @@ namespace nes
     bool Version::Serialize(YAML::Node& node) const
     {
         node.push_back((m_value >> kMajorOffset) & 0x3FF);
-            node.push_back((m_value >> kMinorOffset) & 0x3FF);
-            node.push_back((m_value >> kPatchOffset) & 0xFFF);
+        node.push_back((m_value >> kMinorOffset) & 0x3FF);
+        node.push_back((m_value >> kPatchOffset) & 0xFFF);
         return true;
     }
 

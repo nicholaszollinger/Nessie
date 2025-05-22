@@ -15,23 +15,29 @@ namespace nes
         using CategoriesContainer = std::unordered_map<StringID, LogCategory, StringIDHasher>;
 
     public:
-        static bool Init(const std::string& logOutputDir);
-        static void Close();
-        static bool LoadCategories(const std::string& filepath);
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize the Logger. 
+        ///	@param logOutputDir : Directory where log files will be created.
+        //----------------------------------------------------------------------------------------------------
+        static bool                 Init(const std::string& logOutputDir);
+        static void                 Close();
+        static bool                 LoadCategories(const std::string& filepath);
 
-        static void QuickLog(const LogSeverity type, AddableOrToStringType auto&&...args);
-        static void Log(const StringID categoryName, AddableOrToStringType auto&&...args);
-        static void VitalLog(const StringID categoryName, const LogSeverity type, AddableOrToStringType auto&&...args);
+        static void                 QuickLog(const ELogSeverity type, AddableOrToStringType auto&&...args);
+        static void                 Log(const StringID categoryName, AddableOrToStringType auto&&...args);
+        static void                 VitalLog(const StringID categoryName, const ELogSeverity type, AddableOrToStringType auto&&...args);
 
     private:
-        static void PostToLogTarget(const LogSeverity type, const std::string& msg);
-        static void WriteToFile(const std::string& msg);
-        static std::string FormatQuickLog(const LogSeverity type, AddableOrToStringType auto&&...args);
-        static std::string FormatLog(const LogSeverity type, const char* pCategory, AddableOrToStringType auto&&...args);
-
-        // Static member accessors, to prevent the static initialization order fiasco.
+        static void                 PostToLogTarget(const ELogSeverity type, const std::string& msg);
+        static void                 WriteToFile(const std::string& msg);
+        static std::string          FormatQuickLog(const ELogSeverity type, AddableOrToStringType auto&&...args);
+        static std::string          FormatLog(const ELogSeverity type, const char* pCategory, AddableOrToStringType auto&&...args);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Access the Categories Container. This is created on the first call to this function.
+        //----------------------------------------------------------------------------------------------------
         static CategoriesContainer& GetCategories();
-        static std::mutex& GetMutex();
+        static std::mutex&          GetMutex();
     };
 }
 
@@ -45,12 +51,12 @@ namespace nes
     ///		@param type : Type of log.
     ///		@param args : What we are logging.
     //-----------------------------------------------------------------------------------------------------------------------------
-    void Logger::QuickLog(const LogSeverity type, AddableOrToStringType auto&&... args)
+    void Logger::QuickLog(const ELogSeverity type, AddableOrToStringType auto&&... args)
     {
         const std::string msg = FormatQuickLog(type, args...);
         PostToLogTarget(type, msg);
 
-        if (type == LogSeverity::kError || type == LogSeverity::kWarning)
+        if (type == ELogSeverity::Error || type == ELogSeverity::Warning)
         {
             WriteToFile(msg);
         }
@@ -75,7 +81,7 @@ namespace nes
 
         // If we don't have the category, we aew going to make one that is display only.
         if (!categories.contains(categoryName))
-            categories.emplace(categoryName, LogCategory(categoryName, LogOutputLevel::kDisplay));
+            categories.emplace(categoryName, LogCategory(categoryName, ELogOutputLevel::LogTarget));
 
         const auto category = categories[categoryName];
 
@@ -86,18 +92,18 @@ namespace nes
         const auto output = category.GetOutputLevel();
 
         // If the output level is none, then we are skipping this log.
-        if (output == LogOutputLevel::kNone)
+        if (output == ELogOutputLevel::None)
             return;
 
         // Format the log:
-        const auto msg = FormatLog(LogSeverity::kLog, categoryName.CStr(), args...);
+        const auto msg = FormatLog(ELogSeverity::Log, categoryName.CStr(), args...);
 
         // Post to the target if we are displaying it.
-        if (output == LogOutputLevel::kDisplay || output == LogOutputLevel::kAll)
-            PostToLogTarget(LogSeverity::kLog, msg);
+        if (output == ELogOutputLevel::LogTarget || output == ELogOutputLevel::All)
+            PostToLogTarget(ELogSeverity::Log, msg);
 
         // Write it to the file if we the output level allows it.
-        if (output == LogOutputLevel::kFile || output == LogOutputLevel::kAll)
+        if (output == ELogOutputLevel::File || output == ELogOutputLevel::All)
             WriteToFile(msg);
     }
 
@@ -109,7 +115,7 @@ namespace nes
     ///		@param type : Type of vital log we are posting.
     ///		@param args : Arguments to pass into the log.
     //-----------------------------------------------------------------------------------------------------------------------------
-    void Logger::VitalLog(const StringID categoryName, const LogSeverity type, AddableOrToStringType auto&&... args)
+    void Logger::VitalLog(const StringID categoryName, const ELogSeverity type, AddableOrToStringType auto&&... args)
     {
         const std::string msg = FormatLog(type, categoryName.CStr(), args...);
         PostToLogTarget(type, msg);
@@ -119,29 +125,29 @@ namespace nes
     //-----------------------------------------------------------------------------------------------------------------------------
     ///		@brief : Get the formatted quick log - a timestamp followed by the log message.
     //-----------------------------------------------------------------------------------------------------------------------------
-    std::string Logger::FormatQuickLog(const LogSeverity type, AddableOrToStringType auto&&... args)
+    std::string Logger::FormatQuickLog(const ELogSeverity type, AddableOrToStringType auto&&... args)
     {
         switch (type)
         {
-            case LogSeverity::kLog:
+            case ELogSeverity::Log:
             {
                 // Format: [CurrentTime] - [CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - ", args..., "\n");
             }
 
-            case LogSeverity::kWarning:
+            case ELogSeverity::Warning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [WARNING] ", args..., "\n");
             }
 
-            case LogSeverity::kError:
+            case ELogSeverity::Error:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [ERROR] ", args..., "\n");
             }
 
-            case LogSeverity::kCritical:
+            case ELogSeverity::Critical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [CRITICAL] ", args..., "\n");
@@ -154,29 +160,29 @@ namespace nes
     //-----------------------------------------------------------------------------------------------------------------------------
     ///		@brief : Get the quick log - a timestamp followed by the category and log message.
     //-----------------------------------------------------------------------------------------------------------------------------
-    std::string Logger::FormatLog(const LogSeverity type, const char* pCategory, AddableOrToStringType auto&&... args)
+    std::string Logger::FormatLog(const ELogSeverity type, const char* pCategory, AddableOrToStringType auto&&... args)
     {
         switch (type)
         {
-            case LogSeverity::kLog:
+            case ELogSeverity::Log:
             {
                 // Format: [CurrentTime] - [CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [", pCategory, "] ", args..., "\n");
             }
 
-            case LogSeverity::kWarning:
+            case ELogSeverity::Warning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [WARNING:", pCategory, "] ", args..., "\n");
             }
 
-            case LogSeverity::kError:
+            case ELogSeverity::Error:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [ERROR:", pCategory, "] ", args..., "\n");
             }
 
-            case LogSeverity::kCritical:
+            case ELogSeverity::Critical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
                 return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [CRITICAL:", pCategory, "] ", args..., "\n");

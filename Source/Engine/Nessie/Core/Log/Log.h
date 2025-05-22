@@ -1,5 +1,5 @@
-#pragma once
 // Log.h
+#pragma once
 #include "Logger.h"
 
 #undef NES_LOGGING_ENABLED
@@ -34,15 +34,15 @@
 #define NES_CLOSE_LOGGER() nes::Logger::Close()
 #define NES_LOAD_LOG_CATEGORIES(CategoryDataFilepath) nes::Logger::LoadCategories(CategoryDataFilepath)
 
-#define NES_LOG(...) nes::Logger::QuickLog(nes::LogSeverity::kLog, __VA_ARGS__)
-#define NES_WARN(...) nes::Logger::QuickLog(nes::LogSeverity::kWarning, __VA_ARGS__)
-#define NES_ERROR(...) nes::Logger::QuickLog(nes::LogSeverity::kError, __VA_ARGS__)
-#define NES_CRITICAL(...) nes::Logger::QuickLog(nes::LogSeverity::kCritical, __VA_ARGS__); std::abort()
+#define NES_LOG(...) nes::Logger::QuickLog(nes::ELogSeverity::Log, __VA_ARGS__)
+#define NES_WARN(...) nes::Logger::QuickLog(nes::ELogSeverity::Warning, __VA_ARGS__)
+#define NES_ERROR(...) nes::Logger::QuickLog(nes::ELogSeverity::Error, __VA_ARGS__)
+#define NES_CRITICAL(...) nes::Logger::QuickLog(nes::ELogSeverity::Critical, __VA_ARGS__); std::abort()
 
 #define NES_LOGV(Category, ...) nes::Logger::Log(Category, __VA_ARGS__)
-#define NES_WARNV(Category, ...) nes::Logger::VitalLog(Category, nes::LogSeverity::kWarning, __VA_ARGS__)
-#define NES_ERRORV(Category, ...) nes::Logger::VitalLog(Category,  nes::LogSeverity::kError, __VA_ARGS__)
-#define NES_CRITICALV(Category, ...) nes::Logger::VitalLog(Category,  nes::LogSeverity::kCritical, __VA_ARGS__); std::abort()
+#define NES_WARNV(Category, ...) nes::Logger::VitalLog(Category, nes::ELogSeverity::Warning, __VA_ARGS__)
+#define NES_ERRORV(Category, ...) nes::Logger::VitalLog(Category,  nes::ELogSeverity::Error, __VA_ARGS__)
+#define NES_CRITICALV(Category, ...) nes::Logger::VitalLog(Category,  nes::ELogSeverity::Critical, __VA_ARGS__); std::abort()
 #else
 
 #define NES_INIT_LOGGER(LogOutputFilepath) void(0)

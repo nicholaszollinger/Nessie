@@ -1,7 +1,7 @@
 ﻿// DOF.h
 #pragma once
 #include <cstdint>
-#include "Core/Generic/Bitmask.h"
+#include "Core/Generic/BitOperators.h"
 
 namespace nes
 {
@@ -21,5 +21,5 @@ namespace nes
         Plane2D         = TranslationX | TranslationY | RotationZ,  /// Body can move in the World XY plane, and rotate on the Z Axis.
     };
 
-    NES_DEFINE_BIT_OPERTATIONS_FOR_ENUM(AllowedDOFs);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(AllowedDOFs);
 }

@@ -10,15 +10,12 @@ namespace nes
     class MutexArray
     {
         /// Align the mutex to a cache line to ensure that there is no
-        /// false sharing (this is platform dependent, we do this to be safe). 
+        /// false sharing (this is platform-dependent, we do this to be safe). 
         struct alignas(NES_CACHE_LINE_SIZE) MutexStorage
         {
             NES_OVERRIDE_NEW_DELETE
             MutexType m_mutex;
         };
-
-        MutexStorage*   m_pMutexStorage = nullptr;
-        uint32_t        m_numMutexes = 0;
         
     public:
         /// If default constructing, you need to initialize with Init(). 
@@ -97,5 +94,9 @@ namespace nes
                 pCurrent->m_mutex.unlock();
             }
         }
+
+    private:
+        MutexStorage*   m_pMutexStorage = nullptr;
+        uint32_t        m_numMutexes = 0;
     };
 }

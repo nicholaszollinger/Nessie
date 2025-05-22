@@ -17,32 +17,34 @@ namespace nes
         class BarrierImpl final : public Barrier
         {
         public:
-            virtual void AddJob(const JobHandle&) override {}
-            virtual void AddJobs(const JobHandle*, const uint32_t) override {} 
+            virtual void    AddJob(const JobHandle&) override {}
+            virtual void    AddJobs(const JobHandle*, const uint32_t) override {} 
 
         protected:
-            virtual void OnJobFinished(Job*) override {}
+            virtual void    OnJobFinished(Job*) override {}
         };
 
-        using JobArray = FixedSizeFreeList<Job>;
+        using JobArray      = FixedSizeFreeList<Job>;
         
-        JobArray m_jobs;
-        BarrierImpl m_dummyBarrier{};
-    
     public:
-        JobSystemSingleThreaded() = default;
+                            JobSystemSingleThreaded() = default;
         explicit            JobSystemSingleThreaded(const uint32_t maxJobs) { Init(maxJobs); }
 
+    public:
         void                Init(const uint32_t maxJobs);
         virtual int         GetMaxConcurrency() override { return 1; }
         virtual JobHandle   CreateJob(const char* pName, const JobFunction& jobFunction, const uint32_t numDependencies) override;
         virtual Barrier*    CreateBarrier() override;
         virtual void        DestroyBarrier(Barrier* pBarrier) override;
         virtual void        WaitForJobs(Barrier* pBarrier) override;
-
-    private:
+    
+    private:    
         virtual void        QueueJob(Job* pJob) override;
         virtual void        QueueJobs(Job** pJobs, const uint32_t numHandles) override;
         virtual void        FreeJob(Job* pJob) override;
+
+    private:
+        JobArray            m_jobs;
+        BarrierImpl         m_dummyBarrier{};
     };
 }

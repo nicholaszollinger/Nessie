@@ -25,24 +25,24 @@ namespace nes
         FreeConsole();
     }
 
-    void LogTarget::PrePost(const LogSeverity type)
+    void LogTarget::PrePost(const ELogSeverity type)
     {
         const HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 
         switch (type)
         {
-            case LogSeverity::kLog:
+            case ELogSeverity::Log:
                 // Grey Color
                 SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN);
                 break;
             
-            case LogSeverity::kWarning:
+            case ELogSeverity::Warning:
                 // Yellow Color
                 SetConsoleTextAttribute(h, FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
                 break;
         
-            case LogSeverity::kError:
-            case LogSeverity::kCritical:
+            case ELogSeverity::Error:
+            case ELogSeverity::Critical:
                 // Red Color
                 SetConsoleTextAttribute(h, FOREGROUND_RED);
                 break;

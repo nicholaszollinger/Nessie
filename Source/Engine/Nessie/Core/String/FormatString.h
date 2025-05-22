@@ -1,5 +1,5 @@
+// FormatString.h
 #pragma once
-// FormatString.hpp
 #include <chrono>
 #include <ostream>
 #include <string>
@@ -53,13 +53,13 @@ namespace nes
     };
 
     //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      TODO: I should move this somewhere more 'generic'.
+    //	NOTES:
+    //  TODO: I should move this somewhere more 'generic'.
     //		
-    ///		@brief : Invokes each callable.
-    ///		@tparam FunctorType : Callable type.
-    ///     @tparam Args : Type of arguments passed to each callable.
-    ///		@param funcs : Functors to be called.
+    /// @brief : Invokes each callable.
+    ///	@tparam FunctorType : Callable type.
+    /// @tparam Args : Type of arguments passed to each callable.
+    ///	@param funcs : Functors to be called.
     //-----------------------------------------------------------------------------------------------------------------------------
     void InvokeAll(const auto&&... funcs)
     {
@@ -67,7 +67,7 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Calculate the size of a c-style string at compile time.
+    ///	@brief : Calculate the size of a c-style string at compile time.
     //----------------------------------------------------------------------------------------------------
     constexpr size_t StrLength(const char* str)
     {
@@ -79,9 +79,9 @@ namespace nes
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------
-    ///		@brief : Adds a value to a string.
-    ///		@param str : String we are adding to.
-    ///		@param arg : Value we are adding. This must be either an AddableToStringType or a ToStringType.
+    ///	@brief : Adds a value to a string.
+    ///	@param str : String we are adding to.
+    ///	@param arg : Value we are adding. This must be either an AddableToStringType or a ToStringType.
     //-----------------------------------------------------------------------------------------------------------------------------
     void AddToString(std::string& str, const AddableOrToStringType auto& arg)
     {
@@ -104,7 +104,7 @@ namespace nes
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------
-    ///		@brief : Concatenates each of the arg values into a single std::string.
+    ///	@brief : Concatenates each of the arg values into a single std::string.
     //-----------------------------------------------------------------------------------------------------------------------------
     std::string CombineIntoString(const AddableOrToStringType auto&...args)
     {
@@ -119,13 +119,11 @@ namespace nes
     void FormatStringImpl(const char* pFormat, std::string& outStr);
 
     //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Combines arguments into a string using a format string.
-    ///		@param pFormat : The format string that tells us when to place an argument.
-    ///		@param outStr : The string we are outputting to.
-    ///		@param first : The first argument, taken out of the parameter pack.
-    ///		@param args : The rest of the arguments.
+    ///	@brief : Combines arguments into a string using a format string.
+    ///	@param pFormat : The format string that tells us when to place an argument.
+    ///	@param outStr : The string we are outputting to.
+    ///	@param first : The first argument, taken out of the parameter pack.
+    ///	@param args : The rest of the arguments.
     //-----------------------------------------------------------------------------------------------------------------------------
     void FormatStringImpl(const char* pFormat, std::string& outStr, const AddableOrToStringType auto& first, const AddableOrToStringType auto&...args)
     {
@@ -144,20 +142,20 @@ namespace nes
     }
 
     //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      This based of the 'tprintf' function on cppreference: https://en.cppreference.com/w/cpp/language/parameter_pack
+    //	NOTES:
+    //  This based of the 'printf' function on cppreference: https://en.cppreference.com/w/cpp/language/parameter_pack
     //
-    ///		@brief : Create a std::string that follows the format.
-    ///         \n FORMAT RULES:
-    ///         \n Anytime you want to insert an argument, put a '%' character into the formatted string.
-    ///         \n Each argument following the format string will be added to the final string in order.
-    ///         \n\n EXAMPLE:
-    ///         \n FormatString("% world% %", "Hello", '!', 123); will print: "Hello World! 123".
-    ///         \n (You can add a newline char to the format string, I can't here because of comment formatting.)\n
-    ///		@tparam Args : Any type'd arguments that you want to add into the std::string.
-    ///		@param pFormat : String that defines the format of the final output.
-    ///		@param args : Values to add into the string in sequential order.
-    ///		@returns : Formatted string.
+    ///	@brief : Create a std::string that follows the format.
+    ///     \n FORMAT RULES:
+    ///     \n - Anytime you want to insert an argument, put a '%' character into the formatted string.
+    ///     \n - Each argument following the format string will be added to the final string in order.
+    ///     \n\n EXAMPLE:
+    ///     \n FormatString("% world% %", "Hello", '!', 123); will print: "Hello World! 123".
+    ///     \n (You can add a newline char to the format string, I can't here because of comment formatting.)\n
+    ///	@tparam Args : Any typed arguments that you want to add into the std::string.
+    ///	@param pFormat : String that defines the format of the final output.
+    ///	@param args : Values to add into the string in sequential order.
+    ///	@returns : Formatted string.
     //-----------------------------------------------------------------------------------------------------------------------------
     std::string FormatString(const char* pFormat, const AddableOrToStringType auto&...args)
     {

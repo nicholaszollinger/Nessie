@@ -4,15 +4,6 @@
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      This should probably be moved to something like GenericMemory.ixx or something.
-    //		
-    ///		@brief : Get the address of the closest aligned ptr.
-    ///		@param pPtr : Start address that we are going to add some number of bytes to ensure an aligned address.
-    ///		@param alignment : Alignment we have to adhere to. MUST BE A POWER OF TWO.
-    ///		@returns : Aligned address. It could be the same address if it is already aligned.
-    //----------------------------------------------------------------------------------------------------
     std::byte* GetAlignedPtr(std::byte* pPtr, const size_t alignment)
     {
         NES_ASSERTV(alignment > 0, "Alignment of Zero makes no sense!");
@@ -102,24 +93,13 @@ namespace nes
         // Return the pointer to the allocated memory.
         return pAlignedAddress;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Free memory off the top stack.
-    ///		@param pPtr : Ptr to the memory we want to free.
-    ///		@param count : Size of the memory we want to free.
-    //----------------------------------------------------------------------------------------------------
+    
     void StackAllocator::Free([[maybe_unused]] std::byte* pPtr, const size_t count)
     {
         NES_ASSERTV(count > Size(), "Attempting to free more memory than what is currently allocated!");
         m_pEnd -= count;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Returns a position in the stack that we can free to. This is useful if you want to save
-    ///              keep memory before the current position and free it later.
-    //----------------------------------------------------------------------------------------------------
+    
     StackAllocator::Marker StackAllocator::PlaceMarker() const
     {
         return m_pEnd - m_pBuffer;

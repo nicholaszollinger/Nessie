@@ -11,8 +11,8 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Class that allows lock free creation and destruction of objects (unless a new page of objects
-    ///         needs to be allocated). It contains a fixed pool of objects and also allowing batching up a lot
+    /// @brief : Class that allows lock-free creation and destruction of objects (unless a new page of objects
+    ///         needs to be allocated). It contains a fixed pool of objects and also allows batching up a lot
     ///         of objects to be destroyed while doing the actual free in a single atomic operation.
     ///	@tparam ObjectType : Type of Object that will be allocated.
     //----------------------------------------------------------------------------------------------------
@@ -22,18 +22,18 @@ namespace nes
         struct ObjectStorage
         {
             /// The object we are storing.
-            ObjectType m_object;
+            ObjectType              m_object;
 
             /// When the object is freed (or in the process of being freed as a batch) this will contain
-            /// the next free object. When an object is in use it will contain the object's index in the
+            /// the next free object. When an object is in use, it will contain the object's index in the
             /// free list.
-            std::atomic<uint32_t> m_nextFreeObject;
+            std::atomic<uint32_t>   m_nextFreeObject;
         };
         static_assert(alignof(ObjectStorage) == alignof(ObjectType), "Object not properly aligned");
 
     public:
-        static constexpr uint32_t kInvalidObjectIndex = std::numeric_limits<uint32_t>::max();
-        static constexpr int kObjectStorageSize = sizeof(ObjectStorage);
+        static constexpr uint32_t   kInvalidObjectIndex = std::numeric_limits<uint32_t>::max();
+        static constexpr int        kObjectStorageSize = sizeof(ObjectStorage);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : A Batch of objects to be destructed. 
@@ -44,57 +44,6 @@ namespace nes
             uint32_t m_lastObjectIndex = kInvalidObjectIndex;
             uint32_t m_numObjects = 0;
         };
-        
-    private:
-        /// Size (in objects) of a single page.
-        uint32_t m_numObjectsPerPage;
-
-        /// Number of bits to shift an object index to the right to get the page number.
-        uint32_t m_pageShift;
-
-        /// Mask to use with an object index to get the page number.
-        uint32_t m_objectMask;
-
-        /// Total number of pages that are usable.
-        uint32_t m_numPages;
-
-        /// Total number of objects that have been allocated.
-        uint32_t m_numObjectsAllocated;
-
-        /// Array of pages of objects.
-        ObjectStorage** m_pPages = nullptr;
-
-        // [TODO]: Make this the Mutex wrapper class that profiles the lock contention.
-        /// Mutex that is used to allocate a new page if the storage runs out.
-        /// This variable is aligned to the cache line to prevent false sharing with the
-        /// constants used to index in to the list via "Get()".
-        alignas(NES_CACHE_LINE_SIZE) std::mutex m_pageMutex;
-
-#ifdef NES_LOGGING_ENABLED
-        /// Number of objects that are currently in the free list / new pages.
-        std::atomic<uint32_t> m_numFreeObjects;
-#endif
-        
-        /// Counter that makes the first free object pointer update with every compare-and-exchange so that we don't suffer
-        /// the "ABA" problem, which is when compare-and-exchange will succeed when it shouldn't.
-        ///
-        /// Say Thread 1 reads the value in the atomic. Then, Thread B does two operations: Read the value 
-        /// update it, then return it to the same value and store it again. When Thread 1 goes to exchange,
-        /// it sees the same expected value and performs the swap. This can cause unintended results. Having this
-        /// counter be a part of the "m_firstFreeObjectAndTag" value, it means that we can properly exit
-        /// when the tags are not equal. The counter is incremented every time that we are constructing a
-        /// new "m_firstFreeObjectAndTag". So regardless if the indexes match, the allocationTag must match as well.
-        /// - This is a similar mechanism to the Generation value in the "GenerationalID".
-        std::atomic<uint32_t> m_allocationTag;
-
-        /// Index of the first free object, the first 32 bits of an object are used to point to the next free object.
-        std::atomic<uint64_t> m_firstFreeObjectAndTag;
-
-        /// The first free object to use when the free list is empty (may need to allocate a new page).
-        std::atomic<uint32_t> m_firstFreeObjectInNewPage;
-
-        /// Total number of objects that are actually constructed.
-        std::atomic<uint32_t> m_numObjectsConstructed;
         
     public:
         FixedSizeFreeList() = default;
@@ -107,12 +56,12 @@ namespace nes
         ///	@param maxObjects : Maximum amount of Objects that can be allocated.
         ///	@param numObjectsPerPage : Number of objects per page. When a new page needs to be allocated, a lock is obtained.
         //----------------------------------------------------------------------------------------------------
-        void Init(const unsigned int maxObjects, unsigned int numObjectsPerPage);
+        void                            Init(const unsigned int maxObjects, unsigned int numObjectsPerPage);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destruct all objects allocated by the list. 
         //----------------------------------------------------------------------------------------------------
-        void Clear();
+        void                            Clear();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless construct a new object. ctorParams are passed into the constructor.
@@ -120,45 +69,96 @@ namespace nes
         ///         room!
         //----------------------------------------------------------------------------------------------------
         template <typename ... Parameters>
-        uint32_t ConstructObject(Parameters&&...ctorParams);
+        uint32                          ConstructObject(Parameters&&...ctorParams);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless destruct an object and return it to the free pool. 
         //----------------------------------------------------------------------------------------------------
-        void DestructObject(const uint32_t objectIndex);
+        void                            DestructObject(const uint32_t objectIndex);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless destruct an object and return it to the free pool. 
         //----------------------------------------------------------------------------------------------------
-        void DestructObject(ObjectType* pObject);
+        void                            DestructObject(ObjectType* pObject);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add an object to an existing batch to be destructed.
         //----------------------------------------------------------------------------------------------------
-        void AddObjectToBatch(Batch& batch, const uint32_t objectIndex);
+        void                            AddObjectToBatch(Batch& batch, const uint32_t objectIndex);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless destruct batch of objects. 
         //----------------------------------------------------------------------------------------------------
-        void DestructBatch(Batch& batch);
+        void                            DestructBatch(Batch& batch);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access an object by index.
         //----------------------------------------------------------------------------------------------------
-        [[nodiscard]] ObjectType& Get(const uint32_t objectIndex)             { return GetStorage(objectIndex).m_object; }
+        [[nodiscard]] ObjectType&       Get(const uint32_t objectIndex)             { return GetStorage(objectIndex).m_object; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access an object by index 
         //----------------------------------------------------------------------------------------------------
         [[nodiscard]] const ObjectType& Get(const uint32_t objectIndex) const { return GetStorage(objectIndex).m_object; }
 
-        [[nodiscard]] uint32_t Count()          const { return m_numObjectsConstructed.load(std::memory_order_relaxed); }
-        [[nodiscard]] uint32_t Capacity()       const { return m_numPages * m_numObjectsPerPage; }
-        [[nodiscard]] uint32_t AllocatedSize()  const { return m_numObjectsAllocated; }
+        [[nodiscard]] uint32_t          Count()          const { return m_numObjectsConstructed.load(std::memory_order_relaxed); }
+        [[nodiscard]] uint32_t          Capacity()       const { return m_numPages * m_numObjectsPerPage; }
+        [[nodiscard]] uint32_t          AllocatedSize()  const { return m_numObjectsAllocated; }
         
     private:
-        const ObjectStorage& GetStorage(const uint32_t objectIndex) const;
-        ObjectStorage& GetStorage(const uint32_t objectIndex);
+        const ObjectStorage&            GetStorage(const uint32_t objectIndex) const;
+        ObjectStorage&                  GetStorage(const uint32_t objectIndex);
+
+    private:
+        /// Size (in objects) of a single page.
+        uint32                          m_numObjectsPerPage;
+
+        /// Number of bits to shift an object index to the right to get the page number.
+        uint32                          m_pageShift;
+
+        /// Mask to use with an object index to get the page number.
+        uint32                          m_objectMask;
+
+        /// Total number of pages that are usable.
+        uint32                          m_numPages;
+
+        /// Total number of objects that have been allocated.
+        uint32                          m_numObjectsAllocated;
+
+        /// Array of pages of objects.
+        ObjectStorage**                 m_pPages = nullptr;
+
+        // [TODO]: Make this the Mutex wrapper class that profiles the lock contention.
+        /// Mutex that is used to allocate a new page if the storage runs out.
+        /// This variable is aligned to the cache line to prevent false sharing with the
+        /// constants used to index in to the list via "Get()".
+        alignas(NES_CACHE_LINE_SIZE) std::mutex m_pageMutex;
+
+#ifdef NES_LOGGING_ENABLED
+        /// Number of objects that are currently in the free list / new pages.
+        std::atomic<uint32>             m_numFreeObjects;
+#endif
+        
+        /// Counter that makes the first free object pointer update with every compare-and-exchange so that we don't suffer
+        /// the "ABA" problem, which is when compare-and-exchange will succeed when it shouldn't.
+        ///
+        /// Say Thread 1 reads the value in the atomic. Then, Thread B does two operations: Read the value 
+        /// update it, then return it to the same value and store it again. When Thread 1 goes to exchange,
+        /// it sees the same expected value and performs the swap. This can cause unintended results. Having this
+        /// counter be a part of the "m_firstFreeObjectAndTag" value, it means that we can properly exit
+        /// when the tags are not equal. The counter is incremented every time that we are constructing a
+        /// new "m_firstFreeObjectAndTag". So regardless if the indexes match, the allocationTag must match as well.
+        /// - This is a similar mechanism to the Generation value in the "GenerationalID".
+        std::atomic<uint32>             m_allocationTag;
+
+        /// Index of the first free object, the first 32 bits of an object are used to point to the next free object.
+        std::atomic<uint64>             m_firstFreeObjectAndTag;
+
+        /// The first free object to use when the free list is empty (may need to allocate a new page).
+        std::atomic<uint32>             m_firstFreeObjectInNewPage;
+
+        /// Total number of objects that are actually constructed.
+        std::atomic<uint32>             m_numObjectsConstructed;
     };
 }
 

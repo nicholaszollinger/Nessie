@@ -45,7 +45,7 @@ namespace nes
         auto& categories = GetCategories();
 
         // Add the assert category to our categories.
-        categories.emplace("Assertion Failed!", LogCategory("Assertion Failed!", LogOutputLevel::kAll));
+        categories.emplace("Assertion Failed!", LogCategory("Assertion Failed!", ELogOutputLevel::All));
 
         // Initialize our LogTarget.
         return GetLogTarget().Init();
@@ -70,7 +70,7 @@ namespace nes
         for (auto it = categoryData.begin(); it != categoryData.end(); ++it)
         {
             const StringID name = it->first.as<std::string>();
-            const auto outputLevel = static_cast<LogOutputLevel>(it->second.as<int>());
+            const auto outputLevel = static_cast<ELogOutputLevel>(it->second.as<int>());
 
             categories.emplace(name, LogCategory(name, outputLevel));
         }
@@ -105,7 +105,7 @@ namespace nes
     ///		@brief : This is the stage we actually present the log onto the LogTarget. This is thread-safe if LOGGER_IS_MULTITHREADED
     ///             is set to true.
     //-----------------------------------------------------------------------------------------------------------------------------
-    void Logger::PostToLogTarget(const LogSeverity type, const std::string& msg)
+    void Logger::PostToLogTarget(const ELogSeverity type, const std::string& msg)
     {
     #if NES_LOGGER_IS_MULTITHREADED
         std::lock_guard lock(GetMutex());

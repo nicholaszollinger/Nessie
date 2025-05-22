@@ -31,7 +31,7 @@ namespace nes
             .set_engine_name("Nessie")
             //.set_engine_version(props.m_engineVersion.m_value)
             .set_app_name(props.m_appName.c_str())
-            .set_app_version(props.m_appVersion.m_value)
+            .set_app_version(props.m_appVersion)
     		.enable_extensions(requiredExtensions)
             .require_api_version(1, 3, 0);
         

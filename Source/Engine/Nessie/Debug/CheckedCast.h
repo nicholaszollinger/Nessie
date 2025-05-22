@@ -5,8 +5,8 @@
 #include "Core/Generic/Concepts.h"
 
 //-----------------------------------------------------------------------------------------------------------------------------
-///		@brief : If logs are enabled, this will perform a dynamic_cast. Otherwise, this will perform a static_cast.
-///             Both To and From must be pointers.
+///	@brief : If logs are enabled, this will perform a dynamic_cast. Otherwise, this will perform a static_cast.
+///     Both To and From must be pointers.
 //-----------------------------------------------------------------------------------------------------------------------------
 template <nes::PointerType To, nes::PointerType From>
 constexpr To checked_cast(From pFrom)
@@ -36,15 +36,13 @@ constexpr To checked_cast(From pFrom)
 }
 
 //----------------------------------------------------------------------------------------------------
-//		NOTES:
-//		
-///		@brief : Checked cast for reference types. If Logs are enabled, this will perform a dynamic_cast
-///              on the pointers, and return the dereferenced result. Otherwise, this will
-///              perform a static_cast.
-///		@tparam To : Reference type to cast to. Must be a derived class of From.
-///		@tparam From : Type to cast from. Must be a base class of To.
-///		@param from : Reference value to cast.
-///		@returns : Casted reference value.
+///	@brief : Checked cast for reference types. If Logs are enabled, this will perform a dynamic_cast
+///     on the pointers and return the dereferenced result. Otherwise, this will
+///     perform a static_cast.
+///	@tparam To : Reference type to cast to. Must be a derived class of From.
+///	@tparam From : Type to cast from. Must be a base class of To.
+///	@param from : Reference value to cast.
+///	@returns : Cast reference value.
 //----------------------------------------------------------------------------------------------------
 template <nes::ReferenceType To, typename From>
 constexpr To checked_cast(From& from) requires std::is_base_of_v<From, std::remove_reference_t<To>>

@@ -2,7 +2,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "Core/Generic/Bitmask.h"
+#include "Core/Generic/BitOperators.h"
 
 namespace nes
 {
@@ -14,7 +14,7 @@ namespace nes
         ContactConstraintsFull = 3 << 0,    /// The ContactConstraints Buffer is full. Some contacts were ignored. Increase maxContactConstraints in PhysicsSystem::Init.
     };
 
-    NES_DEFINE_BIT_OPERTATIONS_FOR_ENUM(PhysicsUpdateErrorCode);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(PhysicsUpdateErrorCode);
 
     std::string ToString(const PhysicsUpdateErrorCode errorCodes);
 }

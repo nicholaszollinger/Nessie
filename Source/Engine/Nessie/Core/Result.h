@@ -13,20 +13,12 @@ namespace nes
             && std::is_move_constructible_v<Type>
             , "Result Type must be default, copy, & move constructible!");
         
-        enum class State : uint8_t
+        enum class EState : uint8_t
         {
             Invalid,    /// The result is uninitialized
             Valid,      /// The result is valid.
-            Error,      /// The result is invalid and an error string has been set.
+            Error,      /// The result is invalid, and an error string has been set.
         };
-        
-        union
-        {
-            Type m_result{};      /// The actual resulting object.
-            std::string m_error;  /// The error description on failure.
-        };
-
-        State m_state = State::Invalid;
 
     public:
         Result(){}
@@ -45,17 +37,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if there is a result value set.
         //----------------------------------------------------------------------------------------------------
-        inline bool         IsValid() const             { return m_state == State::Valid; }
+        inline bool         IsValid() const             { return m_state == EState::Valid; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if neither an error or result value was set. 
         //----------------------------------------------------------------------------------------------------
-        inline bool         IsEmpty() const             { return m_state == State::Invalid; }
+        inline bool         IsEmpty() const             { return m_state == EState::Invalid; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Checks if there is was an error message set. 
         //----------------------------------------------------------------------------------------------------
-        inline bool         HasError() const            { return m_state == State::Error; }
+        inline bool         HasError() const            { return m_state == EState::Error; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the value result value. YUou must check IsValid() first. 
@@ -91,6 +83,15 @@ namespace nes
         /// @brief : Set an error value. This will destruct current result if there was one.
         //----------------------------------------------------------------------------------------------------
         inline void         SetError(std::string&& errorMsg);
+
+    private:
+        union
+        {
+            Type        m_result{};      /// The actual resulting object.
+            std::string m_error;  /// The error description on failure.
+        };
+
+        EState          m_state = EState::Invalid;
     };
 
     template <typename Type>
@@ -99,13 +100,13 @@ namespace nes
     {
         switch (m_state)
         {
-            case State::Valid:
+            case EState::Valid:
             {
                 new (&m_result) Type (other.m_result);
                 break;
             }
 
-            case State::Error:
+            case EState::Error:
             {
                 new (&m_error) std::string (other.m_error);
                 break;
@@ -123,13 +124,13 @@ namespace nes
         
         switch (m_state)
         {
-            case State::Valid:
+            case EState::Valid:
             {
                 new (&m_result) Type (std::move(other.m_result));
                 break;
             }
 
-            case State::Error:
+            case EState::Error:
             {
                 new (&m_error) std::string (std::move(other.m_error));
                 break;
@@ -153,13 +154,13 @@ namespace nes
             
             switch (m_state)
             {
-                case State::Valid:
+                case EState::Valid:
                 {
                     new (&m_result) Type (other.m_result);
                     break;
                 }
 
-                case State::Error:
+                case EState::Error:
                 {
                     new (&m_error) std::string (other.m_error);
                     break;
@@ -182,13 +183,13 @@ namespace nes
         
             switch (m_state)
             {
-                case State::Valid:
+                case EState::Valid:
                 {
                     new (&m_result) Type (std::move(other.m_result));
                     break;
                 }
 
-                case State::Error:
+                case EState::Error:
                 {
                     new (&m_error) std::string (std::move(other.m_error));
                     break;
@@ -210,13 +211,13 @@ namespace nes
     {
         switch (m_state)
         {
-            case State::Valid:
+            case EState::Valid:
             {
                 m_result.~Type();
                 break;
             }
 
-            case State::Error:
+            case EState::Error:
             {
                 m_error.std::string::~string();
                 break;
@@ -225,7 +226,7 @@ namespace nes
             default: break;
         }
 
-        m_state = State::Invalid;
+        m_state = EState::Invalid;
         
     }
 
@@ -235,7 +236,7 @@ namespace nes
         Clear();
 
         new (&m_result) Type(value);
-        m_state = State::Valid;
+        m_state = EState::Valid;
     }
 
     template <typename Type>
@@ -244,7 +245,7 @@ namespace nes
         Clear();
 
         new (&m_result) Type(std::move(value));
-        m_state = State::Valid;
+        m_state = EState::Valid;
     }
 
     template <typename Type>
@@ -253,7 +254,7 @@ namespace nes
         Clear();
 
         new (&m_error) std::string(errorMsg);
-        m_state = State::Error;
+        m_state = EState::Error;
     }
 
     template <typename Type>
@@ -262,7 +263,7 @@ namespace nes
         Clear();
 
         new (&m_error) std::string(errorMsg);
-        m_state = State::Error;
+        m_state = EState::Error;
     }
 
     template <typename Type>
@@ -271,6 +272,6 @@ namespace nes
         Clear();
 
         new (&m_error) std::string(std::move(errorMsg));
-        m_state = State::Error;
+        m_state = EState::Error;
     }
 }

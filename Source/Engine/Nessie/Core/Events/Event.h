@@ -1,26 +1,24 @@
-#pragma once
 // Event.h
+#pragma once
 #include <concepts>
 #include "Core/Generic/Hash.h"
 
 //----------------------------------------------------------------------------------------------------
-//		NOTES:
-//		
-///		@brief : Use this in the body of an Event class to define the EventID and GetName functions.
-///		@param type : Type of the Event. Example: KeyEvent, WindowResizeEvent, etc.
+/// @brief : Use this in the body of an Event class to define the EventID and GetName functions.
+///	@param type : Type of the Event. Example: KeyEvent, WindowResizeEvent, etc.
 //----------------------------------------------------------------------------------------------------
-#define NES_EVENT(type)                                                         \
-    private:                                                                    \
-        static constexpr nes::EventID kEventID = HashString32(#type);           \
-    public:                                                                     \
-        static constexpr nes::EventID GetStaticEventID() { return kEventID; }   \
-        virtual nes::EventID GetEventID() const override { return kEventID; }   \
-        virtual const char* GetName() const override { return #type; }          \
+#define NES_EVENT(type)                                                                     \
+    private:                                                                                \
+        static constexpr nes::EventID   kEventID = HashString32(#type);                     \
+    public:                                                                                 \
+        static constexpr nes::EventID   GetStaticEventID() { return kEventID; }             \
+        virtual nes::EventID            GetEventID() const override { return kEventID; }    \
+        virtual const char*             GetName() const override { return #type; }          \
     private:
 
 namespace nes
 {
-    using EventID = uint32_t;
+    using EventID = uint32;
 
     template <typename Type>
     concept EventType = requires(Type value)
@@ -36,21 +34,38 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Base class for any Event that can be pushed to the Application.
+    /// @brief : Base class for any Event that can be pushed to the Application.
     //----------------------------------------------------------------------------------------------------
     class Event
     {
-        bool m_isHandled = false;
-
     public:
         Event() = default;
         virtual ~Event() = default;
 
-        void SetHandled() { m_isHandled = true; }
-        [[nodiscard]] bool IsHandled() const { return m_isHandled; }
-        [[nodiscard]] virtual EventID GetEventID() const = 0;
-        [[nodiscard]] virtual const char* GetName() const = 0;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Setting an Event as handled will early out - no other listeners will get to respond to
+        ///     this event.
+        //----------------------------------------------------------------------------------------------------
+        void                  SetHandled() { m_isHandled = true; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check whether this event has been handled. 
+        //----------------------------------------------------------------------------------------------------
+        bool                  IsHandled() const { return m_isHandled; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the unique identifier for the Event type.
+        /// @note : Do not override this function manually, use the NES_EVENT(type) macro.
+        //----------------------------------------------------------------------------------------------------
+        virtual EventID       GetEventID() const = 0;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the name of this Event type.
+        /// @note : Do not override this function manually, use the NES_EVENT(type) macro.
+        //----------------------------------------------------------------------------------------------------
+        virtual const char*   GetName() const = 0;
+
+    private:
+        bool m_isHandled = false;
     };
 }

@@ -33,12 +33,12 @@ namespace nes
         }
 
         // If any jobs need to be scheduled, schedule them as a batch.
-        const uint32_t numJobsToQueue = static_cast<uint32_t>(pNextJob - pJobsToQueue);
+        const uint32 numJobsToQueue = static_cast<uint32>(pNextJob - pJobsToQueue);
         if (numJobsToQueue > 0)
             pSystem->QueueJobs(pJobsToQueue, numJobsToQueue);
     }
 
-    JobSystem::Job::Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32_t numDependencies)
+    JobSystem::Job::Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32 numDependencies)
         : m_name(pName)
         , m_pJobSystem(pSystem)
         , m_function(function)
@@ -83,10 +83,10 @@ namespace nes
         return false;
     }
 
-    uint32_t JobSystem::Job::Execute()
+    uint32 JobSystem::Job::Execute()
     {
         // Transition to the executing state.
-        uint32_t state = 0; // Assume that the dependency count is 0.
+        uint32 state = 0; // Assume that the dependency count is 0.
         if (!m_numDependencies.compare_exchange_strong(state, kExecutingState, std::memory_order_acquire))
             return state; // We still have dependencies! Return the number of dependencies.
 

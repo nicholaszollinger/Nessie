@@ -32,9 +32,6 @@ namespace nes
         };
     
         static constexpr size_t kCapacity = N;
-        
-        Storage     m_elements[kCapacity];   // Fixed Buffer of elements.
-        size_type   m_size = 0;             // Count of constructed elements in the array.
 
     public:
         StaticArray() = default;
@@ -168,6 +165,10 @@ namespace nes
         ///	@param last : Position to end removal.
         //----------------------------------------------------------------------------------------------------
         void                    erase(const_iterator first, const_iterator last);
+
+    protected:
+        Storage                 m_elements[kCapacity];  /// Fixed Buffer of elements.
+        size_type               m_size = 0;             /// Count of constructed elements in the array.
     };
 
     template <typename ElementType, size_t N>

@@ -69,8 +69,6 @@ namespace nes
             RaiseThreadNameException(threadName);
         }
     }
-
-    
 #else
     void SetThreadName([[maybe_unused]] const char* threadName)
     {

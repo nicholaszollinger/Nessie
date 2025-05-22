@@ -11,9 +11,6 @@ namespace nes::internal
         /// A Large value that is added to the ref count, so that it remains in memory when the number of
         /// external references becomes zero.
         static constexpr uint32_t kEmbedded = 0x0ebedded;
-
-        /// The current ref count to the underlying object. When this reaches zero, the object will be destroyed.
-        mutable std::atomic<uint32_t> m_refCount = 0;
         
     public:
         virtual ~RefCounterBase();
@@ -57,6 +54,10 @@ namespace nes::internal
         /// @brief : Called when the ref count reaches zero. The underlying object must be destroyed.
         //----------------------------------------------------------------------------------------------------
         virtual void        ReleaseObject() const = 0;
+
+    private:
+        /// The current ref count to the underlying object. When this reaches zero, the object will be destroyed.
+        mutable std::atomic<uint32> m_refCount = 0;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -65,21 +66,22 @@ namespace nes::internal
     template <typename Type>
     class RefCounter final : public RefCounterBase
     {
-        mutable Type* m_pObject = nullptr;
-
     private:
+        /// Private Ctor.
         RefCounter() = default;
-
     public:
-        explicit RefCounter(Type*&& pObject) : m_pObject(std::move(pObject)) { }
+        explicit            RefCounter(Type*&& pObject) : m_pObject(std::move(pObject)) { }
 
         template <typename To>
-        RefCounter<To>* GetAs();
+        RefCounter<To>*     GetAs();
 
     private:
         virtual void*       GetObject() override                { return m_pObject; }
         virtual const void* GetObject() const override          { return m_pObject; }
         virtual void        ReleaseObject() const override;
+
+    private:
+        mutable Type*       m_pObject = nullptr;
     };
 }
 

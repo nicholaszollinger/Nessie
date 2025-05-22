@@ -1,11 +1,11 @@
+// BitOperators.h
 #pragma once
-// Bitmask.h
 #include "Concepts.h"
 
 //-----------------------------------------------------------------------------------------------------------------------------
 ///		@brief : Create the bitwise operators for an Enum, to be able to use the enum as a bitmask.
 //-----------------------------------------------------------------------------------------------------------------------------
-#define NES_DEFINE_BIT_OPERTATIONS_FOR_ENUM(Enum)                                                            \
+#define NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(Enum)                                                            \
     static_assert(nes::EnumType<Enum>, "Type must be an enum type!");                       \
     inline constexpr Enum operator|(const Enum left, const Enum right)                      \
     {                                                                                       \

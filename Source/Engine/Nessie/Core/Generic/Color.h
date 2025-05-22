@@ -1,23 +1,21 @@
-#pragma once
 // Color.h
-#include <cstdint>
+#pragma once
+#include "Core/Config.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : RGBA Color represented as integer values from 0 to 255.
+    /// @brief : RGBA Color represented as integer values from 0 to 255.
     //----------------------------------------------------------------------------------------------------
     struct Color
     {
-        uint8_t r = 255;
-        uint8_t g = 255;
-        uint8_t b = 255;
-        uint8_t a = 255;
-
         constexpr Color() = default;
-        constexpr Color(const uint8_t r, const uint8_t g, const uint8_t b, const uint8_t a = 255) : r(r), g(g), b(b), a(a) {}
+        constexpr Color(const uint8 r, const uint8 g, const uint8 b, const uint8 a = 255) : r(r), g(g), b(b), a(a) {}
+
+        uint8 r = 255;
+        uint8 g = 255;
+        uint8 b = 255;
+        uint8 a = 255;
 
         constexpr bool operator==(const Color& other) const
         {
@@ -37,23 +35,18 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : RGBA Color represented as float values from 0.0 to 1.0.
+    /// @brief : RGBA Color represented as float values from 0.0 to 1.0.
     //----------------------------------------------------------------------------------------------------
     struct LinearColor
     {
+        constexpr LinearColor() = default;
+        constexpr LinearColor(const float r, const float g, const float b, const float a = 1.0f) : r(r), g(g), b(b), a(a) {}
+        
         float r = 1.0f;
         float g = 1.0f;
         float b = 1.0f;
         float a = 1.0f;
-
-        constexpr LinearColor() = default;
-        constexpr LinearColor(const float r, const float g, const float b, const float a = 1.0f) : r(r), g(g), b(b), a(a) {}
-
-        //constexpr bool operator==(const LinearColor& other) const;
-        //constexpr bool operator!=(const LinearColor& other) const { return !(*this == other); }
-
+        
         static constexpr LinearColor White()    { return {}; }
         static constexpr LinearColor Black()    { return { 0.0f, 0.0f, 0.0f }; }
         static constexpr LinearColor Gray()     { return { 0.5f, 0.5f, 0.5f }; }
@@ -69,10 +62,10 @@ namespace nes
     {
         return Color
         (
-            static_cast<uint8_t>(linearColor.r * 255.0f),
-            static_cast<uint8_t>(linearColor.g * 255.0f),
-            static_cast<uint8_t>(linearColor.b * 255.0f),
-            static_cast<uint8_t>(linearColor.a * 255.0f)
+            static_cast<uint8>(linearColor.r * 255.0f),
+            static_cast<uint8>(linearColor.g * 255.0f),
+            static_cast<uint8>(linearColor.b * 255.0f),
+            static_cast<uint8>(linearColor.a * 255.0f)
         );
     }
 

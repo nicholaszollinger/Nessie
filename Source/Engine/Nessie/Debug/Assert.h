@@ -4,7 +4,7 @@
 
 #if NES_LOGGING_ENABLED
 //----------------------------------------------------------------------------------------------------
-///		@brief : Assert that a condition is true. If not, log an error message and break.
+///	@brief : Assert that a condition is true. If not, log an error message and break.
 //----------------------------------------------------------------------------------------------------
 #define NES_ASSERT(condition)                                                                                                               \
 do                                                                                                                                   \
@@ -17,8 +17,8 @@ do                                                                              
 } while(0)
 
 //----------------------------------------------------------------------------------------------------
-///		@brief : Assert that a condition is true, with an additional message. If not true,
-///             log an error message and break.
+///	@brief : Assert that a condition is true, with an additional message. If not true,
+///     log an error message and break.
 //----------------------------------------------------------------------------------------------------
 #define NES_ASSERTV(condition, ...)                                                                                                             \
 do                                                                                                                                          \
