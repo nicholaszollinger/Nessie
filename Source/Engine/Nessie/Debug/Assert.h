@@ -2,7 +2,7 @@
 // Assert.h
 #include "Core/Log/Log.h"
 
-#if NES_LOGGING_ENABLED
+#ifdef NES_LOGGING_ENABLED
 //----------------------------------------------------------------------------------------------------
 ///	@brief : Assert that a condition is true. If not, log an error message and break.
 //----------------------------------------------------------------------------------------------------

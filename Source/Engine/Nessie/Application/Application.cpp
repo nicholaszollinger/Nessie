@@ -31,6 +31,7 @@ namespace nes
         if (s_pInstance != nullptr)
         {
             NES_CRITICALV("Application", "Attempted to create a second Application instance!");
+            //NES_FATAL("[Application]: Attempted to create a second Application instance!");
         }
 
         s_pInstance = this;
@@ -57,10 +58,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
-    ///		@brief : Initialize the Application.
-    ///		@returns : 
+    ///	@brief : Initialize the Application.
+    ///	@returns : 
     //----------------------------------------------------------------------------------------------------
-    Application::ExitCode Application::Init()
+    Application::EExitCode Application::Init()
     {
         NES_INIT_LEAK_DETECTOR();
         Logger::Init(NES_LOG_DIR);
@@ -71,11 +72,11 @@ namespace nes
         // Load the Application Settings:
         auto settingsFile = YAML::LoadFile(std::string(logConfigDir + "AppConfig.yaml"));
         if (!settingsFile)
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
 
         auto application = settingsFile["Application"];
         if (!application)
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
 
         m_properties.m_appName = application["Name"].as<std::string>();
         m_properties.m_appVersion.Deserialize(application["Version"]);
@@ -83,14 +84,14 @@ namespace nes
         // Load Window Properties
         auto window = settingsFile["Window"];
         if (!window)
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
         
         WindowProperties windowProperties;
         windowProperties.m_label = window["Label"].as<std::string>();
         const auto extent = window["Extent"].as<std::array<int, 2>>();
         windowProperties.m_extent.m_width = extent[0];
         windowProperties.m_extent.m_height = extent[1];
-        windowProperties.m_windowMode = static_cast<WindowMode>(window["Mode"].as<int>());
+        windowProperties.m_windowMode = static_cast<EWindowMode>(window["Mode"].as<int>());
         windowProperties.m_isResizable = window["IsResizable"].as<bool>();
         windowProperties.m_vsyncEnabled = window["VsyncEnabled"].as<bool>();
         
@@ -98,35 +99,35 @@ namespace nes
         if (!m_window.Init(*this, windowProperties))
         {
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize the Window!");
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
         }
 
         // Initialize the InputManager
         if (!m_inputManager.Init(&m_window))
         {
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize InputManager!");
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
         }
         
         // Create the Renderer
         if (!m_renderer.Init(&m_window, m_properties))
         {
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the Renderer!");
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
         }
         
         // Scene Manager
         if (!m_sceneManager.Init(settingsFile))
         {
             NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the SceneManager!");
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
         }
         
         NES_LOGV("Application", "Initialized App: \"", m_properties.m_appName, "\" Version: ", m_properties.m_appVersion.ToString());
-        return ExitCode::Success;
+        return EExitCode::Success;
     }
 
-    Application::ExitCode Application::RunMainLoop()
+    Application::EExitCode Application::RunMainLoop()
     {
         m_timer.Start();
 
@@ -155,7 +156,7 @@ namespace nes
             m_window.ProcessEvents();
         }
 
-        return ExitCode::Success;
+        return EExitCode::Success;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -166,7 +167,7 @@ namespace nes
     ///             to safely close the Application.
     ///		@param exitCode : Exit code 
     //----------------------------------------------------------------------------------------------------
-    void Application::Close([[maybe_unused]] ExitCode exitCode)
+    void Application::Close([[maybe_unused]] EExitCode exitCode)
     {
         NES_ASSERTV(IsMainThread());
 

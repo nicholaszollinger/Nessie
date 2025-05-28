@@ -132,25 +132,25 @@ namespace nes
             case ELogSeverity::Log:
             {
                 // Format: [CurrentTime] - [CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - ", args..., "\n");
             }
 
             case ELogSeverity::Warning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [WARNING] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [WARNING] ", args..., "\n");
             }
 
             case ELogSeverity::Error:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [ERROR] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [ERROR] ", args..., "\n");
             }
 
             case ELogSeverity::Critical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [CRITICAL] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [CRITICAL] ", args..., "\n");
             }
         }
 
@@ -167,25 +167,25 @@ namespace nes
             case ELogSeverity::Log:
             {
                 // Format: [CurrentTime] - [CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [", pCategory, "] ", args..., "\n");
             }
 
             case ELogSeverity::Warning:
             {
                 // Format: [CurrentTime] - [WARNING:CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [WARNING:", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [WARNING:", pCategory, "] ", args..., "\n");
             }
 
             case ELogSeverity::Error:
             {
                 // Format: [CurrentTime] - [ERROR:CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [ERROR:", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [ERROR:", pCategory, "] ", args..., "\n");
             }
 
             case ELogSeverity::Critical:
             {
                 // Format: [CurrentTime] - [CRITICAL:CategoryName] Message
-                return CombineIntoString("[", Time::ToString(Time::Format::LocalTime), "] - [CRITICAL:", pCategory, "] ", args..., "\n");
+                return CombineIntoString("[", Time::ToString(Time::EFormat::LocalTime), "] - [CRITICAL:", pCategory, "] ", args..., "\n");
             }
         }
 

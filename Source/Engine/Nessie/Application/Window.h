@@ -8,7 +8,7 @@ namespace nes
 {
     class Platform;
 
-    enum class WindowMode
+    enum class EWindowMode
     {
         Windowed,
         Fullscreen,
@@ -25,7 +25,7 @@ namespace nes
     {
         std::string m_label = "App Window";
         WindowExtent m_extent = { 1600, 900 };
-        WindowMode m_windowMode = WindowMode::Windowed;
+        EWindowMode m_windowMode = EWindowMode::Windowed;
         bool m_isResizable = true;
         bool m_vsyncEnabled = false;
         bool m_isMinimized = false;
@@ -65,7 +65,7 @@ namespace nes
 
         [[nodiscard]] void* GetNativeWindowHandle() const    { return m_pNativeWindowHandle; }
         [[nodiscard]] const WindowExtent& GetExtent() const { return m_properties.m_extent; }
-        [[nodiscard]] WindowMode GetWindowMode() const      { return m_properties.m_windowMode; }
+        [[nodiscard]] EWindowMode GetWindowMode() const      { return m_properties.m_windowMode; }
         [[nodiscard]] const Vector2f& GetCursorPosition() const { return m_cursorPosition; }
         [[nodiscard]] bool IsResizable() const              { return m_properties.m_isResizable; }
         [[nodiscard]] bool IsVsyncEnabled() const           { return m_properties.m_vsyncEnabled; }

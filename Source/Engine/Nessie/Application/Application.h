@@ -58,7 +58,7 @@ namespace nes
     class Application
     {
     public:
-        enum class ExitCode
+        enum class EExitCode
         {
             Success = 0,
             FatalError = -1,
@@ -88,9 +88,9 @@ namespace nes
         static std::thread::id GetMainThreadID();
 
         // Main Loop.
-        ExitCode Init();
-        ExitCode RunMainLoop();
-        void Close(ExitCode exitCode);
+        EExitCode Init();
+        EExitCode RunMainLoop();
+        void Close(EExitCode exitCode);
         
         void PushEvent(Event& e);
         void Quit();

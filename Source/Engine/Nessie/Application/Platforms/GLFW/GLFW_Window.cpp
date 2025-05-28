@@ -45,7 +45,7 @@ namespace nes
         GLFWwindow* pWindow = nullptr;
         switch (m_properties.m_windowMode)
         {
-            case WindowMode::Fullscreen:
+            case EWindowMode::Fullscreen:
             {
                 auto* pMonitor = glfwGetPrimaryMonitor();
                 const auto* pMode = glfwGetVideoMode(pMonitor);
@@ -55,7 +55,7 @@ namespace nes
                 break;
             }
 
-            case WindowMode::FullscreenBorderless:
+            case EWindowMode::FullscreenBorderless:
             {
                 auto* pMonitor = glfwGetPrimaryMonitor();
                 const auto* pMode = glfwGetVideoMode(pMonitor);
@@ -72,7 +72,7 @@ namespace nes
                 break;
             }
 
-            case WindowMode::Windowed:
+            case EWindowMode::Windowed:
             {
                 const int width = static_cast<int>(m_properties.m_extent.m_width);
                 const int height = static_cast<int>(m_properties.m_extent.m_height);

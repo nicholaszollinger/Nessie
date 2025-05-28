@@ -36,6 +36,18 @@
     #define NES_FUNCTION_NAME __FUNCTION__
 #endif
 
+// Macro for a BreakPoint
+#if defined(NES_DEBUG)
+    #if defined(NES_COMPILER_MSVC)
+        #define NES_BREAKPOINT __debugbreak()
+    #else
+        #error "No Breakpoint macro setup for current compiler."
+    #endif
+
+#else
+    #define NES_BREAKPOINT void(0)
+#endif
+
 // Define Macro for inline
 #if defined(NES_NO_FORCE_INLINE)
     #define NES_INLINE inline

@@ -11,7 +11,7 @@ int main(int argc, char** argv)                                                 
     nes::Application app(args);                                                     \
     auto code = app.Init();                                                         \
                                                                                     \
-    if (code == nes::Application::ExitCode::Success)                                \
+    if (code == nes::Application::EExitCode::Success)                               \
     {                                                                               \
         code = app.RunMainLoop();                                                   \
     }                                                                               \

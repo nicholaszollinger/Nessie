@@ -53,6 +53,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("stb");
+    dependencyInjector.AddFilesToProject("fmt");
     dependencyInjector.Link("yaml_cpp");
     dependencyInjector.Include("Assimp");
 
