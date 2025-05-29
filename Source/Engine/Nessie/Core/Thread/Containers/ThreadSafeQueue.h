@@ -311,7 +311,7 @@ namespace nes
     template<typename Type>
     Type& ThreadSafeQueue<Type>::Front()
     {
-        NES_ASSERTV(!IsEmpty(), "Attempting to access the front of an empty queue!");
+        NES_ASSERT(!IsEmpty(), "Attempting to access the front of an empty queue!");
         return m_queue.front();
     }
     
@@ -326,7 +326,7 @@ namespace nes
     template<typename Type>
     void ThreadSafeQueue<Type>::Pop()
     {
-        NES_ASSERTV(!IsEmpty(), "Attempting to pop an empty queue!");
+        NES_ASSERT(!IsEmpty(), "Attempting to pop an empty queue!");
         m_queue.pop();
     }
     

@@ -35,7 +35,7 @@ namespace nes
         }
 
         // Make sure the result is left-handed.
-        if (!IsLeftHanded(outRotation.GetAxis(Axis::X), outRotation.GetAxis(Axis::Y), outRotation.GetAxis(Axis::Z)))
+        if (!IsLeftHanded(outRotation.GetAxis(EAxis::X), outRotation.GetAxis(EAxis::Y), outRotation.GetAxis(EAxis::Z)))
             outRotation[3] = -outRotation[3];
 
 #if NES_LOGGING_ENABLED
@@ -58,7 +58,7 @@ namespace nes
 
         // Calculate inertia
         Vector3 sizeSqr = boxSize * boxSize;
-        Vector3 scale = (sizeSqr.Swizzle<Swizzle::Y, Swizzle::X, Swizzle::X>() + sizeSqr.Swizzle<Swizzle::Z, Swizzle::Z, Swizzle::Y>()) * (m_mass / 12.f);
+        Vector3 scale = (sizeSqr.Swizzle<ESwizzle::Y, ESwizzle::X, ESwizzle::X>() + sizeSqr.Swizzle<ESwizzle::Z, ESwizzle::Z, ESwizzle::Y>()) * (m_mass / 12.f);
         m_inertia = Mat4::Scale(scale);
     }
 

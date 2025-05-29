@@ -1,6 +1,6 @@
 ﻿// TMatrix2x2.h
 #pragma once
-#include "../Axis.h"
+#include "../EAxis.h"
 #include "../Vector2.h"
 
 namespace nes
@@ -46,7 +46,7 @@ namespace nes
         bool IsIdentity() const;
         TMatrix2x2& Transpose();
         TMatrix2x2 Transposed() const;
-        constexpr TVector2<Type> GetAxis(const Axis axis) const;
+        constexpr TVector2<Type> GetAxis(const EAxis axis) const;
         constexpr TVector2<Type> GetAxis(const int axis) const;
         constexpr TVector2<Type> GetColumn(const int column) const;
         constexpr TVector2<Type> GetRow(const int row) const;
@@ -281,15 +281,15 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const Axis axis) const
+    constexpr TVector2<Type> TMatrix2x2<Type>::GetAxis(const EAxis axis) const
     {
         switch (axis)
         {
-            case Axis::X: return m_columns[0];
-            case Axis::Y: return m_columns[1];
+            case EAxis::X: return m_columns[0];
+            case EAxis::Y: return m_columns[1];
             
             default:
-                NES_ASSERTV(false, "Invalid Axis request!");
+                NES_ASSERT(false, "Invalid Axis request!");
                 return TVector2<Type>::Zero();
         }
     }

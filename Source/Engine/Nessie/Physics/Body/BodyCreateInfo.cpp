@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    BodyCreateInfo::BodyCreateInfo(const ShapeSettings* pSettings, const Vector3& position, const Quat& rotation, const BodyMotionType motionType, const CollisionLayer layer)
+    BodyCreateInfo::BodyCreateInfo(const ShapeSettings* pSettings, const Vector3& position, const Quat& rotation, const EBodyMotionType motionType, const CollisionLayer layer)
         : m_position(position)
         , m_rotation(rotation)
         , m_collisionLayer(layer)
@@ -13,7 +13,7 @@ namespace nes
         //
     }
 
-    BodyCreateInfo::BodyCreateInfo(const Shape* pShape, const Vector3& position, const Quat& rotation, const BodyMotionType motionType, const CollisionLayer layer)
+    BodyCreateInfo::BodyCreateInfo(const Shape* pShape, const Vector3& position, const Quat& rotation, const EBodyMotionType motionType, const CollisionLayer layer)
         : m_position(position)
         , m_rotation(rotation)
         , m_collisionLayer(layer)
@@ -44,7 +44,7 @@ namespace nes
         if (result.IsValid())
             return result.Get();
 
-        NES_ASSERTV(false, "Error occurred during Shape Creation! Error: ", result.GetError().c_str());
+        NES_ASSERT(false, "Error occurred during Shape Creation! Error: ", result.GetError().c_str());
         return nullptr;
     }
 
@@ -87,14 +87,14 @@ namespace nes
         MassProperties result;
         switch (m_overrideMassProperties)
         {
-            case OverrideMassProperties::CalculateMassAndInertia:
+            case EOverrideMassProperties::CalculateMassAndInertia:
             {
                 result = GetShape()->GetMassProperties();
                 result.m_inertia *= m_inertiaMultiplier;
                 result.m_inertia[3][3] = 1.f;
                 break;
             }
-            case OverrideMassProperties::CalculateInertia:
+            case EOverrideMassProperties::CalculateInertia:
             {
                 result = GetShape()->GetMassProperties();
                 result.ScaleToMass(m_massPropertiesOverride.m_mass);
@@ -102,7 +102,7 @@ namespace nes
                 result.m_inertia[3][3] = 1.f;
                 break;
             }
-            case OverrideMassProperties::MassAndInertiaProvided:
+            case EOverrideMassProperties::MassAndInertiaProvided:
             {
                 result = m_massPropertiesOverride;
                 break;

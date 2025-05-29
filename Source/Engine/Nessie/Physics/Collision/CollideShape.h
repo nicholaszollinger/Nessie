@@ -1,7 +1,7 @@
 // CollideShape.h
 #pragma once
 #include "BackFaceMode.h"
-#include "ActiveEdgeMode.h"
+#include "EActiveEdgeMode.h"
 #include "CollectFacesMode.h"
 #include "Core/StaticArray.h"
 #include "Math/Vector3.h"
@@ -78,7 +78,7 @@ namespace nes
     struct CollideShapeSettingsBase
     {
         /// How active edges (edges that a moving object should bump into) are handled
-        ActiveEdgeMode				m_activeEdgeMode				= ActiveEdgeMode::CollideOnlyWithActive;
+        EActiveEdgeMode				m_activeEdgeMode				= EActiveEdgeMode::CollideOnlyWithActive;
 
         /// If colliding faces should be collected or only the collision point
         CollectFacesMode			m_collectFacesMode			    = CollectFacesMode::NoFaces;

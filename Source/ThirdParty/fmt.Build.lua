@@ -11,15 +11,15 @@ function d.AddFilesToProject(directory)
         directory .. "include/**.h",
         directory .. "src/**.*",
     }
-
-    buildoptions
-    {
-        "/utf-8" -- Unicode support
-    }
 end
 
 function d.Include(directory)
     includedirs { directory .. "include/" }
+    
+    buildoptions
+    {
+        "/utf-8" -- Unicode support
+    }
 end
 
 return d;

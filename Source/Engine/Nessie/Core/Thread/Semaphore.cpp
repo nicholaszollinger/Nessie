@@ -3,13 +3,7 @@
 #include "Debug/Assert.h"
 
 #ifdef NES_PLATFORM_WINDOWS
-#ifndef WIN32_LEAN_AND_MEAN
-    #define WIN32_LEAN_AND_MEAN
-#endif
-#pragma warning (push)
-#pragma warning (disable : 5039)
-#include <Windows.h>
-#pragma warning (pop)
+#include "Platform/Windows/WindowsInclude.h"
 
 #else
 #endif

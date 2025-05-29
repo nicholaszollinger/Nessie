@@ -40,11 +40,11 @@ namespace nes
         m_pRenderContext = NES_NEW(RendererContext());
         if (!m_pRenderContext->Init(pWindow, appProperties, options))
         {
-            NES_ERRORV("Renderer", "Failed to initialize Renderer! Failed to initialize RendererContext!");
+            NES_ERROR(kRendererLogTag, "Failed to initialize Renderer! Failed to initialize RendererContext!");
             return false;
         }
 
-        NES_LOGV("Renderer", "Selected Device: ", m_pRenderContext->GetPhysicalDevice().getProperties().deviceName.data());
+        NES_LOG(kRendererLogTag, "Selected Device: {}", m_pRenderContext->GetPhysicalDevice().getProperties().deviceName.data());
 
         // Initialize the Shader Library
         
@@ -52,7 +52,7 @@ namespace nes
 #if _DEBUG
         shaderOptions.logMessage = []([[maybe_unused]] const char* msg)
         {
-            NES_LOGV("ShaderLib", msg);            
+            NES_LOG("ShaderLib: {}", msg);            
         };
 #endif
         // [TODO]: Load these from Data:
@@ -67,7 +67,7 @@ namespace nes
         m_pShaderLibrary = NES_NEW(GAP311::VulkanShaderLibrary());
         if (!m_pShaderLibrary->Initialize(m_pRenderContext->GetDevice(), shaderOptions))
         {
-            NES_ERRORV("Graphics", "Failed to initialize Renderer! Failed to initializeShader Library!");
+            NES_ERROR(kRendererLogTag, "Failed to initialize Renderer! Failed to initializeShader Library!");
             return false;
         }
 

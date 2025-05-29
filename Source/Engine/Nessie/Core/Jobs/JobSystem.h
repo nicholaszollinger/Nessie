@@ -6,6 +6,11 @@
 
 namespace nes
 {
+    NES_DEFINE_LOG_TAG(LogJobSystem, "Job", Warn);
+}
+
+namespace nes
+{
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Job System facilitates the execution of "Jobs" which are essentially functors. A JobSystem
     ///     is meant to execute Jobs on one or more threads. Jobs can have dependencies so that their order of

@@ -71,7 +71,7 @@ namespace nes
         m_pBodyManager->DestroyBodies(pBodyIDs, count);
     }
 
-    void BodyInterface::AddBody(const BodyID& bodyID, const BodyActivationMode activationMode)
+    void BodyInterface::AddBody(const BodyID& bodyID, const EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -84,7 +84,7 @@ namespace nes
             m_pBroadPhase->AddBodiesFinalize(&id, 1, addState);
 
             // Optionally activate
-            if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+            if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                 m_pBodyManager->ActivateBodies(&bodyID, 1);
         }
     }
@@ -112,7 +112,7 @@ namespace nes
         return lock.SucceededAndIsInBroadPhase();
     }
 
-    BodyID BodyInterface::CreateAndAddBody(const BodyCreateInfo& createInfo, BodyActivationMode activationMode)
+    BodyID BodyInterface::CreateAndAddBody(const BodyCreateInfo& createInfo, EBodyActivationMode activationMode)
     {
         const Body* pBody = CreateBody(createInfo);
         if (pBody == nullptr)
@@ -128,7 +128,7 @@ namespace nes
     }
 
     void BodyInterface::AddBodiesFinalize(BodyID* pBodies, const int count, AddState addState,
-        BodyActivationMode activationMode)
+        EBodyActivationMode activationMode)
     {
         BodyLockMultiWrite lock(*m_pBodyLockInterface, pBodies, count);
         
@@ -136,7 +136,7 @@ namespace nes
         m_pBroadPhase->AddBodiesFinalize(pBodies, count, addState);
 
         // Optionally activate bodies
-        if (activationMode == BodyActivationMode::Activate)
+        if (activationMode == EBodyActivationMode::Activate)
             m_pBodyManager->ActivateBodies(pBodies, count);
     }
 
@@ -225,7 +225,7 @@ namespace nes
     }
 
     void BodyInterface::SetShape(const BodyID& bodyID, const Shape* pShape, bool updateMassProperties,
-        BodyActivationMode activationMode) const
+        EBodyActivationMode activationMode) const
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
 
@@ -249,7 +249,7 @@ namespace nes
                     m_pBroadPhase->NotifyBodiesAABBChanged(&id, 1);
                     
                     // Optionally activate the body
-                    if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+                    if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                         Internal_ActivateBody(body);
                 }
             }
@@ -257,7 +257,7 @@ namespace nes
     }
 
     void BodyInterface::NotifyShapeChanged(const BodyID& bodyID, const Vector3& previousCenterOfMass,
-        bool updateMassProperties, BodyActivationMode activationMode) const
+        bool updateMassProperties, EBodyActivationMode activationMode) const
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
 
@@ -281,7 +281,7 @@ namespace nes
                 m_pBroadPhase->NotifyBodiesAABBChanged(&id, 1);
 
                 // Optionally activate the body
-                if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+                if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                     Internal_ActivateBody(body);
             }
         }
@@ -320,7 +320,7 @@ namespace nes
     }
 
     void BodyInterface::SetPositionAndRotation(const BodyID& bodyID, const Vector3& position, const Quat& rotation,
-        BodyActivationMode activationMode)
+        EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -337,14 +337,14 @@ namespace nes
                 m_pBroadPhase->NotifyBodiesAABBChanged(&id, 1);
 
                 // Optionally activate the body
-                if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+                if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                     Internal_ActivateBody(body);
             }
         }
     }
 
     void BodyInterface::SetPositionAndRotationWhenChanged(const BodyID& bodyID, const Vector3& position,
-        const Quat& rotation, BodyActivationMode activationMode)
+        const Quat& rotation, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -364,7 +364,7 @@ namespace nes
                     m_pBroadPhase->NotifyBodiesAABBChanged(&id, 1);
 
                     // Optionally activate the body
-                    if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+                    if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                         Internal_ActivateBody(body);
                 }
             }
@@ -387,7 +387,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::SetPosition(const BodyID& bodyID, const Vector3& position, BodyActivationMode activationMode)
+    void BodyInterface::SetPosition(const BodyID& bodyID, const Vector3& position, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -403,7 +403,7 @@ namespace nes
                 m_pBroadPhase->NotifyBodiesAABBChanged(&id, 1);
 
                 // Optionally activate the body
-                if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+                if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                     Internal_ActivateBody(body);
             }
         }
@@ -427,7 +427,7 @@ namespace nes
         return Vector3::Zero();
     }
 
-    void BodyInterface::SetRotation(const BodyID& bodyID, const Quat& rotation, BodyActivationMode activationMode)
+    void BodyInterface::SetRotation(const BodyID& bodyID, const Quat& rotation, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -443,7 +443,7 @@ namespace nes
                 m_pBroadPhase->NotifyBodiesAABBChanged(&id, 1);
 
                 // Optionally activate the body
-                if (activationMode == BodyActivationMode::Activate && !body.IsStatic())
+                if (activationMode == EBodyActivationMode::Activate && !body.IsStatic())
                     Internal_ActivateBody(body);
             }
         }
@@ -674,68 +674,68 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddForce(const BodyID& bodyID, const Vector3& force, BodyActivationMode activationMode)
+    void BodyInterface::AddForce(const BodyID& bodyID, const Vector3& force, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
         {
             Body& body = lock.GetBody();
-            if (body.IsDynamic() && (activationMode == BodyActivationMode::Activate || body.IsActive()))
+            if (body.IsDynamic() && (activationMode == EBodyActivationMode::Activate || body.IsActive()))
             {
                 body.AddForce(force);
 
-                if (activationMode == BodyActivationMode::Activate)
+                if (activationMode == EBodyActivationMode::Activate)
                     Internal_ActivateBody(body);
             }
         }
     }
 
     void BodyInterface::AddForce(const BodyID& bodyID, const Vector3& force, const Vector3& point,
-        BodyActivationMode activationMode)
+        EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
         {
             Body& body = lock.GetBody();
-            if (body.IsDynamic() && (activationMode == BodyActivationMode::Activate || body.IsActive()))
+            if (body.IsDynamic() && (activationMode == EBodyActivationMode::Activate || body.IsActive()))
             {
                 body.AddForce(force, point);
 
-                if (activationMode == BodyActivationMode::Activate)
+                if (activationMode == EBodyActivationMode::Activate)
                     Internal_ActivateBody(body);
             }
         }
     }
 
-    void BodyInterface::AddTorque(const BodyID& bodyID, const Vector3& torque, BodyActivationMode activationMode)
+    void BodyInterface::AddTorque(const BodyID& bodyID, const Vector3& torque, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
         {
             Body& body = lock.GetBody();
-            if (body.IsDynamic() && (activationMode == BodyActivationMode::Activate || body.IsActive()))
+            if (body.IsDynamic() && (activationMode == EBodyActivationMode::Activate || body.IsActive()))
             {
                 body.AddTorque(torque);
 
-                if (activationMode == BodyActivationMode::Activate)
+                if (activationMode == EBodyActivationMode::Activate)
                     Internal_ActivateBody(body);
             }
         }
     }
 
     void BodyInterface::AddForceAndTorque(const BodyID& bodyID, const Vector3& force, const Vector3& torque,
-        BodyActivationMode activationMode)
+        EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
         {
             Body& body = lock.GetBody();
-            if (body.IsDynamic() && (activationMode == BodyActivationMode::Activate || body.IsActive()))
+            if (body.IsDynamic() && (activationMode == EBodyActivationMode::Activate || body.IsActive()))
             {
                 body.AddForce(force);
                 body.AddTorque(torque);
 
-                if (activationMode == BodyActivationMode::Activate)
+                if (activationMode == EBodyActivationMode::Activate)
                     Internal_ActivateBody(body);
             }
         }
@@ -789,8 +789,8 @@ namespace nes
         }
     }
 
-    void BodyInterface::SetMotionType(const BodyID& bodyID, BodyMotionType motionType,
-        BodyActivationMode activationMode)
+    void BodyInterface::SetMotionType(const BodyID& bodyID, EBodyMotionType motionType,
+        EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -798,40 +798,40 @@ namespace nes
             Body& body = lock.GetBody();
  
             // Deactivate if we're making the body static
-            if (body.IsActive() && motionType == BodyMotionType::Kinematic)
+            if (body.IsActive() && motionType == EBodyMotionType::Kinematic)
                 m_pBodyManager->DeactivateBodies(&bodyID, 1);
 
             body.SetMotionType(motionType);
 
             // Activate body if requested
-            if (motionType != BodyMotionType::Static && activationMode == BodyActivationMode::Activate)
+            if (motionType != EBodyMotionType::Static && activationMode == EBodyActivationMode::Activate)
                 Internal_ActivateBody(body);
         }
     }
 
-    BodyMotionType BodyInterface::GetMotionType(const BodyID& bodyID) const
+    EBodyMotionType BodyInterface::GetMotionType(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             return lock.GetBody().GetMotionType();
 
-        return BodyMotionType::Static;
+        return EBodyMotionType::Static;
     }
 
-    void BodyInterface::SetMotionQuality(const BodyID& bodyID, const BodyMotionQuality quality)
+    void BodyInterface::SetMotionQuality(const BodyID& bodyID, const EBodyMotionQuality quality)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             m_pBodyManager->SetMotionQuality(lock.GetBody(), quality);
     }
 
-    BodyMotionQuality BodyInterface::GetMotionQuality(const BodyID& bodyID) const
+    EBodyMotionQuality BodyInterface::GetMotionQuality(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded() && !lock.GetBody().IsStatic())
             return lock.GetBody().GetMotionProperties()->GetMotionQuality();
 
-        return BodyMotionQuality::Discrete;
+        return EBodyMotionQuality::Discrete;
     }
 
     Mat4 BodyInterface::GetInverseInertia(const BodyID& bodyID) const

@@ -59,7 +59,7 @@ namespace nes
         TMatrix4x4&                 Transpose();
         TMatrix4x4                  Transposed() const;
         float                       Determinant() const;
-        constexpr TVector3<Type>    GetAxis(const Axis axis) const;
+        constexpr TVector3<Type>    GetAxis(const EAxis axis) const;
         constexpr TVector3<Type>    GetAxis(const int axis) const;
         constexpr TVector4<Type>    GetColumn(const int column) const;
         constexpr TVector3<Type>    GetColumn3(const int column) const;
@@ -178,17 +178,17 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TMatrix4x4<Type>::GetAxis(const Axis axis) const
+    constexpr TVector3<Type> TMatrix4x4<Type>::GetAxis(const EAxis axis) const
     {
         switch (axis)
         {
-            case Axis::X: return TVector3<Type>(m_columns[0].x, m_columns[0].y, m_columns[0].z);
-            case Axis::Y: return TVector3<Type>(m_columns[1].x, m_columns[1].y, m_columns[1].z);
-            case Axis::Z: return TVector3<Type>(m_columns[2].x, m_columns[2].y, m_columns[2].z);
-            case Axis::W: return TVector3<Type>(m_columns[3].x, m_columns[3].y, m_columns[3].z);
+            case EAxis::X: return TVector3<Type>(m_columns[0].x, m_columns[0].y, m_columns[0].z);
+            case EAxis::Y: return TVector3<Type>(m_columns[1].x, m_columns[1].y, m_columns[1].z);
+            case EAxis::Z: return TVector3<Type>(m_columns[2].x, m_columns[2].y, m_columns[2].z);
+            case EAxis::W: return TVector3<Type>(m_columns[3].x, m_columns[3].y, m_columns[3].z);
             
             default:
-                NES_ASSERTV(false, "Invalid Axis request!");
+                NES_ASSERT(false, "Invalid Axis request!");
                 return TVector3<Type>::Zero();
         }
     }

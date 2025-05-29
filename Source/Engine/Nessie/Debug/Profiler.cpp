@@ -12,6 +12,6 @@ namespace nes
     SimpleInstrumentationProfiler::~SimpleInstrumentationProfiler()
     {
         [[maybe_unused]] const double result = m_timer.ElapsedTime();
-        NES_LOGV("Profiler", "[", m_label, "] Result: ", result, "ms.");
+        NES_LOG("[Profiler] [", m_label, "] Result: ", result, "ms.");
     }
 }

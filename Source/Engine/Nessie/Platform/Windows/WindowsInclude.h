@@ -11,5 +11,8 @@
     #ifndef WIN32_LEAN_AND_MEAN
         #define WIN32_LEAN_AND_MEAN
     #endif
+    #pragma warning (push)
+    #pragma warning (disable : 5039)
     #include <windows.h>
+    #pragma warning (pop)
 #endif

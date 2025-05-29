@@ -76,13 +76,13 @@ namespace nes
     }
 
     template <typename ... Args>
-    void Logger::Log(const internal::LogSource& source, ELogLevel level, FormatString<Args...> pFormat, Args&&... args)
+    void Logger::Log(const internal::LogSource& source, ELogLevel level, TFormatString<Args...> pFormat, Args&&... args)
     {
         Log(source, level, LogTag("", level), pFormat, std::forward<Args>(args)...);
     }
 
     template <typename ... Args>
-    void Logger::Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, FormatString<Args...> pFormat, Args&&... args)
+    void Logger::Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, TFormatString<Args...> pFormat, Args&&... args)
     {
         // If the tag's level is less than the message's exit. 
         if (tag.m_level < level)

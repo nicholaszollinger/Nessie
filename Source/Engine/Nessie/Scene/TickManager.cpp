@@ -12,7 +12,7 @@ namespace nes
         NES_ASSERT(g_instance == nullptr);
         g_instance = this;
 
-        m_tickStageGroups.resize(static_cast<uint8_t>(TickStage::NumStages));
+        m_tickStageGroups.resize(static_cast<uint8_t>(ETickStage::NumStages));
     }
 
     TickManager::~TickManager()
@@ -34,7 +34,7 @@ namespace nes
     void TickManager::RegisterTickGroup(TickGroup* pGroup)
     {
         NES_ASSERT(pGroup != nullptr && !pGroup->m_isRegistered);
-        NES_ASSERT(pGroup->GetStage() != TickStage::NumStages);
+        NES_ASSERT(pGroup->GetStage() != ETickStage::NumStages);
         
         const uint8_t stageValue = static_cast<uint8_t>(pGroup->GetStage());
         m_tickStageGroups[stageValue].push_back(pGroup);
@@ -49,7 +49,7 @@ namespace nes
     void TickManager::UnregisterTickGroup(TickGroup* pGroup)
     {
         NES_ASSERT(pGroup != nullptr && pGroup->m_isRegistered);
-        NES_ASSERT(pGroup->GetStage() != TickStage::NumStages);
+        NES_ASSERT(pGroup->GetStage() != ETickStage::NumStages);
 
         const uint8_t stageValue = static_cast<uint8_t>(pGroup->GetStage());
         auto& groups = m_tickStageGroups[stageValue];
@@ -127,9 +127,9 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Runs all Ticks in each group registered to a given stage. 
     //----------------------------------------------------------------------------------------------------
-    void TickManager::RunTickStage(const TickStage stage)
+    void TickManager::RunTickStage(const ETickStage stage)
     {
-        NES_ASSERT(static_cast<uint8_t>(stage) < static_cast<uint8_t>(TickStage::NumStages));
+        NES_ASSERT(static_cast<uint8_t>(stage) < static_cast<uint8_t>(ETickStage::NumStages));
         
         auto& stageGroups = m_tickStageGroups[static_cast<uint8_t>(stage)];
         for (auto& pGroup : stageGroups)

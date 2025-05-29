@@ -23,7 +23,7 @@ namespace nes
         {
             if (!pComponent->Init())
             {
-                NES_ERRORV("Entity3D", "Failed to initialize Entity! Failed to initialize component!");
+                NES_ERROR(kEntityLogTag, "Failed to initialize Entity! Failed to initialize component!");
                 return false;
             }
         }
@@ -33,7 +33,7 @@ namespace nes
             // If there is more than 1 Physics Shape, then the Body needs to build a CompoundShape.
             if (physicsShapes.size() > 1)
             {
-                
+                // [TODO]: 
             }
         }
         

@@ -9,7 +9,7 @@ namespace nes
         auto sceneManager = applicationSettings["SceneManager"];
         if (!sceneManager)
         {
-            NES_ERRORV("Application", "Failed to find SceneManager in Application Settings file!");
+            NES_ERROR(kApplicationLogTag, "Failed to find SceneManager in Application Settings file!");
             return false;
         }
 
@@ -17,7 +17,7 @@ namespace nes
         auto sceneMap = sceneManager["SceneMap"];
         if (!sceneMap)
         {
-            NES_ERRORV("Application", "Failed to find SceneMap in Application Settings file!");
+            NES_ERROR(kApplicationLogTag, "Failed to find SceneMap in Application Settings file!");
             return false;
         }
 
@@ -32,7 +32,7 @@ namespace nes
         auto startScene = sceneManager["StartScene"];
         if (!startScene)
         {
-            NES_ERRORV("Application", "Failed to find StartScene in SceneManager!");
+            NES_ERROR(kSceneLogTag, "Failed to find StartScene in SceneManager!");
             return false;
         }
 
@@ -41,7 +41,7 @@ namespace nes
 
         if (!m_tickManager.Init())
         {
-            NES_ERRORV("SceneManager", "Failed to initialize tick manager!");
+            NES_ERROR(kSceneLogTag, "Failed to initialize tick manager!");
             return false;
         }
         
@@ -61,10 +61,10 @@ namespace nes
         // Right now this all runs synchronously.
         {
             m_tickManager.BeginFrame(static_cast<float>(deltaRealTime));
-            m_tickManager.RunTickStage(TickStage::PrePhysics);
-            m_tickManager.RunTickStage(TickStage::Physics);
-            m_tickManager.RunTickStage(TickStage::PostPhysics);
-            m_tickManager.RunTickStage(TickStage::Late);
+            m_tickManager.RunTickStage(ETickStage::PrePhysics);
+            m_tickManager.RunTickStage(ETickStage::Physics);
+            m_tickManager.RunTickStage(ETickStage::PostPhysics);
+            m_tickManager.RunTickStage(ETickStage::Late);
             m_tickManager.EndFrame();
         }
         
@@ -164,7 +164,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     bool SceneManager::TransitionToScene()
     {
-        NES_LOGV("SceneManager", "Transitioning to Scene: ", m_sceneToTransitionTo.CStr());
+        NES_LOG(kSceneLogTag, "Transitioning to Scene: {}", m_sceneToTransitionTo.CStr());
         
         if (m_pActiveScene)
         {
@@ -177,13 +177,13 @@ namespace nes
 
         if (!m_pActiveScene->Load(sceneData.m_scenePath))
         {
-            NES_ERRORV("Application", "Failed to load Scene: ", m_sceneToTransitionTo.CStr());
+            NES_ERROR(kSceneLogTag, "Failed to load Scene: ", m_sceneToTransitionTo.CStr());
             return false;
         }
 
         if (!m_pActiveScene->Init())
         {
-            NES_ERRORV("Application", "Failed to load Scene: ", m_sceneToTransitionTo.CStr());
+            NES_ERROR(kSceneLogTag, "Failed to load Scene: ", m_sceneToTransitionTo.CStr());
             return false;
         }
         

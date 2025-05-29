@@ -10,6 +10,8 @@
 
 namespace nes
 {
+    NES_DEFINE_LOG_TAG(kApplicationLogTag, "Application", Info);
+    
     class Platform;
     class Window;
     class Event;

@@ -3,9 +3,8 @@
 
 #include <functional>
 #include <queue>
-#include <thread>
+#include "Thread.h"
 #include "ThreadIdleEvent.h"
-#include "Core/Log/Log.h"
 #include "Core/Generic/Concepts.h"
 
 namespace nes
@@ -129,7 +128,7 @@ namespace nes
     {
         if (m_thread.joinable())
         {
-            NES_WARNV("Thread", "Tried to initialize a WorkerThread that is already running!");
+            NES_WARN(nes::kLogTagThread, "Tried to initialize a WorkerThread that is already running!");
             return;
         }
 

@@ -4,7 +4,7 @@
 
 namespace nes
 {
-    enum class Axis : uint8_t
+    enum class EAxis : uint8_t
     {
         None    = 0,
         X       = 1,

@@ -257,13 +257,13 @@ namespace nes
         return m_f32[3];
     }
 
-    template <Swizzle X, Swizzle Y, Swizzle Z, Swizzle W>
+    template <ESwizzle X, ESwizzle Y, ESwizzle Z, ESwizzle W>
     VectorRegisterF VectorRegisterF::Swizzle() const
     {
-        static_assert(X <= Swizzle::W, "Swizzle X value must be in range [0, 3]!");
-        static_assert(Y <= Swizzle::W, "Swizzle Y value must be in range [0, 3]!");
-        static_assert(Z <= Swizzle::W, "Swizzle Z value must be in range [0, 3]!");
-        static_assert(W <= Swizzle::W, "Swizzle W value must be in range [0, 3]!");
+        static_assert(X <= ESwizzle::W, "Swizzle X value must be in range [0, 3]!");
+        static_assert(Y <= ESwizzle::W, "Swizzle Y value must be in range [0, 3]!");
+        static_assert(Z <= ESwizzle::W, "Swizzle Z value must be in range [0, 3]!");
+        static_assert(W <= ESwizzle::W, "Swizzle W value must be in range [0, 3]!");
 
 #if defined(NES_USE_SSE)
         return _mm_shuffle_ps(m_value, m_value, _MM_SHUFFLE(static_cast<int>(W), static_cast<int>(Z), static_cast<int>(Y), static_cast<int>(X)));

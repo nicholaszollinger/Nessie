@@ -81,7 +81,7 @@ namespace nes
     int VectorRegisterUint::CountTrues() const
     {
     #if defined(NES_USE_SSE)
-            return math::CountBits(_mm_movemask_ps(_mm_castsi128_ps(m_value)));
+            return static_cast<int>(math::CountBits(_mm_movemask_ps(_mm_castsi128_ps(m_value))));
     #else
             return (m_u32[0] >> 31) + (m_u32[1] >> 31) + (m_u32[2] >> 31) + (m_u32[3] >> 31);
     #endif

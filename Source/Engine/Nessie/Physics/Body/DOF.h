@@ -8,7 +8,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Determines the allowable "degrees of freedom" for moving a Body. 
     //----------------------------------------------------------------------------------------------------
-    enum class AllowedDOFs : uint8_t
+    enum class EAllowedDOFs : uint8_t
     {
         None            = 0b000000,                                 /// No degrees of freedom are allowed.
         All             = 0b111111,                                 /// All degrees of freedom are allowed.
@@ -21,5 +21,5 @@ namespace nes
         Plane2D         = TranslationX | TranslationY | RotationZ,  /// Body can move in the World XY plane, and rotate on the Z Axis.
     };
 
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(AllowedDOFs);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EAllowedDOFs);
 }

@@ -3,13 +3,7 @@
 #include "Core/Config.h"
 
 #ifdef NES_PLATFORM_WINDOWS
-#pragma warning(push)
-#pragma warning(disable:5039)
-    #ifndef WIN32_LEAN_AND_MEAN
-        #define WIN32_LEAN_AND_MEAN
-    #endif
-#include <Windows.h>
-#pragma warning(pop)
+#include "Platform/Windows/WindowsInclude.h"
 #endif
 
 namespace nes

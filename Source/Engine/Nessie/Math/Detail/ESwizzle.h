@@ -4,7 +4,7 @@
 
 namespace nes
 {
-    enum class Swizzle : uint8_t
+    enum class ESwizzle : uint8_t
     {
         X = 0,      /// Use the X Component
         Y = 1,      /// Use the Y Component

@@ -158,7 +158,7 @@ namespace nes
             }
         }
 
-        NES_ASSERTV(false, "Too many iterations!");
+        NES_ASSERT(false, "Too many iterations!");
         return false;
     }
     

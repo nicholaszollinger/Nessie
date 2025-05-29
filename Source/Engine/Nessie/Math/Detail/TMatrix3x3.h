@@ -64,7 +64,7 @@ namespace nes
         TMatrix3x3& Transpose();
         TMatrix3x3 Transposed() const;
         float Determinant() const;
-        constexpr TVector3<Type> GetAxis(const Axis axis) const;
+        constexpr TVector3<Type> GetAxis(const EAxis axis) const;
         constexpr TVector3<Type> GetAxis(const int axis) const;
         constexpr TVector3<Type> GetColumn(const int column) const;
         constexpr TVector3<Type> GetRow(const int row) const;
@@ -325,16 +325,16 @@ namespace nes
     ///		@brief : Returns an axis of this matrix with scaling included. 
     //----------------------------------------------------------------------------------------------------
     template <FloatingPointType Type>
-    constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const Axis axis) const
+    constexpr TVector3<Type> TMatrix3x3<Type>::GetAxis(const EAxis axis) const
     {
         switch (axis)
         {
-            case Axis::X: return m_columns[0];
-            case Axis::Y: return m_columns[1];
-            case Axis::Z: return m_columns[2];
+            case EAxis::X: return m_columns[0];
+            case EAxis::Y: return m_columns[1];
+            case EAxis::Z: return m_columns[2];
             
             default:
-                NES_ASSERTV(false, "Invalid Axis request!");
+                NES_ASSERT(false, "Invalid Axis request!");
                 return TVector3<Type>::Zero();
         }
     }

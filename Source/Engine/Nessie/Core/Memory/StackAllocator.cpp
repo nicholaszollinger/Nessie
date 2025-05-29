@@ -6,7 +6,7 @@ namespace nes
 {
     std::byte* GetAlignedPtr(std::byte* pPtr, const size_t alignment)
     {
-        NES_ASSERTV(alignment > 0, "Alignment of Zero makes no sense!");
+        NES_ASSERT(alignment > 0, "Alignment of Zero makes no sense!");
 
         // Unsigned integer that is the numeric size to hold the ptr.
         // We are treating the address as a number.
@@ -16,7 +16,7 @@ namespace nes
         // address is divisible by a power of 2.
         // Example: For an address of: 0100 (4), the mask will equal 0011 (3). 
         const size_t mask = alignment - 1;
-        NES_ASSERTV((alignment & mask) == 0, "Alignment must be a power of two!");
+        NES_ASSERT((alignment & mask) == 0, "Alignment must be a power of two!");
 
         // Compute the aligned address.
         // Example: Address = 0101 (5), Mask = 0011 (3), ~Mask = 1100 (12).
@@ -73,7 +73,7 @@ namespace nes
 
     void* StackAllocator::Allocate(const size_t size, const size_t alignment)
     {
-        NES_ASSERTV(size > 0, "Size must be greater than zero!");
+        NES_ASSERT(size > 0, "Size must be greater than zero!");
 
         // Get the aligned address.
         std::byte* pAlignedAddress = GetAlignedPtr(m_pEnd, alignment);
@@ -84,7 +84,7 @@ namespace nes
         // Check if we have enough space.
         if (pNewEnd > m_pCapacity)
         {
-            NES_CRITICAL("Attempted to Allocate memory, but the StackAllocator is full!");
+            NES_FATAL("Attempted to Allocate memory, but the StackAllocator is full!");
         }
 
         // Set our new end:
@@ -96,7 +96,7 @@ namespace nes
     
     void StackAllocator::Free([[maybe_unused]] std::byte* pPtr, const size_t count)
     {
-        NES_ASSERTV(count > Size(), "Attempting to free more memory than what is currently allocated!");
+        NES_ASSERT(count > Size(), "Attempting to free more memory than what is currently allocated!");
         m_pEnd -= count;
     }
     
@@ -113,7 +113,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void StackAllocator::FreeToMarker(const Marker marker)
     {
-        NES_ASSERTV(!IsEmpty() && marker > Size(), "Failed to free to Marker! Either we attempted to free memory that "
+        NES_ASSERT(!IsEmpty() && marker > Size(), "Failed to free to Marker! Either we attempted to free memory that "
                                                    "wasn't allocated, or the allocator is empty!");
         m_pEnd = m_pBuffer + marker;
     }

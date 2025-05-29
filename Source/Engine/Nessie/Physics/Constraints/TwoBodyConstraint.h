@@ -33,7 +33,7 @@ namespace nes
     public:
         explicit TwoBodyConstraint(Body& bodyA, Body& bodyB, const TwoBodyConstraintSettings& settings);
         
-        virtual ConstraintType  GetType() const override { return ConstraintType::TwoBodyConstraint; }
+        virtual EConstraintType GetType() const override { return EConstraintType::TwoBodyConstraint; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access to Body A of the Constraint. Generally, Generally, Body A is considered the Parent,

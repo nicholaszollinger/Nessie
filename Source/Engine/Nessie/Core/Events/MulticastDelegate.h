@@ -1,7 +1,7 @@
 ﻿// MulticastDelegate.h
 #pragma once
 #include <functional>
-#include "Core/Log/Log.h"
+#include "Debug/Log.h"
 
 // [TODO]: This is very unsafe at the minute with the dangling pointers.
 // I would prefer a StrongPtr to a base object class, similar to Unreal. 
@@ -44,7 +44,7 @@ namespace nes
     {
         if (m_listeners.contains(pOwner))
         {
-            NES_WARNV("MulticastDelegate", "Attempted to add second callback to Delegate of the same owner.");
+            NES_WARN("MulticastDelegate: Attempted to add second callback to Delegate of the same owner.");
             return;
         }
         
@@ -61,7 +61,7 @@ namespace nes
 
         else
         {
-            NES_WARNV("MulticastDelegate", "Attempted to remove listener from Delegate that doesn't exist.");
+            NES_WARN("MulticastDelegate: Attempted to remove listener from Delegate that doesn't exist.");
         }
     }
 

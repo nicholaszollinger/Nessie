@@ -14,6 +14,8 @@ namespace GAP311 { class VulkanShaderLibrary; }
 
 namespace nes
 {
+    NES_DEFINE_LOG_TAG(kRendererLogTag, "Renderer", Info);
+    
     class RendererContext;
     
     class Renderer

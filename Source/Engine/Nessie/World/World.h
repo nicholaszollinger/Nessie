@@ -14,7 +14,9 @@ namespace nes
 {
     struct Material;
 
-    enum class WorldRenderMode : uint8_t
+    NES_DEFINE_LOG_TAG(kWorldLogTag, "World", Info);
+
+    enum class EWorldRenderMode : uint8_t
     {
         Fill = 0,
         Wireframe,
@@ -102,7 +104,7 @@ namespace nes
         vk::ImageView m_skyboxCubeImageView;
         vk::Sampler m_skyboxCubeSampler;
         
-        WorldRenderMode m_currentRenderMode = WorldRenderMode::Fill;
+        EWorldRenderMode m_currentRenderMode = EWorldRenderMode::Fill;
 
         // TEMP Editor Data:
         Entity3D* m_pSelectedEntity = nullptr;
@@ -112,8 +114,8 @@ namespace nes
         explicit World(Scene* pScene);
         StrongPtr<Entity3D> CreateEntity(const EntityID& id, const StringID& name);
 
-        void RegisterTickToWorldTickGroup(TickFunction* pFunction, const TickStage stage);
-        [[nodiscard]] TickGroup* GetTickGroup(const TickStage stage);
+        void RegisterTickToWorldTickGroup(TickFunction* pFunction, const ETickStage stage);
+        [[nodiscard]] TickGroup* GetTickGroup(const ETickStage stage);
         
         virtual void DestroyEntity(const LayerHandle& handle) override;
         [[nodiscard]] virtual bool IsValidNode(const LayerHandle& handle) const override;

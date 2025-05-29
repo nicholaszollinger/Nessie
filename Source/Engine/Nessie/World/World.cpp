@@ -24,10 +24,10 @@ namespace nes
     World::World(Scene* pScene)
         : EntityLayer(pScene)
         , m_entityPool(this)
-        , m_prePhysicsTickGroup(TickStage::PrePhysics)
-        , m_physicsTickGroup(TickStage::Physics)
-        , m_postPhysicsTickGroup(TickStage::PostPhysics)
-        , m_lateTickGroup(TickStage::Late)
+        , m_prePhysicsTickGroup(ETickStage::PrePhysics)
+        , m_physicsTickGroup(ETickStage::Physics)
+        , m_postPhysicsTickGroup(ETickStage::PostPhysics)
+        , m_lateTickGroup(ETickStage::Late)
     {
         m_prePhysicsTickGroup.SetDebugName("World PrePhysics Tick");
         m_physicsTickGroup.SetDebugName("World Physics Tick");
@@ -44,43 +44,43 @@ namespace nes
         return pActor;
     }
 
-    void World::RegisterTickToWorldTickGroup(TickFunction* pFunction, const TickStage stage)
+    void World::RegisterTickToWorldTickGroup(TickFunction* pFunction, const ETickStage stage)
     {
         switch (stage)
         {
-            case TickStage::PrePhysics:
+            case ETickStage::PrePhysics:
                 pFunction->RegisterTick(&m_prePhysicsTickGroup);
                 break;
             
-            case TickStage::Physics:
+            case ETickStage::Physics:
                 pFunction->RegisterTick(&m_physicsTickGroup);
                 break;
             
-            case TickStage::PostPhysics:
+            case ETickStage::PostPhysics:
                 pFunction->RegisterTick(&m_postPhysicsTickGroup);
                 break;
             
-            case TickStage::Late:
+            case ETickStage::Late:
                 pFunction->RegisterTick(&m_lateTickGroup);
                 break;
             
             default:
-                NES_ERRORV("Attempted to register Tick to invalid World Tick Group!");
+                NES_ERROR(kWorldLogTag, "Attempted to register Tick to invalid World Tick Group!");
                 break;
         }
     }
 
-    TickGroup* World::GetTickGroup(const TickStage stage)
+    TickGroup* World::GetTickGroup(const ETickStage stage)
     {
         switch (stage)
         {
-            case TickStage::PrePhysics:     return &m_prePhysicsTickGroup;
-            case TickStage::Physics:        return &m_physicsTickGroup;
-            case TickStage::PostPhysics:    return &m_postPhysicsTickGroup;
-            case TickStage::Late:           return &m_lateTickGroup;
+            case ETickStage::PrePhysics:     return &m_prePhysicsTickGroup;
+            case ETickStage::Physics:        return &m_physicsTickGroup;
+            case ETickStage::PostPhysics:    return &m_postPhysicsTickGroup;
+            case ETickStage::Late:           return &m_lateTickGroup;
 
             default:
-                NES_ERRORV("World", "Attempted to get invalid World Tick Group!");
+                NES_ERROR(kWorldLogTag, "Attempted to get invalid World Tick Group!");
                 return nullptr;
         }
     }
@@ -116,7 +116,7 @@ namespace nes
         auto pMaterial = pMesh->GetMaterial();
         if (!pMaterial)
         {
-            NES_WARNV("World", "Attempted to register a Mesh with an invalid Material!");
+            NES_WARN(kWorldLogTag, "Attempted to register a Mesh with an invalid Material!");
             return;
         }
 
@@ -177,15 +177,15 @@ namespace nes
         // [TEMP]: 
         // Add a body to the System???
         auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
-        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vector3(20, 1, 1)), Vector3(0, 10, 0), Quat::Identity(), BodyMotionType::Dynamic, PhysicsLayers::kMoving), BodyActivationMode::Activate);
+        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vector3(20, 1, 1)), Vector3(0, 10, 0), Quat::Identity(), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
 
-        bodyInterface.SetPosition(m_testID, Vector3(0.f), BodyActivationMode::LeaveAsIs);
+        bodyInterface.SetPosition(m_testID, Vector3(0.f), EBodyActivationMode::LeaveAsIs);
         
         for (auto& entity : m_entityPool)
         {
             if (!entity.Init())
             {
-                NES_ERRORV("World", "Failed to initialize World! Failed to initialize Entity: ", entity.GetName().CStr());
+                NES_ERROR(kWorldLogTag, "Failed to initialize World! Failed to initialize Entity: {}", entity.GetName().CStr());
                 return false;
             }
         }
@@ -318,7 +318,7 @@ namespace nes
         auto entities = layerNode["Entities"];
         if (!entities)
         {
-            NES_ERROR("Failed to load World Layer! No Entities node found!");
+            NES_ERROR(kWorldLogTag, "Failed to load World Layer! No Entities node found!");
             return false;
         }
 
@@ -770,7 +770,7 @@ namespace nes
             
                 default:
                 {
-                    NES_ERROR("Unhandled Component type!: ", pComponent->GetTypename());
+                    NES_ERROR(kWorldLogTag, "Unhandled Component type!: {}", pComponent->GetTypename());
                 }
             }
             

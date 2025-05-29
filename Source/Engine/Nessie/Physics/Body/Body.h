@@ -23,7 +23,7 @@ namespace nes
         friend class BodyManager;
         friend class BodyWithMotionProperties;
 
-        enum class Flags : uint8_t
+        enum class EFlags : uint8_t
         {
             IsSensor                        = math::BitVal(0), /// If this Body is a Sensor. A Sensor will receive collision callbacks, but not cause collision responses.
             CollideKinematicVsNonDynamic    = math::BitVal(1), /// If kinematic objects can generate contact points against other kinematic or static objects.
@@ -57,7 +57,7 @@ namespace nes
 
         // 1 byte aligned
         BroadPhaseLayer         m_broadPhaseLayer = kInvalidBroadPhaseLayer; /// The broad phase layer that this body belongs to.
-        BodyMotionType          m_motionType = BodyMotionType::Static;       /// The type of motion (static, dynamic, or kinematic).
+        EBodyMotionType         m_motionType = EBodyMotionType::Static;       /// The type of motion (static, dynamic, or kinematic).
         std::atomic<uint8_t>    m_flags = 0;                                 /// See Flags definition for details.
         // BodyType           m_bodyType = BodyType::Rigid;
         
@@ -96,7 +96,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the degrees of freedom that this body can move in.
         //----------------------------------------------------------------------------------------------------
-        inline AllowedDOFs      GetAllowedDOFs() const;
+        inline EAllowedDOFs      GetAllowedDOFs() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Collision Layer that this body belongs to - this determines if which bodies it can collide with.
@@ -126,18 +126,18 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether this Body is Static (not movable).
         //----------------------------------------------------------------------------------------------------
-        bool                    IsStatic() const                                        { return m_motionType == BodyMotionType::Static; }
+        bool                    IsStatic() const                                        { return m_motionType == EBodyMotionType::Static; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether this body is Kinematic (or keyframed), which means that it will move
         ///         according to its current velocity, but forces don't affect it.
         //----------------------------------------------------------------------------------------------------
-        bool                    IsKinematic() const                                     { return m_motionType == BodyMotionType::Kinematic; }
+        bool                    IsKinematic() const                                     { return m_motionType == EBodyMotionType::Kinematic; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether this body is Dynamic, which means it moves and forces act on it. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsDynamic() const                                       { return m_motionType == BodyMotionType::Dynamic; }
+        bool                    IsDynamic() const                                       { return m_motionType == EBodyMotionType::Dynamic; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if this is a RigidBody or not. 
@@ -157,12 +157,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the body's motion type. Static, Kinematic or Dynamic.
         //----------------------------------------------------------------------------------------------------
-        BodyMotionType          GetMotionType() const                                   { return m_motionType; }
+        EBodyMotionType         GetMotionType() const                                   { return m_motionType; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the motion type of this body. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetMotionType(const BodyMotionType& motionType); 
+        void                    SetMotionType(const EBodyMotionType& motionType); 
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if a body could be made kinematic or dynamic. It would have been created dynamic or
@@ -186,7 +186,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check whether this body is a sensor.
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE bool         IsSensor() const                                        { return Internal_GetFlag(Flags::IsSensor); }
+        NES_INLINE bool         IsSensor() const                                        { return Internal_GetFlag(EFlags::IsSensor); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether kinematic objects can generate contact points against other kinematic or static
@@ -201,7 +201,7 @@ namespace nes
         /// @brief : Check if kinematic objects can generate contact points against other kinematic or static
         ///     objects.
         //----------------------------------------------------------------------------------------------------
-        inline bool             GetCollideKinematicVsNonDynamic() const                 { return Internal_GetFlag(Flags::CollideKinematicVsNonDynamic); }
+        inline bool             GetCollideKinematicVsNonDynamic() const                 { return Internal_GetFlag(EFlags::CollideKinematicVsNonDynamic); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : If PhysicsSettings::m_useManifoldReduction is true, this allows turning off manifold reduction for this specific body.
@@ -214,7 +214,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if this body can use manifold reduction. 
         //----------------------------------------------------------------------------------------------------
-        inline bool             GetUseManifoldReduction() const                         { return Internal_GetFlag(Flags::UseManifoldReduction); }
+        inline bool             GetUseManifoldReduction() const                         { return Internal_GetFlag(EFlags::UseManifoldReduction); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set to indicate that gyroscopic force should be applied to this body.
@@ -225,7 +225,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if gyroscopic force is being applied to this body. 
         //----------------------------------------------------------------------------------------------------
-        inline bool             GetApplyGyroscopicForce() const                         { return Internal_GetFlag(Flags::ApplyGyroscopicForce); }
+        inline bool             GetApplyGyroscopicForce() const                         { return Internal_GetFlag(EFlags::ApplyGyroscopicForce); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set to indicate that extra effort should be made to try to remove ghost contacts (collisions
@@ -237,7 +237,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if enhanced internal edge removal is turned on
         //----------------------------------------------------------------------------------------------------
-        inline bool				GetEnhancedInternalEdgeRemoval() const                  { return Internal_GetFlag(Flags::EnhancedInternalEdgeRemoval); }
+        inline bool				GetEnhancedInternalEdgeRemoval() const                  { return Internal_GetFlag(EFlags::EnhancedInternalEdgeRemoval); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the combination of this body and body2 should use enhanced internal edge removal.
@@ -416,13 +416,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if this Body has been added to the physics system. 
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE bool         IsInBroadPhase() const                  { return Internal_GetFlag(Flags::IsInBroadPhase); }
+        NES_INLINE bool         IsInBroadPhase() const                  { return Internal_GetFlag(EFlags::IsInBroadPhase); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if this Body has been changed in such a way that the collision cache should
         ///     be considered invalid for any Body interacting with this Body.
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE bool         IsCollisionCacheInvalid() const         { return Internal_GetFlag(Flags::InvalidateContactCache); }
+        NES_INLINE bool         IsCollisionCacheInvalid() const         { return Internal_GetFlag(EFlags::InvalidateContactCache); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the shape of this body. 
@@ -578,15 +578,15 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update eligibility for sleeping. 
         //----------------------------------------------------------------------------------------------------
-        AllowedSleep            Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep);
+        EAllowedSleep           Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep);
 
 #ifdef NES_LOGGING_ENABLED
         inline void             Internal_ValidateCachedBounds() const;
 #endif
 
     private:
-        inline void             Internal_SetFlag(const Flags flag, bool set);
-        inline bool             Internal_GetFlag(const Flags flag) const;
+        inline void             Internal_SetFlag(const EFlags flag, bool set);
+        inline bool             Internal_GetFlag(const EFlags flag) const;
         inline void             GetSleepTestPoints(Vector3* outPoints) const;
     };
 }

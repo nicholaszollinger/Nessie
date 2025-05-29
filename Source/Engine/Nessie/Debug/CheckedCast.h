@@ -1,6 +1,5 @@
-#pragma once
 // CheckedCast.h
-
+#pragma once
 #include "Assert.h"
 #include "Core/Generic/Concepts.h"
 
@@ -11,7 +10,7 @@
 template <nes::PointerType To, nes::PointerType From>
 constexpr To checked_cast(From pFrom)
 {
-#if NES_LOGGING_ENABLED
+#if NES_ASSERTS_ENABLED
     // if pFrom is already null, just return null without any special casting
     if (!pFrom)
         return nullptr;
@@ -19,14 +18,14 @@ constexpr To checked_cast(From pFrom)
     if constexpr (std::is_same_v<From, void*>)
     {
         To pResult = static_cast<To>(pFrom);
-        NES_ASSERTV(pResult, "checked_cast failed.");
+        NES_ASSERT(pResult, "checked_cast failed.");
         return pResult;
     }
 
     else
     {
         To pResult = dynamic_cast<To>(pFrom);
-        NES_ASSERTV(pResult, "checked_cast failed.");
+        NES_ASSERT(pResult, "checked_cast failed.");
         return pResult;
     }
     
@@ -47,7 +46,7 @@ constexpr To checked_cast(From pFrom)
 template <nes::ReferenceType To, typename From>
 constexpr To checked_cast(From& from) requires std::is_base_of_v<From, std::remove_reference_t<To>>
 {
-#if NES_LOGGING_ENABLED
+#if NES_ASSERTS_ENABLED
     using PointerType = std::add_pointer_t<std::remove_reference_t<To>>;
     return *(checked_cast<PointerType>(&from));
 #else

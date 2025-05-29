@@ -10,7 +10,7 @@ namespace nes
     using LogTimePoint = LogClock::time_point;
 
     template <typename...Args>
-    using FormatString = fmt::format_string<Args...>;
+    using TFormatString = fmt::format_string<Args...>;
 
     template <typename Type, typename Char = char>
     concept IsConvertibleToBaseFormatString =

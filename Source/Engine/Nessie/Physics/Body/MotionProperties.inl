@@ -5,14 +5,14 @@ namespace nes
 {
     Vector3 MotionProperties::GetLinearVelocity() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::Read));
         
         return m_linearVelocity;
     }
 
     void MotionProperties::SetLinearVelocity(const Vector3& linearVelocity)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         
         NES_ASSERT(linearVelocity.Magnitude() <= m_maxLinearVelocity);
         m_linearVelocity = LockTranslation(linearVelocity);
@@ -26,13 +26,13 @@ namespace nes
 
     Vector3 MotionProperties::GetAngularVelocity() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::Read));
         return m_angularVelocity;
     }
 
     void MotionProperties::SetAngularVelocity(const Vector3& angularVelocity)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         NES_ASSERT(angularVelocity.Magnitude() <= m_maxAngularVelocity);
         m_angularVelocity = LockAngular(angularVelocity);
     }
@@ -45,10 +45,10 @@ namespace nes
 
     void MotionProperties::MoveKinematic(const Vector3& deltaPos, const Quat& deltaRot, const float deltaTime)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         //NES_ASSERT(m_cachedBodyType == BodyType::Rigid);
-        NES_ASSERT(m_cachedMotionType != BodyMotionType::Static);
+        NES_ASSERT(m_cachedMotionType != EBodyMotionType::Static);
 
         // Calculate the required linear velocity
         m_linearVelocity = LockTranslation(deltaPos / deltaTime);
@@ -74,7 +74,7 @@ namespace nes
 
     void MotionProperties::ClampLinearVelocity()
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
 
         const float lengthSqr = m_linearVelocity.SquaredMagnitude();
         NES_ASSERT(!math::IsInf(lengthSqr));
@@ -84,7 +84,7 @@ namespace nes
 
     void MotionProperties::ClampAngularVelocity()
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         
         const float lengthSqr = m_angularVelocity.SquaredMagnitude();
         NES_ASSERT(!math::IsInf(lengthSqr));
@@ -106,13 +106,13 @@ namespace nes
 
     float MotionProperties::GetInverseMass() const
     {
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
         return m_inverseMass;
     }
 
     Vector3 MotionProperties::GetInverseInertiaDiagonal() const
     {
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
         return m_inverseInertiaDiagonal;
     }
 
@@ -124,8 +124,8 @@ namespace nes
 
     void MotionProperties::ScaleToMass(float mass)
     {
-        NES_ASSERTV(m_inverseMass > 0.f, "Body must have finite mass!");
-        NES_ASSERTV(mass > 0.f, "New mass cannot be zero!");
+        NES_ASSERT(m_inverseMass > 0.f, "Body must have finite mass!");
+        NES_ASSERT(mass > 0.f, "New mass cannot be zero!");
 
         float newInverseMass = 1.0f / mass;
         m_inverseInertiaDiagonal *= (newInverseMass * m_inverseMass);
@@ -134,7 +134,7 @@ namespace nes
 
     Mat4 MotionProperties::GetLocalSpaceInverseInertia() const
     {
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
         return GetLocalSpaceInverseInertiaUnchecked();
     }
 
@@ -154,7 +154,7 @@ namespace nes
 
     Mat4 MotionProperties::GetInverseInertiaForRotation(const Mat4& rotation) const
     {
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
 
         Mat4 rot = rotation * math::ToMat4(m_inertiaRotation);
         Mat4 rotationMulScaleTransposed
@@ -184,7 +184,7 @@ namespace nes
 
     Vector3 MotionProperties::MultiplyWorldSpaceInverseInertiaByVector(const Quat& bodyRotation, const Vector3& vec) const
     {
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
 
         /// Mask out columns of DOFs that are not allowed
         const VectorRegisterF angularDOFsMask = GetAngularDOFsMask().ReinterpretAsFloat();
@@ -207,14 +207,14 @@ namespace nes
 
     void MotionProperties::ResetMotion()
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         m_linearVelocity = m_angularVelocity = Vector3::Zero();
         m_force = m_torque = Vector3::Zero();
     }
 
     VectorRegisterUint MotionProperties::GetLinearDOFsMask() const
     {
-        const VectorRegisterUint mask(static_cast<uint32_t>(AllowedDOFs::TranslationX), static_cast<uint32_t>(AllowedDOFs::TranslationY), static_cast<uint32_t>(AllowedDOFs::TranslationZ), 0);
+        const VectorRegisterUint mask(static_cast<uint32_t>(EAllowedDOFs::TranslationX), static_cast<uint32_t>(EAllowedDOFs::TranslationY), static_cast<uint32_t>(EAllowedDOFs::TranslationZ), 0);
         return VectorRegisterUint::Equals(VectorRegisterUint::And(VectorRegisterUint::Replicate(static_cast<uint32_t>(m_allowedDoFs)), mask), mask);
     }
 
@@ -227,7 +227,7 @@ namespace nes
 
     VectorRegisterUint MotionProperties::GetAngularDOFsMask() const
     {
-        const VectorRegisterUint mask(static_cast<uint32_t>(AllowedDOFs::RotationX), static_cast<uint32_t>(AllowedDOFs::RotationY), static_cast<uint32_t>(AllowedDOFs::RotationZ), 0);
+        const VectorRegisterUint mask(static_cast<uint32_t>(EAllowedDOFs::RotationX), static_cast<uint32_t>(EAllowedDOFs::RotationY), static_cast<uint32_t>(EAllowedDOFs::RotationZ), 0);
         return VectorRegisterUint::Equals(VectorRegisterUint::And(VectorRegisterUint::Replicate(static_cast<uint32_t>(m_allowedDoFs)), mask), mask);
     }
 
@@ -252,7 +252,7 @@ namespace nes
 
     void MotionProperties::Internal_AddLinearVelocityStep(const Vector3& linearVelocityChange)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         
         m_linearVelocity = LockTranslation(m_linearVelocity + linearVelocityChange);
         NES_ASSERT(!m_linearVelocity.IsNaN());
@@ -260,7 +260,7 @@ namespace nes
 
     void MotionProperties::Internal_SubLinearVelocityStep(const Vector3& linearVelocityChange)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         
         m_linearVelocity = LockTranslation(m_linearVelocity - linearVelocityChange);
         NES_ASSERT(!m_linearVelocity.IsNaN());
@@ -268,7 +268,7 @@ namespace nes
 
     void MotionProperties::Internal_AddAngularVelocityStep(const Vector3& angularVelocityChange)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         
         m_angularVelocity += angularVelocityChange;
         NES_ASSERT(!m_angularVelocity.IsNaN());
@@ -276,7 +276,7 @@ namespace nes
 
     void MotionProperties::Internal_SubAngularVelocityStep(const Vector3& angularVelocityChange)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         
         m_angularVelocity -= angularVelocityChange;
         NES_ASSERT(!m_angularVelocity.IsNaN());
@@ -284,9 +284,9 @@ namespace nes
 
     void MotionProperties::Internal_ApplyGyroscopicForce(const Quat& bodyRotation, const float deltaTime)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
         // [TODO]: Check that this is rigid body, not a soft body.
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
 
         VectorRegisterF diag(m_inverseInertiaDiagonal.x, m_inverseInertiaDiagonal.y, m_inverseInertiaDiagonal.z, 0.f);
 
@@ -318,8 +318,8 @@ namespace nes
 
     void MotionProperties::Internal_ApplyForceTorqueAndDrag(const Quat& bodyRotation, const Vector3& gravity, const float deltaTime)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::Access::ReadWrite));
-        NES_ASSERT(m_cachedMotionType == BodyMotionType::Dynamic);
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetVelocityAccess(), BodyAccess::EAccess::ReadWrite));
+        NES_ASSERT(m_cachedMotionType == EBodyMotionType::Dynamic);
 
         // Update Linear Velocity
         m_linearVelocity = LockTranslation(m_linearVelocity + deltaTime * (m_gravityScale * gravity + m_inverseMass * GetAccumulatedForce()));
@@ -353,9 +353,9 @@ namespace nes
         m_sleepTestTimer = 0.f;
     }
 
-    AllowedSleep MotionProperties::Internal_AccumulateSleepTime(const float deltaTime, const float timeBeforeSleep)
+    EAllowedSleep MotionProperties::Internal_AccumulateSleepTime(const float deltaTime, const float timeBeforeSleep)
     {
         m_sleepTestTimer += deltaTime;
-        return m_sleepTestTimer >= timeBeforeSleep? AllowedSleep::CanSleep : AllowedSleep::CannotSleep;
+        return m_sleepTestTimer >= timeBeforeSleep? EAllowedSleep::CanSleep : EAllowedSleep::CannotSleep;
     }
 }

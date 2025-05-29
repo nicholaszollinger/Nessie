@@ -86,13 +86,13 @@ namespace nes
             {
                 switch (pBody->GetMotionType())
                 {
-                    case BodyMotionType::Static:
+                    case EBodyMotionType::Static:
                     {
                         stats.m_numStaticBodies++;
                         break;
                     }
 
-                    case BodyMotionType::Dynamic:
+                    case EBodyMotionType::Dynamic:
                     {
                         stats.m_numDynamicBodies++;
                         if (pBody->IsActive())
@@ -100,7 +100,7 @@ namespace nes
                         break;
                     }
 
-                    case BodyMotionType::Kinematic:
+                    case EBodyMotionType::Kinematic:
                     {
                         stats.m_numKinematicBodies++;
                         if (pBody->IsActive())
@@ -180,7 +180,7 @@ namespace nes
 
     void BodyManager::FreeBody(Body* pBody) const
     {
-        NES_ASSERTV(!pBody->GetID().IsValid(), "This function should only e called on a body that doesn't have an ID yet! Use DestroyBody() otherwise.");
+        NES_ASSERT(!pBody->GetID().IsValid(), "This function should only e called on a body that doesn't have an ID yet! Use DestroyBody() otherwise.");
         DeleteBody(pBody);
     }
 
@@ -377,7 +377,7 @@ namespace nes
                 Body& body = *m_bodies[id.GetIndex()];
 
                 NES_ASSERT(body.GetID() == id);
-                NES_ASSERTV(body.IsInBroadPhase(), "Use BodyInterface::AddBody to add the body first!");
+                NES_ASSERT(body.IsInBroadPhase(), "Use BodyInterface::AddBody to add the body first!");
 
                 if (!body.IsStatic())
                 {
@@ -417,7 +417,7 @@ namespace nes
                 Body& body = *m_bodies[id.GetIndex()];
 
                 NES_ASSERT(body.GetID() == id);
-                NES_ASSERTV(body.IsInBroadPhase(), "Use BodyInterface::AddBody to add the body first!");
+                NES_ASSERT(body.IsInBroadPhase(), "Use BodyInterface::AddBody to add the body first!");
 
                 if (body.m_pMotionProperties != nullptr && body.m_pMotionProperties->m_indexInActiveBodies != Body::kInactiveIndex)
                 {
@@ -439,7 +439,7 @@ namespace nes
         }
     }
 
-    void BodyManager::SetMotionQuality(Body& body, const BodyMotionQuality motionQuality)
+    void BodyManager::SetMotionQuality(Body& body, const EBodyMotionQuality motionQuality)
     {
         MotionProperties* pMotion = body.GetMotionPropertiesUnchecked();
         if (pMotion != nullptr && pMotion->GetMotionQuality() != motionQuality)
@@ -449,12 +449,12 @@ namespace nes
             //NES_ASSERT(!m_activeBodiesLocked);
 
             bool isActive = body.IsActive();
-            if (isActive && pMotion->GetMotionQuality() == BodyMotionQuality::LinearCast)
+            if (isActive && pMotion->GetMotionQuality() == EBodyMotionQuality::LinearCast)
                 --m_numActiveCCDBodies;
 
             pMotion->m_motionQuality = motionQuality;
 
-            if (isActive && pMotion->GetMotionQuality() == BodyMotionQuality::LinearCast)
+            if (isActive && pMotion->GetMotionQuality() == EBodyMotionQuality::LinearCast)
                 ++m_numActiveCCDBodies;
         }
     }
@@ -568,7 +568,7 @@ namespace nes
 
     BodyManager::MutexMask BodyManager::Internal_GetMutexMask(const BodyID* pBodyIDs, int number) const
     {
-        NES_ASSERTV(sizeof(MutexMask) * 8 >= m_bodyMutexes.GetNumMutexes(), "MutexMask must have enough bits");
+        NES_ASSERT(sizeof(MutexMask) * 8 >= m_bodyMutexes.GetNumMutexes(), "MutexMask must have enough bits");
 
         if (number >= static_cast<int>(m_bodyMutexes.GetNumMutexes()))
         {
@@ -658,7 +658,7 @@ namespace nes
         m_numActiveBodies.fetch_add(1, std::memory_order_release);
 
         // Update CCD bodies if applicable.
-        if (pMotion->GetMotionQuality() == BodyMotionQuality::LinearCast)
+        if (pMotion->GetMotionQuality() == EBodyMotionQuality::LinearCast)
             ++m_numActiveCCDBodies;
     }
 
@@ -688,7 +688,7 @@ namespace nes
         m_numActiveBodies.fetch_sub(1, std::memory_order_release);
 
         // Update CCD bodies if applicable
-        if (pMotion->GetMotionQuality() == BodyMotionQuality::LinearCast)
+        if (pMotion->GetMotionQuality() == EBodyMotionQuality::LinearCast)
             --m_numActiveCCDBodies;
     }
 
@@ -700,7 +700,7 @@ namespace nes
 
         NES_ASSERT(pBody->GetID() == id);
         NES_ASSERT(!pBody->IsActive());
-        NES_ASSERTV(!pBody->IsInBroadPhase(), "Use BodyInterface::RemoveBody to remove this body first");
+        NES_ASSERT(!pBody->IsInBroadPhase(), "Use BodyInterface::RemoveBody to remove this body first");
 
         // Push the ID onto the free list.
         m_bodies[index] = reinterpret_cast<Body*>(m_bodyIDFreeListStart);

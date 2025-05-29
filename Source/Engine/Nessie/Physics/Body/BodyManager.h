@@ -2,7 +2,7 @@
 #pragma once
 #include <shared_mutex>
 #include "Body.h"
-#include "BodyActivationMode.h"
+#include "EBodyActivationMode.h"
 #include "Core/Thread/MutexArray.h"
 
 namespace nes
@@ -195,7 +195,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update the motion quality of the Body. 
         //----------------------------------------------------------------------------------------------------
-        void                                SetMotionQuality(Body& body, const BodyMotionQuality motionQuality);
+        void                                SetMotionQuality(Body& body, const EBodyMotionQuality motionQuality);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a copy of the Active bodies under protection of a lock. 

@@ -25,7 +25,7 @@ namespace nes
         /// Default Log Pattern for created loggers:
         /// Ex: "[01:29:07 PM] Main.cpp(5) [Info]: Hello World!", or 
         ///     "[01:29:07 PM] Main.cpp(5) [Info] AI: Hello World!" if a Logger is given.
-        static constexpr const char* kDefaultLogPattern = "[%r] %s(%#) %^%N%$: %v";
+        static constexpr const char* kDefaultLogPattern = "[%r] %s(%#) %^[%l]%$: %n%v";
         
     public:
         explicit Logger(std::string name);
@@ -58,13 +58,13 @@ namespace nes
         /// @brief : Log a message to all registered Targets. 
         //----------------------------------------------------------------------------------------------------
         template <typename...Args>
-        void                        Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, FormatString<Args...> pFormat, Args&&...args);
+        void                        Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, TFormatString<Args...> pFormat, Args&&...args);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Log overload with no LogTag.
         //----------------------------------------------------------------------------------------------------
         template <typename...Args>
-        void                        Log(const internal::LogSource& source, ELogLevel level, FormatString<Args...> pFormat, Args&&...args);
+        void                        Log(const internal::LogSource& source, ELogLevel level, TFormatString<Args...> pFormat, Args&&...args);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Log overload for format string types that can't be converted to a format string.

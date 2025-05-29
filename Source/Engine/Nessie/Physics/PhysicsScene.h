@@ -241,7 +241,7 @@ namespace nes
         ///     form islands together and the data to solve contacts between bodies. At the end of the function,
         ///     all allocated memory will have been freed.
         //----------------------------------------------------------------------------------------------------
-        PhysicsUpdateErrorCode          Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
+        EPhysicsUpdateErrorCode          Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
         
         // Job Entry Points.
         void                            JobStepListeners(PhysicsUpdateContext::Step* pStep);

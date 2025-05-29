@@ -4,7 +4,7 @@
 
 namespace nes
 {
-    enum class BodyMotionType : uint8_t
+    enum class EBodyMotionType : uint8_t
     {
         Static,         /// Non-movable.
         Kinematic,      /// Movable using velocities only - does not respond to any forces.

@@ -5,7 +5,7 @@
 
 namespace nes
 {
-    void MotionProperties::SetMassProperties(const AllowedDOFs allowedDoFs, const MassProperties& massProperties)
+    void MotionProperties::SetMassProperties(const EAllowedDOFs allowedDoFs, const MassProperties& massProperties)
     {
         // Store allowed DOFs
         m_allowedDoFs = allowedDoFs;
@@ -21,7 +21,7 @@ namespace nes
         }
         else
         {
-            NES_ASSERTV(massProperties.m_mass > 0.f, "Invalid Mass."
+            NES_ASSERT(massProperties.m_mass > 0.f, "Invalid Mass."
                 "Some shapes like Mesh Shapes or Triangle Shape cannot calculate Mass automatically."
                 "In this case, you need to provide it by setting BodyCreateInfo::m_overrideMassProperties and m_massPropertiesOverride.");
 
@@ -53,7 +53,7 @@ namespace nes
             }
         }
 
-        NES_ASSERTV(m_inverseMass != 0.0f || m_inverseInertiaDiagonal != Vector3::Zero(), "Can't lock all axes, use a static body for this. This will crash with a division by zero later!");
+        NES_ASSERT(m_inverseMass != 0.0f || m_inverseInertiaDiagonal != Vector3::Zero(), "Can't lock all axes, use a static body for this. This will crash with a division by zero later!");
     }
 
 }

@@ -32,7 +32,7 @@ namespace nes
 
             case 'n': // Logger Name
             {
-                m_flagFormatters.push_back(std::make_unique<internal::LoggerNameFormatter<Padder>>(padding));
+                m_flagFormatters.push_back(std::make_unique<internal::LogTagFormatter<Padder>>(padding));
                 break;
             }
 

@@ -1,7 +1,7 @@
 ﻿// VectorRegisterF.h
 #pragma once
 #include "Math/MathTypes.h"
-#include "Math/Detail/Swizzle.h"
+#include "Math/Detail/ESwizzle.h"
 
 namespace nes
 {
@@ -97,7 +97,7 @@ namespace nes
         ///     the current X value, and the ZW components equal to the current Y value.
         /// @note : All Swizzle arguments must be in the range [0, 3].
         //----------------------------------------------------------------------------------------------------
-        template <Swizzle X, Swizzle Y, Swizzle Z, Swizzle W>
+        template <ESwizzle X, ESwizzle Y, ESwizzle Z, ESwizzle W>
         NES_INLINE VectorRegisterF          Swizzle() const;
 
         //----------------------------------------------------------------------------------------------------

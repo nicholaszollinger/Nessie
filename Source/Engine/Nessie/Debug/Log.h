@@ -24,7 +24,7 @@ namespace nes::internal
     /// @brief : Helper function to parse log parameters. This uses the default logger.
     //----------------------------------------------------------------------------------------------------
     template <typename...Args>
-    void LogParamHelper(const LogSource& source, const ELogLevel level, FormatString<Args...> pFormat, Args&&... args)
+    void LogParamHelper(const LogSource& source, const ELogLevel level, TFormatString<Args...> pFormat, Args&&... args)
     {
         nes::LoggerRegistry::Instance().GetDefaultLogger()->Log(source, level, pFormat, std::forward<Args>(args)...);
     }
@@ -34,7 +34,7 @@ namespace nes::internal
     ///     the message.
     //----------------------------------------------------------------------------------------------------
     template <typename...Args>
-    void LogParamHelper(const LogSource& source, const ELogLevel level, const std::shared_ptr<Logger>& pLogger, FormatString<Args...> pFormat, Args&&... args)
+    void LogParamHelper(const LogSource& source, const ELogLevel level, const std::shared_ptr<Logger>& pLogger, TFormatString<Args...> pFormat, Args&&... args)
     {
         pLogger->Log(source, level, pFormat, std::forward<Args>(args)...);
     }
@@ -43,7 +43,7 @@ namespace nes::internal
     /// @brief : Helper function to parse log parameters. This overload contains a log tag parameter.
     //----------------------------------------------------------------------------------------------------
     template <typename...Args>
-    void LogParamHelper(const LogSource& source, const ELogLevel level, const LogTag& tag, FormatString<Args...> pFormat, Args&&... args)
+    void LogParamHelper(const LogSource& source, const ELogLevel level, const LogTag& tag, TFormatString<Args...> pFormat, Args&&... args)
     {
         nes::LoggerRegistry::Instance().GetDefaultLogger()->Log(source, level, tag, pFormat, std::forward<Args>(args)...);
     }
@@ -53,7 +53,7 @@ namespace nes::internal
     ///     string.
     //----------------------------------------------------------------------------------------------------
     template <typename...Args>
-    void LogParamHelper(const LogSource& source, const ELogLevel level, const std::string& tagName, FormatString<Args...> pFormat, Args&&... args)
+    void LogParamHelper(const LogSource& source, const ELogLevel level, const std::string& tagName, TFormatString<Args...> pFormat, Args&&... args)
     {
         const LogTag tag(tagName, level);
         nes::LoggerRegistry::Instance().GetDefaultLogger()->Log(source, level, tag, pFormat, std::forward<Args>(args)...);

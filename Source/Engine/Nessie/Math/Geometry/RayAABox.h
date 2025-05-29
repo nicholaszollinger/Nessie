@@ -50,12 +50,12 @@ namespace nes
         VectorRegisterF tMax = VectorRegisterF::Select(VectorRegisterF::Max(t1, t2), fltMax, invDirection.m_isParallel);
 
         // tMin.XYZ = maximum(tMin.x, tMin.y, tMin.z)
-        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<Swizzle::Y, Swizzle::Z, Swizzle::X, Swizzle::X>());
-        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<Swizzle::Z, Swizzle::X, Swizzle::Y, Swizzle::Y>());
+        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<ESwizzle::Y, ESwizzle::Z, ESwizzle::X, ESwizzle::X>());
+        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<ESwizzle::Z, ESwizzle::X, ESwizzle::Y, ESwizzle::Y>());
 
         // tMax.xyz = minimum(tMax.x, tMax.y, tMax.z);
-        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<Swizzle::Y, Swizzle::Z, Swizzle::X, Swizzle::X>());
-        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<Swizzle::Z, Swizzle::X, Swizzle::Y, Swizzle::Y>());
+        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<ESwizzle::Y, ESwizzle::Z, ESwizzle::X, ESwizzle::X>());
+        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<ESwizzle::Z, ESwizzle::X, ESwizzle::Y, ESwizzle::Y>());
 
         // If (tMin > tMax) return FLT_MAX
         VectorRegisterUint noIntersection = VectorRegisterF::Greater(tMin, tMax);
@@ -94,12 +94,12 @@ namespace nes
         VectorRegisterF tMax = VectorRegisterF::Select(VectorRegisterF::Max(t1, t2), fltMax, invDirection.m_isParallel);
 
         // tMin.XYZ = maximum(tMin.x, tMin.y, tMin.z)
-        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<Swizzle::Y, Swizzle::Z, Swizzle::X, Swizzle::X>());
-        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<Swizzle::Z, Swizzle::X, Swizzle::Y, Swizzle::Y>());
+        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<ESwizzle::Y, ESwizzle::Z, ESwizzle::X, ESwizzle::X>());
+        tMin = VectorRegisterF::Max(tMin, tMin.Swizzle<ESwizzle::Z, ESwizzle::X, ESwizzle::Y, ESwizzle::Y>());
 
         // tMax.xyz = minimum(tMax.x, tMax.y, tMax.z);
-        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<Swizzle::Y, Swizzle::Z, Swizzle::X, Swizzle::X>());
-        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<Swizzle::Z, Swizzle::X, Swizzle::Y, Swizzle::Y>());
+        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<ESwizzle::Y, ESwizzle::Z, ESwizzle::X, ESwizzle::X>());
+        tMax = VectorRegisterF::Min(tMax, tMax.Swizzle<ESwizzle::Z, ESwizzle::X, ESwizzle::Y, ESwizzle::Y>());
 
         // If (tMin > tMax) return FLT_MAX
         VectorRegisterUint noIntersection = VectorRegisterF::Greater(tMin, tMax);

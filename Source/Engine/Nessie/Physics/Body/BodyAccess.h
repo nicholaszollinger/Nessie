@@ -10,7 +10,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access rules, used to detect race conditions during Physics simulation.  
         //----------------------------------------------------------------------------------------------------
-        enum class Access : uint8_t
+        enum class EAccess : uint8_t
         {
             None        = 0,
             Read        = 1,
@@ -22,13 +22,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct GrantScope
         {
-            inline GrantScope(Access velocity, Access position)
+            inline GrantScope(const EAccess velocity, const EAccess position)
             {
-                Access& currentVel = GetVelocityAccess();
-                Access& currentPos = GetPositionAccess();
+                EAccess& currentVel = GetVelocityAccess();
+                EAccess& currentPos = GetPositionAccess();
 
-                NES_ASSERT(currentVel == Access::ReadWrite);
-                NES_ASSERT(currentPos == Access::ReadWrite);
+                NES_ASSERT(currentVel == EAccess::ReadWrite);
+                NES_ASSERT(currentPos == EAccess::ReadWrite);
 
                 currentVel = velocity;
                 currentPos = position;
@@ -36,15 +36,15 @@ namespace nes
 
             inline ~GrantScope()
             {
-                GetVelocityAccess() = Access::ReadWrite;
-                GetPositionAccess() = Access::ReadWrite;
+                GetVelocityAccess() = EAccess::ReadWrite;
+                GetPositionAccess() = EAccess::ReadWrite;
             }
         };
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if we have certain permissions. 
         //----------------------------------------------------------------------------------------------------
-        static inline bool CheckRights(const Access currentRights, const Access desiredRights)
+        static inline bool CheckRights(const EAccess currentRights, const EAccess desiredRights)
         {
             return (static_cast<uint8_t>(currentRights) & static_cast<uint8_t>(desiredRights)) == static_cast<uint8_t>(desiredRights);
         }
@@ -52,18 +52,18 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current thread's velocity access. 
         //----------------------------------------------------------------------------------------------------
-        static inline Access& GetVelocityAccess()
+        static inline EAccess& GetVelocityAccess()
         {
-            static thread_local Access s_access = Access::ReadWrite;
+            static thread_local EAccess s_access = EAccess::ReadWrite;
             return s_access;
         }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current thread's position access. 
         //----------------------------------------------------------------------------------------------------
-        static inline Access& GetPositionAccess()
+        static inline EAccess& GetPositionAccess()
         {
-            static thread_local Access s_access = Access::ReadWrite;
+            static thread_local EAccess s_access = EAccess::ReadWrite;
             return s_access;
         }
     };

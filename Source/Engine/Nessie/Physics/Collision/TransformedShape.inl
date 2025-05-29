@@ -39,7 +39,7 @@ namespace nes
         SubShapeID result;
         const unsigned numBitsWritten = m_subShapeIDCreator.GetNumBitsWritten();
         
-        NES_IF_LOGGING_ENABLED(const uint32_t rootID =)
+        NES_IF_ASSERTS_ENABLED(const uint32_t rootID =)
         subShapeID.PopID(numBitsWritten, result);
         NES_ASSERT(rootID == (m_subShapeIDCreator.GetID().GetValue() & ((1 << numBitsWritten) - 1)));
         

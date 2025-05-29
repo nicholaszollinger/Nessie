@@ -16,19 +16,19 @@ namespace nes
         , m_friction(0.f)
         , m_restitution(0.f)
         , m_collisionLayer(kInvalidCollisionLayer)
-        , m_motionType(BodyMotionType::Static)
+        , m_motionType(EBodyMotionType::Static)
     {
         s_fixedToWorldShape.SetEmbedded();
     }
 
-    void Body::SetMotionType(const BodyMotionType& motionType)
+    void Body::SetMotionType(const EBodyMotionType& motionType)
     {
         if (m_motionType == motionType)
             return;
 
-        NES_ASSERTV((motionType == BodyMotionType::Static || m_pMotionProperties != nullptr), "Body needs to be created with m_allowDynamicOrKinematic set to true!");
-        NES_ASSERTV((motionType == BodyMotionType::Static || !IsActive()), "Deactivate body first!");
-        //NES_ASSERTV((motionType == BodyMotionType::Dynamic || !IsSoftBody()), "Soft bodies can only be dynamic, you can make individual vertices kinematic by setting their inverse mass to 0.");
+        NES_ASSERT((motionType == EBodyMotionType::Static || m_pMotionProperties != nullptr), "Body needs to be created with m_allowDynamicOrKinematic set to true!");
+        NES_ASSERT((motionType == EBodyMotionType::Static || !IsActive()), "Deactivate body first!");
+        //NES_ASSERT((motionType == BodyMotionType::Dynamic || !IsSoftBody()), "Soft bodies can only be dynamic, you can make individual vertices kinematic by setting their inverse mass to 0.");
 
         m_motionType = motionType;
 
@@ -38,7 +38,7 @@ namespace nes
 
             switch (m_motionType)
             {
-                case BodyMotionType::Static:
+                case EBodyMotionType::Static:
                 {
                     // Stop the object
                     m_pMotionProperties->m_linearVelocity = Vector3::Zero();
@@ -46,7 +46,7 @@ namespace nes
                     [[fallthrough]];
                 }
                 
-                case BodyMotionType::Kinematic:
+                case EBodyMotionType::Kinematic:
                 {
                     // Cancel forces
                     m_pMotionProperties->ResetForce();
@@ -54,7 +54,7 @@ namespace nes
                     break;
                 }
                 
-                case BodyMotionType::Dynamic:
+                case EBodyMotionType::Dynamic:
                     break;
             }
         }
@@ -71,7 +71,7 @@ namespace nes
     {
         NES_ASSERT(IsRigidBody());
         NES_ASSERT(!IsStatic());
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
 
         // Calculate the center of mass at the end situation
         const Vector3 newCOM = targetPosition + (targetRotation * m_pShape->GetCenterOfMass());
@@ -98,13 +98,13 @@ namespace nes
         result.m_userData = m_userData;
         result.m_collisionGroup = GetCollisionGroup();
         result.m_motionType = GetMotionType();
-        result.m_allowedDOFs = m_pMotionProperties != nullptr ? m_pMotionProperties->GetAllowedDOFs() : AllowedDOFs::All;
+        result.m_allowedDOFs = m_pMotionProperties != nullptr ? m_pMotionProperties->GetAllowedDOFs() : EAllowedDOFs::All;
         result.m_allowDynamicOrKinematic = m_pMotionProperties != nullptr;
         result.m_isSensor = IsSensor();
         result.m_collideKinematicVsNonDynamic = GetCollideKinematicVsNonDynamic();
         result.m_useManifoldReduction = GetUseManifoldReduction();
         result.m_applyGyroscopicForce = GetApplyGyroscopicForce();
-        result.m_motionQuality = m_pMotionProperties != nullptr ? m_pMotionProperties->m_motionQuality : BodyMotionQuality::Discrete;
+        result.m_motionQuality = m_pMotionProperties != nullptr ? m_pMotionProperties->m_motionQuality : EBodyMotionQuality::Discrete;
         result.m_enhancedInternalEdgeRemoval = GetEnhancedInternalEdgeRemoval();
         result.m_allowSleeping = m_pMotionProperties != nullptr? m_pMotionProperties->GetCanSleep() : true;
         result.m_friction = GetFriction();
@@ -116,7 +116,7 @@ namespace nes
         result.m_gravityScale = m_pMotionProperties != nullptr ? m_pMotionProperties->GetGravityScale() : 1.0f;
         result.m_numVelocityStepsOverride = m_pMotionProperties != nullptr ? m_pMotionProperties->GetNumVelocityStepsOverride() : 0;
         result.m_numPositionStepsOverride = m_pMotionProperties != nullptr ? m_pMotionProperties->GetNumPositionStepsOverride() : 0;
-        result.m_overrideMassProperties = OverrideMassProperties::MassAndInertiaProvided;
+        result.m_overrideMassProperties = EOverrideMassProperties::MassAndInertiaProvided;
 
         // Invert inertia and mass
         if (m_pMotionProperties != nullptr)
@@ -161,7 +161,7 @@ namespace nes
 
     void Body::Internal_SetPositionAndRotation(const Vector3& position, const Quat& rotation, bool resetSleepTimer)
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
 
         m_position = position + rotation * m_pShape->GetCenterOfMass();
         m_rotation = rotation;
@@ -187,7 +187,7 @@ namespace nes
     void Body::Internal_SetShape(const Shape* pShape, bool updateMassProperties)
     {
         NES_ASSERT(IsRigidBody());
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
 
         // Get the old center of mass
         const Vector3 oldCOM = m_pShape->GetCenterOfMass();
@@ -202,11 +202,11 @@ namespace nes
         Internal_CalculateWorldSpaceBounds();
     }
 
-    AllowedSleep Body::Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep)
+    EAllowedSleep Body::Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep)
     {
         // Check override & sensors will never go to sleep (they would stop detecting collisions with sleeping bodies).
         if (!m_pMotionProperties->m_canSleep || IsSensor())
-            return AllowedSleep::CannotSleep;
+            return EAllowedSleep::CannotSleep;
 
         // Get the points to test
         Vector3 points[3];
@@ -229,7 +229,7 @@ namespace nes
             if (sphere.m_radius > maxMovement)
             {
                 m_pMotionProperties->Internal_ResetSleepTestSpheres(points);
-                return AllowedSleep::CannotSleep;
+                return EAllowedSleep::CannotSleep;
             }
         }
 

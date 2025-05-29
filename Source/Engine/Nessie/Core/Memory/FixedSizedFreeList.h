@@ -356,11 +356,11 @@ namespace nes
     template <typename ObjectType>
     void FixedSizeFreeList<ObjectType>::AddObjectToBatch(Batch& batch, const uint32_t objectIndex)
     {
-        NES_ASSERTV(batch.m_numObjects != std::numeric_limits<uint32_t>::max(), "Trying to reuse a FixedSizeFreeList::Batch that has already been freed!");
+        NES_ASSERT(batch.m_numObjects != std::numeric_limits<uint32_t>::max(), "Trying to reuse a FixedSizeFreeList::Batch that has already been freed!");
 
         // Reset the next index
         std::atomic<uint32_t>& nextFreeObject = GetStorage(objectIndex).m_nextFreeObject;
-        NES_ASSERTV(nextFreeObject.load(std::memory_order_relaxed) == objectIndex, "Trying to add an object to the FixedSizeFreeList::Batch that is already in the free list!");
+        NES_ASSERT(nextFreeObject.load(std::memory_order_relaxed) == objectIndex, "Trying to add an object to the FixedSizeFreeList::Batch that is already in the free list!");
         nextFreeObject.store(kInvalidObjectIndex, std::memory_order_release);
         
         // Link object in the batch to free:

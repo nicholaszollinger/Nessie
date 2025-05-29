@@ -242,7 +242,7 @@ namespace nes
                             }
                             else
                             {
-                                NES_ASSERTV(false, "Stack full!\n"
+                                NES_ASSERT(false, "Stack full!\n"
                                     "This must be a very deep tree. Are you batch adding bodies? Or adding them one at a time?"
                                     "If you add one at a time, you need to call OptimizeBroadPhase to rebuild the tree.");
 
@@ -420,7 +420,7 @@ namespace nes
 
         for (const BodyID* pCurrent = bodyIDArray, *pEnd = bodyIDArray + number; pCurrent < pEnd; ++pCurrent)
         {
-            NES_ASSERTV(bodies[pCurrent->GetIndex()]->GetID() == *pCurrent, "Provided BodyID doesn't match the BodyID in the BodyManager!");
+            NES_ASSERT(bodies[pCurrent->GetIndex()]->GetID() == *pCurrent, "Provided BodyID doesn't match the BodyID in the BodyManager!");
 
             // Get the Location of the Body
             uint32_t nodeIndex;
@@ -455,7 +455,7 @@ namespace nes
         {
             // Check if the BodyID is correct
             const Body* pBody = bodies[pCurrent->GetIndex()];
-            NES_ASSERTV(pBody->GetID() == *pCurrent, "Provided BodyID doesn't match the BodyID in the BodyManager!");
+            NES_ASSERT(pBody->GetID() == *pCurrent, "Provided BodyID doesn't match the BodyID in the BodyManager!");
 
             // Get the new bounding box
             const AABox& newBounds = pBody->GetWorldSpaceBounds();
@@ -480,12 +480,12 @@ namespace nes
 
     void QuadTree::CastRay([[maybe_unused]] const RayCast& ray, [[maybe_unused]] RayCastBodyCollector& collector, [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
-        NES_ASSERTV(false, "Not implemented yet!"); 
+        NES_ASSERT(false, "Not implemented yet!"); 
     }
 
     void QuadTree::CastAABox([[maybe_unused]] const AABoxCast& box, [[maybe_unused]] CastShapeBodyCollector& collector, [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
-        NES_ASSERTV(false, "Not implemented yet!");
+        NES_ASSERT(false, "Not implemented yet!");
     }
 
     void QuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
@@ -526,26 +526,26 @@ namespace nes
     void QuadTree::CollideSphere([[maybe_unused]] const Vector3& center, [[maybe_unused]] const float radius, [[maybe_unused]] CollideShapeBodyCollector& collector,
         [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
-        NES_ASSERTV(false, "Not implemented yet!"); 
+        NES_ASSERT(false, "Not implemented yet!"); 
     }
 
     void QuadTree::CollidePoint([[maybe_unused]] const Vector3& point, [[maybe_unused]] CollideShapeBodyCollector& collector,
         [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
-        NES_ASSERTV(false, "Not implemented yet!"); 
+        NES_ASSERT(false, "Not implemented yet!"); 
     }
 
     void QuadTree::CollideOrientedBox([[maybe_unused]] const OrientedBox& box, [[maybe_unused]] CollideShapeBodyCollector& collector,
         [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
-        NES_ASSERTV(false, "Not implemented yet!"); 
+        NES_ASSERT(false, "Not implemented yet!"); 
     }
 
     void QuadTree::FindCollidingPairs([[maybe_unused]] const BodyVector& bodies, [[maybe_unused]] const BodyID* activeBodiesArray,
         [[maybe_unused]] const int numActiveBodies, [[maybe_unused]] float speculativeContactDistance, [[maybe_unused]] BodyPairCollector& collector,
         [[maybe_unused]] const CollisionLayerPairFilter& layerFilter) const
     {
-        NES_ASSERTV(false, "Not implemented yet!"); 
+        NES_ASSERT(false, "Not implemented yet!"); 
     }
 
     AABox QuadTree::GetBounds() const
@@ -566,7 +566,7 @@ namespace nes
         NES_ASSERT(bodyLocation != BodyTracker::kInvalidBodyLocation);
         outNodeIndex = bodyLocation & BodyTracker::kBodyIndexMask;
         outChildIndex = bodyLocation >> BodyTracker::kChildIndexShift;
-        NES_ASSERTV(m_pAllocator->Get(outNodeIndex).m_childNodeIDs[outChildIndex] == bodyID, "Make sure that the body is in the node where it should be!");
+        NES_ASSERT(m_pAllocator->Get(outNodeIndex).m_childNodeIDs[outChildIndex] == bodyID, "Make sure that the body is in the node where it should be!");
     }
 
     void QuadTree::SetBodyLocation(BodyTrackerArray& trackers, const BodyID bodyID, const uint32_t nodeIndex,
@@ -574,7 +574,7 @@ namespace nes
     {
         NES_ASSERT(nodeIndex < BodyTracker::kBodyIndexMask);
         NES_ASSERT(childIndex < 4);
-        NES_ASSERTV(m_pAllocator->Get(nodeIndex).m_childNodeIDs[childIndex] == bodyID, "Make sure that the body is in the node where it should be!");
+        NES_ASSERT(m_pAllocator->Get(nodeIndex).m_childNodeIDs[childIndex] == bodyID, "Make sure that the body is in the node where it should be!");
         trackers[bodyID.GetIndex()].m_bodyLocation = nodeIndex + (childIndex << BodyTracker::kChildIndexShift);
 
 #if NES_LOGGING_ENABLED
@@ -658,7 +658,7 @@ namespace nes
                     break;
                 }
             }
-            NES_ASSERTV(childIndex != -1, "Nodes should not get removed from the tree, we should have found it.");
+            NES_ASSERT(childIndex != -1, "Nodes should not get removed from the tree, we should have found it.");
 
             // To avoid any race conditions with other threads we only enlarge bounding boxes.
             if (!parentNode.EncapsulateChildBounds(childIndex, newBounds))
@@ -692,7 +692,7 @@ namespace nes
             // For normal situations there are plenty of nodes available. If all else fails, you can increase the number of nodes
             // by increasing the maximum number of bodies.
             
-            NES_CRITICAL("QuadTree: Out of Nodes!");
+            NES_FATAL("QuadTree: Out of Nodes!");
         }
         return index;
     }
@@ -1088,7 +1088,7 @@ namespace nes
 
                 else
                 {
-                    NES_ASSERTV(false, "Stack full!\n"
+                    NES_ASSERT(false, "Stack full!\n"
                                     "This must be a very deep tree. Are you batch adding bodies? Or adding them one at a time?"
                                     "If you add one at a time, you need to call OptimizeBroadPhase to rebuild the tree.");
                 }

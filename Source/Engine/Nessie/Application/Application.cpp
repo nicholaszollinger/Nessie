@@ -30,7 +30,7 @@ namespace nes
     {
         if (s_pInstance != nullptr)
         {
-            NES_CRITICALV("Application", "Attempted to create a second Application instance!");
+            NES_FATAL(kApplicationLogTag, "Attempted to create a second Application instance!");
             //NES_FATAL("[Application]: Attempted to create a second Application instance!");
         }
 
@@ -64,10 +64,11 @@ namespace nes
     Application::EExitCode Application::Init()
     {
         NES_INIT_LEAK_DETECTOR();
-        Logger::Init(NES_LOG_DIR);
+        //Logger::Init(NES_LOG_DIR);
+        LoggerRegistry::Instance().Internal_Init();
         
         const std::string logConfigDir = NES_CONFIG_DIR;
-        Logger::LoadCategories(std::string(logConfigDir + "LogConfig.yaml"));
+        //Logger::LoadCategories(std::string(logConfigDir + "LogConfig.yaml"));
 
         // Load the Application Settings:
         auto settingsFile = YAML::LoadFile(std::string(logConfigDir + "AppConfig.yaml"));
@@ -98,32 +99,32 @@ namespace nes
         // Create the Window:
         if (!m_window.Init(*this, windowProperties))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize the Window!");
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to Initialize the Window!");
             return EExitCode::FatalError;
         }
 
         // Initialize the InputManager
         if (!m_inputManager.Init(&m_window))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize InputManager!");
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to Initialize InputManager!");
             return EExitCode::FatalError;
         }
         
         // Create the Renderer
         if (!m_renderer.Init(&m_window, m_properties))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the Renderer!");
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to initialize the Renderer!");
             return EExitCode::FatalError;
         }
         
         // Scene Manager
         if (!m_sceneManager.Init(settingsFile))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the SceneManager!");
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to initialize the SceneManager!");
             return EExitCode::FatalError;
         }
         
-        NES_LOGV("Application", "Initialized App: \"", m_properties.m_appName, "\" Version: ", m_properties.m_appVersion.ToString());
+        NES_LOG(kApplicationLogTag, "Initialized App: \"{}\" Version: ", m_properties.m_appName, m_properties.m_appVersion.ToString());
         return EExitCode::Success;
     }
 
@@ -169,7 +170,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void Application::Close([[maybe_unused]] EExitCode exitCode)
     {
-        NES_ASSERTV(IsMainThread());
+        NES_ASSERT(IsMainThread());
 
         m_renderer.WaitUntilIdle();
 
@@ -178,8 +179,8 @@ namespace nes
         m_inputManager.Shutdown();
         m_window.Close();
 
-        NES_LOGV("Application", "Application Closed");
-        Logger::Close();
+        NES_LOG(kApplicationLogTag, "Application Closed");
+        LoggerRegistry::Instance().Internal_Shutdown();
         NES_DUMP_AND_DESTROY_LEAK_DETECTOR();
 
         // Set the Instance back to nullptr.

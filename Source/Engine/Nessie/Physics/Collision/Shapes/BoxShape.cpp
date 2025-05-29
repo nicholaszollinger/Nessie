@@ -116,7 +116,7 @@ namespace nes
 
     Vector3 BoxShape::GetSurfaceNormal([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& localSurfacePosition) const
     {
-        NES_ASSERTV(subShapeID.IsEmpty(), "Invalid subshape ID");
+        NES_ASSERT(subShapeID.IsEmpty(), "Invalid subshape ID");
 
         // Get the component that is closest to the surface of the box.
         const int index = (localSurfacePosition.Abs() - m_halfExtent).Abs().GetLowestComponentIndex();
@@ -242,7 +242,7 @@ namespace nes
     void BoxShape::GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& direction, const Vector3& scale,
         const Mat4& centerOfMassTransform, SupportingFace& outVertices) const
     {
-        NES_ASSERTV(subShapeID.IsEmpty(), "Invalid subshape ID");
+        NES_ASSERT(subShapeID.IsEmpty(), "Invalid subshape ID");
 
         Vector3 scaledHalfExtent = scale.Abs() * m_halfExtent;
         const AABox box(-scaledHalfExtent, scaledHalfExtent);

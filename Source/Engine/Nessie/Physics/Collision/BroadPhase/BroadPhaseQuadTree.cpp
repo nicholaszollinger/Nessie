@@ -21,7 +21,7 @@ namespace nes
         m_numLayers = layerInterface.GetNumBroadPhaseLayers();
         NES_ASSERT(m_numLayers < static_cast<BroadPhaseLayer::Type>(kInvalidBroadPhaseLayer));
 
-#if NES_LOGGING_ENABLED
+#if NES_IF_ASSERTS_ENABLED
         // TODO later: "PhysicsLockContext"
         //m_lockContext = pBodyManager;
 #endif
@@ -253,7 +253,7 @@ namespace nes
             return;
         }
 
-        NES_IF_LOGGING_ENABLED(const BodyVector& bodies = m_pBodyManager->GetBodies());
+        NES_IF_ASSERTS_ENABLED(const BodyVector& bodies = m_pBodyManager->GetBodies());
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         LayerState* pLayerStates = static_cast<LayerState*>(addState);

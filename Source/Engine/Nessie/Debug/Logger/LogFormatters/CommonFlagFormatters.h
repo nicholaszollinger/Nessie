@@ -10,18 +10,21 @@ namespace nes::internal
     /// @brief : Formatter to add the logger name to the log message. 
     //----------------------------------------------------------------------------------------------------
     template <typename ScopedPadder>
-    class LoggerNameFormatter final : public FlagFormatter
+    class LogTagFormatter final : public FlagFormatter
     {
     public:
-        explicit LoggerNameFormatter(const PaddingInfo paddingInfo) : FlagFormatter(paddingInfo) {}
+        explicit LogTagFormatter(const PaddingInfo paddingInfo) : FlagFormatter(paddingInfo) {}
 
         virtual void Format(const LogMessage& msg, const std::tm&, LogMemoryBuffer& dest) override
         {
             if (msg.m_tagName.empty())
                 return;
-            
+
+            const size_t textSize = msg.m_tagName.size() + 2; // +2 for ': '. 
             ScopedPadder padder(msg.m_tagName.size(), m_paddingInfo, dest);
             FormatHelpers::AppendStringView(msg.m_tagName, dest);
+            dest.push_back(':');
+            dest.push_back(' ');
         }
     };
     
@@ -60,7 +63,7 @@ namespace nes::internal
             const bool hasName = !msg.m_tagName.empty();
             if (hasName)
             {
-                textSize += 1 + msg.m_tagName.size();
+                textSize += 2 + msg.m_tagName.size(); // +2 for ': '
             }
 
             ScopedPadder padder(textSize, m_paddingInfo, dest);
@@ -68,15 +71,15 @@ namespace nes::internal
             // Add the Level Name
             dest.push_back('[');
             FormatHelpers::AppendStringView(levelName, dest);
+            dest.push_back(']');
 
             // Add Name, if present
             if (hasName)
             {
                 dest.push_back(':');
+                dest.push_back(' ');
                 FormatHelpers::AppendStringView(msg.m_tagName, dest);
             }
-            
-            dest.push_back(']');
         }
     };
     

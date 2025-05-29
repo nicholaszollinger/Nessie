@@ -280,7 +280,7 @@ namespace nes
     typename TEntityPool<Type>::Iterator& TEntityPool<Type>::Iterator::operator++()
     {
         NES_ASSERT(m_pPtr != nullptr);
-        NES_ASSERTV(m_pPtr != m_pEnd, "Cannot increment past the end of the container");
+        NES_ASSERT(m_pPtr != m_pEnd, "Cannot increment past the end of the container");
 
         ++m_pPtr;
 
@@ -298,7 +298,7 @@ namespace nes
     typename TEntityPool<Type>::Iterator& TEntityPool<Type>::Iterator::operator--()
     {
         NES_ASSERT(m_pPtr != nullptr);
-        NES_ASSERTV(m_pPtr != m_pBegin, "Cannot decrement past the beginning of the container");
+        NES_ASSERT(m_pPtr != m_pBegin, "Cannot decrement past the beginning of the container");
 
         --m_pPtr;
 

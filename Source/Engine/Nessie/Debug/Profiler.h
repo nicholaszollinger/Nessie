@@ -1,6 +1,6 @@
 #pragma once
 // Profiler.h
-#include "Core/Log/Log.h"
+#include "Debug/Log.h"
 #include "Core/Time/Timer.h"
 
 #if NES_LOGGING_ENABLED

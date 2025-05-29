@@ -10,8 +10,11 @@
 
 static void GLFW_ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char* description);
 
+
 namespace nes
 {
+    NES_DEFINE_LOG_TAG(kGLFWLogTag, "GLFW", Warn);
+    
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
@@ -30,7 +33,7 @@ namespace nes
         // only created once.
         if (!glfwInit())
         {
-            NES_ERRORV("GLFW", "GLFW could not be initialized!");
+            NES_ERROR(kGLFWLogTag, "GLFW could not be initialized!");
             return false;
         }
 
@@ -111,8 +114,8 @@ namespace nes
             Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
             const Modifiers mods = glfw::ConvertToModifiers(modifiers);
-            const KeyCode keyCode = glfw::ConvertToKeyCode(key);
-            const KeyAction keyAction = glfw::ConvertToKeyAction(action);
+            const EKeyCode keyCode = glfw::ConvertToKeyCode(key);
+            const EKeyAction keyAction = glfw::ConvertToKeyAction(action);
 
             KeyEvent event(keyCode, keyAction, mods);
             pApp->PushEvent(event);
@@ -127,9 +130,9 @@ namespace nes
             double xPos, yPos;
             glfwGetCursorPos(pWindow, &xPos, &yPos);
             const Vector2 mousePos(static_cast<float>(xPos), static_cast<float>(yPos));
-            const MouseButton mouseButton = glfw::ConvertToMouseButton(button);
+            const EMouseButton mouseButton = glfw::ConvertToMouseButton(button);
             const Modifiers mods = glfw::ConvertToModifiers(modifiers);
-            const MouseAction mouseAction = glfw::ConvertToMouseAction(action);
+            const EMouseAction mouseAction = glfw::ConvertToMouseAction(action);
 
             MouseButtonEvent event(mouseButton, mouseAction, mods, mousePos.x, mousePos.y);
             pApp->PushEvent(event);
@@ -268,7 +271,7 @@ namespace nes
 
 void GLFW_ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char* description)
 {
-    NES_ERRORV("GLFW", "Error: ", error, " - ", description);
+    NES_ERROR(nes::kGLFWLogTag, "Error: ", error, " - ", description);
 }
 
 #endif

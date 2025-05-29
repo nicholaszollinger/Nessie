@@ -17,7 +17,7 @@ namespace nes
                 {
                     s_collideShapeFunctions[i][j] = [](const Shape*, const Shape*, const Vector3&, const Vector3&, const Mat4&, const Mat4&, const SubShapeIDCreator&, const SubShapeIDCreator&, const CollideShapeSettings&, CollideShapeCollector&, const ShapeFilter&)
                     {
-                        NES_ASSERTV(false, "Attempted to collide unsupported shape pair!");  
+                        NES_ASSERT(false, "Attempted to collide unsupported shape pair!");  
                     };
                 }
 
@@ -25,7 +25,7 @@ namespace nes
                 {
                     s_castShapeFunctions[i][j] = [](const ShapeCast&, const ShapeCastSettings&, const Shape*, const Vector3&, const ShapeFilter&, const Mat4&, const SubShapeIDCreator&, const SubShapeIDCreator&, CastShapeCollector&)
                     {
-                        NES_ASSERTV(false, "Attempted to cast unsupported shape pair!");  
+                        NES_ASSERT(false, "Attempted to cast unsupported shape pair!");  
                     };
                 }
             }

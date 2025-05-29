@@ -6,7 +6,7 @@
 
 namespace nes
 {
-    enum class PhysicsUpdateErrorCode : uint32_t
+    enum class EPhysicsUpdateErrorCode : uint32_t
     {
         None = 0,                           /// No Errors
         ManifoldCacheFull = 1 << 0,         /// The Manifold Cache is full, total number of contacts between bodies is too high. Some contacts were ignored. Increase maxContactConstraints in PhysicsSystem::Init. 
@@ -14,7 +14,7 @@ namespace nes
         ContactConstraintsFull = 3 << 0,    /// The ContactConstraints Buffer is full. Some contacts were ignored. Increase maxContactConstraints in PhysicsSystem::Init.
     };
 
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(PhysicsUpdateErrorCode);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPhysicsUpdateErrorCode);
 
-    std::string ToString(const PhysicsUpdateErrorCode errorCodes);
+    std::string ToString(const EPhysicsUpdateErrorCode errorCodes);
 }

@@ -14,7 +14,7 @@ namespace nes
         m_rotationEnabled = false;
         auto* pWorld = GetOwner()->GetWorld();
         //m_tickFunction.SetTickInterval(5.f);
-        pWorld->RegisterTickToWorldTickGroup(&m_tickFunction, TickStage::PrePhysics);
+        pWorld->RegisterTickToWorldTickGroup(&m_tickFunction, ETickStage::PrePhysics);
         
         return TickableEntity3DComponent::Init();
     }
@@ -46,22 +46,22 @@ namespace nes
         m_inputRotation = Vector2::Zero();
 
         // Process Movement:
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::W))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::W))
             m_inputMovement.z += 1.f;
             
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::S))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::S))
             m_inputMovement.z += -1.f;
             
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::A))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::A))
             m_inputMovement.x += -1.f;
         
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::D))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::D))
             m_inputMovement.x += 1.f;
         
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::Space))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::Space))
             m_inputMovement.y += 1.f;    
             
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::LeftControl) || nes::InputManager::IsKeyDown(nes::KeyCode::RightControl))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::LeftControl) || nes::InputManager::IsKeyDown(nes::EKeyCode::RightControl))
             m_inputMovement.y += -1.f;
 
         // Normalize movement vector;
@@ -83,18 +83,18 @@ namespace nes
         if (event.GetEventID() == nes::MouseButtonEvent::GetStaticEventID())
         {
             auto& mouseButtonEvent = checked_cast<nes::MouseButtonEvent&>(event);
-            if (mouseButtonEvent.GetButton() == nes::MouseButton::Right)
+            if (mouseButtonEvent.GetButton() == nes::EMouseButton::Right)
             {
-                if (mouseButtonEvent.GetAction() == nes::MouseAction::Pressed)
+                if (mouseButtonEvent.GetAction() == nes::EMouseAction::Pressed)
                 {
                     m_rotationEnabled = true;
-                    nes::InputManager::SetCursorMode(nes::CursorMode::Disabled);
+                    nes::InputManager::SetCursorMode(nes::ECursorMode::Disabled);
                 }
                     
-                else if (mouseButtonEvent.GetAction() == nes::MouseAction::Released)
+                else if (mouseButtonEvent.GetAction() == nes::EMouseAction::Released)
                 {
                     m_rotationEnabled = false;
-                    nes::InputManager::SetCursorMode(nes::CursorMode::Visible);
+                    nes::InputManager::SetCursorMode(nes::ECursorMode::Visible);
                 }
             }
         }

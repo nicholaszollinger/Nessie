@@ -80,7 +80,7 @@ namespace nes
     template <UnsignedIntegralType Type>
     constexpr GenerationalID<Type>::GenerationalID(const IntergralType auto id)
     {
-        NES_ASSERTV(id >= 0 && id <= kGenerationMask, "Attempted to construct a GenerationalID with ID value out of range! Value must"
+        NES_ASSERT(id >= 0 && id <= kGenerationMask, "Attempted to construct a GenerationalID with ID value out of range! Value must"
                                            "be greater than 0 and less than ", kGenerationMask);
         m_value = id + kInitialGeneration;
     }

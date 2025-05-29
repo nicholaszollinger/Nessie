@@ -516,9 +516,9 @@ namespace nes
 
         Vector3 absRot[3]
         {
-            rotation.GetAxis(Axis::X).Abs() + vEpsilon,
-            rotation.GetAxis(Axis::Y).Abs() + vEpsilon,
-            rotation.GetAxis(Axis::Z).Abs() + vEpsilon,
+            rotation.GetAxis(EAxis::X).Abs() + vEpsilon,
+            rotation.GetAxis(EAxis::Y).Abs() + vEpsilon,
+            rotation.GetAxis(EAxis::Z).Abs() + vEpsilon,
         };
 
         // Test axes L = A0, L = A1, L = A2

@@ -10,7 +10,7 @@ namespace nes
     {
         m_isBeingDestroyed = false;
         // Layers should already be added when loading the World.
-        NES_ASSERTV(!m_layerStack.empty(), "World contains no Layers!");
+        NES_ASSERT(!m_layerStack.empty(), "World contains no Layers!");
 
         // Initialize layers.
         for (auto& pLayer : m_layerStack)
@@ -55,7 +55,7 @@ namespace nes
 
         m_layerStack.clear();
 
-        NES_LOGV("Scene", "Destroy() Complete");
+        NES_LOG(kSceneLogTag, "Destroy() Complete");
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ namespace nes
         YAML::Node file = YAML::LoadFile(fullPath);
         if (!file)
         {
-            NES_ERRORV("Scene", "Failed to load scene! Filepath invalid!");
+            NES_ERROR(kSceneLogTag, "Failed to load scene! Filepath invalid!");
             return false;
         }
         

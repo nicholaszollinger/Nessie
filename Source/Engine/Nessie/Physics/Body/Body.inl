@@ -4,47 +4,47 @@
 
 namespace nes
 {
-    AllowedDOFs Body::GetAllowedDOFs() const
+    EAllowedDOFs Body::GetAllowedDOFs() const
     {
         if (m_pMotionProperties != nullptr)
             return m_pMotionProperties->GetAllowedDOFs();
         
-        return AllowedDOFs::All;
+        return EAllowedDOFs::All;
     }
 
     void Body::SetIsSensor(const bool isSensor)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(Flags::IsSensor, isSensor);
+        Internal_SetFlag(EFlags::IsSensor, isSensor);
     }
 
     void Body::SetCollideKinematicVsNonDynamic(const bool collideKinematicVsNonDynamic)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(Flags::CollideKinematicVsNonDynamic, collideKinematicVsNonDynamic);
+        Internal_SetFlag(EFlags::CollideKinematicVsNonDynamic, collideKinematicVsNonDynamic);
     }
 
     void Body::SetUseManifoldReduction(bool useReduction)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(Flags::UseManifoldReduction, useReduction);
+        Internal_SetFlag(EFlags::UseManifoldReduction, useReduction);
     }
 
     void Body::SetApplyGyroscopicForce(const bool apply)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(Flags::ApplyGyroscopicForce, apply);
+        Internal_SetFlag(EFlags::ApplyGyroscopicForce, apply);
     }
 
     void Body::SetEnhancedInternalEdgeRemoval(const bool apply)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(Flags::EnhancedInternalEdgeRemoval, apply);
+        Internal_SetFlag(EFlags::EnhancedInternalEdgeRemoval, apply);
     }
     
     bool Body::GetEnhancedInternalEdgeRemovalWithBody(const Body& body2) const
     {
-        return ((m_flags.load(std::memory_order_relaxed) & body2.m_flags.load(std::memory_order_relaxed)) & static_cast<uint8_t>(Flags::EnhancedInternalEdgeRemoval)) != 0;
+        return ((m_flags.load(std::memory_order_relaxed) & body2.m_flags.load(std::memory_order_relaxed)) & static_cast<uint8_t>(EFlags::EnhancedInternalEdgeRemoval)) != 0;
     }
 
     void Body::ResetSleepTimer()
@@ -95,7 +95,7 @@ namespace nes
 
     Vector3 Body::GetPointVelocity(const Vector3& point) const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         return GetPointVelocityCOM(point - m_position);
     }
 
@@ -176,25 +176,25 @@ namespace nes
 
     Mat4 Body::GetWorldTransform() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         return math::MakeRotationTranslationMatrix(m_position, m_rotation).PreTranslated(-m_pShape->GetCenterOfMass());
     }
 
     Vector3 Body::GetCenterOfMassPosition() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         return m_position;
     }
 
     Mat4 Body::GetCenterOfMassTransform() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         return math::MakeRotationTranslationMatrix(m_position, m_rotation);
     }
 
     Mat4 Body::GetInverseCenterOfMassTransform() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         return math::MakeInverseRotationTranslationMatrix(m_position, m_rotation);
     }
 
@@ -218,7 +218,7 @@ namespace nes
 
     TransformedShape Body::GetTransformedShape() const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
         return TransformedShape(m_position, m_rotation, m_pShape, m_id);
     }
 
@@ -239,7 +239,7 @@ namespace nes
             return false;
 
         const uint32_t body1IndexInActiveBodies = body1.Internal_GetIndexInActiveBodies();
-        NES_ASSERTV(!body1.IsStatic() && body1IndexInActiveBodies != Body::kInactiveIndex, "This function assumes that Body 1 is active.");
+        NES_ASSERT(!body1.IsStatic() && body1IndexInActiveBodies != Body::kInactiveIndex, "This function assumes that Body 1 is active.");
 
         // If the pair A, B collides we need to ensure that the pair B, A does not collide or else we will handle the collision twice..
         // If A is the same body as B we don't want to collide (1)
@@ -265,7 +265,7 @@ namespace nes
         if (!body2.IsSoftBody() && body1IndexInActiveBodies >= body2.Internal_GetIndexInActiveBodies())
             return false;
 
-        NES_ASSERTV(body1.GetID() != body2.GetID(), "Read the comment above, A and B are the same body which should not be possible!");
+        NES_ASSERT(body1.GetID() != body2.GetID(), "Read the comment above, A and B are the same body which should not be possible!");
 
         // Check collision group filter
         if (!body1.GetCollisionGroup().CanCollide(body2.GetCollisionGroup()))
@@ -277,7 +277,7 @@ namespace nes
     void Body::Internal_AddPositionStep(const Vector3& linearVelocityTimesDeltaTime)
     {
         NES_ASSERT(IsRigidBody());
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
         
         m_position += m_pMotionProperties->LockTranslation(linearVelocityTimesDeltaTime);
         
@@ -287,7 +287,7 @@ namespace nes
     void Body::Internal_SubPositionStep(const Vector3& linearVelocityTimesDeltaTime)
     {
         NES_ASSERT(IsRigidBody());
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
         
         m_position -= m_pMotionProperties->LockTranslation(linearVelocityTimesDeltaTime);
         
@@ -297,7 +297,7 @@ namespace nes
     void Body::Internal_AddRotationStep(const Vector3& angularVelocityTimesDeltaTime)
     {
         NES_ASSERT(IsRigidBody());
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
 
         // From Jolt:
         // This used to use the equation: d/dt R(t) = 1/2 * w(t) * R(t) so that R(t + dt) = R(t) + 1/2 * w(t) * R(t) * dt
@@ -317,7 +317,7 @@ namespace nes
     void Body::Internal_SubRotationStep(const Vector3& angularVelocityTimesDeltaTime)
     {
         NES_ASSERT(IsRigidBody());
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::ReadWrite));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
         
         // See comment in Internal_AddRotationStep().
         const float length = angularVelocityTimesDeltaTime.Magnitude();
@@ -331,31 +331,31 @@ namespace nes
     void Body::Internal_SetInBroadPhase(const bool isInBroadPhase)
     {
         if (isInBroadPhase)
-            m_flags.fetch_or(static_cast<uint8_t>(Flags::IsInBroadPhase), std::memory_order::relaxed);
+            m_flags.fetch_or(static_cast<uint8_t>(EFlags::IsInBroadPhase), std::memory_order::relaxed);
         else
-            m_flags.fetch_and(static_cast<uint8_t>(~static_cast<uint8_t>(Flags::IsInBroadPhase)), std::memory_order::relaxed);
+            m_flags.fetch_and(static_cast<uint8_t>(~static_cast<uint8_t>(EFlags::IsInBroadPhase)), std::memory_order::relaxed);
     }
 
     bool Body::Internal_InvalidateContactCache()
     {
-        return (m_flags.fetch_or(static_cast<uint8_t>(Flags::InvalidateContactCache), std::memory_order::relaxed) & static_cast<uint8_t>(Flags::InvalidateContactCache)) == 0;
+        return (m_flags.fetch_or(static_cast<uint8_t>(EFlags::InvalidateContactCache), std::memory_order::relaxed) & static_cast<uint8_t>(EFlags::InvalidateContactCache)) == 0;
     }
 
     void Body::Internal_ValidateContactCache()
     {
         NES_IF_LOGGING_ENABLED(const uint8_t oldValue = )
-        m_flags.fetch_and(static_cast<uint8_t>(~static_cast<uint8_t>(Flags::InvalidateContactCache)), std::memory_order_relaxed);
+        m_flags.fetch_and(static_cast<uint8_t>(~static_cast<uint8_t>(EFlags::InvalidateContactCache)), std::memory_order_relaxed);
         
-        NES_ASSERT((oldValue & static_cast<uint8_t>(Flags::InvalidateContactCache)) != 0);
+        NES_ASSERT((oldValue & static_cast<uint8_t>(EFlags::InvalidateContactCache)) != 0);
     }
 
     void Body::Internal_ValidateCachedBounds() const
     {
         [[maybe_unused]] const AABox actualBodyBounds = m_pShape->GetWorldBounds(GetCenterOfMassTransform(), Vector3::Unit());
-        NES_ASSERTV(actualBodyBounds == m_bounds, "Mismatch between cached bounding box and actual bounding box!");
+        NES_ASSERT(actualBodyBounds == m_bounds, "Mismatch between cached bounding box and actual bounding box!");
     }
 
-    void Body::Internal_SetFlag(const Flags flag, const bool set)
+    void Body::Internal_SetFlag(const EFlags flag, const bool set)
     {
         if (set)
             m_flags.fetch_or(static_cast<uint8_t>(flag), std::memory_order::relaxed);
@@ -363,14 +363,14 @@ namespace nes
             m_flags.fetch_and(~static_cast<uint8_t>(flag), std::memory_order::relaxed);
     }
 
-    bool Body::Internal_GetFlag(const Flags flag) const
+    bool Body::Internal_GetFlag(const EFlags flag) const
     {
         return (m_flags.load(std::memory_order_relaxed) & static_cast<uint8_t>(flag)) != 0;
     }
 
     void Body::GetSleepTestPoints(Vector3* outPoints) const
     {
-        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::Access::Read));
+        NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
 
         // Center of mass is the first position
         outPoints[0] = m_position;

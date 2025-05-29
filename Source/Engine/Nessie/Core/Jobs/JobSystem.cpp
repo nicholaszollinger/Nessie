@@ -62,7 +62,7 @@ namespace nes
     {
         const uint32_t oldValue = m_numDependencies.fetch_sub(count, std::memory_order_release);
         const uint32_t newValue = oldValue - count;
-        NES_ASSERTV(oldValue > newValue, "Removed more dependencies than were set for Job!");
+        NES_ASSERT(oldValue > newValue, "Removed more dependencies than were set for Job!");
         
         return newValue == 0;
     }
@@ -79,7 +79,7 @@ namespace nes
         if (m_barrier.compare_exchange_strong(barrier, reinterpret_cast<intptr_t>(pBarrier), std::memory_order_relaxed))
             return true;
 
-        NES_ASSERTV(barrier == kBarrierDoneState, "A job can only belong to one barrier!");
+        NES_ASSERT(barrier == kBarrierDoneState, "A job can only belong to one barrier!");
         return false;
     }
 

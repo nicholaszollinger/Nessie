@@ -15,7 +15,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Enum to identify constraint type. 
     //----------------------------------------------------------------------------------------------------
-    enum class ConstraintType
+    enum class EConstraintType
     {
         Constraint, // Constraint that is applied to a single body.
         TwoBodyConstraint,    // Constraint that is applied to two connected bodies.
@@ -24,7 +24,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Enum to identity constraint subtype. 
     //----------------------------------------------------------------------------------------------------
-    enum class ConstraintSubType
+    enum class EConstraintSubType
     {
         Fixed,
         Point,
@@ -37,7 +37,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Certain constraints support setting them up in local or world space. This governs what is used. 
     //----------------------------------------------------------------------------------------------------
-    enum class ConstraintSpace
+    enum class EConstraintSpace
     {
         LocalToBodyCOM, /// All constraint properties are specified in local space to center of mass of the bodies that are being constrained (so e.g. 'constraint position 1' will be local to body 1 COM, 'constraint position 2' will be local to body 2 COM). Note that this means you need to subtract Shape::GetCenterOfMass() from positions!
         WorldSpace,     /// All constraint properties are specified in world space.
@@ -113,12 +113,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Type of constraint.
         //----------------------------------------------------------------------------------------------------
-        virtual ConstraintType      GetType() const                                     { return ConstraintType::Constraint; }
+        virtual EConstraintType     GetType() const                                     { return EConstraintType::Constraint; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the subtype of a constraint. 
         //----------------------------------------------------------------------------------------------------
-        virtual ConstraintSubType   GetSubType() const = 0;
+        virtual EConstraintSubType  GetSubType() const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Priority of the Constraint when solving. Higher values are more likely to be solved correctly.

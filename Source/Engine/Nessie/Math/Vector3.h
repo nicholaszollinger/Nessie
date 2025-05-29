@@ -3,7 +3,7 @@
 #include "Generic.h"
 #include "Vector2.h"
 #include "Core/String/FormatString.h"
-#include "Detail/Swizzle.h"
+#include "Detail/ESwizzle.h"
 #include "Math/Float3.h"
 
 // [TODO]: Combine with VectorRegisterF.
@@ -75,7 +75,7 @@ namespace nes
         float                       ReduceMin() const;
         
 
-        template <Swizzle X, Swizzle Y, Swizzle Z>
+        template <ESwizzle X, ESwizzle Y, ESwizzle Z>
         TVector3                    Swizzle() const;
         
         template <ScalarType To>
@@ -468,13 +468,13 @@ namespace nes
     template <ScalarType Type>
     float TVector3<Type>::ReduceMin() const
     {
-        TVector3 vec = Min(*this, Swizzle<Swizzle::Y, Swizzle::Unused, Swizzle::Z>());
-        vec = Min(vec, Swizzle<Swizzle::Z, Swizzle::Unused, Swizzle::Unused>());
+        TVector3 vec = Min(*this, Swizzle<ESwizzle::Y, ESwizzle::Unused, ESwizzle::Z>());
+        vec = Min(vec, Swizzle<ESwizzle::Z, ESwizzle::Unused, ESwizzle::Unused>());
         return vec.x;
     }
 
     template <ScalarType Type>
-    template <Swizzle X, Swizzle Y, Swizzle Z>
+    template <ESwizzle X, ESwizzle Y, ESwizzle Z>
     TVector3<Type> TVector3<Type>::Swizzle() const
     {
         static_assert(static_cast<size_t>(X) < 3, "Swizzle X must be less than 3");

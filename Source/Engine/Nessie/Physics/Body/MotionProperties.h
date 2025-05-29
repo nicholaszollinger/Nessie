@@ -14,7 +14,7 @@ namespace nes
 {
     struct MassProperties;
 
-    enum class AllowedSleep : uint8_t
+    enum class EAllowedSleep : uint8_t
     {
         CannotSleep = 0,    /// Object cannot go to sleep
         CanSleep = 1,       // Object can go to sleep
@@ -54,9 +54,9 @@ namespace nes
         uint32_t            m_indexInActiveBodies   = kInactiveIndex;           /// If the body is active, this is the index in the active body list or kInactiveIndex if it is not active.
         uint32_t            m_islandIndex           = kInactiveIndex;           /// Index of the Island that this body is a part of. When the body has not yet been updated or is not active, this equals kInactiveIndex.
 
-        BodyMotionQuality   m_motionQuality         = BodyMotionQuality::Discrete;  /// Motion quality, or how well it detects collisions at high velocity.
+        EBodyMotionQuality   m_motionQuality         = EBodyMotionQuality::Discrete;  /// Motion quality, or how well it detects collisions at high velocity.
         bool                m_canSleep         = true;                              /// If this body can go to sleep.
-        AllowedDOFs         m_allowedDoFs           = AllowedDOFs::All;             /// Allowed degrees of freedom for this body.
+        EAllowedDOFs         m_allowedDoFs           = EAllowedDOFs::All;             /// Allowed degrees of freedom for this body.
         uint8_t             m_numVelocityStepsOverride = 0;                         /// Used only when this Body is dynamic and colliding. Override for the number of solver velocity iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
         uint8_t             m_numPositionStepsOverride = 0;                         /// Used only when this Body is dynamic and colliding. Override for the number of solver position iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
 
@@ -65,7 +65,7 @@ namespace nes
         float               m_sleepTestTimer = 0.f;                              /// How long this body has been within the movement tolerance.
 
 #if NES_LOGGING_ENABLED
-        BodyMotionType  m_cachedMotionType = BodyMotionType::Static;
+        EBodyMotionType  m_cachedMotionType = EBodyMotionType::Static;
         // [TODO]:  RigidBody vs SoftBody, I am going to assume rigidbody for now.
         //BodyType        m_cachedBodyType;
 #endif
@@ -74,12 +74,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Motion quality, or how well it detects collisions at high velocity.
         //----------------------------------------------------------------------------------------------------
-        inline BodyMotionQuality    GetMotionQuality() const                                { return m_motionQuality; }
+        inline EBodyMotionQuality   GetMotionQuality() const                                { return m_motionQuality; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allowed degrees of freedom for this body. This can be changed by calling SetMassProperties
         //----------------------------------------------------------------------------------------------------
-        inline AllowedDOFs          GetAllowedDOFs() const                                  { return m_allowedDoFs; }
+        inline EAllowedDOFs         GetAllowedDOFs() const                                  { return m_allowedDoFs; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : If this body can go to sleep.
@@ -187,7 +187,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the mass and inertia tensor.
         //----------------------------------------------------------------------------------------------------
-        void                        SetMassProperties(const AllowedDOFs allowedDoFs, const MassProperties& massProperties);
+        void                        SetMassProperties(const EAllowedDOFs allowedDoFs, const MassProperties& massProperties);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get inverse mass (1 / mass). Should only be called on a dynamic object (static or kinematic
@@ -360,7 +360,7 @@ namespace nes
         
         inline void                 Internal_ResetSleepTestSpheres(const Vector3* pPoints);
         inline void                 Internal_ResetSleepTestTimer()                          { m_sleepTestTimer = 0.f; }
-        inline AllowedSleep         Internal_AccumulateSleepTime(float deltaTime, float timeBeforeSleep);
+        inline EAllowedSleep         Internal_AccumulateSleepTime(float deltaTime, float timeBeforeSleep);
         
     };
 }

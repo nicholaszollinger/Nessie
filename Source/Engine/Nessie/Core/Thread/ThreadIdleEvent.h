@@ -1,5 +1,5 @@
-#pragma once
 // ThreadIdleEvent.h
+#pragma once
 #include <condition_variable>
 #include <mutex>
 

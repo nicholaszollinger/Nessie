@@ -13,15 +13,15 @@ namespace nes
     {
         NES_EVENT(KeyEvent)
 
-        KeyCode m_keyCode = KeyCode::Unknown;
-        KeyAction m_action = KeyAction::Unknown;
+        EKeyCode m_keyCode = EKeyCode::Unknown;
+        EKeyAction m_action = EKeyAction::Unknown;
         Modifiers m_modifiers = Modifiers{};
 
     public:
-        KeyEvent(KeyCode code, KeyAction action, Modifiers modifiers);
+        KeyEvent(EKeyCode code, EKeyAction action, Modifiers modifiers);
 
-        [[nodiscard]] KeyCode GetKeyCode() const        { return m_keyCode; }
-        [[nodiscard]] KeyAction GetAction() const       { return m_action; }
+        [[nodiscard]] EKeyCode GetKeyCode() const        { return m_keyCode; }
+        [[nodiscard]] EKeyAction GetAction() const       { return m_action; }
         [[nodiscard]] Modifiers GetModifiers() const    { return m_modifiers; }
     };
 
@@ -32,16 +32,16 @@ namespace nes
     {
         NES_EVENT(MouseButtonEvent)
 
-        MouseButton m_button = MouseButton::Unknown;
-        MouseAction m_action = MouseAction::Unknown;
+        EMouseButton m_button = EMouseButton::Unknown;
+        EMouseAction m_action = EMouseAction::Unknown;
         Modifiers m_modifiers = Modifiers{};
         Vector2f m_position;
 
     public:
-        MouseButtonEvent(const MouseButton button, const MouseAction action, const Modifiers modifiers, const float xPos, const float yPos);
+        MouseButtonEvent(const EMouseButton button, const EMouseAction action, const Modifiers modifiers, const float xPos, const float yPos);
 
-        [[nodiscard]] MouseButton GetButton() const     { return m_button; }
-        [[nodiscard]] MouseAction GetAction() const     { return m_action; }
+        [[nodiscard]] EMouseButton GetButton() const     { return m_button; }
+        [[nodiscard]] EMouseAction GetAction() const     { return m_action; }
         [[nodiscard]] Modifiers GetModifiers() const    { return m_modifiers; }
         [[nodiscard]] Vector2f GetPosition() const      { return m_position; }
     };
