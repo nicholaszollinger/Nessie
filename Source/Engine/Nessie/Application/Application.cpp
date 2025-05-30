@@ -4,12 +4,12 @@
 
 namespace nes
 {
+    /// Application instance variable. This is set in the constructor of the Application.
     static Application* s_pInstance = nullptr;
+
+    /// ID of the thread that the Application is running on. Set in the constructor of the Application. 
     static std::thread::id s_mainThreadId{};
     
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Application instance.
-    //----------------------------------------------------------------------------------------------------
     Application& Application::Get()
     {
         NES_ASSERT(s_pInstance);
@@ -38,30 +38,18 @@ namespace nes
         s_mainThreadId = std::this_thread::get_id();
         m_properties.m_commandLineArgs = args;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Application's Window.
-    //----------------------------------------------------------------------------------------------------
+    
     Window& Application::GetWindow()
     {
         return m_window;
     }
     
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Application's Window. (Const version)
-    //----------------------------------------------------------------------------------------------------
     const Window& Application::GetWindow() const
     {
         return m_window;
     }
     
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///	@brief : Initialize the Application.
-    ///	@returns : 
-    //----------------------------------------------------------------------------------------------------
-    Application::EExitCode Application::Init()
+    Application::EExitCode Application::Internal_Init()
     {
         NES_INIT_LEAK_DETECTOR();
         //Logger::Init(NES_LOG_DIR);
@@ -128,7 +116,7 @@ namespace nes
         return EExitCode::Success;
     }
 
-    Application::EExitCode Application::RunMainLoop()
+    Application::EExitCode Application::Internal_RunMainLoop()
     {
         m_timer.Start();
 
@@ -159,16 +147,8 @@ namespace nes
 
         return EExitCode::Success;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief :Immediately closes the Application. This should not be called manually-it is intended
-    ///             to be called in the main function of the program after RunMainLoop(). Use Application::Quit
-    ///             to safely close the Application.
-    ///		@param exitCode : Exit code 
-    //----------------------------------------------------------------------------------------------------
-    void Application::Close([[maybe_unused]] EExitCode exitCode)
+    
+    void Application::Internal_Close([[maybe_unused]] EExitCode exitCode)
     {
         NES_ASSERT(IsMainThread());
 
@@ -186,11 +166,7 @@ namespace nes
         // Set the Instance back to nullptr.
         s_pInstance = nullptr;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Quit the Application. Note: This won't close the App immediately-it will wait until the
-    ///              the current frame has finished.
-    //----------------------------------------------------------------------------------------------------
+    
     void Application::Quit()
     {
         m_closeRequested = true;

@@ -52,7 +52,8 @@ namespace nes
         bool            Internal_ShouldLog(const ELogLevel level) const         { return level >= m_level.load(std::memory_order_relaxed); }
         
     protected:
-        std::atomic<ELogLevel> m_level{ ELogLevel::Trace };  /// The current log level for this Target.  
+        /// The current log level for this Target.  
+        std::atomic<ELogLevel> m_level{ ELogLevel::Trace };
     };
 
     using LogTargetPtr = std::shared_ptr<LogTarget>;

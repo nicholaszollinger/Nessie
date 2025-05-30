@@ -14,15 +14,21 @@ namespace nes
     class ConvexShapeSettings : public ShapeSettings
     {
     public:
-        //ConstStrongPtr<PhysicsMaterial> m_pMaterial;  /// Material assigned to this shape
-        float m_density = 1000.f;                       /// Uniform density of the interior of the convex object (kg / m^3).
-        
         ConvexShapeSettings() = default;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the density of the object in kg/m^3. 
         //----------------------------------------------------------------------------------------------------
         void SetDensity(const float density) { m_density = density; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the uniform density of the interior of the convex object (kg / m^3) 
+        //----------------------------------------------------------------------------------------------------
+        float GetDensity() const { return m_density; }
+
+    protected:
+        //ConstStrongPtr<PhysicsMaterial> m_pMaterial;  /// Material assigned to this shape
+        float m_density = 1000.f;                       /// Uniform density of the interior of the convex object (kg / m^3).
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -71,23 +77,16 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : How the GetSupport function should behave. 
         //----------------------------------------------------------------------------------------------------
-        enum class SupportMode
+        enum class ESupportMode
         {
             ExcludeConvexRadius,    /// Return the shape excluding the convex radius, Support::GetConvexRadius will return the convex radius if there is one, but adding this radius may not result in the most accurate/efficient representation of shapes with sharp edges.   
             IncludeConvexRadius,    /// Return the shape including the convex radius, Support::GetSupport includes the convex radius if there is one, Support::GetConvexRadius will return 0
             Default,                /// Use both Support::GetSupport add Support::GetConvexRadius to get a support point that matches the original shape as accurately/efficiently as possible
         };
-        
-    private:
-        //ConstStrongPtr<PhysicsMaterial> m_pMaterial;      /// Material assigned to this shape.
-        float m_density = 1000.f;                           /// Uniform density of the interior of the convex object (kg / m^3)
-
-    protected:
-        static const StaticArray<Vector3, 384> s_unitSphereTriangles;
 
     public:
-        explicit ConvexShape(const ShapeSubType subType) : Shape(ShapeType::Convex, subType) {}
-        ConvexShape(const ShapeSubType subType, const ConvexShapeSettings& settings, ShapeResult& outResult);
+        explicit ConvexShape(const EShapeSubType subType) : Shape(EShapeType::Convex, subType) {}
+        ConvexShape(const EShapeSubType subType, const ConvexShapeSettings& settings, ShapeResult& outResult);
         //ConvexShape(const ShapeSubType subType, const PhysicsMaterial* pMaterial);
         
         //----------------------------------------------------------------------------------------------------
@@ -97,7 +96,7 @@ namespace nes
         ///	@param buffer : Buffer to contain the Support object.
         ///	@param scale : Scales the shape in local space.
         //----------------------------------------------------------------------------------------------------
-        virtual const Support* GetSupportFunction(SupportMode mode, SupportBuffer& buffer, const Vector3& scale) const = 0;
+        virtual const Support* GetSupportFunction(ESupportMode mode, SupportBuffer& buffer, const Vector3& scale) const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::CastRay()
@@ -154,5 +153,12 @@ namespace nes
         /// @brief : Helper function called by the CollisionSolver
         //----------------------------------------------------------------------------------------------------
         static void			    CastConvexVsConvex(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vector3& scale, const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector);
+
+    protected:
+        static const StaticArray<Vector3, 384> s_unitSphereTriangles;
+
+    private:
+        //ConstStrongPtr<PhysicsMaterial> m_pMaterial;      /// Material assigned to this shape.
+        float m_density = 1000.f;                           /// Uniform density of the interior of the convex object (kg / m^3)
     };
 }

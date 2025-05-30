@@ -85,27 +85,6 @@ namespace nes
     public:
         static constexpr uint32_t kInvalidConstraintIndex = std::numeric_limits<uint32_t>::max();
 
-    private:
-        /// Index of the Constraint in the ConstraintManager's array.
-        uint32_t m_constraintIndex = kInvalidConstraintIndex;
-
-        /// Priority of the Constraint when solving. Higher values are more likely to be solved correctly.
-        uint32_t m_constraintPriority = 0;
-
-        /// Use only when the constraint is active. Override for the number of solver iterations to run.
-        /// 0 means use the default in PhysicsSettings::m_numVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
-        uint8_t m_numVelocityStepsOverride = 0;
-
-        /// Use only when the constraint is active. Override for the number of solver iterations to run.
-        /// 0 means use the default in PhysicsSettings::m_numPositionSteps. The number of iterations to use is the max of all contacts and constraints in the island.
-        uint8_t m_numPositionStepsOverride = 0;
-
-        /// Whether this Constraint is currently Active.
-        bool m_isEnabled = true;
-
-        /// User data value (can be used by the application).
-        uint64_t m_userData = 0;
-
     public:
         Constraint(const ConstraintSettings& settings);
         virtual ~Constraint() = default;
@@ -220,5 +199,26 @@ namespace nes
         /// @brief : Helper function to copy settings beack to constraint settings for this base class.
         //----------------------------------------------------------------------------------------------------
         void                        ToConstraintSettings(ConstraintSettings& outSettings) const;
+
+    private:
+        /// Index of the Constraint in the ConstraintManager's array.
+        uint32_t    m_constraintIndex = kInvalidConstraintIndex;
+
+        /// Priority of the Constraint when solving. Higher values are more likely to be solved correctly.
+        uint32_t    m_constraintPriority = 0;
+
+        /// Use only when the constraint is active. Override for the number of solver iterations to run.
+        /// 0 means use the default in PhysicsSettings::m_numVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
+        uint8_t     m_numVelocityStepsOverride = 0;
+
+        /// Use only when the constraint is active. Override for the number of solver iterations to run.
+        /// 0 means use the default in PhysicsSettings::m_numPositionSteps. The number of iterations to use is the max of all contacts and constraints in the island.
+        uint8_t     m_numPositionStepsOverride = 0;
+
+        /// Whether this Constraint is currently Active.
+        bool        m_isEnabled = true;
+
+        /// User data value (can be used by the application).
+        uint64_t    m_userData = 0;
     };
 }

@@ -17,16 +17,20 @@
 
 namespace nes
 {
-    class SimpleInstrumentationProfiler
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : On construction, saves a time point. On destruction, logs the time that has passed
+    ///     since construction.
+    //----------------------------------------------------------------------------------------------------
+    class SimpleScopedProfiler
     {
     public:
-        explicit SimpleInstrumentationProfiler(const std::string& label);
-        ~SimpleInstrumentationProfiler();
+        explicit SimpleScopedProfiler(const std::string& label);
+        ~SimpleScopedProfiler();
 
-        SimpleInstrumentationProfiler(const SimpleInstrumentationProfiler&) = delete;
-        SimpleInstrumentationProfiler(SimpleInstrumentationProfiler&&) noexcept = delete;
-        SimpleInstrumentationProfiler& operator=(const SimpleInstrumentationProfiler&) = delete;
-        SimpleInstrumentationProfiler& operator=(SimpleInstrumentationProfiler&&) noexcept = delete;
+        SimpleScopedProfiler(const SimpleScopedProfiler&) = delete;
+        SimpleScopedProfiler(SimpleScopedProfiler&&) noexcept = delete;
+        SimpleScopedProfiler& operator=(const SimpleScopedProfiler&) = delete;
+        SimpleScopedProfiler& operator=(SimpleScopedProfiler&&) noexcept = delete;
 
     private:
         Timer       m_timer;

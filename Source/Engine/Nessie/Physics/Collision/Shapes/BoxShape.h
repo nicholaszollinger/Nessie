@@ -28,14 +28,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class BoxShape final : public nes::ConvexShape
     {
-        /// Class for GetSupportFunction()
-        class Box;
-
-        Vector3 m_halfExtent    = Vector3::Zero(); /// Half the size of the box, including the convex radius.
-        float   m_convexRadius  = 0.f;
-        
     public:
-        BoxShape() : ConvexShape(ShapeSubType::Box) {}
+        BoxShape() : ConvexShape(EShapeSubType::Box) {}
         BoxShape(const BoxShapeSettings& settings, ShapeResult& outResult);
         BoxShape(const Vector3& halfExtent, float convexRadius = physics::kDefaultConvexRadius);
         
@@ -97,7 +91,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @see : ConvexShape::GetSupportFunction()
         //----------------------------------------------------------------------------------------------------
-        virtual const Support*  GetSupportFunction(SupportMode mode, SupportBuffer& buffer, const Vector3& scale) const override;
+        virtual const Support*  GetSupportFunction(ESupportMode mode, SupportBuffer& buffer, const Vector3& scale) const override;
 
         //----------------------------------------------------------------------------------------------------
         /// @see : ConvexShape::GetSupportingFace()
@@ -108,5 +102,12 @@ namespace nes
         /// @brief : Register shape functions within the registry. 
         //----------------------------------------------------------------------------------------------------
         static void             Register();
+
+    private:
+        /// Class for GetSupportFunction()
+        class Box;
+
+        Vector3 m_halfExtent    = Vector3::Zero(); /// Half the size of the box, including the convex radius.
+        float   m_convexRadius  = 0.f;
     };
 }

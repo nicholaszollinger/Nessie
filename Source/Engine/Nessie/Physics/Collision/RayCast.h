@@ -44,17 +44,17 @@ namespace nes
     {
         /// How backfacing triangles should be treated. Should we report back facing hits for triangle based shapes, e.g.
         /// MeshShape/HeightFieldShape?
-        BackFaceMode m_backfaceModeTriangles    = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode   m_backfaceModeTriangles    = EBackFaceMode::IgnoreBackFaces;
 
         /// How back facing convex objects should be treated. Should we report back facing hits on convex shapes?
-        BackFaceMode m_backfaceModeConvex       = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode   m_backfaceModeConvex       = EBackFaceMode::IgnoreBackFaces;
 
         /// If convex shapes should be treated as solid. When true, a ray starting inside a convex shape will generate a hit at fraction 0.
-        bool m_treatConvexAsSolid = true;
+        bool            m_treatConvexAsSolid = true;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the back face mode for all shapes. 
         //----------------------------------------------------------------------------------------------------
-        void SetBackFaceMode(const BackFaceMode& backfaceMode) { m_backfaceModeTriangles = m_backfaceModeConvex = backfaceMode; }
+        void            SetBackFaceMode(const EBackFaceMode& backfaceMode) { m_backfaceModeTriangles = m_backfaceModeConvex = backfaceMode; }
     };
 }

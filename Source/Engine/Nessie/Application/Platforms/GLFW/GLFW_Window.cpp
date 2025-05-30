@@ -8,21 +8,15 @@
 #include "Debug/CheckedCast.h"
 #include "GLFW/glfw3.h"
 
+//----------------------------------------------------------------------------------------------------
+/// @brief : Callback used to handle errors in GLFW.
+//----------------------------------------------------------------------------------------------------
 static void GLFW_ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char* description);
-
 
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kGLFWLogTag, "GLFW", Warn);
     
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Creates the Window and sets up Window Callbacks.
-    ///		@param app : Application creating this Window.
-    ///		@param props : Properties for the Window.
-    ///		@returns : False if there was an error setting up the Window.
-    //----------------------------------------------------------------------------------------------------
     bool Window::Init(Application& app, const WindowProperties& props)
     {
         m_properties = props;

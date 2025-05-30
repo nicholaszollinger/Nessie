@@ -28,7 +28,7 @@ namespace nes
             : m_localToWorld(math::MakeRotationTranslationMatrix(positionCOM, rotation) * math::MakeScaleMatrix(scale))
             , m_isInsideOut(ScaleHelpers::IsInsideOut(scale))
         {
-            m_pSupport = pShape->GetSupportFunction(SupportMode::IncludeConvexRadius, m_supportBuffer, Vector3::Unit());
+            m_pSupport = pShape->GetSupportFunction(ESupportMode::IncludeConvexRadius, m_supportBuffer, Vector3::Unit());
         }
 
         SupportBuffer		m_supportBuffer;
@@ -47,10 +47,10 @@ namespace nes
         return result;
     }();
     
-    ConvexShape::ConvexShape(const ShapeSubType subType, const ConvexShapeSettings& settings, ShapeResult& outResult)
-        : Shape(ShapeType::Convex, subType, settings, outResult)
+    ConvexShape::ConvexShape(const EShapeSubType subType, const ConvexShapeSettings& settings, ShapeResult& outResult)
+        : Shape(EShapeType::Convex, subType, settings, outResult)
         //, m_pMaterial
-        , m_density(settings.m_density)
+        , m_density(settings.GetDensity())
     {
         //
     }
@@ -62,7 +62,7 @@ namespace nes
 
         // Create support function
         SupportBuffer buffer;
-        const Support* pSupport = GetSupportFunction(SupportMode::IncludeConvexRadius, buffer, Vector3::Unit());
+        const Support* pSupport = GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer, Vector3::Unit());
 
         // Cast Ray
         GJKClosestPoint gjk;
@@ -97,7 +97,7 @@ namespace nes
             }
 
             // Check if we want back facing hits and the collector still accepts additional hits 
-            if (settings.m_backfaceModeConvex == BackFaceMode::CollideWithBackFaces && !collector.ShouldEarlyOut())
+            if (settings.m_backfaceModeConvex == EBackFaceMode::CollideWithBackFaces && !collector.ShouldEarlyOut())
             {
                 // Invert the ray, going from the early out fraction back to the fraction where we found our forward hit.
                 const float startFraction = math::Min(1.f, collector.GetEarlyOutFraction());
@@ -133,7 +133,7 @@ namespace nes
         {
             // Create the support function
             SupportBuffer buffer;
-            const Support* pSupport = GetSupportFunction(SupportMode::IncludeConvexRadius, buffer, Vector3::Unit());
+            const Support* pSupport = GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer, Vector3::Unit());
 
             // Create the support function for point
             PointConvexSupport convexPoint { point };
@@ -197,9 +197,9 @@ namespace nes
 
     void ConvexShape::Register()
     {
-        for (const ShapeSubType subType1 : kConvexSubShapeTypes)
+        for (const EShapeSubType subType1 : kConvexSubShapeTypes)
         {
-            for (const ShapeSubType subType2 : kConvexSubShapeTypes)
+            for (const EShapeSubType subType2 : kConvexSubShapeTypes)
             {
                 CollisionSolver::RegisterCollideShape(subType1, subType2, CollideConvexVsConvex);
                 CollisionSolver::RegisterCastShape(subType1, subType2, CastConvexVsConvex);
@@ -214,8 +214,8 @@ namespace nes
         [[maybe_unused]] const ShapeFilter& shapeFilter)
     {
         // Get the shapes:
-        NES_ASSERT(pShape1->GetType() == ShapeType::Convex);
-        NES_ASSERT(pShape2->GetType() == ShapeType::Convex);
+        NES_ASSERT(pShape1->GetType() == EShapeType::Convex);
+        NES_ASSERT(pShape2->GetType() == EShapeType::Convex);
         const ConvexShape* pConvex1 = checked_cast<const ConvexShape*>(pShape1);
         const ConvexShape* pConvex2 = checked_cast<const ConvexShape*>(pShape2);
 
@@ -253,8 +253,8 @@ namespace nes
             // Create the Support functions
             SupportBuffer buffer1_ExclConvexRadius;
             SupportBuffer buffer2_ExclConvexRadius;
-            const Support* pShape1_ExclConvexRadius = pConvex1->GetSupportFunction(SupportMode::ExcludeConvexRadius, buffer1_ExclConvexRadius, scale1);
-            const Support* pShape2_ExclConvexRadius = pConvex2->GetSupportFunction(SupportMode::ExcludeConvexRadius, buffer2_ExclConvexRadius, scale2);
+            const Support* pShape1_ExclConvexRadius = pConvex1->GetSupportFunction(ESupportMode::ExcludeConvexRadius, buffer1_ExclConvexRadius, scale1);
+            const Support* pShape2_ExclConvexRadius = pConvex2->GetSupportFunction(ESupportMode::ExcludeConvexRadius, buffer2_ExclConvexRadius, scale2);
 
             // Transform shape 2 in the space of shape 1
             TransformedConvexObject transformed2_ExclConvexRadius(transform2To1, *pShape2_ExclConvexRadius);
@@ -292,8 +292,8 @@ namespace nes
                 // Create the Support functions
                 SupportBuffer buffer1_InclConvexRadius;
                 SupportBuffer buffer2_InclConvexRadius;
-                const Support* pShape1_InclConvexRadius = pConvex1->GetSupportFunction(SupportMode::IncludeConvexRadius, buffer1_InclConvexRadius, scale1);
-                const Support* pShape2_InclConvexRadius = pConvex2->GetSupportFunction(SupportMode::IncludeConvexRadius, buffer2_InclConvexRadius, scale2);
+                const Support* pShape1_InclConvexRadius = pConvex1->GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer1_InclConvexRadius, scale1);
+                const Support* pShape2_InclConvexRadius = pConvex2->GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer2_InclConvexRadius, scale2);
 
                 // Add separation distance
                 AddConvexRadius shape1_AddMaxSeparationDistance(*pShape1_InclConvexRadius, maxSeparationDistance);
@@ -335,7 +335,7 @@ namespace nes
         CollideShapeResult result(point1, point2, penetrationAxisWorld, penetrationDepth, subShapeIDCreator1.GetID(), subShapeIDCreator2.GetID(), TransformedShape::GetBodyID(collector.GetContext()));
 
         // Gather faces
-        if (collideShapeSettings.m_collectFacesMode == CollectFacesMode::CollectFaces)
+        if (collideShapeSettings.m_collectFacesMode == ECollectFacesMode::CollectFaces)
         {
             // Set the supporting face of shape 1
             pConvex1->GetSupportingFace(SubShapeID(), -penetrationAxis, scale1, centerOfMassTransform1, result.m_shape1Face);
@@ -354,14 +354,14 @@ namespace nes
         const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2,
         CastShapeCollector& collector)
     {
-        NES_ASSERT(shapeCast.m_pShape->GetType() == ShapeType::Convex);
+        NES_ASSERT(shapeCast.m_pShape->GetType() == EShapeType::Convex);
         const ConvexShape* pCastShape = checked_cast<const ConvexShape*>(shapeCast.m_pShape);
         
-        NES_ASSERT(pShape->GetType() == ShapeType::Convex);
+        NES_ASSERT(pShape->GetType() == EShapeType::Convex);
         const ConvexShape* pTargetShape = checked_cast<const ConvexShape*>(pShape);
 
         // Determine if we want to use the actual shape or a shrunken shape with convex radius
-        SupportMode supportMode = shapeCastSettings.m_useShrunkenShapeAndConvexRadius? SupportMode::ExcludeConvexRadius : SupportMode::Default;
+        ESupportMode supportMode = shapeCastSettings.m_useShrunkenShapeAndConvexRadius? ESupportMode::ExcludeConvexRadius : ESupportMode::Default;
  
         // Create a support function for the cast shape.
         SupportBuffer castBuffer;
@@ -388,7 +388,7 @@ namespace nes
             , shapeCastSettings.m_returnDeepestPoint
             , fraction
             , contactPointA, contactPointB, contactNormal)
-            && (shapeCastSettings.m_backfaceModeConvex == BackFaceMode::CollideWithBackFaces
+            && (shapeCastSettings.m_backfaceModeConvex == EBackFaceMode::CollideWithBackFaces
                 || contactNormal.Dot(shapeCast.m_direction) > 0.f)) // Test if backfacing 
         {
             // Convert to world space
@@ -403,7 +403,7 @@ namespace nes
                 return;
 
             // Gather Faces
-            if (shapeCastSettings.m_collectFacesMode == CollectFacesMode::CollectFaces)
+            if (shapeCastSettings.m_collectFacesMode == ECollectFacesMode::CollectFaces)
             {
                 // Get the supporting face of shape 1
                 Mat4 transform1To2 = shapeCast.m_centerOfMassStart;

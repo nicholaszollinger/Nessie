@@ -75,23 +75,23 @@ namespace nes
     {
         /// How backfacing triangles should be treated. Should we report back facing hits for triangle based shapes, e.g.
         /// MeshShape/HeightFieldShape?
-        BackFaceMode m_backfaceModeTriangles    = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode   m_backfaceModeTriangles    = EBackFaceMode::IgnoreBackFaces;
 
         /// How back facing convex objects should be treated. Should we report back facing hits on convex shapes?
-        BackFaceMode m_backfaceModeConvex       = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode   m_backfaceModeConvex       = EBackFaceMode::IgnoreBackFaces;
 
         /// Indicates if we want to shrink the shape by the convex radius and then expand it again. This speeds up collision
         /// detection and gives a more accurate normal at the cost of a more 'rounded' shape.
-        bool m_useShrunkenShapeAndConvexRadius = false;
+        bool            m_useShrunkenShapeAndConvexRadius = false;
 
         /// When true, and the shape is intersecting at the beginning of the cast (fraction = 0), then this will calculate
         /// the deepest penetration point (costing additional CPU time).
-        bool m_returnDeepestPoint = false;
+        bool            m_returnDeepestPoint = false;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the back face mode for all shapes. 
         //----------------------------------------------------------------------------------------------------
-        void SetBackFaceMode(const BackFaceMode& backfaceMode) { m_backfaceModeTriangles = m_backfaceModeConvex = backfaceMode; }
+        void SetBackFaceMode(const EBackFaceMode& backfaceMode) { m_backfaceModeTriangles = m_backfaceModeConvex = backfaceMode; }
     };
 
     //----------------------------------------------------------------------------------------------------

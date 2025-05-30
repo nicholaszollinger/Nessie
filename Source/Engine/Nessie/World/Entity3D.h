@@ -17,59 +17,176 @@ namespace nes
 
     public:
         using WorldTransformUpdatedEvent = MulticastDelegate<>;
-        
-    private:
-        Vector3 m_location;
-        Rotation m_rotation;
-        Vector3 m_scale;
-        
-        WorldTransformUpdatedEvent m_onWorldTransformUpdated{};
-        Mat4 m_worldTransformMatrix{};
-        bool m_worldTransformNeedsUpdate = false;
-
-        BodyID m_bodyID{}; // The ID of the Physics Body of this Entity.
 
     public:
-        void Rotate(const float angle, const Vector3& axis);
-        void Rotate(const Rotation& rotation);
-        void Translate(const Vector3& translation);
-        void Scale(const float uniformScale);
-        void Scale(const Vector3& scale);
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Rotate this Entity by a delta angle around an axis. The angle must be in radians.
+        //----------------------------------------------------------------------------------------------------
+        void                        Rotate(const float angle, const Vector3& axis);
 
-        void SetLocalLocation(const Vector3& location);
-        void SetLocalRotation(const Rotation& rotation);
-        void SetLocalRotation(const Vector3& eulerAngles);
-        void SetLocalScale(const Vector3& scale);
-        void SetLocalTransform(const Vector3& location, const Rotation& rotation, const Vector3& scale);
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Rotate this Entity by a delta rotation.
+        //----------------------------------------------------------------------------------------------------
+        void                        Rotate(const Rotation& rotation);
 
-        void SetWorldLocation(const Vector3& location);
-        void SetWorldRotation(const Rotation& rotation);
-        void SetWorldScale(const Vector3& scale);
-        void SetWorldTransform(const Mat4& transform);
-        void SetWorldTransform(const Vector3& worldLocation, const Rotation& worldRotation, const Vector3& worldScale);
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Move this Entity's local location based on the translation. 
+        //----------------------------------------------------------------------------------------------------
+        void                        Translate(const Vector3& translation);
 
-        [[nodiscard]] Vector3           GetLocation() const;
-        [[nodiscard]] Rotation          GetRotation() const;
-        [[nodiscard]] Vector3           GetScale() const;
-        [[nodiscard]] const Vector3&    GetLocalLocation() const; 
-        [[nodiscard]] const Rotation&   GetLocalRotation() const;
-        [[nodiscard]] const Vector3&    GetLocalScale() const;
-        [[nodiscard]] Mat4              LocalTransformMatrix() const;
-        [[nodiscard]] const Mat4&       GetWorldTransformMatrix() const;
-        [[nodiscard]] WorldTransformUpdatedEvent& OnWorldTransformUpdated() { return m_onWorldTransformUpdated; }
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Increase the local scale by a delta scalar amount. This multiplies the current scale of each
+        ///     axis by the scalar values of deltaScale.
+        //----------------------------------------------------------------------------------------------------
+        void                        Scale(const float uniformScale);
+        
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Increase the local scale by an amount on each axis. This multiplies the current local
+        ///     scale by the scale vector.
+        //----------------------------------------------------------------------------------------------------
+        void                        Scale(const Vector3& scale);
 
-        [[nodiscard]] World* GetWorld() const;
-        [[nodiscard]] Scene* GetScene() const;
-        [[nodiscard]] bool WorldTransformNeedsUpdate() const;
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Sets this Entity's location relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetLocalLocation(const Vector3& location);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set this Entity's orientation relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetLocalRotation(const Rotation& rotation);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set this Entity's local orientation, from euler angles. The euler angles are expected
+        ///     to be in degrees.
+        //----------------------------------------------------------------------------------------------------
+        void                        SetLocalRotation(const Vector3& eulerAngles);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set this Entity's scale relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetLocalScale(const Vector3& scale);
+        
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set the Entity's location, orientation and scale relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetLocalTransform(const Vector3& location, const Rotation& rotation, const Vector3& scale);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set the Entity's location, in world space. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetWorldLocation(const Vector3& location);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set the Entity's orientation, in world space. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetWorldRotation(const Rotation& rotation);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set the Entity's scale, in world space. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetWorldScale(const Vector3& scale);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set the Entity3Ds transform, in world space. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetWorldTransform(const Mat4& transform);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Set the Entity3Ds transform, in world space. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetWorldTransform(const Vector3& worldLocation, const Rotation& worldRotation, const Vector3& worldScale);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Entity's location, in world space. 
+        //----------------------------------------------------------------------------------------------------
+        Vector3                     GetLocation() const;
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Entity's world orientation. 
+        //----------------------------------------------------------------------------------------------------
+        Rotation                    GetRotation() const;
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Entity's total world scale. 
+        //----------------------------------------------------------------------------------------------------
+        Vector3                     GetScale() const;
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Entity's location relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        const Vector3&              GetLocalLocation() const;
+        
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Entity's rotation relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        const Rotation&             GetLocalRotation() const;
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Entity's scale relative to its parent. 
+        //----------------------------------------------------------------------------------------------------
+        const Vector3&              GetLocalScale() const;
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get the Local Transform in its Matrix representation. 
+        //----------------------------------------------------------------------------------------------------
+        Mat4                        LocalTransformMatrix() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the World Transformation Matrix of this Entity. 
+        //----------------------------------------------------------------------------------------------------
+        const Mat4&                 GetWorldTransformMatrix() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the event that is broadcast when this Entity's transform is updated. 
+        //----------------------------------------------------------------------------------------------------
+        WorldTransformUpdatedEvent& OnWorldTransformUpdated() { return m_onWorldTransformUpdated; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the World that this Entity is in. 
+        //----------------------------------------------------------------------------------------------------
+        [[nodiscard]] World*        GetWorld() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Scene that this Entity is in. 
+        //----------------------------------------------------------------------------------------------------
+        [[nodiscard]] Scene*        GetScene() const;
+        
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : If true, then the current World Transform is out of date. This can be caused when the
+        ///     Entity hierarchy is changed or this Entity or a parent has moved.
+        //----------------------------------------------------------------------------------------------------
+        [[nodiscard]] bool          WorldTransformNeedsUpdate() const;
 
     protected:
-        virtual bool Init() override;
-        virtual void OnParentSet(Entity3D* pParent) override;
+        virtual bool                Init() override;
+        virtual void                OnParentSet(Entity3D* pParent) override;
 
-        void MarkWorldTransformDirty();
-        void UpdateWorldTransform(Entity3D* pParent, const Matrix4x4& localTransform);
-        void PropagateTransformUpdateToChildren();
-        
-        void RebuildPhysicsBody();
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Sets the "WorldTransformNeedsUpdate" flag to true, which will ensure that the next
+        ///     call to get or set will update the Transform appropriately, including Children.
+        //----------------------------------------------------------------------------------------------------
+        void                        MarkWorldTransformDirty();
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Updates our calculated world transformation matrix.
+        ///     Called when a Parent's transform has changed or the Parent itself has changed.
+        //----------------------------------------------------------------------------------------------------
+        void                        UpdateWorldTransform(Entity3D* pParent, const Matrix4x4& localTransform);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Walk down the tree, updating the world Transforms of all children.
+        //----------------------------------------------------------------------------------------------------
+        void                        PropagateTransformUpdateToChildren();
+        void                        RebuildPhysicsBody();
+
+    private:
+        Vector3                     m_location;
+        Rotation                    m_rotation;
+        Vector3                     m_scale;
+        WorldTransformUpdatedEvent  m_onWorldTransformUpdated{};
+        Mat4                        m_worldTransformMatrix{};
+        bool                        m_worldTransformNeedsUpdate = false;
+        BodyID                      m_bodyID{}; // The ID of the Physics Body of this Entity.
     };
 }

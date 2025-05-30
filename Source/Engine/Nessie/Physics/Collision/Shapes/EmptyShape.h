@@ -29,11 +29,9 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class EmptyShape final : public Shape
     {
-        Vector3 m_centerOfMass = Vector3::Zero();
-        
     public:
-        EmptyShape() : Shape(ShapeType::Empty, ShapeSubType::Empty) {}
-        explicit EmptyShape(const Vector3& centerOfMass) : Shape(ShapeType::Empty, ShapeSubType::Empty), m_centerOfMass(centerOfMass) {}
+        EmptyShape() : Shape(EShapeType::Empty, EShapeSubType::Empty) {}
+        explicit EmptyShape(const Vector3& centerOfMass) : Shape(EShapeType::Empty, EShapeSubType::Empty), m_centerOfMass(centerOfMass) {}
         EmptyShape(const EmptyShapeSettings& settings, ShapeResult& outResult);
 
         virtual Vector3         GetCenterOfMass() const override                    { return m_centerOfMass; }
@@ -57,5 +55,8 @@ namespace nes
         /// @brief : Register Shape functions with the registry. 
         //----------------------------------------------------------------------------------------------------
         static void             Register();
+
+    private:
+        Vector3 m_centerOfMass = Vector3::Zero();
     };
 }

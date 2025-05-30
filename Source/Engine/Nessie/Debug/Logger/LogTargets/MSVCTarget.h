@@ -20,7 +20,7 @@ namespace nes
         MSVCTarget(const bool checkDebuggerPresent) : m_checkDebuggerPresent(checkDebuggerPresent) {}
     
     protected:
-        virtual void LogImpl(const internal::LogMessage& message) override
+        virtual void    LogImpl(const internal::LogMessage& message) override
         {
             if (m_checkDebuggerPresent && !IsDebuggerPresent())
                 return;
@@ -31,10 +31,10 @@ namespace nes
             OutputDebugStringA(formattedMsg.data());
         }
         
-        virtual void FlushImpl() override {}
+        virtual void    FlushImpl() override {}
 
     private:
-        bool m_checkDebuggerPresent = true;
+        bool            m_checkDebuggerPresent = true;
     };
 
     using MSVCTargetMT = MSVCTarget<std::mutex>;

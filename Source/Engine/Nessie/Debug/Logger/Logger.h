@@ -50,9 +50,9 @@ namespace nes
         Logger(Logger&& other) noexcept;
         virtual ~Logger() = default;
 
-        /// Assignment Operators    
-        Logger&         operator=(const Logger& other);
-        Logger&         operator=(Logger&& other) noexcept;
+        /// Assignment Operators 
+        Logger&                     operator=(const Logger& other);
+        Logger&                     operator=(Logger&& other) noexcept;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Log a message to all registered Targets. 

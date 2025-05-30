@@ -106,22 +106,12 @@ namespace nes
         // Null out the instance:
         g_pInstance = nullptr;;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Blocks until the Renderer is available for commands.  
-    //----------------------------------------------------------------------------------------------------
+    
     void Renderer::WaitUntilIdle() const
     {
         m_pRenderContext->GetDevice().waitIdle();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Begin rendering a new frame. IMPORTANT! If this function returns false it means that
-    ///         we have to rebuild the swapchain and *all draw commands will fail* due to the current command
-    ///         buffer and framebuffer begin null.
-    //----------------------------------------------------------------------------------------------------
+    
     bool Renderer::BeginFrame()
     {
         if (!m_pRenderContext->BeginFrame(m_commandBuffer, m_frameBuffer))
@@ -129,14 +119,7 @@ namespace nes
 
         return true;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : End Rendering for the current Frame. NOTE: Right now, you have to start and end a render
-    ///             pass before calling this function! Otherwise, the display image will not return to the
-    ///             proper format.
-    //----------------------------------------------------------------------------------------------------
+    
     void Renderer::EndFrame()
     {
         // NOTE: There must be a Render pass start and end before finishing a Frame with the current
@@ -267,15 +250,7 @@ namespace nes
     {
         Instance().m_commandBuffer.updateBuffer(buffer, offset, typeSize, pData);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Create a Graphics Pipeline that describes how to draw passed in geometry. You need to
-    ///             bind the Pipeline before making draw calls.
-    ///		@param config : Configuration parameters for the Pipeline, including what Shaders to use.
-    ///		@returns : Shared pointer to the new Pipeline.
-    //----------------------------------------------------------------------------------------------------
+    
     std::shared_ptr<RendererContext::GraphicsPipeline> Renderer::CreatePipeline(const nes::GraphicsPipelineConfig& config)
     {
         return Instance().m_pRenderContext->CreatePipeline(config);
@@ -285,27 +260,12 @@ namespace nes
     {
         Instance().m_pRenderContext->DestroyPipeline(pPipeline);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Returns the Shader Module with the given name. In Debug Mode, if compilation is enabled,
-    ///             the shader will be compiled on the fly if not already present.
-    ///		@param shaderName : Name of the Shader
-    ///		@returns : If nullptr, then no shader module with that name exists.
-    //----------------------------------------------------------------------------------------------------
+    
     vk::ShaderModule Renderer::GetShader(const std::string& shaderName)
     {
         return Instance().m_pShaderLibrary->GetModule(shaderName.c_str());
     }
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      [Consider] This should probably be a member function on a Pipeline object.
-    //      Should I also save the currently bound pipeline?
-    //		
-    ///		@brief : Push a shader constant to the pipeline.
-    //----------------------------------------------------------------------------------------------------
     void Renderer::PushShaderConstant(std::shared_ptr<RendererContext::GraphicsPipeline> pPipeline,
         vk::ShaderStageFlagBits shaderStage, const uint32_t offset, const uint32_t size, const void* pValues)
     {
@@ -339,11 +299,7 @@ namespace nes
     {
         Instance().m_commandBuffer.bindDescriptorSets(bindPoint, pPipeline->GetLayout(), 0, descriptorSets, {});
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Allow recording overlay draw commands. Must be done within a Renderpass and followed
-    ///         up with a call to EndImGui().
-    //----------------------------------------------------------------------------------------------------
+    
     void Renderer::BeginImGui()
     {
         ImGui_ImplVulkan_NewFrame();
@@ -351,10 +307,6 @@ namespace nes
         ImGui::NewFrame();
     }
 
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Submit the Draw data for the Overlay Draw Commands. Must be done within a Renderpass
-    ///             and preceded by a call to BeginImGui();
-    //----------------------------------------------------------------------------------------------------
     void Renderer::EndImGui()
     {
         auto& drawCommandBuffer = Instance().m_commandBuffer;
@@ -371,15 +323,7 @@ namespace nes
             ImGui::RenderPlatformWindowsDefault();
         }
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      The vk::Buffer object should be wrapped in a VertexBuffer class
-    //		
-    ///		@brief : Draw a single, non-instanced VertexBuffer.
-    ///		@param vertexBuffer : The array of vertices to submit.
-    ///		@param vertexCount : Number of vertices in the buffer.
-    //----------------------------------------------------------------------------------------------------
+    
     void Renderer::Draw(const vk::Buffer& vertexBuffer, const uint32_t vertexCount)
     {
         // [Consider] I can submit multiple buffers at once...
@@ -387,29 +331,13 @@ namespace nes
         //m_commandBuffer.bindIndexBuffer()
         Instance().m_commandBuffer.draw(vertexCount, 1, 0, 0);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      This is used when you have an array of vertices already set in the shader, or already bound.
-    //		
-    ///		@brief : Draw a set number of vertices. 
-    //----------------------------------------------------------------------------------------------------
+    
     void Renderer::Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance)
     {
         auto& commandBuffer = Instance().m_commandBuffer;
         commandBuffer.draw(vertexCount, instanceCount, firstVertex, firstInstance);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      If I want to render multiple objects within the same buffer, I need to supply the offsets to draw
-    //      the designated object.
-    //		
-    ///		@brief : Draw a single non-instanced set of vertices, utilizing an index buffer. 
-    ///		@param vertexBuffer : Array of vertices to submit.
-    ///		@param indexBuffer : Index buffer associated with the vertex buffer.
-    ///		@param indexCount : Number of indices to draw.      
-    //----------------------------------------------------------------------------------------------------
+    
     void Renderer::DrawIndexed(const vk::Buffer& vertexBuffer, const vk::Buffer& indexBuffer, const uint32_t indexCount)
     {
         auto& commandBuffer = Instance().m_commandBuffer;

@@ -145,7 +145,7 @@ namespace nes
     //	NOTES:
     //  This based of the 'printf' function on cppreference: https://en.cppreference.com/w/cpp/language/parameter_pack
     //
-    ///	@brief : Create a std::string that follows the format.
+    ///	@brief : Create a string that follows the format.
     ///     \n FORMAT RULES:
     ///     \n - Anytime you want to insert an argument, put a '%' character into the formatted string.
     ///     \n - Each argument following the format string will be added to the final string in order.

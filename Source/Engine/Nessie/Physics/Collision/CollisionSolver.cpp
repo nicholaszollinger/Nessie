@@ -32,12 +32,12 @@ namespace nes
         }
     }
     
-    void CollisionSolver::RegisterCollideShape(const ShapeSubType type1, const ShapeSubType type2, const CollideShape& function)
+    void CollisionSolver::RegisterCollideShape(const EShapeSubType type1, const EShapeSubType type2, const CollideShape& function)
     {
         s_collideShapeFunctions[static_cast<int>(type1)][static_cast<int>(type2)] = function; 
     }
 
-    void CollisionSolver::RegisterCastShape(const ShapeSubType type1, const ShapeSubType type2, const CastShape& function)
+    void CollisionSolver::RegisterCastShape(const EShapeSubType type1, const EShapeSubType type2, const CastShape& function)
     {
         s_castShapeFunctions[static_cast<int>(type1)][static_cast<int>(type2)] = function;
     }

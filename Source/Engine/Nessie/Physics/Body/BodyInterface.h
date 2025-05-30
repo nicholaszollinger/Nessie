@@ -2,7 +2,7 @@
 #pragma once
 
 #include "BodyID.h"
-#include "EBodyActivationMode.h"
+#include "BodyActivationMode.h"
 #include "MotionQuality.h"
 #include "MotionType.h"
 #include "Core/Memory/StrongPtr.h"

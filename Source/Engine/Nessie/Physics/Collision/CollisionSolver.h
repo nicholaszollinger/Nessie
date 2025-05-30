@@ -93,12 +93,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Register a collide shape function in the collision table.
         //----------------------------------------------------------------------------------------------------
-        static void RegisterCollideShape(const ShapeSubType type1, const ShapeSubType type2, const CollideShape& function);
+        static void RegisterCollideShape(const EShapeSubType type1, const EShapeSubType type2, const CollideShape& function);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Register a cast shape function in the collision table.
         //----------------------------------------------------------------------------------------------------
-        static void RegisterCastShape(const ShapeSubType type1, const ShapeSubType type2, const CastShape& function);
+        static void RegisterCastShape(const EShapeSubType type1, const EShapeSubType type2, const CastShape& function);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : An implementation of CollideShape that swaps pShape1 and pShape 2 and swaps the results

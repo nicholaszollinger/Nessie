@@ -20,9 +20,27 @@ namespace nes
         LogTargetBase& operator=(const LogTargetBase&) = delete;
         LogTargetBase& operator=(LogTargetBase&&) noexcept = delete;
         
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the pattern string for Log Messages for this Log Target.
+        /// @note : To see pattern string flags and examples, see "PatternFormatter.h"
+        //----------------------------------------------------------------------------------------------------
         virtual void SetPattern(const std::string& pattern) override final;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the formatter, the object that decides how incoming messages will be formatted.
+        //----------------------------------------------------------------------------------------------------
         virtual void SetFormatter(std::unique_ptr<LogFormatter> formatter) override final;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Log a message to the Target under lock protection. (If the mutex type is NullMutex, then
+        ///     no lock is acquired).
+        //----------------------------------------------------------------------------------------------------
         virtual void Internal_Log(const internal::LogMessage& message) override final;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Flush any outstanding messages to the Target under lock protection.
+        ///     (If the mutex type is NullMutex, then no lock is acquired).
+        //----------------------------------------------------------------------------------------------------
         virtual void Internal_Flush() override final;
         
     protected:
@@ -47,8 +65,8 @@ namespace nes
         virtual void SetFormatterImpl(std::unique_ptr<LogFormatter> formatter);
         
     protected:
-        std::unique_ptr<LogFormatter> m_pFormatter;  /// The formatter for this Log Target.
-        Mutex m_mutex;                               /// Mutex for thread safety.
+        std::unique_ptr<LogFormatter>   m_pFormatter;  /// The formatter for this Log Target.
+        Mutex                           m_mutex;       /// Mutex for thread safety.
     };
 }
 

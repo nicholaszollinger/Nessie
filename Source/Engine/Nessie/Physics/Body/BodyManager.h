@@ -2,7 +2,7 @@
 #pragma once
 #include <shared_mutex>
 #include "Body.h"
-#include "EBodyActivationMode.h"
+#include "BodyActivationMode.h"
 #include "Core/Thread/MutexArray.h"
 
 namespace nes

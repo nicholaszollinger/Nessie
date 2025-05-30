@@ -126,5 +126,4 @@ namespace nes
         static constexpr std::hash<const std::string*> kHash;
         return kHash(id.ConstPtr());
     }
-
 }

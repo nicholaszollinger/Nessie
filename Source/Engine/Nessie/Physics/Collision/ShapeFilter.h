@@ -50,8 +50,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class ReverseShapeFilter : public ShapeFilter
     {
-        const ShapeFilter& m_filter; 
-        
     public:
         explicit ReverseShapeFilter(const ShapeFilter& filter) : m_filter(filter) { m_bodyID2 = filter.m_bodyID2; }
 
@@ -65,5 +63,8 @@ namespace nes
             // Reverse the argument order.
             return m_filter.ShouldCollide(pShape2, subShapeIDOfShape2, pShape1, subShapeIDOfShape1);
         }
+
+    private:
+        const ShapeFilter& m_filter; 
     };
 }

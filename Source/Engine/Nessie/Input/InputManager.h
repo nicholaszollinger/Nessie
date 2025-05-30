@@ -13,38 +13,56 @@ namespace nes
         Disabled, // Cursor is locked to the center of the screen, useful for things FPS cameras.
         Captured, // The Cursor is locked to the bounds of the window.
     };
-    
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : InputManager is a static API to query the current input states of keys,
+    ///     mouse position, etc.
+    //----------------------------------------------------------------------------------------------------
     class InputManager
     {
-        friend class Application; // Change to "Platform" when you can.
-        Window* m_pWindow = nullptr;
-        ECursorMode m_cursorMode = ECursorMode::Visible;
-        Vector2 m_cursorPosition {};
-        Vector2 m_cursorDelta    {};
-        
     public:
-        static bool IsKeyDown(const EKeyCode key);
-        static bool IsKeyUp(const EKeyCode key);
+        static bool         IsKeyDown(const EKeyCode key);
+        static bool         IsKeyUp(const EKeyCode key);
         
-        static bool IsMouseButtonDown(const EMouseButton button);
-        static bool IsMouseButtonUp(const EMouseButton button);
-        static void SetCursorMode(const ECursorMode mode);
+        static bool         IsMouseButtonDown(const EMouseButton button);
+        static bool         IsMouseButtonUp(const EMouseButton button);
+        static void         SetCursorMode(const ECursorMode mode);
 
-        [[nodiscard]] static ECursorMode GetCursorMode();
-        [[nodiscard]] static Vector2 GetCursorPosition();
-        [[nodiscard]] static Vector2 GetCursorDelta();
+        static ECursorMode  GetCursorMode();
+        static Vector2      GetCursorPosition();
+        static Vector2      GetCursorDelta();
         
     private:
-        bool Init(Window* pWindow);
-        void Shutdown();
-        void Update(const double deltaTime);
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize the Input Manager with the window that we will be reading input from. 
+        ///	@param pWindow : The window that we are reading input from.
+        //----------------------------------------------------------------------------------------------------
+        bool                Init(Window* pWindow);
 
-        // Platform Defined Implementations:
-        Vector2d GetCursorPosition_Impl(void* pNativeWindow);
-        bool IsKeyDown_Impl(void* pNativeWindow, const EKeyCode key);
-        bool IsKeyUp_Impl(void* pNativeWindow, const EKeyCode key);
-        bool IsMouseButtonDown_Impl(void* pNativeWindow, const EMouseButton button);
-        bool IsMouseButtonUp_Impl(void* pNativeWindow, const EMouseButton button);
-        void SetCursorMode_Impl(void* pNativeWindow, const ECursorMode mode);
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Shutdown the InputManager, which will set the static instance to null.
+        //----------------------------------------------------------------------------------------------------
+        void                Shutdown();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Update current input states based on delta time.
+        //----------------------------------------------------------------------------------------------------
+        void                Update(const double deltaTime);
+
+        /// Platform Defined Implementations:
+        Vector2d            GetCursorPosition_Impl(void* pNativeWindow);
+        bool                IsKeyDown_Impl(void* pNativeWindow, const EKeyCode key);
+        bool                IsKeyUp_Impl(void* pNativeWindow, const EKeyCode key);
+        bool                IsMouseButtonDown_Impl(void* pNativeWindow, const EMouseButton button);
+        bool                IsMouseButtonUp_Impl(void* pNativeWindow, const EMouseButton button);
+        void                SetCursorMode_Impl(void* pNativeWindow, const ECursorMode mode);
+
+    private:
+        friend class Application;
+        
+        Window*             m_pWindow = nullptr;
+        ECursorMode         m_cursorMode = ECursorMode::Visible;
+        Vector2             m_cursorPosition{};
+        Vector2             m_cursorDelta{};
     };
 }

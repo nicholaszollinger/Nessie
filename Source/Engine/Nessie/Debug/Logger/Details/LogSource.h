@@ -21,6 +21,9 @@ namespace nes::internal
         const char*     m_functionName  = nullptr;
         int             m_line          = 0;
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true the location has been set. 
+        //----------------------------------------------------------------------------------------------------
         constexpr bool  IsValid() const { return m_line > 0; }
     };
 }

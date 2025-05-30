@@ -35,7 +35,7 @@ namespace nes
     using CollideShapeCollector = CollisionCollector<CollideShapeResult, CollisionCollectorTraitsCollideShape>;
     using TransformedShapeCollector = CollisionCollector<TransformedShape, CollisionCollectorTraitsCollideShape>;
     
-    enum class ShapeType : uint8_t
+    enum class EShapeType : uint8_t
     {
         Convex,
         Compound,
@@ -49,7 +49,7 @@ namespace nes
         // [TODO]: User defined values
     };
 
-    enum class ShapeSubType : uint8_t
+    enum class EShapeSubType : uint8_t
     {
         // Convex Shapes
         Sphere,
@@ -80,14 +80,13 @@ namespace nes
         // [TODO]: User defined values
     };
 
-    static constexpr ShapeSubType kAllSubShapeTypes[] = { ShapeSubType::Sphere, ShapeSubType::Box, ShapeSubType::Triangle, ShapeSubType::Capsule, ShapeSubType::TaperedCapsule, ShapeSubType::Cylinder, ShapeSubType::ConvexHull, ShapeSubType::StaticCompound, ShapeSubType::MutableCompound, ShapeSubType::RotatedTranslated, ShapeSubType::Scaled, ShapeSubType::OffsetCenterOfMass, ShapeSubType::Mesh, ShapeSubType::HeightField, ShapeSubType::SoftBody, ShapeSubType::Plane, ShapeSubType::TaperedCylinder, ShapeSubType::Empty };
-    static constexpr ShapeSubType kConvexSubShapeTypes[] = { ShapeSubType::Sphere, ShapeSubType::Box, ShapeSubType::Triangle, ShapeSubType::Capsule, ShapeSubType::TaperedCapsule, ShapeSubType::Cylinder, ShapeSubType::ConvexHull, ShapeSubType::TaperedCylinder};
-    static constexpr ShapeSubType kCompoundSubShapeTypes[] = { ShapeSubType::StaticCompound, ShapeSubType::MutableCompound };
-    static constexpr ShapeSubType kDecoratorSubShapeTypes[] = { ShapeSubType::RotatedTranslated, ShapeSubType::Scaled, ShapeSubType::OffsetCenterOfMass };
+    static constexpr EShapeSubType  kAllSubShapeTypes[] = { EShapeSubType::Sphere, EShapeSubType::Box, EShapeSubType::Triangle, EShapeSubType::Capsule, EShapeSubType::TaperedCapsule, EShapeSubType::Cylinder, EShapeSubType::ConvexHull, EShapeSubType::StaticCompound, EShapeSubType::MutableCompound, EShapeSubType::RotatedTranslated, EShapeSubType::Scaled, EShapeSubType::OffsetCenterOfMass, EShapeSubType::Mesh, EShapeSubType::HeightField, EShapeSubType::SoftBody, EShapeSubType::Plane, EShapeSubType::TaperedCylinder, EShapeSubType::Empty };
+    static constexpr EShapeSubType  kConvexSubShapeTypes[] = { EShapeSubType::Sphere, EShapeSubType::Box, EShapeSubType::Triangle, EShapeSubType::Capsule, EShapeSubType::TaperedCapsule, EShapeSubType::Cylinder, EShapeSubType::ConvexHull, EShapeSubType::TaperedCylinder};
+    static constexpr EShapeSubType  kCompoundSubShapeTypes[] = { EShapeSubType::StaticCompound, EShapeSubType::MutableCompound };
+    static constexpr EShapeSubType  kDecoratorSubShapeTypes[] = { EShapeSubType::RotatedTranslated, EShapeSubType::Scaled, EShapeSubType::OffsetCenterOfMass };
 
-    static constexpr unsigned kNumSubShapeTypes = static_cast<unsigned>(std::size(kAllSubShapeTypes));
-    
-    static constexpr const char *kSubShapeTypeNames[] = { "Sphere", "Box", "Triangle", "Capsule", "TaperedCapsule", "Cylinder", "ConvexHull", "StaticCompound", "MutableCompound", "RotatedTranslated", "Scaled", "OffsetCenterOfMass", "Mesh", "HeightField", "SoftBody", "Plane", "TaperedCylinder", "Empty" };
+    static constexpr unsigned       kNumSubShapeTypes = static_cast<unsigned>(std::size(kAllSubShapeTypes));
+    static constexpr const char *   kSubShapeTypeNames[] = { "Sphere", "Box", "Triangle", "Capsule", "TaperedCapsule", "Cylinder", "ConvexHull", "StaticCompound", "MutableCompound", "RotatedTranslated", "Scaled", "OffsetCenterOfMass", "Mesh", "HeightField", "SoftBody", "Plane", "TaperedCylinder", "Empty" };
     static_assert(std::size(kSubShapeTypeNames) == kNumSubShapeTypes);
 
     //----------------------------------------------------------------------------------------------------
@@ -104,10 +103,6 @@ namespace nes
 
         /// User data (to be used freely by the application).
         uint64_t m_userData;
-
-    protected:
-        /// Cached result from the Create() function.
-        mutable ShapeResult m_cachedResult;
         
     public:
         virtual             ~ShapeSettings() = default;
@@ -123,6 +118,10 @@ namespace nes
         ///     cached result to allow Create() to build a new shape.
         //----------------------------------------------------------------------------------------------------
         void                ClearCachedResult();
+
+    protected:
+        /// Cached result from the Create() function.
+        mutable ShapeResult m_cachedResult;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -140,7 +139,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get an entry in the registry for a particular subtype.
         //----------------------------------------------------------------------------------------------------
-        static inline ShapeFunctions& Get(ShapeSubType subType) { return s_registry[static_cast<size_t>(subType)]; }
+        static inline ShapeFunctions& Get(EShapeSubType subType) { return s_registry[static_cast<size_t>(subType)]; }
 
     private:
         static ShapeFunctions s_registry[kNumSubShapeTypes];
@@ -163,23 +162,19 @@ namespace nes
 
         /// This is the minimum amount of triangles that should be requested through GetTrianglesNext().
         static constexpr int kGetTrianglesMinTrianglesRequested = 32;
-
-    private:
-        uint64_t        m_userData = 0;
-        ShapeType       m_shapeType;
-        ShapeSubType    m_subShapeType;
         
     public:
-        Shape(const ShapeType type, const ShapeSubType subType) : m_shapeType(type), m_subShapeType(subType) {}
-        Shape(const ShapeType type, const ShapeSubType subType, const ShapeSettings& settings, [[maybe_unused]] ShapeResult &outResult) : m_userData(settings.m_userData), m_shapeType(type), m_subShapeType(subType) {}
+        Shape(const EShapeType type, const EShapeSubType subType) : m_shapeType(type), m_subShapeType(subType) {}
+        Shape(const EShapeType type, const EShapeSubType subType, const ShapeSettings& settings, [[maybe_unused]] ShapeResult &outResult) : m_userData(settings.m_userData), m_shapeType(type), m_subShapeType(subType) {}
         Shape(const Shape&) = delete;
         Shape(Shape&&) noexcept = default;
         Shape& operator=(const Shape&) = delete;
         Shape& operator=(Shape&&) noexcept = default;
         virtual ~Shape() override = default;
-        
-        inline ShapeType        GetType() const                                 { return m_shapeType; }
-        inline ShapeSubType     GetSubType() const                              { return m_subShapeType; }
+
+    public:
+        inline EShapeType       GetType() const                                 { return m_shapeType; }
+        inline EShapeSubType    GetSubType() const                              { return m_subShapeType; }
         uint64_t                GetUserData() const                             { return m_userData; }
         void                    SetUserData(const uint64_t userData)            { m_userData = userData; }
 
@@ -407,7 +402,10 @@ namespace nes
         ///     determine if the point is inside the shape or not. Odd number of hits means inside, even number of hits means outside.
         //----------------------------------------------------------------------------------------------------
         static void             CollidePointUsingRayCast(const Shape& shape, const Vector3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter);
-        
-        // [TODO]: Debug Draw functions
+
+    private:
+        uint64_t                m_userData = 0;
+        EShapeType              m_shapeType;
+        EShapeSubType           m_subShapeType;
     };
 }

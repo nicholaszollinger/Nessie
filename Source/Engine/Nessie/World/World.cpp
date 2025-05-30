@@ -437,7 +437,7 @@ namespace nes
                     camera.SetOrthographicFarPlane(value);
 
                     // ProjectionType
-                    const auto projectionType = static_cast<Camera::ProjectionType>(cameraNode["ProjectionType"].as<uint8_t>());
+                    const auto projectionType = static_cast<Camera::EProjectionType>(cameraNode["ProjectionType"].as<uint8_t>());
                     camera.SetProjectionType(projectionType);
                 }
 
@@ -698,7 +698,7 @@ namespace nes
                     // [TODO]: Handle changing type with Enum property.
                     bool cameraNeedsUpdate = false;
 
-                    if (projectionType == Camera::ProjectionType::Perspective)
+                    if (projectionType == Camera::EProjectionType::Perspective)
                     {
                         float value = camera.GetPerspectiveFOV() * math::RadiansToDegrees();
                         

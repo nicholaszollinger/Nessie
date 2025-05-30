@@ -26,10 +26,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class TwoBodyConstraint : public Constraint
     {
-    protected:
-        Body* m_pBodyA = nullptr;
-        Body* m_pBodyB = nullptr;
-
     public:
         explicit TwoBodyConstraint(Body& bodyA, Body& bodyB, const TwoBodyConstraintSettings& settings);
         
@@ -72,5 +68,9 @@ namespace nes
         /// @brief : Link bodies that are connected by this constraint in the same split. Returns the split index.
         //----------------------------------------------------------------------------------------------------
         virtual unsigned        BuildIslandSplits(LargeIslandSplitter& splitter) const override;
+
+    protected:
+        Body* m_pBodyA = nullptr;
+        Body* m_pBodyB = nullptr;
     };
 }

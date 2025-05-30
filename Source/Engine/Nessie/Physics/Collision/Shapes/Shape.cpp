@@ -157,7 +157,7 @@ namespace nes
 
             // Configure the ray cast
             RayCastSettings settings;
-            settings.SetBackFaceMode(BackFaceMode::CollideWithBackFaces);
+            settings.SetBackFaceMode(EBackFaceMode::CollideWithBackFaces);
 
             // Cast a ray that's 10% longer than the height of our bounding box.
             shape.CastRay(RayCast{point, 1.1f * bounds.Size().y * Vector3::Up() }, settings, subShapeIDCreator, hitCollector, shapeFilter);

@@ -1,7 +1,7 @@
 // CollideShape.h
 #pragma once
 #include "BackFaceMode.h"
-#include "EActiveEdgeMode.h"
+#include "ActiveEdgeMode.h"
 #include "CollectFacesMode.h"
 #include "Core/StaticArray.h"
 #include "Math/Vector3.h"
@@ -81,7 +81,7 @@ namespace nes
         EActiveEdgeMode				m_activeEdgeMode				= EActiveEdgeMode::CollideOnlyWithActive;
 
         /// If colliding faces should be collected or only the collision point
-        CollectFacesMode			m_collectFacesMode			    = CollectFacesMode::NoFaces;
+        ECollectFacesMode			m_collectFacesMode			    = ECollectFacesMode::NoFaces;
 
         /// If objects are closer than this distance, they are considered to be colliding. Used for GJK. (unit: m)
         float                       m_collisionTolerance			= physics::kDefaultCollisionTolerance;
@@ -107,6 +107,6 @@ namespace nes
         float                       m_maxSeparationDistance = 0.f;
 
         /// How backfacing triangles should be treated
-        BackFaceMode                m_backFaceMode = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode                m_backFaceMode = EBackFaceMode::IgnoreBackFaces;
     };
 }

@@ -11,22 +11,24 @@ namespace nes
     class CameraComponent final : public Entity3DComponent
     {
         NES_DEFINE_COMPONENT_TYPE(CameraComponent)
-        
-        Camera m_camera;
-        bool m_setActiveOnEnable = true;
     
     public:
-        virtual bool Init() override;
-        void SetAsActiveCamera() const;
-        void SetActiveOnEnabled(const bool setActiveOnEnable);
-        [[nodiscard]] Camera& GetCamera();
-        [[nodiscard]] const Camera& GetCamera() const;
-        [[nodiscard]] bool CameraIsSetActiveOnEnable() const { return m_setActiveOnEnable; }
-        [[nodiscard]] bool IsActiveCamera() const;
+        virtual bool    Init() override;
+        void            SetAsActiveCamera() const;
+        void            SetActiveOnEnabled(const bool setActiveOnEnable);
+        
+        Camera&         GetCamera();
+        const Camera&   GetCamera() const;
+        bool            CameraIsSetActiveOnEnable() const { return m_setActiveOnEnable; }
+        bool            IsActiveCamera() const;
         
     protected:
-        void UpdateCameraViewBasedOnActorTransform();
-        virtual void OnEnabled() override;
-        virtual void OnDisabled() override;
+        void            UpdateCameraViewBasedOnActorTransform();
+        virtual void    OnEnabled() override;
+        virtual void    OnDisabled() override;
+
+    private:
+        Camera          m_camera;
+        bool            m_setActiveOnEnable = true;
     };
 }

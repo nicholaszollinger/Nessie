@@ -73,7 +73,7 @@ namespace nes
     }
 
     BoxShape::BoxShape(const BoxShapeSettings& settings, ShapeResult& outResult)
-        : ConvexShape(ShapeSubType::Box, settings, outResult)
+        : ConvexShape(EShapeSubType::Box, settings, outResult)
         , m_halfExtent(settings.m_halfExtent)
         , m_convexRadius(settings.m_convexRadius)
     {
@@ -89,7 +89,7 @@ namespace nes
     }
 
     BoxShape::BoxShape(const Vector3& halfExtent, const float convexRadius)
-        : ConvexShape(ShapeSubType::Box)
+        : ConvexShape(EShapeSubType::Box)
         , m_halfExtent(halfExtent)
         , m_convexRadius(convexRadius)
     {
@@ -166,7 +166,7 @@ namespace nes
             }
 
             // Check back side hit
-            if (settings.m_backfaceModeConvex == BackFaceMode::CollideWithBackFaces
+            if (settings.m_backfaceModeConvex == EBackFaceMode::CollideWithBackFaces
                 && maxFraction < collector.GetEarlyOutFraction())
             {
                 hit.m_fraction = maxFraction;
@@ -206,15 +206,15 @@ namespace nes
         return GetLocalBounds().GetVolume();
     }
 
-    const ConvexShape::Support* BoxShape::GetSupportFunction(SupportMode mode, SupportBuffer& buffer,
+    const ConvexShape::Support* BoxShape::GetSupportFunction(ESupportMode mode, SupportBuffer& buffer,
         const Vector3& scale) const
     {
         Vector3 scaledHalfExtent = scale.Abs() * m_halfExtent;
 
         switch (mode)
         {
-            case SupportMode::ExcludeConvexRadius:
-            case SupportMode::Default:
+            case ESupportMode::ExcludeConvexRadius:
+            case ESupportMode::Default:
             {
                 // Make a box out of our half extents
                 AABox box = AABox(-scaledHalfExtent, scaledHalfExtent);
@@ -222,7 +222,7 @@ namespace nes
                 return new (&buffer) Box(box, 0.f);
                 
             }
-            case SupportMode::IncludeConvexRadius:
+            case ESupportMode::IncludeConvexRadius:
             {
                 // Reduce the box by our convex radius
                 float convexRadius = ScaleHelpers::ScaleConvexRadius(m_convexRadius, scale);
@@ -257,7 +257,7 @@ namespace nes
 
     void BoxShape::Register()
     {
-        ShapeFunctions& f = ShapeFunctions::Get(ShapeSubType::Box);
+        ShapeFunctions& f = ShapeFunctions::Get(EShapeSubType::Box);
         f.m_construct = []() -> Shape* { return new BoxShape; };
         f.m_color = Color::Green();
     }

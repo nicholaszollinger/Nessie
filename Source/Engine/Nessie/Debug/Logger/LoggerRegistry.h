@@ -62,11 +62,11 @@ namespace nes
     private:
         using LoggerMap = std::unordered_map<std::string, std::shared_ptr<Logger>>;
         
-        LoggerMap                     m_loggers;
-        std::mutex                    m_loggersMutex;
-        std::unique_ptr<LogFormatter> m_pDefaultFormatter;
-        std::shared_ptr<Logger>       m_pDefaultLogger;
-        ELogLevel                     m_globalLogLevel = ELogLevel::Info;
+        LoggerMap                       m_loggers;
+        std::mutex                      m_loggersMutex;
+        std::unique_ptr<LogFormatter>   m_pDefaultFormatter;
+        std::shared_ptr<Logger>         m_pDefaultLogger;
+        ELogLevel                       m_globalLogLevel = ELogLevel::Info;
     };
 }
 

@@ -306,7 +306,6 @@ namespace nes
         glfwGetCursorPos(pWindow, &cursorPosition.x, &cursorPosition.y);
         return cursorPosition;
     }
-
 }
 
 #endif

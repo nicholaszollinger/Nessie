@@ -12,13 +12,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class GetTrianglesContextVertexList
     {
-        Mat4            m_localToWorld;
-        const Vector3*  m_pTriangleVertices;
-        size_t          m_numTriangleVertices;
-        size_t          m_currentVertex;
-        // Physics Material
-        bool            m_isInsideOut;
-        
     public:
         GetTrianglesContextVertexList(const Vector3& positionCOM, const Quat& rotation, const Vector3& scale, const Mat4& localTransform, const Vector3* triangleVertices, size_t numTriangleVertices);
 
@@ -51,6 +44,14 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         template <typename VertexArray>
         static void CreateUnitSphereHelper(VertexArray& vertices, const Vector3& inV1, const Vector3& inV2, const Vector3& inV3, const int detailLevel);
+
+    private:
+        Mat4            m_localToWorld;
+        const Vector3*  m_pTriangleVertices;
+        size_t          m_numTriangleVertices;
+        size_t          m_currentVertex;
+        // [TODO]: Physics Material
+        bool            m_isInsideOut;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -59,21 +60,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class GetTrianglesContextMultiVertexList
     {
-        struct Part
-        {
-            Mat4            m_localToWorld;
-            const Vector3*  m_pTriangleVertices;
-            size_t          m_numTriangleVertices;
-        };
-        
-        // [TODO]: 
-        // Supposed to be a StaticArray
-        std::vector<Part>   m_parts;
-        unsigned            m_currentPart;
-        size_t              m_currentVertex;
-        // Physics Material
-        bool                m_isInsideOut;
-        
     public:
         GetTrianglesContextMultiVertexList(bool isInsideOut);
 
@@ -86,6 +72,20 @@ namespace nes
         /// @see Shape::GetTrianglesNext()  
         //----------------------------------------------------------------------------------------------------
         int GetTrianglesNext(int maxTrianglesRequested, Float3* pOutTriangleVertices);
+
+    private:
+        struct Part
+        {
+            Mat4                m_localToWorld;
+            const Vector3*      m_pTriangleVertices;
+            size_t              m_numTriangleVertices;
+        };
+        
+        StaticArray<Part, 3>    m_parts;
+        unsigned                m_currentPart;
+        size_t                  m_currentVertex;
+        // [TODO]: Physics Material
+        bool                    m_isInsideOut;
     };
 
     template <typename VertexArray>

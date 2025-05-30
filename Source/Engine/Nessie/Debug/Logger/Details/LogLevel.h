@@ -19,7 +19,7 @@ namespace nes
 
     namespace internal
     {
-        static std::string_view s_logLevelNames[]
+        static const std::string_view s_logLevelNames[]
         {
             std::string_view("Trace", 5),
             std::string_view("Debug", 5),

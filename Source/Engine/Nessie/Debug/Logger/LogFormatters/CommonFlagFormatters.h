@@ -4,8 +4,8 @@
 
 namespace nes::internal
 {
-    // [TODO]: Thread ID, Process ID.
-
+    // [TODO]: Thread ID formatter
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Formatter to add the logger name to the log message. 
     //----------------------------------------------------------------------------------------------------
@@ -21,7 +21,7 @@ namespace nes::internal
                 return;
 
             const size_t textSize = msg.m_tagName.size() + 2; // +2 for ': '. 
-            ScopedPadder padder(msg.m_tagName.size(), m_paddingInfo, dest);
+            ScopedPadder padder(textSize, m_paddingInfo, dest);
             FormatHelpers::AppendStringView(msg.m_tagName, dest);
             dest.push_back(':');
             dest.push_back(' ');
