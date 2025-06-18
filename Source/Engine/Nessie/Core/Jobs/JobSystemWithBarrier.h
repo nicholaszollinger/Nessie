@@ -12,34 +12,35 @@ namespace nes
     {
         class BarrierImpl final : public Barrier
         {
-        protected:
             static constexpr uint32_t kMaxJobs = 2048;
-            std::atomic<Job*> m_jobs[kMaxJobs];
-            alignas (NES_CACHE_LINE_SIZE) std::atomic<uint32_t> m_readIndex{0};
-            alignas (NES_CACHE_LINE_SIZE) std::atomic<uint32_t> m_writeIndex{0};
-            Semaphore m_semaphore{0};
-            
-            /// At the start of the WaitForJobs(), this will be equal to (the number of calls to AddJob() & AddJobs()) +
-            /// (the number of Jobs that have been scheduled).
-            std::atomic<uint32_t> m_numLeftToAcquire{0};
             
         public:
             BarrierImpl();
-            virtual         ~BarrierImpl() override;
-            virtual void    AddJob(const JobHandle& handle) override;
-            virtual void    AddJobs(const JobHandle* pHandles, const uint32_t numHandles) override;
-            inline bool     IsEmpty() const { return m_readIndex == m_writeIndex; }
-            void            WaitForJobs();
+            virtual             ~BarrierImpl() override;
+
+        public:
+            /// Whether this Barrier is currently being used or not.
+            std::atomic_bool    m_isInUse { false };
+
+        public:
+            virtual void        AddJob(const JobHandle& handle) override;
+            virtual void        AddJobs(const JobHandle* pHandles, const uint32_t numHandles) override;
+            inline bool         IsEmpty() const { return m_readIndex == m_writeIndex; }
+            void                WaitForJobs();
+
+        private:
+            virtual void        OnJobFinished(Job* pJob) override;
             
-            std::atomic_bool m_isInUse { false };
-
-        protected:
-            virtual void    OnJobFinished(Job* pJob) override;
+            std::atomic<Job*>   m_jobs[kMaxJobs];
+            alignas (NES_CACHE_LINE_SIZE) std::atomic<uint32> m_readIndex{0};
+            alignas (NES_CACHE_LINE_SIZE) std::atomic<uint32> m_writeIndex{0};
+            Semaphore           m_semaphore{0};
+            
+            /// At the start of the WaitForJobs(), this will be equal to (the number of calls to AddJob() & AddJobs()) +
+            /// (the number of Jobs that have been scheduled).
+            std::atomic<uint32> m_numLeftToAcquire{0};
         };
-        
-        uint32_t            m_maxBarriers = 0;
-        BarrierImpl*        m_barriers = nullptr;
-
+    
     public:
         JobSystemWithBarrier() = default;
         explicit            JobSystemWithBarrier(const uint32_t maxBarriers) { Init(maxBarriers); }
@@ -50,5 +51,9 @@ namespace nes
         virtual Barrier*    CreateBarrier() override;
         virtual void        DestroyBarrier(Barrier* pBarrier) override;
         virtual void        WaitForJobs(Barrier* pBarrier) override;
+
+    private:
+        uint32              m_maxBarriers = 0;
+        BarrierImpl*        m_barriers = nullptr;
     };
 }

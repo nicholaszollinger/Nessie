@@ -1,9 +1,9 @@
 ﻿// InputManager.cpp
-
 #include "InputManager.h"
 
 #include "Application/Window.h"
 #include "Debug/Assert.h"
+#include "Math/Vec2.h"
 
 namespace nes
 {
@@ -17,8 +17,8 @@ namespace nes
         g_pInstance = this;
         m_pWindow = pWindow;
 
-        Vector2d pos = GetCursorPosition_Impl(m_pWindow->GetNativeWindowHandle());
-        m_cursorPosition = pos.CastTo<float>();
+        const Double2 pos = GetCursorPosition_Impl(m_pWindow->GetNativeWindowHandle());
+        m_cursorPosition = Vec2(pos.CastTo<float>());
         m_cursorDelta = {};
         return true;
     }
@@ -26,8 +26,8 @@ namespace nes
     void InputManager::Update([[maybe_unused]] const double deltaTime)
     {
         // Update cursor position:
-        Vector2 currentCursorPos = GetCursorPosition_Impl(m_pWindow->GetNativeWindowHandle()).CastTo<float>();
-        m_cursorDelta = currentCursorPos - m_cursorPosition;
+        const Vec2 currentCursorPos = Vec2(GetCursorPosition_Impl(m_pWindow->GetNativeWindowHandle()).CastTo<float>());
+        m_cursorDelta = Vec2(currentCursorPos) - Vec2(m_cursorPosition);
         m_cursorPosition = currentCursorPos;
 
         // [TODO Later]: Update key state information.
@@ -39,49 +39,49 @@ namespace nes
         m_pWindow = nullptr;
     }
     
-    bool InputManager::IsKeyDown(const KeyCode key)
+    bool InputManager::IsKeyDown(const EKeyCode key)
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->IsKeyDown_Impl(g_pInstance->m_pWindow->GetNativeWindowHandle(), key);
     }
 
-    bool InputManager::IsKeyUp(const KeyCode key)
+    bool InputManager::IsKeyUp(const EKeyCode key)
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->IsKeyUp_Impl(g_pInstance->m_pWindow->GetNativeWindowHandle(), key);
     }
 
-    bool InputManager::IsMouseButtonDown(const MouseButton button)
+    bool InputManager::IsMouseButtonDown(const EMouseButton button)
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->IsMouseButtonDown_Impl(g_pInstance->m_pWindow->GetNativeWindowHandle(), button);
     }
 
-    bool InputManager::IsMouseButtonUp(const MouseButton button)
+    bool InputManager::IsMouseButtonUp(const EMouseButton button)
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->IsMouseButtonUp_Impl(g_pInstance->m_pWindow->GetNativeWindowHandle(), button);
     }
 
-    void InputManager::SetCursorMode(const CursorMode mode)
+    void InputManager::SetCursorMode(const ECursorMode mode)
     {
         NES_ASSERT(g_pInstance != nullptr);
         g_pInstance->SetCursorMode_Impl(g_pInstance->m_pWindow->GetNativeWindowHandle(), mode);
     }
 
-    CursorMode InputManager::GetCursorMode()
+    ECursorMode InputManager::GetCursorMode()
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->m_cursorMode;
     }
 
-    Vector2 InputManager::GetCursorPosition()
+    Vec2 InputManager::GetCursorPosition()
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->m_cursorPosition;
     }
 
-    Vector2 InputManager::GetCursorDelta()
+    Vec2 InputManager::GetCursorDelta()
     {
         NES_ASSERT(g_pInstance != nullptr);
         return g_pInstance->m_cursorDelta;

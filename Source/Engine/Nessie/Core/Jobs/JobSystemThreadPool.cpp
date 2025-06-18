@@ -40,7 +40,7 @@ namespace nes
             if (index != AvailableJobs::kInvalidObjectIndex)
                 break;
 
-            NES_ASSERTV(false, "No jobs available!");
+            NES_ASSERT(false, "No jobs available!");
             std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
         Job* pJob = &m_jobs.Get(index);

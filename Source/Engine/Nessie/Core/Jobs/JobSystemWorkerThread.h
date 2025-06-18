@@ -8,7 +8,7 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : JobSystem that utilizes a single WorkerThread to execute Jobs. 
+    /// @brief : JobSystem that uses a single WorkerThread to execute Jobs. 
     //----------------------------------------------------------------------------------------------------
     class JobSystemWorkerThread final : public JobSystemWithBarrier
     {
@@ -26,24 +26,16 @@ namespace nes
     private:
         using JobArray = FixedSizeFreeList<Job>;
         static constexpr uint32_t kQueueLength = 512;
-        
-        WorkerThread<JobThreadInstruction>  m_workerThread;
-        JobArray                            m_jobs;
-        std::atomic<Job*>                   m_jobQueue[kQueueLength];
-        std::atomic<uint32_t>               m_queueHead;
-        std::atomic<uint32_t>               m_queueTail;
-        ThreadInitExitFunction              m_threadInitFunction = [](){};
-        ThreadInitExitFunction              m_threadExitFunction = [](){};
     
     public:
-        JobSystemWorkerThread() = default;
-        explicit JobSystemWorkerThread(const uint32_t maxJobs, const uint32_t maxBarriers);
-        virtual ~JobSystemWorkerThread() override;
+                            JobSystemWorkerThread() = default;
+        explicit            JobSystemWorkerThread(const uint32_t maxJobs, const uint32_t maxBarriers);
+        virtual             ~JobSystemWorkerThread() override;
 
-        void SetThreadInitFunction(const ThreadInitExitFunction& threadInitFunction) { m_threadInitFunction = threadInitFunction; }
-        void SetThreadExitFunction(const ThreadInitExitFunction& threadExitFunction) { m_threadExitFunction = threadExitFunction; }
-        
-        void Init(const uint32_t maxJobs, const uint32_t maxBarriers);
+    public:
+        void                SetThreadInitFunction(const ThreadInitExitFunction& threadInitFunction) { m_threadInitFunction = threadInitFunction; }
+        void                SetThreadExitFunction(const ThreadInitExitFunction& threadExitFunction) { m_threadExitFunction = threadExitFunction; }
+        void                Init(const uint32_t maxJobs, const uint32_t maxBarriers);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : The Maximum concurrency is still 1 - the Jobs are just executed on another thread. 
@@ -61,5 +53,14 @@ namespace nes
         bool                ProcessInstruction(const JobThreadInstruction instruction);
         void                ThreadProcessJobQueue();
         void                ThreadTerminate();
+
+    private:
+        WorkerThread<JobThreadInstruction>  m_workerThread;
+        JobArray                            m_jobs;
+        std::atomic<Job*>                   m_jobQueue[kQueueLength];
+        std::atomic<uint32_t>               m_queueHead;
+        std::atomic<uint32_t>               m_queueTail;
+        ThreadInitExitFunction              m_threadInitFunction = [](){};
+        ThreadInitExitFunction              m_threadExitFunction = [](){};
     };
 }

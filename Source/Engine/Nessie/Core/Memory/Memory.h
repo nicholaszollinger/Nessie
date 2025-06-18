@@ -5,7 +5,7 @@
 #include "Core/Config.h"
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : Macro to toggle recording allocations as they happen in order to print out each missed allocation
+/// @brief : Macro to toggle recording allocations as they happen to print out each missed allocation
 ///     at the call to NES_DUMP_AND_DESTROY_LEAK_DETECTOR(). Very expensive.
 //----------------------------------------------------------------------------------------------------
 #define NES_ENABLE_ALLOCATION_TRACKING 0
@@ -39,19 +39,19 @@ namespace nes::memory::internal
 }
 
 /// Debug new/delete operators
-void* operator new(size_t size, const char* filename, int lineNum);
-void operator delete(void* pMemory);
-void operator delete(void* pMemory, const char*, int);
+void*       operator new(size_t size, const char* filename, int lineNum);
+void        operator delete(void* pMemory);
+void        operator delete(void* pMemory, const char*, int);
 
 /// Debug aligned new/delete operators
-void* operator new(size_t size, std::align_val_t alignment, const char* filename, int lineNum);
-void operator delete(void* pMemory, std::align_val_t alignment);
-void operator delete(void* pMemory, std::align_val_t alignment, const char*, int);
+void*       operator new(size_t size, std::align_val_t alignment, const char* filename, int lineNum);
+void        operator delete(void* pMemory, std::align_val_t alignment);
+void        operator delete(void* pMemory, std::align_val_t alignment, const char*, int);
 
 /// Debug array new/delete operators
-void* operator new[](size_t size, const char* filename, int lineNum);
-void operator delete[](void* pMemory);
-void operator delete[](void* pMemory, const char*, int);
+void*       operator new[](size_t size, const char* filename, int lineNum);
+void        operator delete[](void* pMemory);
+void        operator delete[](void* pMemory, const char*, int);
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Initialize the Leak Detector. Must be called at the top of main(). 

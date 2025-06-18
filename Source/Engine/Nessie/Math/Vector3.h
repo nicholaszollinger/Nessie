@@ -4,7 +4,7 @@
 #include "Vector2.h"
 #include "Core/String/FormatString.h"
 #include "Detail/Swizzle.h"
-#include "Math/Float3.h"
+#include "Scalar3.h"
 
 // [TODO]: Combine with VectorRegisterF.
 
@@ -75,7 +75,7 @@ namespace nes
         float                       ReduceMin() const;
         
 
-        template <Swizzle X, Swizzle Y, Swizzle Z>
+        template <uint32 SwizzleX, uint32 SwizzleY, uint32 SwizzleZ>
         TVector3                    Swizzle() const;
         
         template <ScalarType To>
@@ -88,7 +88,6 @@ namespace nes
         static constexpr Type       DistanceSquared(const TVector3& a, const TVector3& b);
         static constexpr TVector3   Min(const TVector3& a, const TVector3& b);
         static constexpr TVector3   Max(const TVector3& a, const TVector3& b);
-        //static VectorRegisterUint   Less(const TVector3& a, const TVector3& b);
         static constexpr TVector3   Cross(const TVector3& a, const TVector3& b);
         static constexpr TVector3   Lerp(const TVector3 from, const TVector3 to, const float t);
         static constexpr TVector3   Replicate(const Type value);
@@ -468,22 +467,22 @@ namespace nes
     template <ScalarType Type>
     float TVector3<Type>::ReduceMin() const
     {
-        TVector3 vec = Min(*this, Swizzle<Swizzle::Y, Swizzle::Unused, Swizzle::Z>());
-        vec = Min(vec, Swizzle<Swizzle::Z, Swizzle::Unused, Swizzle::Unused>());
+        TVector3 vec = Min(*this, Swizzle<ESwizzleY, ESwizzleUnused, ESwizzleZ>());
+        vec = Min(vec, Swizzle<ESwizzleZ, ESwizzleUnused, ESwizzleUnused>());
         return vec.x;
     }
 
     template <ScalarType Type>
-    template <Swizzle X, Swizzle Y, Swizzle Z>
+    template <uint32 SwizzleX, uint32 SwizzleY, uint32 SwizzleZ>
     TVector3<Type> TVector3<Type>::Swizzle() const
     {
-        static_assert(static_cast<size_t>(X) < 3, "Swizzle X must be less than 3");
-        static_assert(static_cast<size_t>(Y) < 3, "Swizzle X must be less than 3");
-        static_assert(static_cast<size_t>(Z) < 3, "Swizzle X must be less than 3");
+        static_assert(SwizzleX < 3, "Swizzle X must be less than 3");
+        static_assert(SwizzleY < 3, "Swizzle Y must be less than 3");
+        static_assert(SwizzleZ < 3, "Swizzle Z must be less than 3");
 
         // [TODO]: SIMD version
         auto& vec = *this;
-        return TVector3(vec[static_cast<size_t>(X)], vec[static_cast<size_t>(Y)], vec[static_cast<size_t>(Z)]);
+        return TVector3(vec[SwizzleX], vec[SwizzleY], vec[SwizzleZ]);
     }
 
     template <ScalarType Type>

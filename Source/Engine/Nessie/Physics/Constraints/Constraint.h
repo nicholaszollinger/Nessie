@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "Core/Result.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/Vector3.h"
+#include "Math/Vec3.h"
 
 namespace nes
 {
@@ -15,7 +15,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Enum to identify constraint type. 
     //----------------------------------------------------------------------------------------------------
-    enum class ConstraintType
+    enum class EConstraintType
     {
         Constraint, // Constraint that is applied to a single body.
         TwoBodyConstraint,    // Constraint that is applied to two connected bodies.
@@ -24,7 +24,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Enum to identity constraint subtype. 
     //----------------------------------------------------------------------------------------------------
-    enum class ConstraintSubType
+    enum class EConstraintSubType
     {
         Fixed,
         Point,
@@ -37,7 +37,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Certain constraints support setting them up in local or world space. This governs what is used. 
     //----------------------------------------------------------------------------------------------------
-    enum class ConstraintSpace
+    enum class EConstraintSpace
     {
         LocalToBodyCOM, /// All constraint properties are specified in local space to center of mass of the bodies that are being constrained (so e.g. 'constraint position 1' will be local to body 1 COM, 'constraint position 2' will be local to body 2 COM). Note that this means you need to subtract Shape::GetCenterOfMass() from positions!
         WorldSpace,     /// All constraint properties are specified in world space.
@@ -85,27 +85,6 @@ namespace nes
     public:
         static constexpr uint32_t kInvalidConstraintIndex = std::numeric_limits<uint32_t>::max();
 
-    private:
-        /// Index of the Constraint in the ConstraintManager's array.
-        uint32_t m_constraintIndex = kInvalidConstraintIndex;
-
-        /// Priority of the Constraint when solving. Higher values are more likely to be solved correctly.
-        uint32_t m_constraintPriority = 0;
-
-        /// Use only when the constraint is active. Override for the number of solver iterations to run.
-        /// 0 means use the default in PhysicsSettings::m_numVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
-        uint8_t m_numVelocityStepsOverride = 0;
-
-        /// Use only when the constraint is active. Override for the number of solver iterations to run.
-        /// 0 means use the default in PhysicsSettings::m_numPositionSteps. The number of iterations to use is the max of all contacts and constraints in the island.
-        uint8_t m_numPositionStepsOverride = 0;
-
-        /// Whether this Constraint is currently Active.
-        bool m_isEnabled = true;
-
-        /// User data value (can be used by the application).
-        uint64_t m_userData = 0;
-
     public:
         Constraint(const ConstraintSettings& settings);
         virtual ~Constraint() = default;
@@ -113,12 +92,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Type of constraint.
         //----------------------------------------------------------------------------------------------------
-        virtual ConstraintType      GetType() const                                     { return ConstraintType::Constraint; }
+        virtual EConstraintType     GetType() const                                     { return EConstraintType::Constraint; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the subtype of a constraint. 
         //----------------------------------------------------------------------------------------------------
-        virtual ConstraintSubType   GetSubType() const = 0;
+        virtual EConstraintSubType  GetSubType() const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Priority of the Constraint when solving. Higher values are more likely to be solved correctly.
@@ -190,7 +169,7 @@ namespace nes
         ///	@param deltaCOM : The delta of the center of mass of the Body. (shape->GetCenterOfMass() -
         ///     shapeBeforeChanged->GetCenterOfMass());
         //----------------------------------------------------------------------------------------------------
-        virtual void                NotifyShapeChanged(const BodyID& bodyID, const Vector3& deltaCOM) = 0;
+        virtual void                NotifyShapeChanged(const BodyID& bodyID, const Vec3& deltaCOM) = 0;
 
         /// Solver interface
         virtual bool                Internal_IsActive() const                             { return m_isEnabled; }
@@ -220,5 +199,26 @@ namespace nes
         /// @brief : Helper function to copy settings beack to constraint settings for this base class.
         //----------------------------------------------------------------------------------------------------
         void                        ToConstraintSettings(ConstraintSettings& outSettings) const;
+
+    private:
+        /// Index of the Constraint in the ConstraintManager's array.
+        uint32_t    m_constraintIndex = kInvalidConstraintIndex;
+
+        /// Priority of the Constraint when solving. Higher values are more likely to be solved correctly.
+        uint32_t    m_constraintPriority = 0;
+
+        /// Use only when the constraint is active. Override for the number of solver iterations to run.
+        /// 0 means use the default in PhysicsSettings::m_numVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
+        uint8_t     m_numVelocityStepsOverride = 0;
+
+        /// Use only when the constraint is active. Override for the number of solver iterations to run.
+        /// 0 means use the default in PhysicsSettings::m_numPositionSteps. The number of iterations to use is the max of all contacts and constraints in the island.
+        uint8_t     m_numPositionStepsOverride = 0;
+
+        /// Whether this Constraint is currently Active.
+        bool        m_isEnabled = true;
+
+        /// User data value (can be used by the application).
+        uint64_t    m_userData = 0;
     };
 }

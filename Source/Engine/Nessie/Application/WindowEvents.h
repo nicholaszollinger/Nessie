@@ -1,12 +1,11 @@
-#pragma once
 // WindowEvents.h
-
+#pragma once
 #include "Core/Events/Event.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Invoked when the Window is closed.
+    ///	@brief : Invoked when the Window is closed.
     //----------------------------------------------------------------------------------------------------
     class WindowClosedEvent final : public Event
     {
@@ -14,7 +13,7 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Invoked when the Window is resized.
+    ///	@brief : Invoked when the Window is resized.
     //----------------------------------------------------------------------------------------------------
     class WindowResizeEvent final : public Event
     {
@@ -26,12 +25,12 @@ namespace nes
     public:
         explicit WindowResizeEvent(const uint32_t width, const uint32_t height) : m_width(width), m_height(height) { }
 
-        [[nodiscard]] uint32_t GetWidth() const { return m_width; }
-        [[nodiscard]] uint32_t GetHeight() const { return m_height; }
+        uint32_t GetWidth() const { return m_width; }
+        uint32_t GetHeight() const { return m_height; }
     };
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Invoked when the Window is minimized or un-minimized.
+    ///	@brief : Invoked when the Window is minimized or unminimized.
     //----------------------------------------------------------------------------------------------------
     class WindowMinimizeEvent final : public Event
     {
@@ -42,11 +41,11 @@ namespace nes
     public:
         explicit WindowMinimizeEvent(const bool isMinimized) : m_isMinimized(isMinimized) { }
 
-        [[nodiscard]] bool IsMinimized() const { return m_isMinimized; }
+        bool IsMinimized() const { return m_isMinimized; }
     };
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Invoked when the Window is focused or unfocused.
+    ///	@brief : Invoked when the Window is focused or unfocused.
     //----------------------------------------------------------------------------------------------------
     class WindowFocusEvent final : public Event
     {
@@ -57,6 +56,9 @@ namespace nes
     public:
         explicit WindowFocusEvent(const bool hasFocus) : m_hasFocus(hasFocus) { }
 
-        [[nodiscard]] bool HasFocus() const { return m_hasFocus; }
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if the Window has gained (true) or lost focus (false)..  
+        //----------------------------------------------------------------------------------------------------
+        bool HasFocus() const { return m_hasFocus; }
     };
 }

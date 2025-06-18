@@ -15,10 +15,6 @@ namespace nes
     {
     public:
         using ConstraintsArray = std::vector<StrongPtr<Constraint>>;
-        
-    private:
-        ConstraintsArray    m_constraints{};
-        mutable std::mutex  m_mutex{};
 
     public:
         ConstraintManager() = default;
@@ -95,5 +91,9 @@ namespace nes
         // /// @brief : Unlock all constraints. This should only be done during PhysicsSystem::Update().
         // //----------------------------------------------------------------------------------------------------
         // void                Internal_UnlockAllConstraints();
+
+    private:
+        ConstraintsArray    m_constraints{};
+        mutable std::mutex  m_mutex{};
     };
 }

@@ -9,14 +9,14 @@ int main(int argc, char** argv)                                                 
     nes::CommandLineArgs args = {static_cast<size_t>(argc), argv };                 \
                                                                                     \
     nes::Application app(args);                                                     \
-    auto code = app.Init();                                                         \
+    auto code = app.Internal_Init();                                                \
                                                                                     \
-    if (code == nes::Application::ExitCode::Success)                                \
+    if (code == nes::Application::EExitCode::Success)                               \
     {                                                                               \
-        code = app.RunMainLoop();                                                   \
+        code = app.Internal_RunMainLoop();                                          \
     }                                                                               \
                                                                                     \
-    app.Close(code);                                                                \
+    app.Internal_Close(code);                                                       \
                                                                                     \
     return static_cast<int>(code);                                                  \
 }                                                                                   

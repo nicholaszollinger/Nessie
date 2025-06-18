@@ -14,7 +14,7 @@ namespace nes
         m_rotationEnabled = false;
         auto* pWorld = GetOwner()->GetWorld();
         //m_tickFunction.SetTickInterval(5.f);
-        pWorld->RegisterTickToWorldTickGroup(&m_tickFunction, TickStage::PrePhysics);
+        pWorld->RegisterTickToWorldTickGroup(&m_tickFunction, ETickStage::PrePhysics);
         
         return TickableEntity3DComponent::Init();
     }
@@ -42,39 +42,38 @@ namespace nes
 
     void FreeCamMovementComponent::ProcessInput()
     {
-        m_inputMovement = Vector3::Zero();
-        m_inputRotation = Vector2::Zero();
+        m_inputMovement = Vec3::Zero();
+        m_inputRotation = Vec2::Zero();
 
         // Process Movement:
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::W))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::W))
             m_inputMovement.z += 1.f;
             
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::S))
-            m_inputMovement.z += -1.f;
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::S))
+            m_inputMovement.z -= 1.f;
             
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::A))
-            m_inputMovement.x += -1.f;
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::A))
+            m_inputMovement.x -= 1.f;
         
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::D))
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::D))
             m_inputMovement.x += 1.f;
         
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::Space))
-            m_inputMovement.y += 1.f;    
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::Space))
+            m_inputMovement.y += 1.f;  
             
-        if (nes::InputManager::IsKeyDown(nes::KeyCode::LeftControl) || nes::InputManager::IsKeyDown(nes::KeyCode::RightControl))
-            m_inputMovement.y += -1.f;
+        if (nes::InputManager::IsKeyDown(nes::EKeyCode::LeftControl) || nes::InputManager::IsKeyDown(nes::EKeyCode::RightControl))
+            m_inputMovement.y -= 1.f;
 
-        // Normalize movement vector;
-        m_inputMovement.Normalize();
+        // Normalize movement vector
+        m_inputMovement.NormalizedOr(Vec3::Zero());
         
         // Process Rotation:
         if (m_rotationEnabled)
         {
-            const nes::Vector2 mouseDelta = nes::InputManager::GetCursorDelta();
-            m_inputRotation.y = mouseDelta.x; // Yaw
-            m_inputRotation.x = mouseDelta.y; // Pitch
-        
-            m_inputRotation = m_inputRotation.Normalize();
+            const Vec2 delta = nes::InputManager::GetCursorDelta();
+            m_inputRotation.x = delta.y;
+            m_inputRotation.y = delta.x;
+            m_inputRotation.Normalize();
         }
     }
 
@@ -83,18 +82,18 @@ namespace nes
         if (event.GetEventID() == nes::MouseButtonEvent::GetStaticEventID())
         {
             auto& mouseButtonEvent = checked_cast<nes::MouseButtonEvent&>(event);
-            if (mouseButtonEvent.GetButton() == nes::MouseButton::Right)
+            if (mouseButtonEvent.GetButton() == nes::EMouseButton::Right)
             {
-                if (mouseButtonEvent.GetAction() == nes::MouseAction::Pressed)
+                if (mouseButtonEvent.GetAction() == nes::EMouseAction::Pressed)
                 {
                     m_rotationEnabled = true;
-                    nes::InputManager::SetCursorMode(nes::CursorMode::Disabled);
+                    nes::InputManager::SetCursorMode(nes::ECursorMode::Disabled);
                 }
                     
-                else if (mouseButtonEvent.GetAction() == nes::MouseAction::Released)
+                else if (mouseButtonEvent.GetAction() == nes::EMouseAction::Released)
                 {
                     m_rotationEnabled = false;
-                    nes::InputManager::SetCursorMode(nes::CursorMode::Visible);
+                    nes::InputManager::SetCursorMode(nes::ECursorMode::Visible);
                 }
             }
         }
@@ -104,15 +103,15 @@ namespace nes
     {
         //NES_LOG("Ticked. Delta Time: ", deltaTime);
         ProcessInput();
-        const Vector3 deltaPitchYawRoll = Vector3(m_inputRotation.x * m_turnSpeedPitch, m_inputRotation.y * m_turnSpeedYaw, 0.f) * deltaTime;
-        const Vector3 deltaMovement = m_inputMovement * (m_moveSpeed * deltaTime);
+        const Vec3 deltaPitchYawRoll = Vec3(m_inputRotation.x * m_turnSpeedPitch, m_inputRotation.y * m_turnSpeedYaw, 0.f) * deltaTime;
+        const Vec3 deltaMovement = m_inputMovement * (m_moveSpeed * deltaTime);
         
         Entity3D* pOwner = GetOwner();
-        if (deltaPitchYawRoll.SquaredMagnitude() > 0.f || deltaMovement.SquaredMagnitude() > 0.f)
+        if (deltaPitchYawRoll.LengthSqr() > 0.f || deltaMovement.LengthSqr() > 0.f)
         {
             // Apply Rotation:
             Rotation localRotation = pOwner->GetLocalRotation();
-            if (deltaPitchYawRoll.SquaredMagnitude() > 0.f)
+            if (deltaPitchYawRoll.LengthSqr() > 0.f)
             {
                 const Rotation deltaRotation(deltaPitchYawRoll);
                 localRotation += deltaRotation;
@@ -121,12 +120,12 @@ namespace nes
             // Translation:
             // - Add the Delta XZ movement in our local orientation.
             // - Add the Delta Y movement on the world Y axis.
-            Vector3 localLocation = pOwner->GetLocalLocation();
-            localLocation += localRotation.RotatedVector(Vector3(deltaMovement.x, 0.f, deltaMovement.z));
+            Vec3 localLocation = pOwner->GetLocalLocation();
+            localLocation += localRotation.RotatedVector(Vec3(deltaMovement.x, 0.f, deltaMovement.z));
             localLocation.y += deltaMovement.y;
 
             // Set the new Transform
-            pOwner->SetLocalTransform(localLocation, localRotation, Vector3::Unit());
+            pOwner->SetLocalTransform(localLocation, localRotation, Vec3::One());
         }
     }
 }

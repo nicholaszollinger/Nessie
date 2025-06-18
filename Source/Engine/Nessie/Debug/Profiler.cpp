@@ -3,15 +3,15 @@
 
 namespace nes
 {
-    SimpleInstrumentationProfiler::SimpleInstrumentationProfiler(const std::string& label)
+    SimpleScopedProfiler::SimpleScopedProfiler(const std::string& label)
         : m_label(label)
     {
         m_timer.Start();
     }
 
-    SimpleInstrumentationProfiler::~SimpleInstrumentationProfiler()
+    SimpleScopedProfiler::~SimpleScopedProfiler()
     {
         [[maybe_unused]] const double result = m_timer.ElapsedTime();
-        NES_LOGV("Profiler", "[", m_label, "] Result: ", result, "ms.");
+        NES_LOG("[Profiler] [", m_label, "] Result: ", result, "ms.");
     }
 }

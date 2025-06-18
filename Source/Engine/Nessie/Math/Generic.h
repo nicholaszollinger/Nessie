@@ -1,4 +1,5 @@
 // Generic.h
+// [TODO]: Change name to Math/Common.h
 #pragma once
 #include <cmath>
 #include "Core/Config.h"

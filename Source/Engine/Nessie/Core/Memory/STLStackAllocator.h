@@ -28,27 +28,37 @@ namespace nes
         {
             using other = STLStackAllocator<OtherType>;  
         };
-
-        
-        inline STLStackAllocator(StackAllocator& stackAllocator) : m_allocator(stackAllocator) {}
+    
+    public:
+        inline          STLStackAllocator(StackAllocator& stackAllocator) : m_allocator(stackAllocator) {}
 
         /// Construct from another typed allocator.
         template <typename OtherType>
-        explicit STLStackAllocator(const STLStackAllocator<OtherType>& other) : m_allocator(other.GetAllocator()) {}
+        explicit        STLStackAllocator(const STLStackAllocator<OtherType>& other) : m_allocator(other.GetAllocator()) {}
 
-        inline pointer allocate(size_type size)
+        bool            operator==(const STLStackAllocator& other) const { return &m_allocator == &other.m_allocator; }
+        bool            operator!=(const STLStackAllocator& other) const { return &m_allocator != &other.m_allocator; }
+
+    public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : STL Allocate.
+        //----------------------------------------------------------------------------------------------------
+        inline pointer  allocate(size_type size)
         {
             return pointer(m_allocator.Allocate(size * sizeof(value_type)));
         }
 
-        inline void deallocate(pointer pPtr, const size_type size)
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : STL Deallocate.
+        //----------------------------------------------------------------------------------------------------
+        inline void     deallocate(pointer pPtr, const size_type size)
         {
             m_allocator.Free(reinterpret_cast<std::byte*>(pPtr), size * sizeof(value_type));
         }
 
-        bool operator==(const STLStackAllocator& other) const { return &m_allocator == &other.m_allocator; }
-        bool operator!=(const STLStackAllocator& other) const { return &m_allocator != &other.m_allocator; }
-        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the underlying Stack Allocator used by wrapper. 
+        //----------------------------------------------------------------------------------------------------
         [[nodiscard]] StackAllocator& GetAllocator() const { return m_allocator; }
     };
 }

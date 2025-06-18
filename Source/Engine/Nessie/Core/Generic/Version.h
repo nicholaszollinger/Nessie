@@ -1,33 +1,57 @@
-#pragma once
 // Version.h
-#include <cstdint>
+#pragma once
+#include "Core/Config.h"
 #include <string>
 #include "Resources/Serializer_Member.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Struct that represents a version number for the Application, Engine, etc.
+    /// @brief : Struct that represents a version number for the Application, Engine, etc.
     //----------------------------------------------------------------------------------------------------
     struct Version
     {
-        uint32_t m_value{};
-
+    public:
         Version() = default;
-        Version(uint32_t major, uint32_t minor = 0, uint32_t patch = 0, const uint32_t variant = 0);
+        Version(uint32 major, uint32 minor = 0, uint32 patch = 0, const uint32 variant = 0);
 
-        bool operator==(const Version& other) const { return m_value == other.m_value; }
-        bool operator!=(const Version& other) const { return m_value != other.m_value; }
+        bool            operator==(const Version& other) const  { return m_value == other.m_value; }
+        bool            operator!=(const Version& other) const  { return m_value != other.m_value; }
+                        operator uint32() const                 { return m_value; }
 
-        uint32_t Major() const;
-        uint32_t Minor() const;
-        uint32_t Patch() const;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Major value of the version. 
+        //----------------------------------------------------------------------------------------------------
+        uint32          Major() const;
 
-        std::string ToString() const;
-        bool Deserialize(const YAML::Node& node);
-        bool Serialize(YAML::Node& node) const;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Minor value of the version.
+        //----------------------------------------------------------------------------------------------------
+        uint32          Minor() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Patch value of the version 
+        //----------------------------------------------------------------------------------------------------
+        uint32          Patch() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the string representation of the version value. 
+        //----------------------------------------------------------------------------------------------------
+        std::string     ToString() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Deserialize a Version from YAML.
+        //----------------------------------------------------------------------------------------------------
+        bool            Deserialize(const YAML::Node& node);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Serialize a Version to YAML
+        //----------------------------------------------------------------------------------------------------
+        bool            Serialize(YAML::Node& node) const;
+
+    private:
+        /// Combined value containing Major, Minor and Patch values.
+        uint32          m_value{};
     };
 
     NES_DEFINE_MEMBER_SERIALIZER(Version);

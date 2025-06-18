@@ -10,7 +10,6 @@ namespace nes
     {
         BodyID  m_bodyID;                                    /// Body that was hit.
         float   m_fraction = 1.f + math::PrecisionDelta();   /// Hit fraction fo the ray/object [0, 1]. HitPoint = Start + m_fraction * (End - Start). 
-
         
         //----------------------------------------------------------------------------------------------------
         /// @breif : Function required by the CollisionCollector. A smaller fraction is considered to be a 'better hit'.

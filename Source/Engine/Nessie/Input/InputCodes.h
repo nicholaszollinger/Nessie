@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    enum class KeyCode : int
+    enum class EKeyCode : int
     {
         Unknown,
         A,
@@ -93,7 +93,7 @@ namespace nes
         RightSuper,
     };
 
-    enum class KeyAction : int
+    enum class EKeyAction : int
     {
         Pressed,
         Released,
@@ -111,7 +111,7 @@ namespace nes
         bool m_numLock  = false;
     };
 
-    enum class MouseButton : int
+    enum class EMouseButton : int
     {
         Left,
         Right,
@@ -121,7 +121,7 @@ namespace nes
         Unknown,
     };
 
-    enum class MouseAction : int
+    enum class EMouseAction : int
     {
         Pressed,
         Released,

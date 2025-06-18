@@ -1,7 +1,6 @@
 ﻿// Camera.cpp
 #include "CameraComponent.h"
 #include "Application/Application.h"
-#include "Math/VectorConversions.h"
 #include "Scene/Scene.h"
 #include "World/Entity3D.h"
 
@@ -54,11 +53,11 @@ namespace nes
     {
         // Set the ViewMatrix of the Camera to look toward the position in front of the camera.
         const auto& worldTransformMatrix = GetOwner()->GetWorldTransformMatrix();
-        const Mat4 orientationMatrix = math::ExtractMatrixRotation4x4(worldTransformMatrix);
+        const Mat44 orientationMatrix = worldTransformMatrix.GetRotation();
         
-        const auto cameraForward = orientationMatrix.TransformVector(Vector3::Forward());
-        const auto cameraUp = orientationMatrix.TransformVector(Vector3::Up());
-        const Vector3 cameraPosition = math::XYZ(worldTransformMatrix[3]); 
+        const auto cameraForward = orientationMatrix.TransformVector(Vec3::Forward());
+        const auto cameraUp = orientationMatrix.TransformVector(Vec3::Up());
+        const Vec3 cameraPosition = worldTransformMatrix.GetTranslation(); 
         m_camera.LookAt(cameraPosition, cameraPosition + cameraForward, cameraUp);
     }
 

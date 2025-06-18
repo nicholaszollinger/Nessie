@@ -26,6 +26,9 @@ namespace nes
         }
     };
 #else
-#error "Unsupported CPU Architecture!"
+//#error "Unsupported CPU Architecture!"
+    template <unsigned Value, unsigned Mask>
+    class FPControlWord {};
+    
 #endif
 }

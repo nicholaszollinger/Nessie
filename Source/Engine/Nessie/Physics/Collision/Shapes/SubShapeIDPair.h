@@ -12,11 +12,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class SubShapeIDPair
     {
-        BodyID      m_body1ID;
-        SubShapeID  m_subShape1ID;
-        BodyID      m_body2ID;
-        SubShapeID  m_subShape2ID;
-        
     public:
         SubShapeIDPair() = default;
 
@@ -29,13 +24,13 @@ namespace nes
             //
         }
 
-        inline bool operator==(const SubShapeIDPair& other) const
+        inline bool         operator==(const SubShapeIDPair& other) const
         {
             return VectorRegisterUint::Load(reinterpret_cast<const uint32_t*>(this)) == VectorRegisterUint::Load(reinterpret_cast<const uint32_t*>(&other));
         }
 
         /// Less than operator is used to consistently order contact points for a deterministic simulation.
-        inline bool operator< (const SubShapeIDPair& other) const
+        inline bool         operator<(const SubShapeIDPair& other) const
         {
             if (m_body1ID != other.m_body1ID)
                 return m_body1ID < other.m_body1ID;
@@ -55,7 +50,13 @@ namespace nes
         const SubShapeID&   GetSubShape2ID() const      { return m_subShape1ID; }
 
         // [TODO]: 
-        uint64_t GetHash() const;
+        uint64_t            GetHash() const;
+
+    private:
+        BodyID      m_body1ID;
+        SubShapeID  m_subShape1ID;
+        BodyID      m_body2ID;
+        SubShapeID  m_subShape2ID;
     };
 
     static_assert(sizeof(SubShapeIDPair) == 16, "Unexpected size");

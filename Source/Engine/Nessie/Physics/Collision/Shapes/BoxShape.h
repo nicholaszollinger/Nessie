@@ -11,11 +11,11 @@ namespace nes
     class BoxShapeSettings final : public ConvexShapeSettings
     {
     public:
-        Vector3 m_halfExtent    = Vector3::Zero(); /// Half the size of the box, including the convex radius.
+        Vec3    m_halfExtent    = Vec3::Zero(); /// Half the size of the box, including the convex radius.
         float   m_convexRadius  = 0.f;
         
         BoxShapeSettings() = default;
-        explicit BoxShapeSettings(const Vector3& halfExtent, float convexRadius = physics::kDefaultConvexRadius);
+        explicit BoxShapeSettings(const Vec3& halfExtent, float convexRadius = physics::kDefaultConvexRadius);
 
         //----------------------------------------------------------------------------------------------------
         /// @see : ShapeSettings::Create()
@@ -28,16 +28,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class BoxShape final : public nes::ConvexShape
     {
-        /// Class for GetSupportFunction()
-        class Box;
-
-        Vector3 m_halfExtent    = Vector3::Zero(); /// Half the size of the box, including the convex radius.
-        float   m_convexRadius  = 0.f;
-        
     public:
-        BoxShape() : ConvexShape(ShapeSubType::Box) {}
+        BoxShape() : ConvexShape(EShapeSubType::Box) {}
         BoxShape(const BoxShapeSettings& settings, ShapeResult& outResult);
-        BoxShape(const Vector3& halfExtent, float convexRadius = physics::kDefaultConvexRadius);
+        BoxShape(const Vec3& halfExtent, float convexRadius = physics::kDefaultConvexRadius);
         
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::GetLocalBounds()
@@ -57,7 +51,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::GetSurfaceNormal()
         //----------------------------------------------------------------------------------------------------
-        virtual Vector3         GetSurfaceNormal(const SubShapeID& subShapeID, const Vector3& localSurfacePosition) const override;
+        virtual Vec3            GetSurfaceNormal(const SubShapeID& subShapeID, const Vec3& localSurfacePosition) const override;
 
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::CastRay()
@@ -72,12 +66,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::CollidePoint()
         //----------------------------------------------------------------------------------------------------
-        virtual void            CollidePoint(const Vector3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const override;
+        virtual void            CollidePoint(const Vec3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const override;
 
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::GetTrianglesStart()
         //----------------------------------------------------------------------------------------------------
-        virtual void            GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vector3& positionCOM, const Quat& rotation, const Vector3& scale) const override;
+        virtual void            GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vec3& positionCOM, const Quat& rotation, const Vec3& scale) const override;
 
         //----------------------------------------------------------------------------------------------------
         /// @see : Shape::GetTrianglesNext()
@@ -97,16 +91,23 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @see : ConvexShape::GetSupportFunction()
         //----------------------------------------------------------------------------------------------------
-        virtual const Support*  GetSupportFunction(SupportMode mode, SupportBuffer& buffer, const Vector3& scale) const override;
+        virtual const Support*  GetSupportFunction(ESupportMode mode, SupportBuffer& buffer, const Vec3& scale) const override;
 
         //----------------------------------------------------------------------------------------------------
         /// @see : ConvexShape::GetSupportingFace()
         //----------------------------------------------------------------------------------------------------
-        virtual void            GetSupportingFace(const SubShapeID& subShapeID, const Vector3& direction, const Vector3& scale, const Mat4& centerOfMassTransform, SupportingFace& outVertices) const override;
+        virtual void            GetSupportingFace(const SubShapeID& subShapeID, const Vec3& direction, const Vec3& scale, const Mat44& centerOfMassTransform, SupportingFace& outVertices) const override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Register shape functions within the registry. 
         //----------------------------------------------------------------------------------------------------
         static void             Register();
+
+    private:
+        /// Class for GetSupportFunction()
+        class Box;
+
+        Vec3    m_halfExtent    = Vec3::Zero(); /// Half the size of the box, including the convex radius.
+        float   m_convexRadius  = 0.f;
     };
 }

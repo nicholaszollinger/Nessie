@@ -74,10 +74,7 @@ namespace nes
         static constexpr TQuaternion MakeFromRotationVector(const TVector3<Type>& vector);
         static constexpr TQuaternion MakeFromAngleAxis(const Type angleRadians, const TVector3<Type>& axis);
     };
-
-    using Quatf = TQuaternion<float>;
-    using Quatd = TQuaternion<double>;
-    using Quat = TQuaternion<NES_PRECISION_TYPE>;
+    
 }
 
 namespace nes
@@ -716,10 +713,10 @@ namespace nes
         const float sinRoll  = std::sin(halfEulerRadians.z);
 
         TQuaternion result;
-        result.w = (cosPitch * cosYaw * cosRoll) + (sinPitch * sinYaw * sinRoll);
         result.x = (sinPitch * cosYaw * cosRoll) - (cosPitch * sinYaw * sinRoll);
         result.y = (cosPitch * sinYaw * cosRoll) + (sinPitch * cosYaw * sinRoll);
         result.z = (cosPitch * cosYaw * sinRoll) - (sinPitch * sinYaw * cosRoll);
+        result.w = (cosPitch * cosYaw * cosRoll) + (sinPitch * sinYaw * sinRoll);
         
         return result;
     }

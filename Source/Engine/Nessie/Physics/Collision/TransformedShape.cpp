@@ -6,7 +6,7 @@
 #include "CastResult.h"
 #include "Shapes/SubShapeID.h"
 #include "CollisionSolver.h"
-#include "Math/OrientedBox.h"
+#include "Geometry/OrientedBox.h"
 
 namespace nes
 {
@@ -18,7 +18,7 @@ namespace nes
             RayCast localRay(ray.Transformed(GetInverseCenterOfMassTransform()));
 
             // Scale the ray
-            Vector3 inverseScale = GetShapeScale().GetReciprocal();
+            Vec3 inverseScale = GetShapeScale().Reciprocal();
             localRay.m_origin *= inverseScale;
             localRay.m_direction *= inverseScale;
 
@@ -47,7 +47,7 @@ namespace nes
             RayCast localRay(ray.Transformed(GetInverseCenterOfMassTransform()));
 
             // Scale the ray
-            Vector3 inverseScale = GetShapeScale().GetReciprocal();
+            Vec3 inverseScale = GetShapeScale().Reciprocal();
             localRay.m_origin *= inverseScale;
             localRay.m_direction *= inverseScale;
 
@@ -57,7 +57,7 @@ namespace nes
         }
     }
 
-    void TransformedShape::CollidePoint(const Vector3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CollidePoint(const Vec3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {
@@ -66,7 +66,7 @@ namespace nes
             shapeFilter.m_bodyID2 = m_bodyID;
 
             // Transform and scale the point to local space
-            const Vector3 localPoint = Vector3(GetInverseCenterOfMassTransform().TransformPoint(point)) / GetShapeScale();
+            const Vec3 localPoint = Vec3(GetInverseCenterOfMassTransform().TransformPoint(point)) / GetShapeScale();
             
             // Do point collide on the Shape
             SubShapeIDCreator subShapeID(m_subShapeIDCreator);
@@ -74,7 +74,7 @@ namespace nes
         }
     }
 
-    void TransformedShape::CollideShape(const Shape* pShape, const Vector3& shapeScale, const Mat4& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const Vector3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CollideShape(const Shape* pShape, const Vec3& shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const Vec3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {
@@ -85,13 +85,13 @@ namespace nes
             // Collide the shapes.
             SubShapeIDCreator subShapeID1(m_subShapeIDCreator);
             SubShapeIDCreator subShapeID2(m_subShapeIDCreator);
-            Mat4 transform1 = centerOfMassTransform.PostTranslated(-baseOffset);
-            Mat4 transform2 = GetCenterOfMassTransform().PostTranslated(-baseOffset);
+            Mat44 transform1 = centerOfMassTransform.PostTranslated(-baseOffset);
+            Mat44 transform2 = GetCenterOfMassTransform().PostTranslated(-baseOffset);
             CollisionSolver::CollideShapeVsShape(pShape, m_pShape, shapeScale, GetShapeScale(), transform1, transform2, subShapeID1, subShapeID2, collideShapeSettings, collector, shapeFilter);
         }
     }
 
-    void TransformedShape::CastShape(const ShapeCast& shapeCast, const ShapeCastSettings& settings, const Vector3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CastShape(const ShapeCast& shapeCast, const ShapeCastSettings& settings, const Vec3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {
@@ -103,7 +103,7 @@ namespace nes
             ShapeCast localShapeCast(shapeCast.PostTranslated(-baseOffset));
 
             // Get center of mass of object we're casting against relative to the base offset and convert it to floats
-            Mat4 centerOfMassTransform2 = GetCenterOfMassTransform().PostTranslated(-baseOffset);
+            Mat44 centerOfMassTransform2 = GetCenterOfMassTransform().PostTranslated(-baseOffset);
 
             // Cast the shape onto this one.
             SubShapeIDCreator subShapeID1(m_subShapeIDCreator);
@@ -119,9 +119,9 @@ namespace nes
             struct MyCollector : public TransformedShapeCollector
             {
                 TransformedShapeCollector& m_collector;
-                Vector3 m_shapePositionCOM;
+                Vec3 m_shapePositionCOM;
                 
-                MyCollector(TransformedShapeCollector& collector, const Vector3& shapePositionCOM)
+                MyCollector(TransformedShapeCollector& collector, const Vec3& shapePositionCOM)
                     : TransformedShapeCollector(collector)
                     , m_collector(collector)
                     , m_shapePositionCOM(shapePositionCOM)
@@ -154,11 +154,11 @@ namespace nes
             AABox localBox = box;
             localBox.Translate(-m_shapePositionCOM);
 
-            m_pShape->CollectTransformedShapes(localBox, Vector3::Zero(), m_shapeRotation, GetShapeScale(), m_subShapeIDCreator, myCollector, shapeFilter);
+            m_pShape->CollectTransformedShapes(localBox, Vec3::Zero(), m_shapeRotation, GetShapeScale(), m_subShapeIDCreator, myCollector, shapeFilter);
         }
     }
     
-    void TransformedShape::GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vector3& baseOffset) const
+    void TransformedShape::GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vec3& baseOffset) const
     {
         if (m_pShape != nullptr)
         {
@@ -166,7 +166,7 @@ namespace nes
             AABox localBox = box;
             localBox.Translate(-baseOffset);
 
-            m_pShape->GetTrianglesStart(context, localBox, Vector3(m_shapePositionCOM - baseOffset), m_shapeRotation, GetShapeScale());
+            m_pShape->GetTrianglesStart(context, localBox, Vec3(m_shapePositionCOM - baseOffset), m_shapeRotation, GetShapeScale());
         }
     }
 

@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    TransformedShape::TransformedShape(const Vector3& positionCOM, const Quat& rotation, const Shape* pShape, const BodyID& bodyID, const SubShapeIDCreator& subShapeIdCreator)
+    TransformedShape::TransformedShape(const Vec3& positionCOM, const Quat& rotation, const Shape* pShape, const BodyID& bodyID, const SubShapeIDCreator& subShapeIdCreator)
         : m_shapePositionCOM(positionCOM)
         , m_shapeRotation(rotation)
         , m_pShape(pShape)
@@ -13,23 +13,23 @@ namespace nes
         //
     }
 
-    void TransformedShape::SetWorldTransform(const Vector3& position, const Quat& rotation, const Vector3& scale)
+    void TransformedShape::SetWorldTransform(const Vec3& position, const Quat& rotation, const Vec3& scale)
     {
         m_shapePositionCOM = position + rotation * (scale * m_pShape->GetCenterOfMass());
         m_shapeRotation = rotation;
         SetShapeScale(scale);
     }
 
-    void TransformedShape::SetWorldTransform(const Mat4& transform)
+    void TransformedShape::SetWorldTransform(const Mat44& transform)
     {
-        Vector3 scale;
-        Mat4 rotationTranslation = transform.Decompose(scale);
-        SetWorldTransform(rotationTranslation.GetColumn3(3), math::ToQuat(rotationTranslation), scale);
+        Vec3 scale;
+        Mat44 rotationTranslation = transform.Decompose(scale);
+        SetWorldTransform(rotationTranslation.GetColumn3(3), rotationTranslation.ToQuaternion(), scale);
     }
 
-    Mat4 TransformedShape::GetWorldTransform() const
+    Mat44 TransformedShape::GetWorldTransform() const
     {
-        Mat4 transform = math::MakeRotationMatrix4(m_shapeRotation).PreScaled(GetShapeScale());
+        Mat44 transform = Mat44::MakeRotation(m_shapeRotation).PreScaled(GetShapeScale());
         transform.SetTranslation(m_shapePositionCOM - transform.TransformVector(m_pShape->GetCenterOfMass()));
         return transform;
     }
@@ -39,25 +39,25 @@ namespace nes
         SubShapeID result;
         const unsigned numBitsWritten = m_subShapeIDCreator.GetNumBitsWritten();
         
-        NES_IF_LOGGING_ENABLED(const uint32_t rootID =)
+        NES_IF_ASSERTS_ENABLED(const uint32_t rootID =)
         subShapeID.PopID(numBitsWritten, result);
         NES_ASSERT(rootID == (m_subShapeIDCreator.GetID().GetValue() & ((1 << numBitsWritten) - 1)));
         
         return result;
     }
 
-    Vector3 TransformedShape::GetWorldSpaceSurfaceNormal(const SubShapeID& subShapeID, const Vector3& position) const
+    Vec3 TransformedShape::GetWorldSpaceSurfaceNormal(const SubShapeID& subShapeID, const Vec3& position) const
     {
-        Mat4 inverseCOM = GetInverseCenterOfMassTransform();
-        Vector3 scale = GetShapeScale();
-        return inverseCOM.TransformVectorTranspose(m_pShape->GetSurfaceNormal(MakeSubShapeIDRelativeToShape(subShapeID), Vector3(inverseCOM.TransformPoint(position)) / scale) / scale).Normalized();
+        Mat44 inverseCOM = GetInverseCenterOfMassTransform();
+        Vec3 scale = GetShapeScale();
+        return inverseCOM.Multiply3x3Transposed(m_pShape->GetSurfaceNormal(MakeSubShapeIDRelativeToShape(subShapeID), Vec3(inverseCOM.TransformPoint(position)) / scale) / scale).Normalized();
     }
 
-    void TransformedShape::GetSupportingFace(const SubShapeID& subShapeID, const Vector3& direction,
-        const Vector3& baseOffset, Shape::SupportingFace& outVertices) const
+    void TransformedShape::GetSupportingFace(const SubShapeID& subShapeID, const Vec3& direction,
+        const Vec3& baseOffset, Shape::SupportingFace& outVertices) const
     {
-        const Mat4 com = GetCenterOfMassTransform().PostTranslated(-baseOffset);
-        m_pShape->GetSupportingFace(MakeSubShapeIDRelativeToShape(subShapeID), com.TransformVectorTranspose(direction), GetShapeScale(), com, outVertices);
+        const Mat44 com = GetCenterOfMassTransform().PostTranslated(-baseOffset);
+        m_pShape->GetSupportingFace(MakeSubShapeIDRelativeToShape(subShapeID), com.Multiply3x3Transposed(direction), GetShapeScale(), com, outVertices);
     }
 
     uint64_t TransformedShape::GetSubShapeUserData(const SubShapeID& subShapeID) const
@@ -67,7 +67,7 @@ namespace nes
 
     TransformedShape TransformedShape::GetSubShapeTransformedShape(const SubShapeID& subShapeID, SubShapeID& outRemainder) const
     {
-        TransformedShape result = m_pShape->GetSubShapeTransformedShape(subShapeID, Vector3::Zero(), m_shapeRotation, GetShapeScale(), outRemainder);
+        TransformedShape result = m_pShape->GetSubShapeTransformedShape(subShapeID, Vec3::Zero(), m_shapeRotation, GetShapeScale(), outRemainder);
         result.m_shapePositionCOM += m_shapePositionCOM;
         return result;
     }

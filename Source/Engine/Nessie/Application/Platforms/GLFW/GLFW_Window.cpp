@@ -7,19 +7,17 @@
 #include "Application/Application.h"
 #include "Debug/CheckedCast.h"
 #include "GLFW/glfw3.h"
+#include "Math/Vec2.h"
 
+//----------------------------------------------------------------------------------------------------
+/// @brief : Callback used to handle errors in GLFW.
+//----------------------------------------------------------------------------------------------------
 static void GLFW_ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char* description);
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Creates the Window and sets up Window Callbacks.
-    ///		@param app : Application creating this Window.
-    ///		@param props : Properties for the Window.
-    ///		@returns : False if there was an error setting up the Window.
-    //----------------------------------------------------------------------------------------------------
+    NES_DEFINE_LOG_TAG(kGLFWLogTag, "GLFW", Warn);
+    
     bool Window::Init(Application& app, const WindowProperties& props)
     {
         m_properties = props;
@@ -30,7 +28,7 @@ namespace nes
         // only created once.
         if (!glfwInit())
         {
-            NES_ERRORV("GLFW", "GLFW could not be initialized!");
+            NES_ERROR(kGLFWLogTag, "GLFW could not be initialized!");
             return false;
         }
 
@@ -45,7 +43,7 @@ namespace nes
         GLFWwindow* pWindow = nullptr;
         switch (m_properties.m_windowMode)
         {
-            case WindowMode::Fullscreen:
+            case EWindowMode::Fullscreen:
             {
                 auto* pMonitor = glfwGetPrimaryMonitor();
                 const auto* pMode = glfwGetVideoMode(pMonitor);
@@ -55,7 +53,7 @@ namespace nes
                 break;
             }
 
-            case WindowMode::FullscreenBorderless:
+            case EWindowMode::FullscreenBorderless:
             {
                 auto* pMonitor = glfwGetPrimaryMonitor();
                 const auto* pMode = glfwGetVideoMode(pMonitor);
@@ -72,7 +70,7 @@ namespace nes
                 break;
             }
 
-            case WindowMode::Windowed:
+            case EWindowMode::Windowed:
             {
                 const int width = static_cast<int>(m_properties.m_extent.m_width);
                 const int height = static_cast<int>(m_properties.m_extent.m_height);
@@ -111,8 +109,8 @@ namespace nes
             Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
 
             const Modifiers mods = glfw::ConvertToModifiers(modifiers);
-            const KeyCode keyCode = glfw::ConvertToKeyCode(key);
-            const KeyAction keyAction = glfw::ConvertToKeyAction(action);
+            const EKeyCode keyCode = glfw::ConvertToKeyCode(key);
+            const EKeyAction keyAction = glfw::ConvertToKeyAction(action);
 
             KeyEvent event(keyCode, keyAction, mods);
             pApp->PushEvent(event);
@@ -126,10 +124,10 @@ namespace nes
             // Get the mouse position at the time of the event.
             double xPos, yPos;
             glfwGetCursorPos(pWindow, &xPos, &yPos);
-            const Vector2 mousePos(static_cast<float>(xPos), static_cast<float>(yPos));
-            const MouseButton mouseButton = glfw::ConvertToMouseButton(button);
+            const Float2 mousePos(static_cast<float>(xPos), static_cast<float>(yPos));
+            const EMouseButton mouseButton = glfw::ConvertToMouseButton(button);
             const Modifiers mods = glfw::ConvertToModifiers(modifiers);
-            const MouseAction mouseAction = glfw::ConvertToMouseAction(action);
+            const EMouseAction mouseAction = glfw::ConvertToMouseAction(action);
 
             MouseButtonEvent event(mouseButton, mouseAction, mods, mousePos.x, mousePos.y);
             pApp->PushEvent(event);
@@ -151,10 +149,10 @@ namespace nes
             Window& window = pApp->GetWindow();
 
             // New Mouse Position.
-            Vector2 position{static_cast<float>(xPos), static_cast<float>(yPos)};
+            Vec2 position{static_cast<float>(xPos), static_cast<float>(yPos)};
 
             // Calculate the relative motion from the last cursor position of the mouse.
-            Vector2 deltaPosition = position - window.m_cursorPosition;
+            Vec2 deltaPosition = Vec2(position) - Vec2(window.m_cursorPosition);
 
             // Update the last cursor position.
             window.m_cursorPosition = position;
@@ -268,7 +266,7 @@ namespace nes
 
 void GLFW_ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char* description)
 {
-    NES_ERRORV("GLFW", "Error: ", error, " - ", description);
+    NES_ERROR(nes::kGLFWLogTag, "Error: ", error, " - ", description);
 }
 
 #endif

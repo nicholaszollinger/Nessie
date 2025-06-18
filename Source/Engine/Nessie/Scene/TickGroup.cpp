@@ -63,7 +63,7 @@ namespace nes
         return false;
     }
 
-    TickGroup::TickGroup(const TickStage stage)
+    TickGroup::TickGroup(const ETickStage stage)
         : m_stage(stage)
     {
         //
