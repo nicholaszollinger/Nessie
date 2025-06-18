@@ -17,7 +17,7 @@ namespace nes
     ///	@param contactPointsOn1 : The contact points on shape 1 relative to the centerOfMass.
     ///	@param contactPointsOn2 : The contact points on shape 2 relative to the centerOfMass.
     //----------------------------------------------------------------------------------------------------
-    void PruneContactPoints(const Vector3& penetrationAxis, ContactPoints& contactPointsOn1, ContactPoints& contactPointsOn2);
+    void PruneContactPoints(const Vec3& penetrationAxis, ContactPoints& contactPointsOn1, ContactPoints& contactPointsOn2);
 
     // [TODO]: 
     //----------------------------------------------------------------------------------------------------
@@ -33,5 +33,5 @@ namespace nes
     ///	@param outContactPoints1 : Returns the contact points between the two shapes for shape 1 relative to centerOfMass (any existing points in the output array are left as is).
     ///	@param outContactPoints2 : Returns the contact points between the two shapes for shape 2 relative to centerOfMass (any existing points in the output array are left as is).
     //----------------------------------------------------------------------------------------------------
-    void ManifoldBetweenTwoFaces(const Vector3& contactPoint1, const Vector3& contactPoint2, const Vector3& penetrationAxis, float maxContactDistance, const ConvexShape::SupportingFace& shapeFace1, const ConvexShape::SupportingFace& shapeFace2, ContactPoints& outContactPoints1, ContactPoints& outContactPoints2);
+    void ManifoldBetweenTwoFaces(const Vec3& contactPoint1, const Vec3& contactPoint2, const Vec3& penetrationAxis, float maxContactDistance, const ConvexShape::SupportingFace& shapeFace1, const ConvexShape::SupportingFace& shapeFace2, ContactPoints& outContactPoints1, ContactPoints& outContactPoints2);
 }

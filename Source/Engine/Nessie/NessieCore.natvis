@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+    <Type Name="nes::Vec4Reg">
+		<DisplayString>x={m_f32[0]}, y={m_f32[1]}, z={m_f32[2]}, w={m_f32[3]}, L^2={m_f32[0]*m_f32[0]+m_f32[1]*m_f32[1]+m_f32[2]*m_f32[2]+m_f32[3]*m_f32[3]}</DisplayString>
+	</Type>
+
+    <Type Name="nes::UVec4Reg">
+        <DisplayString>x={m_u32[0]}, y={m_u32[1]}, z={m_u32[2]}, w={m_u32[3]}</DisplayString>
+    </Type>
+
+    <Type Name="nes::Quat">
+        <DisplayString>x={m_value.x}, y={m_value.y}, z={m_value.z}, w={m_value.w}</DisplayString>
+    </Type>
+
+    <Type Name="nes::Mat33">
+        <DisplayString>{m_columns[0].m_f32[0]}, {m_columns[1].m_f32[0]}, {m_columns[2].m_f32[0]} | {m_columns[0].m_f32[1]}, {m_columns[1].m_f32[1]}, {m_columns[2].m_f32[1]} | {m_columns[0].m_f32[2]}, {m_columns[1].m_f32[2]}, {m_columns[2].m_f32[2]}</DisplayString>
+        <Expand>
+            <Synthetic Name="[Row 0]">
+                <DisplayString>{m_columns[0].m_f32[0]}, {m_columns[1].m_f32[0]}, {m_columns[2].m_f32[0]}</DisplayString>
+            </Synthetic>
+            <Synthetic Name="[Row 1]">
+                <DisplayString>{m_columns[0].m_f32[1]}, {m_columns[1].m_f32[1]}, {m_columns[2].m_f32[1]}</DisplayString>
+            </Synthetic>
+            <Synthetic Name="[Row 2]">
+                <DisplayString>{m_columns[0].m_f32[2]}, {m_columns[1].m_f32[2]}, {m_columns[2].m_f32[2]}</DisplayString>
+            </Synthetic>
+        </Expand>
+    </Type>
+
+    <Type Name="nes::Mat44">
+        <DisplayString>{m_columns[0].m_f32[0]}, {m_columns[1].m_f32[0]}, {m_columns[2].m_f32[0]}, {m_columns[3].m_f32[0]} | {m_columns[0].m_f32[1]}, {m_columns[1].m_f32[1]}, {m_columns[2].m_f32[1]}, {m_columns[3].m_f32[1]} | {m_columns[0].m_f32[2]}, {m_columns[1].m_f32[2]}, {m_columns[2].m_f32[2]}, {m_columns[3].m_f32[2]}</DisplayString>
+        <Expand>
+            <Synthetic Name="[Row 0]">
+                <DisplayString>{m_columns[0].m_f32[0]}, {m_columns[1].m_f32[0]}, {m_columns[2].m_f32[0]}, {m_columns[3].m_f32[0]}</DisplayString>
+            </Synthetic>
+            <Synthetic Name="[Row 1]">
+                <DisplayString>{m_columns[0].m_f32[1]}, {m_columns[1].m_f32[1]}, {m_columns[2].m_f32[1]}, {m_columns[3].m_f32[1]}</DisplayString>
+            </Synthetic>
+            <Synthetic Name="[Row 2]">
+                <DisplayString>{m_columns[0].m_f32[2]}, {m_columns[1].m_f32[2]}, {m_columns[2].m_f32[2]}, {m_columns[3].m_f32[2]}</DisplayString>
+            </Synthetic>
+            <Synthetic Name="[Row 3]">
+                <DisplayString>{m_columns[0].m_f32[3]}, {m_columns[1].m_f32[3]}, {m_columns[2].m_f32[3]}, {m_columns[3].m_f32[3]}</DisplayString>
+            </Synthetic>
+        </Expand>
+    </Type>
+
+    <Type Name="nes::StaticArray&lt;*&gt;">
+        <DisplayString>size={mSize}</DisplayString>
+        <Expand>
+            <Item Name="[size]" ExcludeView="simple">m_size</Item>
+            <ArrayItems>
+                <Size>m_size</Size>
+                <ValuePointer>(value_type *)m_elements</ValuePointer>
+            </ArrayItems>
+        </Expand>
+    </Type>
+    
+</AutoVisualizer>

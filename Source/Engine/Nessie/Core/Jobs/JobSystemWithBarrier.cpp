@@ -38,7 +38,7 @@ namespace nes
             const uint32_t writeIndex = m_writeIndex.fetch_add(1, std::memory_order_relaxed);
             while (writeIndex - m_readIndex >= kMaxJobs)
             {
-                NES_ASSERTV(false, "Barrier full! stalling!");
+                NES_ASSERT(false, "Barrier full! stalling!");
                 std::this_thread::sleep_for(std::chrono::microseconds(100));
             }
             m_jobs[writeIndex & (kMaxJobs - 1)] = pJob;
@@ -72,7 +72,7 @@ namespace nes
                 const uint32_t writeIndex = m_writeIndex.fetch_add(1, std::memory_order_relaxed);
                 while (writeIndex - m_readIndex >= kMaxJobs)
                 {
-                    NES_ASSERTV(false, "Barrier full! stalling!");
+                    NES_ASSERT(false, "Barrier full! stalling!");
                     std::this_thread::sleep_for(std::chrono::microseconds(100));
                 }
                 m_jobs[writeIndex & (kMaxJobs - 1)] = pJob;

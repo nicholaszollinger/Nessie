@@ -14,7 +14,7 @@ namespace nes
     }
 
     EmptyShape::EmptyShape(const EmptyShapeSettings& settings, ShapeResult& outResult)
-        : Shape(ShapeType::Empty, ShapeSubType::Empty, settings, outResult)
+        : Shape(EShapeType::Empty, EShapeSubType::Empty, settings, outResult)
         , m_centerOfMass(settings.m_centerOfMass)
     {
         outResult.Set(this);
@@ -24,13 +24,13 @@ namespace nes
     {
         MassProperties massProperties;
         massProperties.m_mass = 1.f;
-        massProperties.m_inertia = Mat4::Identity();
+        massProperties.m_inertia = Mat44::Identity();
         return massProperties;
     }
 
     void EmptyShape::Register()
     {
-        ShapeFunctions& f = ShapeFunctions::Get(ShapeSubType::Empty);
+        ShapeFunctions& f = ShapeFunctions::Get(EShapeSubType::Empty);
         f.m_construct = []() -> Shape* { return new EmptyShape; };
         f.m_color = Color::Black();
     }

@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    enum class BodyMotionQuality : uint8_t
+    enum class EBodyMotionQuality : uint8_t
     {
         /// Update the body in discrete steps. Body will tunnel through thin objects if its velocity is high
         /// enough. This is the cheapest way of simulating a body.

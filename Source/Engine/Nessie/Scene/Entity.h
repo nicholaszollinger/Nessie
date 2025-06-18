@@ -14,6 +14,8 @@ namespace nes
     using EntityID = uint64_t;
     using LayerHandle = nes::GenerationalID<uint64_t>;
 
+    NES_DEFINE_LOG_TAG(kEntityLogTag, "Entity", Warn);
+
     //----------------------------------------------------------------------------------------------------
     //		NOTES:
     //		
@@ -230,7 +232,7 @@ namespace nes
         {
             if (pCurrentChild == pChild)
             {
-                NES_WARNV("Entity", "Attempted to re-add Child that already exists!");
+                NES_WARN(kEntityLogTag, "Attempted to re-add Child that already exists!");
                 return;
             }
         }
@@ -272,7 +274,7 @@ namespace nes
             }
         }
 
-        NES_WARNV("Entity", "Attempted to remove Child that did not exist!");
+        NES_WARN(kEntityLogTag, "Attempted to remove Child that did not exist!");
     }
 
     //----------------------------------------------------------------------------------------------------

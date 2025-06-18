@@ -19,12 +19,9 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class PerlinNoise2D
     {
-        Rng m_rng;
-        Vector2f m_gradients[internal::kMaxPermutationCount];
-
     public:
         PerlinNoise2D();
-        PerlinNoise2D(const uint64_t seed);
+        PerlinNoise2D(const uint64 seed);
         ~PerlinNoise2D() = default;
 
         PerlinNoise2D(const PerlinNoise2D&) = delete;
@@ -33,12 +30,38 @@ namespace nes
         PerlinNoise2D& operator=(PerlinNoise2D&&) = delete;
 
     public:
-        void Seed();
-        void Seed(const uint64_t seed);
-        uint64_t GetSeed() const;
-        float CalculateNoise(float x, float y, uint32_t noiseInputRange, int octaves = 1, float persistence = 0.5f) const;
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Seed the Noise Generator. This is an expensive operation, so try not to do this often.
+        //----------------------------------------------------------------------------------------------------
+        void    Seed();
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Seed the Noise Generator. This is an expensive operation, so try not to do this often.
+        //----------------------------------------------------------------------------------------------------
+        void    Seed(const uint64 seed);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Returns the Seed value used to initialize PerlinNoise.
+        //----------------------------------------------------------------------------------------------------
+        uint64  GetSeed() const;
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Get a Noise value at a given 2D position.
+        ///	@param x : X Position.
+        ///	@param y : Y Position.
+        ///	@param noiseInputRange : Determines the 'size' of the noise grid.
+        ///	@param octaves : Lower values will be smoother, higher values will be more detailed.
+        ///	@param persistence : Determines how much each octave contributes to the overall noise.
+        ///     The default value is 0.5f, meaning that each layer contributes evenly to the next.
+        ///	@returns : Noise value in the range [0, 1].
+        //----------------------------------------------------------------------------------------------------
+        float   CalculateNoise(float x, float y, uint32 noiseInputRange, int octaves = 1, float persistence = 0.5f) const;
 
     private:
-        float CalculateNoise(float noiseX, float noiseY) const;
+        float   CalculateNoise(float noiseX, float noiseY) const;
+
+    private:
+        Rng     m_rng;
+        Vec2    m_gradients[internal::kMaxPermutationCount];
     };
 }

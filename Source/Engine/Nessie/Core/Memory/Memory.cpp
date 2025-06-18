@@ -34,17 +34,8 @@
     //-----------------------------------------------------------------------------------------------------------------
     // Windows is required.
     //-----------------------------------------------------------------------------------------------------------------
-    #ifdef _WIN32
-        #define WIN32_LEAN_AND_MEAN
-        #include <Windows.h>
-
-        // Windows.h ends up including a file that defines these macros, so we undef them.
-        #ifdef max
-            #undef max
-        #endif
-        #ifdef min
-            #undef min
-        #endif
+    #ifdef NES_PLATFORM_WINDOWS
+    #include "Platform/Windows/WindowsInclude.h"
     #else
         #error "Allocation Tracking requires a Windows platform."
     #endif

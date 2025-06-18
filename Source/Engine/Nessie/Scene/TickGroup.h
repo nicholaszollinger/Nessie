@@ -8,13 +8,12 @@ namespace nes
 {
     class TickManager;
 
-    enum class TickStage : uint8_t
+    enum class ETickStage : uint8_t
     {
         PrePhysics = 0,
         Physics,
         PostPhysics,
         Late,
-        
         NumStages,
     };
     
@@ -65,13 +64,13 @@ namespace nes
         size_t m_numReadyTicks = 0;
         StringID m_debugName{};
         float m_timeScale = 1.f;                    // Current scale factor applied to the delta time of all Tick Functions in the Group.
-        TickStage m_stage = TickStage::PrePhysics;  // The Stage of the overall update loop that this TickGroup will be run.
+        ETickStage m_stage = ETickStage::PrePhysics;  // The Stage of the overall update loop that this TickGroup will be run.
         bool m_isRegistered = false;
         bool m_isEnabled = true;
         bool m_isRunning = false;                   // Whether this Group is currently being executed or not.
         
     public:
-        explicit TickGroup(const TickStage stage);
+        explicit TickGroup(const ETickStage stage);
         ~TickGroup();
 
         TickGroup(const TickGroup&) = delete;
@@ -90,7 +89,7 @@ namespace nes
 
         [[nodiscard]] float     GetTimeScale() const        { return m_timeScale; }
         [[nodiscard]] StringID  GetDebugName() const        { return m_debugName; }
-        [[nodiscard]] TickStage GetStage() const            { return m_stage; }
+        [[nodiscard]] ETickStage GetStage() const            { return m_stage; }
         [[nodiscard]] bool      IsEnabled() const           { return m_isEnabled; }
         [[nodiscard]] bool      HasTickFunction(TickFunction* pTickFunction) const;
 

@@ -7,10 +7,10 @@ namespace nes
     class EmptyShapeSettings final : public ShapeSettings
     {
     public:
-        Vector3 m_centerOfMass = Vector3::Zero();
+        Vec3 m_centerOfMass = Vec3::Zero();
         
         EmptyShapeSettings() = default;
-        explicit EmptyShapeSettings(const Vector3& centerOfMass) : m_centerOfMass(centerOfMass) {}
+        explicit EmptyShapeSettings(const Vec3& centerOfMass) : m_centerOfMass(centerOfMass) {}
 
         virtual ShapeResult Create() const override;
     };
@@ -29,33 +29,34 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class EmptyShape final : public Shape
     {
-        Vector3 m_centerOfMass = Vector3::Zero();
-        
     public:
-        EmptyShape() : Shape(ShapeType::Empty, ShapeSubType::Empty) {}
-        explicit EmptyShape(const Vector3& centerOfMass) : Shape(ShapeType::Empty, ShapeSubType::Empty), m_centerOfMass(centerOfMass) {}
+        EmptyShape() : Shape(EShapeType::Empty, EShapeSubType::Empty) {}
+        explicit EmptyShape(const Vec3& centerOfMass) : Shape(EShapeType::Empty, EShapeSubType::Empty), m_centerOfMass(centerOfMass) {}
         EmptyShape(const EmptyShapeSettings& settings, ShapeResult& outResult);
 
-        virtual Vector3         GetCenterOfMass() const override                    { return m_centerOfMass; }
-        virtual AABox           GetLocalBounds() const override                     { return { Vector3::Zero(), Vector3::Zero() }; }
+        virtual Vec3            GetCenterOfMass() const override                    { return m_centerOfMass; }
+        virtual AABox           GetLocalBounds() const override                     { return { Vec3::Zero(), Vec3::Zero() }; }
         virtual unsigned        GetSubSShapeIDBitsRecursive() const override        { return 0; }
         virtual float           GetInnerRadius() const override                     { return 0.f; }
         virtual MassProperties  GetMassProperties() const override;
-        virtual Vector3         GetSurfaceNormal(const SubShapeID&, const Vector3&) const override { return Vector3::Zero(); }
+        virtual Vec3            GetSurfaceNormal(const SubShapeID&, const Vec3&) const override { return Vec3::Zero(); }
         // [TODO]: PhysicsMaterial
         // [TODO]: SubmergedVolume
 
         virtual bool            CastRay(const RayCast&, const SubShapeIDCreator&, RayCastResult&) const override { return false; }
         virtual void            CastRay(const RayCast&, const RayCastSettings&, const SubShapeIDCreator&, CastRayCollector&, const ShapeFilter&) const override { }
-        virtual void            CollidePoint(const Vector3&, const SubShapeIDCreator&, CollidePointCollector&, const ShapeFilter&) const override { }
-        virtual void            GetTrianglesStart(GetTrianglesContext&, const AABox&, const Vector3&, const Quat&, const Vector3&) const override { }
+        virtual void            CollidePoint(const Vec3&, const SubShapeIDCreator&, CollidePointCollector&, const ShapeFilter&) const override { }
+        virtual void            GetTrianglesStart(GetTrianglesContext&, const AABox&, const Vec3&, const Quat&, const Vec3&) const override { }
         virtual int             GetTrianglesNext(GetTrianglesContext&, int, Float3*) const override { return 0; }
         virtual float           GetVolume() const override { return 0.f; }
-        virtual bool            IsValidScale(const Vector3&) const override { return true; }
+        virtual bool            IsValidScale(const Vec3&) const override { return true; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Register Shape functions with the registry. 
         //----------------------------------------------------------------------------------------------------
         static void             Register();
+
+    private:
+        Vec3                    m_centerOfMass = Vec3::Zero();
     };
 }

@@ -1,27 +1,17 @@
 ﻿// ShapeComponent.h
 #pragma once
 #include "World/Components/Entity3DComponent.h"
-#include "Math/AABox.h"
+#include "Geometry/AABox.h"
 #include "Physics/Collision/Shapes/Shape.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Base class for all Collision based geometry. The Base class contains 
+    /// @brief : // [TODO]: Base class for all Collision-based geometry.  
     //----------------------------------------------------------------------------------------------------
     class ShapeComponent : public Entity3DComponent
     {   
         NES_DEFINE_COMPONENT_TYPE(ShapeComponent)
-
-    protected:
-        // Local Transform of the Shape.
-        Vector3     m_localPosition{};
-        Rotation    m_localRotation{};
-        Vector3     m_localScale{};
-        
-        ShapeType m_shapeType = ShapeType::Empty;
         
     public:
         ShapeComponent() = default;
@@ -30,16 +20,24 @@ namespace nes
         ShapeComponent(ShapeComponent&&) noexcept = default;
         ShapeComponent& operator=(ShapeComponent&&) noexcept = default;
         
-        virtual Vector3     GetCenterOfMass() const { return Vector3::Zero(); }
-        virtual AABox       GetLocalBounds() const = 0;
-        virtual AABox       GetWorldBounds() const = 0;
-        ShapeType           GetShapeType() const { return m_shapeType; }
+        virtual Vec3    GetCenterOfMass() const { return Vec3::Zero(); }
+        virtual AABox   GetLocalBounds() const = 0;
+        virtual AABox   GetWorldBounds() const = 0;
+        EShapeType      GetShapeType() const { return m_shapeType; }
 
         // [TODO]: Debug Rendering API
 
     protected:
-        virtual bool Init() override;
-        virtual void OnEnabled() override;
-        virtual void OnDisabled() override;
+        virtual bool    Init() override;
+        virtual void    OnEnabled() override;
+        virtual void    OnDisabled() override;
+
+    protected:
+        // Local Transform of the Shape.
+        Vec3            m_localPosition{};
+        Rotation        m_localRotation{};
+        Vec3            m_localScale{};
+            
+        EShapeType      m_shapeType = EShapeType::Empty;
     };
 }

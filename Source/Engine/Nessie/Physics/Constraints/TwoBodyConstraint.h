@@ -26,14 +26,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class TwoBodyConstraint : public Constraint
     {
-    protected:
-        Body* m_pBodyA = nullptr;
-        Body* m_pBodyB = nullptr;
-
     public:
         explicit TwoBodyConstraint(Body& bodyA, Body& bodyB, const TwoBodyConstraintSettings& settings);
         
-        virtual ConstraintType  GetType() const override { return ConstraintType::TwoBodyConstraint; }
+        virtual EConstraintType GetType() const override { return EConstraintType::TwoBodyConstraint; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access to Body A of the Constraint. Generally, Generally, Body A is considered the Parent,
@@ -48,18 +44,18 @@ namespace nes
         [[nodiscard]] Body*     GetBodyB() const { return m_pBodyB; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Calculates the transform that transforms from constraint space to BodyA space. The first
+        /// @brief : Calculates the matrix that transforms from constraint space to BodyA space. The first
         ///     column of the matrix is the primary constraint axis (e.g. the hinge axis / slider direction),
         ///     second column the secondary etc.
         //----------------------------------------------------------------------------------------------------
-        virtual Mat4            GetConstraintToBodyAMatrix() const = 0;
+        virtual Mat44           ConstraintToBodyAMatrix() const = 0;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Calculates the transform that transforms from constraint space to BodyB space. The first
+        /// @brief : Calculates the matrix that transforms from constraint space to BodyB space. The first
         ///     column of the matrix is the primary constraint axis (e.g. the hinge axis / slider direction),
         ///     second column the secondary etc.
         //----------------------------------------------------------------------------------------------------
-        virtual Mat4            GetConstraintToBodyBMatrix() const = 0;
+        virtual Mat44           ConstraintToBodyBMatrix() const = 0;
         
         virtual bool            Internal_IsActive() const override;
 
@@ -72,5 +68,9 @@ namespace nes
         /// @brief : Link bodies that are connected by this constraint in the same split. Returns the split index.
         //----------------------------------------------------------------------------------------------------
         virtual unsigned        BuildIslandSplits(LargeIslandSplitter& splitter) const override;
+
+    protected:
+        Body* m_pBodyA = nullptr;
+        Body* m_pBodyB = nullptr;
     };
 }

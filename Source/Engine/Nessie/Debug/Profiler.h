@@ -1,13 +1,13 @@
 #pragma once
 // Profiler.h
-#include "Core/Log/Log.h"
+#include "Debug/Log.h"
 #include "Core/Time/Timer.h"
 
 #if NES_LOGGING_ENABLED
 //----------------------------------------------------------------------------------------------------
-///		@brief : Use this to create a scope-based profiler that will log the time taken to
-///             execute the scope. This is a quick way to profile a function or a block of code.
-///		@param label : Label to give the test.
+///	@brief : Use this to create a scope-based profiler that will log the time taken to
+///     execute the scope. This is a quick way to profile a function or a block of code.
+///	@param label : Label to give the test.
 //----------------------------------------------------------------------------------------------------
 #define NES_PROFILE_SCOPE(label) nes::SimpleInstrumentationProfiler profile(label)
 
@@ -17,18 +17,23 @@
 
 namespace nes
 {
-    class SimpleInstrumentationProfiler
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : On construction, saves a time point. On destruction, logs the time that has passed
+    ///     since construction.
+    //----------------------------------------------------------------------------------------------------
+    class SimpleScopedProfiler
     {
-        Timer m_timer;
-        std::string m_label;
-
     public:
-        explicit SimpleInstrumentationProfiler(const std::string& label);
-        ~SimpleInstrumentationProfiler();
+        explicit SimpleScopedProfiler(const std::string& label);
+        ~SimpleScopedProfiler();
 
-        SimpleInstrumentationProfiler(const SimpleInstrumentationProfiler&) = delete;
-        SimpleInstrumentationProfiler(SimpleInstrumentationProfiler&&) noexcept = delete;
-        SimpleInstrumentationProfiler& operator=(const SimpleInstrumentationProfiler&) = delete;
-        SimpleInstrumentationProfiler& operator=(SimpleInstrumentationProfiler&&) noexcept = delete;
+        SimpleScopedProfiler(const SimpleScopedProfiler&) = delete;
+        SimpleScopedProfiler(SimpleScopedProfiler&&) noexcept = delete;
+        SimpleScopedProfiler& operator=(const SimpleScopedProfiler&) = delete;
+        SimpleScopedProfiler& operator=(SimpleScopedProfiler&&) noexcept = delete;
+
+    private:
+        Timer       m_timer;
+        std::string m_label;
     };
 }

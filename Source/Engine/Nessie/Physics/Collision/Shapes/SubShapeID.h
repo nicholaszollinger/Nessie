@@ -6,8 +6,6 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    //	NOTES:
-    //		
     /// @brief : A sub shape ID contains a path to an element (usually a triangle or other primitive type) of
     ///     a compound shape. Each sub shape knows how many bits it needs to encode its ID, so it knows how many
     ///     bits to take from the sub shape ID.
@@ -39,15 +37,10 @@ namespace nes
         using BiggerType = uint64_t;
         static_assert(sizeof(BiggerType) > sizeof(Type));
 
-        // How many bits we can store in this ID.
+        /// How many bits we can store in this ID.
         static constexpr unsigned kMaxBits = 8 * sizeof(Type);
 
     private:
-        /// An empty sub shape ID has all of its bits set.
-        static constexpr Type kEmpty = ~static_cast<Type>(0);
-        
-        Type m_value = kEmpty;
-
         explicit SubShapeID(Type value) : m_value(value) {}
         
     public:
@@ -100,6 +93,12 @@ namespace nes
             // Then set them to the new value.
             m_value |= value << firstBitSet;
         }
+
+    private:
+        /// An empty sub shape ID has all of its bits set.
+        static constexpr Type kEmpty = ~static_cast<Type>(0);
+        
+        Type m_value = kEmpty;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -108,14 +107,11 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class SubShapeIDCreator
     {
-        SubShapeID  m_id;
-        unsigned    m_currentBit = 0;
-        
     public:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add a new ID to the chain of ID's and return it. 
         //----------------------------------------------------------------------------------------------------
-        SubShapeIDCreator PushID(const unsigned value, const unsigned numBits) const
+        SubShapeIDCreator           PushID(const unsigned value, const unsigned numBits) const
         {
             NES_ASSERT(value < static_cast<SubShapeID::BiggerType>(1) << numBits);
 
@@ -130,11 +126,15 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the resulting Sub Shape ID. 
         //----------------------------------------------------------------------------------------------------
-        inline const SubShapeID& GetID() const { return m_id; }
+        inline const SubShapeID&    GetID() const { return m_id; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the number of bits written to the sub shape ID so far. 
         //----------------------------------------------------------------------------------------------------
-        inline unsigned GetNumBitsWritten() const { return m_currentBit; }
+        inline unsigned             GetNumBitsWritten() const { return m_currentBit; }
+
+    private:
+        SubShapeID  m_id;
+        unsigned    m_currentBit = 0;
     };
 }

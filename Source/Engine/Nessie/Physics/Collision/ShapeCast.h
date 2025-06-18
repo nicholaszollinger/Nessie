@@ -1,7 +1,7 @@
 // ShapeCast.h
 #pragma once
 
-#include "Math/AABox.h"
+#include "Geometry/AABox.h"
 #include "CollideShape.h"
 #include "Shapes/Shape.h"
 
@@ -10,12 +10,12 @@ namespace nes
     struct ShapeCast
     {
         const Shape*    m_pShape;               /// Shape that's being cast (cannot be a mesh shape). Note that this structure does not assume ownership over the shape for performance reasons.
-        const Vector3   m_scale;                /// Scale in local space of the shape being cast (scales relative to its center of mass).
-        const Mat4      m_centerOfMassStart;    /// Start position and orientation of the center of mass of the shape (construct using FromWorldTransform() if you have a world transform for your shape).
-        const Vector3   m_direction;            /// Direction and length of the cast (anything beyond this length will not be reported as a hit).
+        const Vec3      m_scale;                /// Scale in local space of the shape being cast (scales relative to its center of mass).
+        const Mat44     m_centerOfMassStart;    /// Start position and orientation of the center of mass of the shape (construct using FromWorldTransform() if you have a world transform for your shape).
+        const Vec3      m_direction;            /// Direction and length of the cast (anything beyond this length will not be reported as a hit).
         const AABox     m_shapeWorldBounds;     /// Cached shape's world bounds, calculated in constructor.
 
-        ShapeCast(const Shape* pShape, const Vector3& scale, const Mat4& centerOfMassStart, const Vector3& direction, const AABox& shapeWorldBounds)
+        ShapeCast(const Shape* pShape, const Vec3& scale, const Mat44& centerOfMassStart, const Vec3& direction, const AABox& shapeWorldBounds)
             : m_pShape(pShape)
             , m_scale(scale)
             , m_centerOfMassStart(centerOfMassStart)
@@ -25,7 +25,7 @@ namespace nes
             //
         }
 
-        ShapeCast(const Shape* pShape, const Vector3& scale, const Mat4& centerOfMassStart, const Vector3& direction)
+        ShapeCast(const Shape* pShape, const Vec3& scale, const Mat44& centerOfMassStart, const Vec3& direction)
             : ShapeCast(pShape, scale, centerOfMassStart, direction, pShape->GetWorldBounds(centerOfMassStart, scale))
         {
             //
@@ -34,7 +34,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Construct a shape cast using a world transform for a shape instead of the center of mass transform. 
         //----------------------------------------------------------------------------------------------------
-        static inline ShapeCast FromWorldTransform(const Shape* pShape, const Vector3& scale, const Mat4& worldTransform, const Vector3& direction)
+        static inline ShapeCast FromWorldTransform(const Shape* pShape, const Vec3& scale, const Mat44& worldTransform, const Vec3& direction)
         {
             return ShapeCast(pShape, scale, worldTransform.PreTranslated(pShape->GetCenterOfMass()), direction);
         }
@@ -43,17 +43,17 @@ namespace nes
         /// @brief : Get a transformed copy of this shape cast using 'transform'. Multiply transform on the
         ///     left hand side.
         //----------------------------------------------------------------------------------------------------
-        ShapeCast               PostTransformed(const Mat4& transform) const
+        ShapeCast               PostTransformed(const Mat44& transform) const
         {
-            Mat4 start = transform * m_centerOfMassStart;
-            Vector3 direction = transform.TransformVector(m_direction);
+            Mat44 start = transform * m_centerOfMassStart;
+            Vec3 direction = transform.TransformVector(m_direction);
             return { m_pShape, m_scale, start, direction };
         }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a translated copy of this shape cast by 'translation'. 
         //----------------------------------------------------------------------------------------------------
-        ShapeCast               PostTranslated(const Vector3& translation) const
+        ShapeCast               PostTranslated(const Vec3& translation) const
         {
             return { m_pShape, m_scale, m_centerOfMassStart.PostTranslated(translation), m_direction };
         }
@@ -62,7 +62,7 @@ namespace nes
         /// @brief : Get a point that is 'distance' along the ray form m_centerOfMassStart to m_centerOfMassStart + m_direction * fraction
         ///     where 0 = start of the ray and 1 = end of the ray.
         //----------------------------------------------------------------------------------------------------
-        Vector3                 GetPointAlongRay(const float fraction) const
+        Vec3                 GetPointAlongRay(const float fraction) const
         {
             return m_centerOfMassStart.GetColumn3(3) + (fraction * m_direction); 
         }
@@ -75,23 +75,23 @@ namespace nes
     {
         /// How backfacing triangles should be treated. Should we report back facing hits for triangle based shapes, e.g.
         /// MeshShape/HeightFieldShape?
-        BackFaceMode m_backfaceModeTriangles    = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode   m_backfaceModeTriangles    = EBackFaceMode::IgnoreBackFaces;
 
         /// How back facing convex objects should be treated. Should we report back facing hits on convex shapes?
-        BackFaceMode m_backfaceModeConvex       = BackFaceMode::IgnoreBackFaces;
+        EBackFaceMode   m_backfaceModeConvex       = EBackFaceMode::IgnoreBackFaces;
 
         /// Indicates if we want to shrink the shape by the convex radius and then expand it again. This speeds up collision
         /// detection and gives a more accurate normal at the cost of a more 'rounded' shape.
-        bool m_useShrunkenShapeAndConvexRadius = false;
+        bool            m_useShrunkenShapeAndConvexRadius = false;
 
         /// When true, and the shape is intersecting at the beginning of the cast (fraction = 0), then this will calculate
         /// the deepest penetration point (costing additional CPU time).
-        bool m_returnDeepestPoint = false;
+        bool            m_returnDeepestPoint = false;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the back face mode for all shapes. 
         //----------------------------------------------------------------------------------------------------
-        void SetBackFaceMode(const BackFaceMode& backfaceMode) { m_backfaceModeTriangles = m_backfaceModeConvex = backfaceMode; }
+        void SetBackFaceMode(const EBackFaceMode& backfaceMode) { m_backfaceModeTriangles = m_backfaceModeConvex = backfaceMode; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -103,8 +103,8 @@ namespace nes
         bool    m_isBackFaceHit;    /// True if the shape was hit from the back side.
         
         ShapeCastResult() = default;
-        ShapeCastResult(const float fraction, const Vector3& contactPoint1, const Vector3& contactPoint2, const Vector3& contactNormalOrPenetrationDepth, bool isBackFaceHit, const SubShapeID& subShapeID1, const SubShapeID& subShapeID2, const BodyID& bodyID2)
-            : CollideShapeResult(contactPoint1, contactPoint2, contactNormalOrPenetrationDepth, (contactPoint2 - contactPoint1).Magnitude(), subShapeID1, subShapeID2, bodyID2)
+        ShapeCastResult(const float fraction, const Vec3& contactPoint1, const Vec3& contactPoint2, const Vec3& contactNormalOrPenetrationDepth, bool isBackFaceHit, const SubShapeID& subShapeID1, const SubShapeID& subShapeID2, const BodyID& bodyID2)
+            : CollideShapeResult(contactPoint1, contactPoint2, contactNormalOrPenetrationDepth, (contactPoint2 - contactPoint1).Length(), subShapeID1, subShapeID2, bodyID2)
             , m_fraction(fraction)
             , m_isBackFaceHit(isBackFaceHit)
         {
@@ -122,9 +122,9 @@ namespace nes
         /// @brief : Reverses the hit result, swapping contact point 1 with contact point 2, etc.
         ///	@param worldSpaceCastDirection : Direction of the shape cast in world space.
         //----------------------------------------------------------------------------------------------------
-        ShapeCastResult Reversed(const Vector3& worldSpaceCastDirection) const
+        ShapeCastResult Reversed(const Vec3& worldSpaceCastDirection) const
         {
-            Vector3 delta = m_fraction * worldSpaceCastDirection;
+            Vec3 delta = m_fraction * worldSpaceCastDirection;
 
             ShapeCastResult result;
             result.m_contactPointOn2 = m_contactPointOn1 - delta;

@@ -21,7 +21,7 @@ namespace nes
         m_numLayers = layerInterface.GetNumBroadPhaseLayers();
         NES_ASSERT(m_numLayers < static_cast<BroadPhaseLayer::Type>(kInvalidBroadPhaseLayer));
 
-#if NES_LOGGING_ENABLED
+#if NES_IF_ASSERTS_ENABLED
         // TODO later: "PhysicsLockContext"
         //m_lockContext = pBodyManager;
 #endif
@@ -253,7 +253,7 @@ namespace nes
             return;
         }
 
-        NES_IF_LOGGING_ENABLED(const BodyVector& bodies = m_pBodyManager->GetBodies());
+        NES_IF_ASSERTS_ENABLED(const BodyVector& bodies = m_pBodyManager->GetBodies());
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         LayerState* pLayerStates = static_cast<LayerState*>(addState);
@@ -499,7 +499,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideSphere(const Vector3& center, const float radius,
+    void BroadPhaseQuadTree::CollideSphere(const Vec3& center, const float radius,
         CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter,
         const CollisionLayerFilter& collisionLayerFilter) const
     {
@@ -521,7 +521,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollidePoint(const Vector3& point, CollideShapeBodyCollector& collector,
+    void BroadPhaseQuadTree::CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector,
         const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -617,7 +617,7 @@ namespace nes
         AABox bounds;
         for (BroadPhaseLayer::Type i = 0; i < static_cast<BroadPhaseLayer::Type>(m_numLayers); ++i)
         {
-            bounds.GrowToEncapsulate(m_layers[i].GetBounds());
+            bounds.Encapsulate(m_layers[i].GetBounds());
         }
         return bounds;
     }

@@ -18,6 +18,11 @@
  #define NES_VULKAN_DEBUG 0
  #endif
 
+namespace nes::vulkan
+{
+    NES_DEFINE_LOG_TAG(kLogTag, "Vulkan", Warn);
+}
+
  //----------------------------------------------------------------------------------------------------
  //		NOTES:
  //		
@@ -27,9 +32,9 @@
  #define NES_VULKAN_MUST_PASS(expression)                                                        \
  do                                                                                              \
  {                                                                                               \
-     VkResult error = expression;                                                                    \
-     if (error)                                                                                      \
-     {                                                                                               \
-     NES_CRITICAL("Vulkan", #expression, " failed! \n Vulkan Error: ", string_VkResult(error));      \
-     }                                                                                               \
+     VkResult error = expression;                                                                   \
+     if (error)                                                                                     \
+     {                                                                                              \
+        NES_FATAL(nes::vulkan::kLogTag, "{} failed! Vulkan Error: {}", #expression, string_VkResult(error));     \
+     }                                                                                              \
  } while (0)

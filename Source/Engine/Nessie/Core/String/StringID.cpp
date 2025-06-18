@@ -46,20 +46,12 @@ namespace nes
 
         return *this;
     }
-
-    //-----------------------------------------------------------------------------------------------------------------------------
-    ///		@brief : Get a copy of the internal string. If you just want a reference, use GetStringRef(). \n NOT THREAD SAFE.
-    //-----------------------------------------------------------------------------------------------------------------------------
+    
     std::string StringID::StringCopy() const
     {
         return *m_pStrRef;
     }
-
-    //-----------------------------------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Get a const reference to the internal string. If you want a copy, use GetStringCopy(). \n NOT THREAD SAFE.
-    //-----------------------------------------------------------------------------------------------------------------------------
+    
     const std::string& StringID::StringRef() const
     {
         return *m_pStrRef;
@@ -82,12 +74,7 @@ namespace nes
 
         return m_pStrRef->c_str();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Either returns the address to an existing string in the static container, creates a
-    ///             new entry in the container for this string, or returns the invalid string address in the
-    ///             event that nullptr was passed in.
-    //----------------------------------------------------------------------------------------------------
+    
     std::string* StringID::MakeStringPtr(const char* str)
     {
         // If we are being set to nullptr, then return the address of the invalid string.
@@ -108,12 +95,7 @@ namespace nes
 
         return &strings[hash];
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Either returns the address to an existing string in the static container, creates a
-    ///             new entry in the container for this string, or returns the invalid string address in the
-    ///             event that an empty string was passed in.
-    //----------------------------------------------------------------------------------------------------
+    
     std::string* StringID::MakeStringPtr(const std::string& str)
     {
         if (str.empty())
@@ -144,5 +126,4 @@ namespace nes
         static constexpr std::hash<const std::string*> kHash;
         return kHash(id.ConstPtr());
     }
-
 }

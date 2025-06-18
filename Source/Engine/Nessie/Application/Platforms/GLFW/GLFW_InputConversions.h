@@ -6,10 +6,10 @@
 
 namespace nes::glfw
 {
-    KeyCode ConvertToKeyCode(const int key);
-    MouseButton ConvertToMouseButton(const int button);
-    Modifiers ConvertToModifiers(const int modifiers);
-    KeyAction ConvertToKeyAction(const int action);
-    MouseAction ConvertToMouseAction(const int action);
+    EKeyCode        ConvertToKeyCode(const int key);
+    EMouseButton    ConvertToMouseButton(const int button);
+    Modifiers       ConvertToModifiers(const int modifiers);
+    EKeyAction      ConvertToKeyAction(const int action);
+    EMouseAction    ConvertToMouseAction(const int action);
 }
 #endif

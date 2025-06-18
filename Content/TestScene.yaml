@@ -31,7 +31,7 @@ Scene:
             IsEnabled: true
             MoveSpeed: 10.0
             TurnSpeedYaw: 2000.0
-            TurnSpeedPitch: 1700.0
+            TurnSpeedPitch: 2000.0
             
       # "Player"
       - Entity: 1

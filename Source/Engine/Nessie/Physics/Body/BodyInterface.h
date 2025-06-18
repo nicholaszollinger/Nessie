@@ -1,6 +1,5 @@
 // BodyInterface.h
 #pragma once
-
 #include "BodyID.h"
 #include "BodyActivationMode.h"
 #include "MotionQuality.h"
@@ -137,7 +136,7 @@ namespace nes
         ///
         /// @note : After adding, to get a body by ID use the BodyLockRead or BodyLockWrite interface!
         //----------------------------------------------------------------------------------------------------
-        void                    AddBody(const BodyID& bodyID, const BodyActivationMode activationMode);
+        void                    AddBody(const BodyID& bodyID, const EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Remove a body from the physics scene.
@@ -153,7 +152,7 @@ namespace nes
         /// @brief : Combines CreateBody() and AddBody(). 
         ///	@returns : The created body's ID, or an invalid ID when the max number of bodies have been reached.
         //----------------------------------------------------------------------------------------------------
-        BodyID                  CreateAndAddBody(const BodyCreateInfo& createInfo, BodyActivationMode activationMode);
+        BodyID                  CreateAndAddBody(const BodyCreateInfo& createInfo, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Prepare adding a number of bodies to the Physics Scene. Returns a handle that should be
@@ -175,7 +174,7 @@ namespace nes
         ///	@param addState : The return value from the AddBodiesPrepare() function.
         ///	@param activationMode : The activation behavior applied to all added bodies.
         //----------------------------------------------------------------------------------------------------
-        void                    AddBodiesFinalize(BodyID* pBodies, const int count, AddState addState, BodyActivationMode activationMode);
+        void                    AddBodiesFinalize(BodyID* pBodies, const int count, AddState addState, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Abort adding multiple bodies to the Physics Scene - must be supplied with the return result
@@ -248,7 +247,7 @@ namespace nes
         ///	@param updateMassProperties : When true, the mass and inertia tensor is recalculated.
         ///	@param activationMode : Whether to activate the body.
         //----------------------------------------------------------------------------------------------------
-        void                    SetShape(const BodyID& bodyID, const Shape* pShape, bool updateMassProperties, BodyActivationMode activationMode) const;
+        void                    SetShape(const BodyID& bodyID, const Shape* pShape, bool updateMassProperties, EBodyActivationMode activationMode) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Notify all systems to indicate that a shape has changed (usable for MutableCompoundShapes).
@@ -257,7 +256,7 @@ namespace nes
         ///	@param updateMassProperties : When true, the mass and inertia tensor is recalculated.
         ///	@param activationMode : Whether to activate the body.
         //----------------------------------------------------------------------------------------------------
-        void                    NotifyShapeChanged(const BodyID& bodyID, const Vector3& previousCenterOfMass, bool updateMassProperties, BodyActivationMode activationMode) const;
+        void                    NotifyShapeChanged(const BodyID& bodyID, const Vec3& previousCenterOfMass, bool updateMassProperties, EBodyActivationMode activationMode) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the collision layer for a body. A collision layer, combined with a Broadphase Layer,
@@ -274,39 +273,39 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update the position and rotation of the body, and then activate the body. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetPositionAndRotation(const BodyID& bodyID, const Vector3& position, const Quat& rotation, BodyActivationMode activationMode);
+        void                    SetPositionAndRotation(const BodyID& bodyID, const Vec3& position, const Quat& rotation, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Will only update the position/rotation and activate the body when the difference is larger
         ///     than a very small number. This avoids updating the broadphase/waking up a body when the
         ///     resulting position/orientation doesn't really change.  
         //----------------------------------------------------------------------------------------------------
-        void                    SetPositionAndRotationWhenChanged(const BodyID& bodyID, const Vector3& position, const Quat& rotation, BodyActivationMode activationMode);
+        void                    SetPositionAndRotationWhenChanged(const BodyID& bodyID, const Vec3& position, const Quat& rotation, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current position and rotation of a body.
         //----------------------------------------------------------------------------------------------------
-        void                    GetPositionAndRotation(const BodyID& bodyID, Vector3& outPosition, Quat& outRotation) const;
+        void                    GetPositionAndRotation(const BodyID& bodyID, Vec3& outPosition, Quat& outRotation) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update the position and activate the body. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetPosition(const BodyID& bodyID, const Vector3& position, BodyActivationMode activationMode);
+        void                    SetPosition(const BodyID& bodyID, const Vec3& position, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current position of a body.
         //----------------------------------------------------------------------------------------------------
-        Vector3                 GetPosition(const BodyID& bodyID) const;
+        Vec3                    GetPosition(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current position of the body's center of mass. 
         //----------------------------------------------------------------------------------------------------
-        Vector3                 GetCenterOfMassPosition(const BodyID& bodyID) const;
+        Vec3                    GetCenterOfMassPosition(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update the rotation and activate the body. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetRotation(const BodyID& bodyID, const Quat& rotation, BodyActivationMode activationMode);
+        void                    SetRotation(const BodyID& bodyID, const Quat& rotation, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current rotation of a body.
@@ -316,140 +315,140 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the world transform of a body. 
         //----------------------------------------------------------------------------------------------------
-        Mat4                    GetWorldTransform(const BodyID& bodyID) const;
+        Mat44                   GetWorldTransform(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the world transform of a body's center of mass. 
         //----------------------------------------------------------------------------------------------------
-        Mat4                    GetCenterOfMassTransform(const BodyID& bodyID) const;
+        Mat44                   GetCenterOfMassTransform(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the velocity of a Body such that it will be positioned at targetPosition/Rotation in
         ///     deltaTime seconds. This will activate the body if needed.
         //----------------------------------------------------------------------------------------------------
-        void                    MoveKinematic(const BodyID& bodyID, const Vector3& targetPosition, const Quat& targetRotation, float deltaTime);
+        void                    MoveKinematic(const BodyID& bodyID, const Vec3& targetPosition, const Quat& targetRotation, float deltaTime);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the linear and angular velocity of the body. This will activate the body if needed.
         /// @note : The linear velocity is the velocity of the center of mass, which may not coincide with the position
         ///     of your object. To correct for this: VelocityCOM = Velocity - AngularVelocity * ShapeCOM.
         //----------------------------------------------------------------------------------------------------
-        void                    SetLinearAndAngularVelocity(const BodyID& bodyID, const Vector3& linearVelocity, const Vector3& angularVelocity);
+        void                    SetLinearAndAngularVelocity(const BodyID& bodyID, const Vec3& linearVelocity, const Vec3& angularVelocity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the linear and angular velocity of the body.
         /// @note : The linear velocity is the velocity of the center of mass, which may not coincide with the position
         ///     of your object. To correct for this: VelocityCOM = Velocity - AngularVelocity * ShapeCOM.
         //----------------------------------------------------------------------------------------------------
-        void                    GetLinearAndAngularVelocity(const BodyID& bodyID, Vector3& outLinearVelocity, Vector3& outAngularVelocity) const;
+        void                    GetLinearAndAngularVelocity(const BodyID& bodyID, Vec3& outLinearVelocity, Vec3& outAngularVelocity) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the linear velocity of the body.
         /// @note : The linear velocity is the velocity of the center of mass, which may not coincide with the position
         ///     of your object. To correct for this: VelocityCOM = Velocity - AngularVelocity * ShapeCOM.
         //----------------------------------------------------------------------------------------------------
-        void                    SetLinearVelocity(const BodyID& bodyID, const Vector3& linearVelocity);
+        void                    SetLinearVelocity(const BodyID& bodyID, const Vec3& linearVelocity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the linear velocity of the body.
         /// @note : The linear velocity is the velocity of the center of mass, which may not coincide with the position
         ///     of your object. To correct for this: VelocityCOM = Velocity - AngularVelocity * ShapeCOM.
         //----------------------------------------------------------------------------------------------------
-        Vector3                 GetLinearVelocity(const BodyID& bodyID) const;
+        Vec3                    GetLinearVelocity(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the angular velocity of the body. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetAngularVelocity(const BodyID& bodyID, const Vector3& angularVelocity);
+        void                    SetAngularVelocity(const BodyID& bodyID, const Vec3& angularVelocity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add velocity to the current velocity of the body.
         //----------------------------------------------------------------------------------------------------
-        void                    AddLinearVelocity(const BodyID& bodyID, const Vector3& deltaLinearVelocity);
+        void                    AddLinearVelocity(const BodyID& bodyID, const Vec3& deltaLinearVelocity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add linear and angular velocity to the current velocities of the body.
         //----------------------------------------------------------------------------------------------------
-        void                    AddLinearAndAngularVelocity(const BodyID& bodyID, const Vector3& deltaLinearVelocity, const Vector3& deltaAngularVelocity);
+        void                    AddLinearAndAngularVelocity(const BodyID& bodyID, const Vec3& deltaLinearVelocity, const Vec3& deltaAngularVelocity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the angular velocity of the body.
         //----------------------------------------------------------------------------------------------------
-        Vector3                 GetAngularVelocity(const BodyID& bodyID) const;
+        Vec3                    GetAngularVelocity(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the velocity of a point (in world space, on the surface of the body) of the body.
         //----------------------------------------------------------------------------------------------------
-        Vector3                 GetPointVelocity(const BodyID& bodyID, const Vector3& point) const;
+        Vec3                    GetPointVelocity(const BodyID& bodyID, const Vec3& point) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the complete motion state of the body. 
         /// @note : The linear velocity is the velocity of the center of mass, which may not coincide with the position
         ///     of your object. To correct for this: VelocityCOM = Velocity - AngularVelocity * ShapeCOM.
         //----------------------------------------------------------------------------------------------------
-        void                    SetPositionAndRotationAndVelocity(const BodyID& bodyID, const Vector3& position, const Quat& rotation, const Vector3& linearVelocity, const Vector3& angularVelocity);
+        void                    SetPositionAndRotationAndVelocity(const BodyID& bodyID, const Vec3& position, const Quat& rotation, const Vec3& linearVelocity, const Vec3& angularVelocity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add force (unit: N) at the center of mass for the next time step. This will be reset after
         ///     the next call to PhysicsScene::Update().
         //----------------------------------------------------------------------------------------------------
-        void                    AddForce(const BodyID& bodyID, const Vector3& force, BodyActivationMode activationMode = BodyActivationMode::Activate);
+        void                    AddForce(const BodyID& bodyID, const Vec3& force, EBodyActivationMode activationMode = EBodyActivationMode::Activate);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add Force, applied at a world space point.
         //----------------------------------------------------------------------------------------------------
-        void                    AddForce(const BodyID& bodyID, const Vector3& force, const Vector3& point, BodyActivationMode activationMode = BodyActivationMode::Activate);
+        void                    AddForce(const BodyID& bodyID, const Vec3& force, const Vec3& point, EBodyActivationMode activationMode = EBodyActivationMode::Activate);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add torque (unit: N m) for the next time step, will be reset after the next call to
         ///     PhysicsScene::Update().
         //----------------------------------------------------------------------------------------------------
-        void                    AddTorque(const BodyID& bodyID, const Vector3& torque, BodyActivationMode activationMode = BodyActivationMode::Activate);
+        void                    AddTorque(const BodyID& bodyID, const Vec3& torque, EBodyActivationMode activationMode = EBodyActivationMode::Activate);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : A combination of AddForce() and AddTorque().
         //----------------------------------------------------------------------------------------------------
-        void                    AddForceAndTorque(const BodyID& bodyID, const Vector3& force, const Vector3& torque, BodyActivationMode activationMode = BodyActivationMode::Activate);
+        void                    AddForceAndTorque(const BodyID& bodyID, const Vec3& force, const Vec3& torque, EBodyActivationMode activationMode = EBodyActivationMode::Activate);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add an impulse to the center of mass (unit: kg m/s).
         //----------------------------------------------------------------------------------------------------
-        void                    AddImpulse(const BodyID& bodyID, const Vector3& impulse);
+        void                    AddImpulse(const BodyID& bodyID, const Vec3& impulse);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add an impulse to a point in world space (unit: kg m/s).
         //----------------------------------------------------------------------------------------------------
-        void                    AddImpulse(const BodyID& bodyID, const Vector3& impulse, const Vector3& point);
+        void                    AddImpulse(const BodyID& bodyID, const Vec3& impulse, const Vec3& point);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add angular impulse to this body in world space (unit: N m s).
         //----------------------------------------------------------------------------------------------------
-        void                    AddAngularImpulse(const BodyID& bodyID, const Vector3& angularImpulse);
+        void                    AddAngularImpulse(const BodyID& bodyID, const Vec3& angularImpulse);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the motion-type of a body, and activate it if desired. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetMotionType(const BodyID& bodyID, BodyMotionType motionType, BodyActivationMode activationMode);
+        void                    SetMotionType(const BodyID& bodyID, EBodyMotionType motionType, EBodyActivationMode activationMode);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the motion-type of a body. If the ID is invalid, this will return Kinematic as a default. 
         //----------------------------------------------------------------------------------------------------
-        BodyMotionType          GetMotionType(const BodyID& bodyID) const;
+        EBodyMotionType         GetMotionType(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the motion quality of a body. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetMotionQuality(const BodyID& bodyID, BodyMotionQuality quality);
+        void                    SetMotionQuality(const BodyID& bodyID, EBodyMotionQuality quality);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the body's motion quality.
         //----------------------------------------------------------------------------------------------------
-        BodyMotionQuality       GetMotionQuality(const BodyID& bodyID) const;
+        EBodyMotionQuality      GetMotionQuality(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the inverse inertia tensor in world space. 
         //----------------------------------------------------------------------------------------------------
-        Mat4                    GetInverseInertia(const BodyID& bodyID) const;
+        Mat44                   GetInverseInertia(const BodyID& bodyID) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a body's restitution. Restitution is usually between [0, 1], where 0 = completely non-elastic collision response

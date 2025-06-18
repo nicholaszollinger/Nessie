@@ -26,7 +26,7 @@ namespace nes
         bool m_startWithTickEnabled = true;
         
         Entity3DComponentTickFunction() = default;
-        virtual void ExecuteTick(const TickDeltaTime& deltaTime) override;
+        virtual void    ExecuteTick(const TickDeltaTime& deltaTime) override;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -40,20 +40,20 @@ namespace nes
 
     public:
         using TickFunction = Entity3DComponentTickFunction;
-
-    protected:
-        TickFunction m_tickFunction;
         
     public:
         TickableEntity3DComponent() = default;
         
-        virtual void Tick(const float deltaTime) = 0;
-        void SetTickEnabled(bool enabled);
-        void RegisterTickToGroup(TickGroup* pTickGroup);
+        virtual void    Tick(const float deltaTime) = 0;
+        void            SetTickEnabled(bool enabled);
+        void            RegisterTickToGroup(TickGroup* pTickGroup);
     
     protected:
-        virtual bool Init() override;
-        virtual void OnEnabled() override;
-        virtual void OnDisabled() override;
+        virtual bool    Init() override;
+        virtual void    OnEnabled() override;
+        virtual void    OnDisabled() override;
+
+    protected:
+        TickFunction m_tickFunction;
     };
 }

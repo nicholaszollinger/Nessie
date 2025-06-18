@@ -12,6 +12,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     dependencyInjector.Include("imgui");
     dependencyInjector.Include("yaml_cpp");
+    dependencyInjector.Include("fmt");
     dependencyInjector.Link("Nessie");
     dependencyInjector.Link("Assimp");
 

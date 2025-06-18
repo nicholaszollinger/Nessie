@@ -10,7 +10,7 @@
 
 namespace nes
 {
-    enum class OverrideMassProperties : uint8_t
+    enum class EOverrideMassProperties : uint8_t
     {
         CalculateMassAndInertia,    /// Tells the system to calculate the mass and inertia based on density.
         CalculateInertia,           /// Tells the system to take the mass form m_massPropertiesOverride and to calculate the inertia based on the density of shapes and to scale it to the provided mass.
@@ -23,19 +23,19 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct BodyCreateInfo
     {
-        Vector3                 m_position                      = Vector3::Zero();                      /// Position of the body (not center of mass).
+        Vec3                    m_position                      = Vec3::Zero();                      /// Position of the body (not center of mass).
         Quat                    m_rotation                      = Quat::Identity();                     /// Rotation of the body
-        Vector3                 m_linearVelocity                = Vector3::Zero();                      /// World space linear velocity of the center of mass (m/s). 
-        Vector3                 m_angularVelocity               = Vector3::Zero();                      /// World space angular velocity (rad/s).
+        Vec3                    m_linearVelocity                = Vec3::Zero();                      /// World space linear velocity of the center of mass (m/s). 
+        Vec3                    m_angularVelocity               = Vec3::Zero();                      /// World space angular velocity (rad/s).
         
         uint64_t                m_userData                      = 0;                                    /// User data value.
         
         CollisionLayer          m_collisionLayer                = 0;                                    /// Collision layer this body belongs to (determines if two objects can collide).
         CollisionGroup          m_collisionGroup;                                                       /// Collision group this body belongs to (determines if two objects can collide).
         
-        BodyMotionType          m_motionType                    = BodyMotionType::Static;               /// Motion type, determines if the object is static, dynamic, or kinematic. 
-        AllowedDOFs             m_allowedDOFs                   = AllowedDOFs::All;                     /// Which degrees of freedom this body has (can be used to limit simulation to 2D).
-        BodyMotionQuality       m_motionQuality                 = BodyMotionQuality::Discrete;          /// Motion Quality, or how well it detects collisions when it has a high velocity.
+        EBodyMotionType         m_motionType                    = EBodyMotionType::Static;               /// Motion type, determines if the object is static, dynamic, or kinematic. 
+        EAllowedDOFs            m_allowedDOFs                   = EAllowedDOFs::All;                     /// Which degrees of freedom this body has (can be used to limit simulation to 2D).
+        EBodyMotionQuality       m_motionQuality                 = EBodyMotionQuality::Discrete;          /// Motion Quality, or how well it detects collisions when it has a high velocity.
         float                   m_gravityScale                  = 1.0f;                                 /// Value to multiply gravity with for this body
         float                   m_maxLinearVelocity             = 500.f;                                /// Maximum linear velocity that this body can reach (m/s).        
         float                   m_maxAngularVelocity            = 0.25f * math::Pi<float>() * 60.f;     /// Maximum angular velocity that this body can reach (rad/s).
@@ -53,7 +53,7 @@ namespace nes
         bool                    m_useManifoldReduction          = true;                                 /// If this body should use manifold reduction (see description at Body::SetUseManifoldReduction)
         bool                    m_applyGyroscopicForce          = false;                                /// Set to indicate that the gyroscopic force should be applied to this body (aka Dzhanibekov effect, see https://en.wikipedia.org/wiki/Tennis_racket_theorem)
 
-        OverrideMassProperties  m_overrideMassProperties        = OverrideMassProperties::CalculateMassAndInertia; /// Determines how m_massPropertiesOverride will be used
+        EOverrideMassProperties m_overrideMassProperties        = EOverrideMassProperties::CalculateMassAndInertia; /// Determines how m_massPropertiesOverride will be used
         float                   m_inertiaMultiplier             = 1.0f;                                 /// When calculating the inertia (not when it is provided) the calculated inertia will be multiplied by this value.
         MassProperties          m_massPropertiesOverride;                                               /// Contains replacement mass settings which override the automatically calculated values.
 
@@ -63,8 +63,8 @@ namespace nes
 
     public:
         BodyCreateInfo() = default;
-        BodyCreateInfo(const ShapeSettings* pSettings, const Vector3& position, const Quat& rotation, BodyMotionType motionType, CollisionLayer layer);
-        BodyCreateInfo(const Shape* pShape, const Vector3& position, const Quat& rotation, BodyMotionType motionType, CollisionLayer layer);
+        BodyCreateInfo(const ShapeSettings* pSettings, const Vec3& position, const Quat& rotation, EBodyMotionType motionType, CollisionLayer layer);
+        BodyCreateInfo(const Shape* pShape, const Vec3& position, const Quat& rotation, EBodyMotionType motionType, CollisionLayer layer);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get access to the shape settings object. This contains serializable (non-runtime optimized)
@@ -98,7 +98,7 @@ namespace nes
         /// @brief : Check if the mass properties of this body will be calculated (Only relevant for kinematic
         ///     or dynamic objects that need a MotionProperties object).
         //----------------------------------------------------------------------------------------------------
-        bool                    HasMassProperties() const                   { return m_allowDynamicOrKinematic || m_motionType != BodyMotionType::Static; }
+        bool                    HasMassProperties() const                   { return m_allowDynamicOrKinematic || m_motionType != EBodyMotionType::Static; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculate (or return when overriden) the mass and inertia for the body. 

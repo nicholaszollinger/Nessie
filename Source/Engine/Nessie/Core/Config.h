@@ -19,7 +19,7 @@
     #else
         #define NES_CPU_ADDRESS_BITS 32
     #endif
-    #define NES_USE_SSE
+    //#define NES_USE_SSE
     #define NES_VECTOR_ALIGNMENT 16
     #define NES_DVECTOR_ALIGNMENT 32
 #else
@@ -27,13 +27,25 @@
 #endif
 
 // Use "Trailing Zero Count" instruction.
-#define NES_USE_TZCNT
+//#define NES_USE_TZCNT
 // Use "Leading Zero Count" instruction.
-#define NES_USE_LZCNT
+//#define NES_USE_LZCNT
 
 // Macro to get the current function name.
 #if defined(NES_COMPILER_MSVC)
     #define NES_FUNCTION_NAME __FUNCTION__
+#endif
+
+// Macro for a BreakPoint
+#if defined(NES_DEBUG)
+    #if defined(NES_COMPILER_MSVC)
+        #define NES_BREAKPOINT __debugbreak()
+    #else
+        #error "No Breakpoint macro setup for current compiler."
+    #endif
+
+#else
+    #define NES_BREAKPOINT void(0)
 #endif
 
 // Define Macro for inline
@@ -49,8 +61,8 @@
     #define NES_CACHE_LINE_SIZE 64
 #endif
 
+#define NOMINMAX
 #ifdef NES_USE_SSE
-    #define NOMINMAX
     #include <immintrin.h>
 #endif
 
@@ -90,3 +102,12 @@
 #error "No Valid Window & RenderAPI found! 
 #endif
 
+// Standard Types
+#include <cstdint>
+using uint = unsigned int;
+using uint8 = std::uint8_t;
+using uint16 = std::uint16_t;
+using uint32 = std::uint32_t;
+using uint64 = std::uint64_t;
+
+#include "WarningSuppression.h"

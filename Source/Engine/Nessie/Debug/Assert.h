@@ -1,37 +1,36 @@
 #pragma once
 // Assert.h
-#include "Core/Log/Log.h"
+#include "ErrorHandling.h"
 
-#if NES_LOGGING_ENABLED
+#ifdef NES_ASSERTS_ENABLED
 //----------------------------------------------------------------------------------------------------
-///		@brief : Assert that a condition is true. If not, log an error message and break.
+/// @brief : Checks that the expression is true. If not, this will log an assert failed error and
+///     break into the debugger if attached.
+/// @note : This accepts a format string same as the logging functions. For more info on formatting logs,
+///     see NES_LOG().
 //----------------------------------------------------------------------------------------------------
-#define NES_ASSERT(condition)                                                                                                               \
-do                                                                                                                                   \
-{                                                                                                                                    \
-    if (!(condition))                                                                                                                \
-    {                                                                                                                                \
-        NES_ERRORV("Assertion Failed!", (#condition), "\n\t", GET_CURRENT_FILENAME, " - ", __FUNCTION__, "() - Line: ", __LINE__);       \
-        __debugbreak();                                                                                                              \
-    }                                                                                                                                \
-} while(0)
-
-//----------------------------------------------------------------------------------------------------
-///		@brief : Assert that a condition is true, with an additional message. If not true,
-///             log an error message and break.
-//----------------------------------------------------------------------------------------------------
-#define NES_ASSERTV(condition, ...)                                                                                                             \
-do                                                                                                                                          \
-{                                                                                                                                           \
-    if (!(condition))                                                                                                                       \
-    {                                                                                                                                       \
-        NES_ERRORV("Assertion Failed!", (#condition), " ", __VA_ARGS__, "\n\t", GET_CURRENT_FILENAME, " - ", __FUNCTION__, "() - Line: ", __LINE__); \
-        __debugbreak();                                                                                                                     \
-    }                                                                                                                                       \
-} while(0)
+#define NES_ASSERT(expression, ...)                                                                                                     \
+do                                                                                                                                      \
+{                                                                                                                                       \
+    if (!(expression))                                                                                                                  \
+    {                                                                                                                                   \
+        auto message = nes::internal::AssertFailedHelper(nes::internal::LogSource(__FILE__, __LINE__, __FUNCTION__), #expression, ##__VA_ARGS__); \
+        nes::Platform::HandleFatalError("Assertion Failed!", message);                                       \
+        NES_BREAKPOINT;                                                                                                               \
+    }                                                                                                                                   \
+} while (false)
 
 #else
-#define NES_ASSERT(condition) void(0)
-#define NES_ASSERTV(condition, ...) void(0)
-
+#define NES_ASSERT(expression, ...) void(0)
 #endif
+
+//----------------------------------------------------------------------------------------------------
+/// @brief : Post a fatal error message. The program will exit as a result of this call.
+//----------------------------------------------------------------------------------------------------
+#define NES_FATAL(...) \
+do                                                                                                                              \
+{                                                                                                                               \
+    auto message = nes::internal::FatalErrorHelper(nes::internal::LogSource(__FILE__, __LINE__, __FUNCTION__), __VA_ARGS__);    \
+    nes::Platform::HandleFatalError("Fatal Error!", message);                                                                   \
+    NES_BREAKPOINT;                                                                                                             \
+} while (false)

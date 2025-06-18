@@ -5,11 +5,11 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    //      Might rename this to a Quad? This was previously used in collision, but that was changed to
-    //      "Box2D".
-    //    
-    ///		@brief : Represents a quad for rendering purposes. The Position is the bottom-left corner of the Rect.
-    ///		@tparam Type : Type of the Rect.
+    //  Might rename this to a Quad? This was previously used in collision, but that was changed to
+    //  "AABox".
+    //  
+    ///	@brief : Represents a quad for rendering purposes. The Position is the bottom-left corner of the Rect.
+    ///	@tparam Type : Type of the Rect.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
     struct Rect
@@ -23,26 +23,27 @@ namespace nes
         constexpr Rect(const Type x, const Type y, const Type width, const Type height);
         constexpr Rect(const TVector2<Type> position, const TVector2<Type> size);
 
-        constexpr bool operator==(const Rect& other) const;
-        constexpr bool operator!=(const Rect& other) const { return !(*this == other); }
-        constexpr Rect& operator+=(const TVector2<Type> point);
-        constexpr Rect& operator+=(const Rect& other);
+        /// Operators
+        constexpr bool              operator==(const Rect& other) const;
+        constexpr bool              operator!=(const Rect& other) const { return !(*this == other); }
+        constexpr Rect&             operator+=(const TVector2<Type> point);
+        constexpr Rect&             operator+=(const Rect& other);
 
-        void SetPosition(const Type _x, const Type _y);
-        void SetPosition(const TVector2<Type> pos);
-        void SetSize(const Type _width, const Type _height);
-        void SetSize(const TVector2<Type> size);
+        void                        SetPosition(const Type _x, const Type _y);
+        void                        SetPosition(const TVector2<Type> pos);
+        void                        SetSize(const Type _width, const Type _height);
+        void                        SetSize(const TVector2<Type> size);
 
-        constexpr TVector2<Type> GetPosition() const;
-        constexpr TVector2<Type> GetSize() const;
-        constexpr TVector2<Type> Center() const;
-        constexpr TVector2<Type> Min() const;
-        constexpr TVector2<Type> Max() const;
+        constexpr TVector2<Type>    GetPosition() const;
+        constexpr TVector2<Type>    GetSize() const;
+        constexpr TVector2<Type>    Center() const;
+        constexpr TVector2<Type>    Min() const;
+        constexpr TVector2<Type>    Max() const;
 
-        constexpr bool HasValidDimensions() const;
-        TVector2<Type> Extent() const;
+        constexpr bool              HasValidDimensions() const;
+        TVector2<Type>              Extent() const;
 
-        std::string ToString() const;
+        std::string                 ToString() const;
     };
 
     using Rectf = Rect<float>;

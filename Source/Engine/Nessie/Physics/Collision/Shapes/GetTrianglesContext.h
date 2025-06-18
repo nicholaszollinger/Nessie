@@ -12,15 +12,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class GetTrianglesContextVertexList
     {
-        Mat4            m_localToWorld;
-        const Vector3*  m_pTriangleVertices;
-        size_t          m_numTriangleVertices;
-        size_t          m_currentVertex;
-        // Physics Material
-        bool            m_isInsideOut;
-        
     public:
-        GetTrianglesContextVertexList(const Vector3& positionCOM, const Quat& rotation, const Vector3& scale, const Mat4& localTransform, const Vector3* triangleVertices, size_t numTriangleVertices);
+        GetTrianglesContextVertexList(const Vec3& positionCOM, const Quat& rotation, const Vec3& scale, const Mat44& localTransform, const Vec3* triangleVertices, size_t numTriangleVertices);
 
         //----------------------------------------------------------------------------------------------------
         /// @see Shape::GetTrianglesNext()  
@@ -50,7 +43,15 @@ namespace nes
         /// @brief : Helper function for creating a sphere. 
         //----------------------------------------------------------------------------------------------------
         template <typename VertexArray>
-        static void CreateUnitSphereHelper(VertexArray& vertices, const Vector3& inV1, const Vector3& inV2, const Vector3& inV3, const int detailLevel);
+        static void CreateUnitSphereHelper(VertexArray& vertices, const Vec3& inV1, const Vec3& inV2, const Vec3& inV3, const int detailLevel);
+
+    private:
+        Mat44           m_localToWorld;
+        const Vec3*     m_pTriangleVertices;
+        size_t          m_numTriangleVertices;
+        size_t          m_currentVertex;
+        // [TODO]: Physics Material
+        bool            m_isInsideOut;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -59,67 +60,66 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class GetTrianglesContextMultiVertexList
     {
-        struct Part
-        {
-            Mat4            m_localToWorld;
-            const Vector3*  m_pTriangleVertices;
-            size_t          m_numTriangleVertices;
-        };
-        
-        // [TODO]: 
-        // Supposed to be a StaticArray
-        std::vector<Part>   m_parts;
-        unsigned            m_currentPart;
-        size_t              m_currentVertex;
-        // Physics Material
-        bool                m_isInsideOut;
-        
     public:
         GetTrianglesContextMultiVertexList(bool isInsideOut);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add a mesh part and its transform. 
         //----------------------------------------------------------------------------------------------------
-        void AddPart(const Mat4& localToWorld, const Vector3* pTriangleVertices, size_t numTriangleVertices);
+        void AddPart(const Mat44& localToWorld, const Vec3* pTriangleVertices, size_t numTriangleVertices);
 
         //----------------------------------------------------------------------------------------------------
         /// @see Shape::GetTrianglesNext()  
         //----------------------------------------------------------------------------------------------------
         int GetTrianglesNext(int maxTrianglesRequested, Float3* pOutTriangleVertices);
+
+    private:
+        struct Part
+        {
+            Mat44               m_localToWorld;
+            const Vec3*         m_pTriangleVertices;
+            size_t              m_numTriangleVertices;
+        };
+        
+        StaticArray<Part, 3>    m_parts;
+        unsigned                m_currentPart;
+        size_t                  m_currentVertex;
+        // [TODO]: Physics Material
+        bool                    m_isInsideOut;
     };
 
     template <typename VertexArray>
     void GetTrianglesContextVertexList::CreateHalfUnitSphereTop(VertexArray& vertices, const int detailLevel)
     {
-       CreateUnitSphereHelper(vertices,  Vector3::AxisX(),  Vector3::AxisY(),  Vector3::AxisZ(), detailLevel);
-       CreateUnitSphereHelper(vertices,  Vector3::AxisY(), -Vector3::AxisX(),  Vector3::AxisZ(), detailLevel);
-       CreateUnitSphereHelper(vertices,  Vector3::AxisX(),  Vector3::AxisX(), -Vector3::AxisZ(), detailLevel);
-       CreateUnitSphereHelper(vertices, -Vector3::AxisY(),  Vector3::AxisY(), -Vector3::AxisZ(), detailLevel);
+       CreateUnitSphereHelper(vertices,  Vec3::AxisX(),  Vec3::AxisY(),  Vec3::AxisZ(), detailLevel);
+       CreateUnitSphereHelper(vertices,  Vec3::AxisY(), -Vec3::AxisX(),  Vec3::AxisZ(), detailLevel);
+       CreateUnitSphereHelper(vertices,  Vec3::AxisX(),  Vec3::AxisX(), -Vec3::AxisZ(), detailLevel);
+       CreateUnitSphereHelper(vertices, -Vec3::AxisY(),  Vec3::AxisY(), -Vec3::AxisZ(), detailLevel);
     }
 
     template <typename VertexArray>
     void GetTrianglesContextVertexList::CreateHalfUnitSphereBottom(VertexArray& vertices, const int detailLevel)
     {
-        CreateUnitSphereHelper(vertices, -Vector3::AxisX(), -Vector3::AxisY(),  Vector3::AxisZ(), detailLevel);
-        CreateUnitSphereHelper(vertices, -Vector3::AxisY(),  Vector3::AxisX(),  Vector3::AxisZ(), detailLevel);
-        CreateUnitSphereHelper(vertices,  Vector3::AxisX(), -Vector3::AxisY(), -Vector3::AxisZ(), detailLevel);
-        CreateUnitSphereHelper(vertices, -Vector3::AxisY(), -Vector3::AxisX(), -Vector3::AxisZ(), detailLevel);
+        CreateUnitSphereHelper(vertices, -Vec3::AxisX(), -Vec3::AxisY(),  Vec3::AxisZ(), detailLevel);
+        CreateUnitSphereHelper(vertices, -Vec3::AxisY(),  Vec3::AxisX(),  Vec3::AxisZ(), detailLevel);
+        CreateUnitSphereHelper(vertices,  Vec3::AxisX(), -Vec3::AxisY(), -Vec3::AxisZ(), detailLevel);
+        CreateUnitSphereHelper(vertices, -Vec3::AxisY(), -Vec3::AxisX(), -Vec3::AxisZ(), detailLevel);
     }
 
     template <typename VertexArray>
     void GetTrianglesContextVertexList::CreateUnitOpenCylinder(VertexArray& vertices, const int detailLevel)
     {
-        constexpr Vector3 bottomOffset(0.0f, -2.0f, 0.0f);
+        constexpr Vec3 bottomOffset(0.0f, -2.0f, 0.0f);
         int numVerts = 4 * (1 << detailLevel);
         for (int i = 0; i < numVerts; ++i)
         {
             const float angle1 = 2.0f * math::Pi<float>() * (static_cast<float>(i) / static_cast<float>(numVerts));
             const float angle2 = 2.0f * math::Pi<float>() * (static_cast<float>(i + 1) / static_cast<float>(numVerts));
 
-            Vector3 t1(std::sin(angle1), 1.0f, std::cos(angle1));
-            Vector3 t2(std::sin(angle2), 1.0f, std::cos(angle2));
-            Vector3 b1 = t1 + bottomOffset;
-            Vector3 b2 = t2 + bottomOffset;
+            Vec3 t1(std::sin(angle1), 1.0f, std::cos(angle1));
+            Vec3 t2(std::sin(angle2), 1.0f, std::cos(angle2));
+            Vec3 b1 = t1 + bottomOffset;
+            Vec3 b2 = t2 + bottomOffset;
 
             vertices.push_back(t1);
             vertices.push_back(b1);
@@ -132,12 +132,12 @@ namespace nes
     }
 
     template <typename VertexArray>
-    void GetTrianglesContextVertexList::CreateUnitSphereHelper(VertexArray& vertices, const Vector3& inV1,
-        const Vector3& inV2, const Vector3& inV3, const int detailLevel)
+    void GetTrianglesContextVertexList::CreateUnitSphereHelper(VertexArray& vertices, const Vec3& inV1,
+        const Vec3& inV2, const Vec3& inV3, const int detailLevel)
     {
-        Vector3 center1 = (inV1 + inV2).Normalized();
-        Vector3 center2 = (inV2 + inV3).Normalized();
-        Vector3 center3 = (inV3 + inV1).Normalized();
+        Vec3 center1 = (inV1 + inV2).Normalized();
+        Vec3 center2 = (inV2 + inV3).Normalized();
+        Vec3 center3 = (inV3 + inV1).Normalized();
 
         if (detailLevel > 0)
         {

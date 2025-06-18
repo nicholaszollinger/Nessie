@@ -2,22 +2,19 @@
 // Rng.h
 #include <chrono>
 #include <limits>
-
 #include "Core/Generic/Concepts.h"
-#include "Math/Vector2.h"
+#include "Math/Vec2.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Random Number Generator class. This can be used on its own thread.
+    ///	@brief : Random Number Generator class. This can be used on its own thread.
     //----------------------------------------------------------------------------------------------------
     class RandomNumberGenerator
     {
+    public:
         static constexpr uint64_t kRandMax = std::numeric_limits<uint64_t>::max();
 	    static constexpr uint64_t kHalfRandMax = kRandMax >> 1;
-
-        uint64_t m_state[4] { 0, 0, 0, 0 };
-	    uint64_t m_lastSeedValue = 0; // Last Seed Value used to initialize the RNG.
 
     public:
         RandomNumberGenerator();
@@ -28,31 +25,75 @@ namespace nes
 	    RandomNumberGenerator(RandomNumberGenerator&& other) noexcept = default;
 	    RandomNumberGenerator& operator=(RandomNumberGenerator&& other) noexcept = default;
 
-	    void SeedFromTime();
-        void SeedFromRand();
-	    void SetSeed(uint64_t seed);
-	    uint64_t GetLastSeed() const;
+    	//----------------------------------------------------------------------------------------------------
+    	///		@brief : Seed the RNG with a random value based on the current time.
+    	//----------------------------------------------------------------------------------------------------
+	    void 	SeedFromTime();
 
-        uint64_t Rand();
-	    bool RandBool();
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Seed the RNG with the result from Rand().
+    	//----------------------------------------------------------------------------------------------------
+        void 	SeedFromRand();
 
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Seed the RNG with a given value.
+    	//----------------------------------------------------------------------------------------------------
+	    void 	SetSeed(uint64 seed);
+
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Returns the last seed value used to initialize the RNG. Calls to Seed() will
+    	///		change this value.
+    	//----------------------------------------------------------------------------------------------------
+	    uint64	GetLastSeed() const;
+
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Returns a random UINT64 value.
+    	//----------------------------------------------------------------------------------------------------
+        uint64	Rand();
+
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Returns a random boolean value.
+    	//----------------------------------------------------------------------------------------------------
+	    bool	RandBool();
+
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Return a random value between [min, max].
+    	///	@tparam Type : Type of the value to return, must be a Numeric type.
+    	//----------------------------------------------------------------------------------------------------
         template <ScalarType Type>
-	    Type RandRange(const Type min, const Type max);
+	    Type	RandRange(const Type min, const Type max);
 
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Return a random index between [0, size - 1].
+    	///	@tparam Type : Type of the value to return, must be an integral type. Default is size_t.
+    	///	@param size : Size of the container.
+    	//----------------------------------------------------------------------------------------------------
 	    template <UnsignedIntegralType Type = size_t>
-	    Type RandIndex(const size_t size);
+	    Type	RandIndex(const size_t size)				{ return static_cast<Type>(Rand() % size); }
 
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Return a random floating point value between [0, 1].
+    	//----------------------------------------------------------------------------------------------------
 	    template <std::floating_point Type = float>
-	    Type NormalizedRand();
+	    Type	NormalizedRand()							{ return static_cast<Type>(Rand()) / static_cast<Type>(kRandMax); }
 
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Return a random floating point value between [-1, 1].
+    	//----------------------------------------------------------------------------------------------------
 	    template <std::floating_point Type = float>
-	    Type SignedNormalizedRand();
+	    Type	SignedNormalizedRand()						{ return (NormalizedRand<Type>() * static_cast<Type>(2)) - static_cast<Type>(1); }
 
-	    template <std::floating_point Type = float>
-	    TVector2<Type> RandUnitVector2D();
+    	//----------------------------------------------------------------------------------------------------
+    	///	@brief : Returns a random unit vector in 2D space.
+    	//----------------------------------------------------------------------------------------------------
+	    Vec2	RandUnitVector2();
 
     private:
-        void InitState(uint64_t seed);
+        void	InitState(uint64_t seed);
+
+    private:
+    	uint64 	m_state[4] { 0, 0, 0, 0 };
+    	uint64 	m_lastSeedValue = 0; // Last Seed Value used to initialize the RNG.
     };
 
     using Rng = RandomNumberGenerator;
@@ -60,14 +101,6 @@ namespace nes
 
 namespace nes
 {
-    //----------------------------------------------------------------------------------------------------
-	//		NOTES:
-	//		
-	///		@brief : Return a random value between [min, max].
-	///		@tparam Type : Type of the value to return, must be a Numeric type.
-	///		@param min : Min value of the range.
-	///		@param max : Max value of the range.
-	//----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
     Type Rng::RandRange(const Type min, const Type max)
     {
@@ -83,55 +116,5 @@ namespace nes
 	    {
 	        return min + static_cast<Type>((Rand() % (max - min + 1)));
 	    }
-    }
-
-    //----------------------------------------------------------------------------------------------------
-	//		NOTES:
-	//		
-	///		@brief : Return a random index between [0, size - 1].
-	///		@tparam Type : Type of the value to return, must be an integral type. Default is size_t.
-	///		@param size : Size of the container.
-	//----------------------------------------------------------------------------------------------------
-    template <UnsignedIntegralType Type>
-    Type Rng::RandIndex(const size_t size)
-    {
-        return static_cast<Type>(Rand() % size);
-    }
-
-    //----------------------------------------------------------------------------------------------------
-	//		NOTES:
-	//		
-	///		@brief : Return a random floating point value between [0, 1].
-	///		@tparam Type : Floating point type to return.
-	//----------------------------------------------------------------------------------------------------
-	template <std::floating_point Type>
-	Type Rng::NormalizedRand()
-	{
-	    return static_cast<Type>(Rand()) / static_cast<Type>(kRandMax);
-	}
-
-    //----------------------------------------------------------------------------------------------------
-	//		NOTES:
-	//		
-	///		@brief : Return a random floating point value between [-1, 1].
-	///		@tparam Type : Floating point type to return.
-	//----------------------------------------------------------------------------------------------------
-	template <std::floating_point Type>
-	Type Rng::SignedNormalizedRand()
-	{
-	    return (NormalizedRand<Type>() * static_cast<Type>(2)) - static_cast<Type>(1);
-	}
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Returns a Random Unit Vector in 2D space.
-    ///		@tparam Type : Floating point element type.
-    //----------------------------------------------------------------------------------------------------
-    template <std::floating_point Type>
-    TVector2<Type> Rng::RandUnitVector2D()
-    {
-        const Type angle = NormalizedRand<Type>() * math::TwoPi<Type>();
-        return { std::cos(angle), std::sin(angle) };
     }
 }

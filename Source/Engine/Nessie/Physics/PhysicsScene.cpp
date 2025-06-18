@@ -17,7 +17,7 @@ namespace nes
     void PhysicsScene::Init(const CreateInfo& createInfo)
     {
         const uint32_t maxBodies = math::Min(createInfo.m_maxBodies, kMaxBodiesLimit);
-        NES_ASSERTV(maxBodies == createInfo.m_maxBodies, "Cannot support this many bodies!");
+        NES_ASSERT(maxBodies == createInfo.m_maxBodies, "Cannot support this many bodies!");
 
         m_pCollisionLayerPairFilter = createInfo.m_pCollisionLayerPairFilter;
         m_pCollisionVsBroadPhaseLayerFilter = createInfo.m_pCollisionVsBroadPhaseLayerFilter;
@@ -69,7 +69,7 @@ namespace nes
         m_pBroadphase->Optimize();
     }
 
-    PhysicsUpdateErrorCode PhysicsScene::Update([[maybe_unused]] const float deltaTime, [[maybe_unused]] const int collisionSteps, [[maybe_unused]] StackAllocator* pAllocator, JobSystem* pJobSystem)
+    EPhysicsUpdateErrorCode PhysicsScene::Update([[maybe_unused]] const float deltaTime, [[maybe_unused]] const int collisionSteps, [[maybe_unused]] StackAllocator* pAllocator, JobSystem* pJobSystem)
     {
         NES_ASSERT(m_pBroadphase != nullptr);
         NES_ASSERT(collisionSteps > 0);
@@ -206,7 +206,7 @@ namespace nes
         //const auto errors = static_cast<PhysicsUpdateErrorCode>(context.m_errors.load(std::memory_order_acquire));
         //NES_ASSERTV(errors == PhysicsUpdateErrorCode::None, "An Error occurred during the physics update! Error: ", ToString(errors));
         //return errors;
-        return PhysicsUpdateErrorCode::None;
+        return EPhysicsUpdateErrorCode::None;
     }
 
     void PhysicsScene::JobStepListeners([[maybe_unused]] PhysicsUpdateContext::Step* pStep)

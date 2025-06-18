@@ -1,7 +1,6 @@
 // ScaleHelpers.h
 #pragma once
-#include "Math/Vector3.h"
-#include "Math/SIMD/VectorRegisterUint.h"
+#include "Math/Vec3.h"
 #include "Physics/PhysicsSettings.h"
 
 namespace nes::ScaleHelpers
@@ -15,42 +14,40 @@ namespace nes::ScaleHelpers
     //----------------------------------------------------------------------------------------------------
     /// @brief : Test if scale is identity.
     //----------------------------------------------------------------------------------------------------
-    inline bool IsNotScaled(const Vector3& scale)       { return scale.IsClose(Vector3::Unit(), kScaleToleranceSqr); }
+    inline bool     IsNotScaled(const Vec3& scale)       { return scale.IsClose(Vec3::One(), kScaleToleranceSqr); }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Test if scale is uniform.
     //----------------------------------------------------------------------------------------------------
-    inline bool IsUniformScale(const Vector3& scale)    { return scale.Swizzle<Swizzle::Y, Swizzle::Z, Swizzle::X>().IsClose(scale, kScaleToleranceSqr); }
+    inline bool     IsUniformScale(const Vec3& scale)    { return scale.Swizzle<ESwizzleY, ESwizzleZ, ESwizzleX>().IsClose(scale, kScaleToleranceSqr); }
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Test if any of the components of the scale have a value below kMinScale
     //----------------------------------------------------------------------------------------------------
-    inline bool IsZeroScale(const Vector3& scale)
+    inline bool     IsZeroScale(const Vec3& scale)
     {
-        const VectorRegisterF absReg(std::abs(scale.x), std::abs(scale.y), std::abs(scale.z), std::abs(scale.z));
-        return VectorRegisterF::Less(absReg, VectorRegisterF::Replicate(kMinScale)).TestAnyXYZTrue();
+        return Vec3::Less(scale.Abs(), Vec3::Replicate(kMinScale)).TestAnyXYZTrue();
     }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Test if a scale flips an object inside out (which requires flipping all normals and polygon windings.
     //----------------------------------------------------------------------------------------------------
-    inline bool IsInsideOut(const Vector3& scale)
+    inline bool     IsInsideOut(const Vec3& scale)
     {
-        const VectorRegisterF reg (scale.x, scale.y, scale.z, scale.z);
-        return (math::CountBits(VectorRegisterF::Less(reg, VectorRegisterF::Zero()).GetTrues() & 0x7) & 1) != 0;
+        return (math::CountBits(Vec3::Less(scale, Vec3::Zero()).GetTrues() & 0x7) & 1) != 0;
     }
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Ensure that the scale for each component is at least kMinScale
     //----------------------------------------------------------------------------------------------------
-    inline Vector3 MakeNonZeroScale(const Vector3& scale) { return scale.GetSign() * Vector3::Max(scale.Abs(), Vector3::Replicate(kMinScale)); }
+    inline Vec3     MakeNonZeroScale(const Vec3& scale) { return scale.GetSign() * Vec3::Max(scale.Abs(), Vec3::Replicate(kMinScale)); }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Get the scaled convex radius of an object. 
     //----------------------------------------------------------------------------------------------------
-    inline float   ScaleConvexRadius(const float convexRadius, const Vector3& scale)
+    inline float    ScaleConvexRadius(const float convexRadius, const Vec3& scale)
     {
-        return math::Min(convexRadius * scale.Abs().ReduceMin(), physics::kDefaultConvexRadius);
+        return math::Min(convexRadius * scale.Abs().MinComponent(), physics::kDefaultConvexRadius);
     }
     
 }

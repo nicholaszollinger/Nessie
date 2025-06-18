@@ -5,12 +5,13 @@
 #include "EntityLayer.h"
 #include "Core/Events/Event.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/Matrix.h"
 
 namespace nes
 {
     class Camera;
     class WorldComponent;
+
+    NES_DEFINE_LOG_TAG(kSceneLogTag, "Scene", Info);
     
     //----------------------------------------------------------------------------------------------------
     ///		@brief : A Scene manages a stack of NodeLayers and processed in the following order:

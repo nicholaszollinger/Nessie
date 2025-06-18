@@ -2,7 +2,6 @@
 #include "Entity3D.h"
 #include "Core/Memory/Memory.h"
 #include "Components/Entity3DComponent.h"
-#include "Math/VectorConversions.h"
 #include "Physics/Components/ShapeComponent.h"
 #include "Scene/EntityLayer.h"
 #include "World/World.h"
@@ -23,7 +22,7 @@ namespace nes
         {
             if (!pComponent->Init())
             {
-                NES_ERRORV("Entity3D", "Failed to initialize Entity! Failed to initialize component!");
+                NES_ERROR(kEntityLogTag, "Failed to initialize Entity! Failed to initialize component!");
                 return false;
             }
         }
@@ -33,7 +32,7 @@ namespace nes
             // If there is more than 1 Physics Shape, then the Body needs to build a CompoundShape.
             if (physicsShapes.size() > 1)
             {
-                
+                // [TODO]: 
             }
         }
         
@@ -41,86 +40,56 @@ namespace nes
         
         return true;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Rotate this Entity by a delta angle around an axis. The angle must be in radians.
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::Rotate(const float angle, const Vector3& axis)
+    
+    void Entity3D::Rotate(const float angle, const Vec3& axis)
     {
-        m_rotation = Quat::MakeFromAngleAxis(angle, axis).EulerAngles();
+        m_rotation = Quat::FromAxisAngle(axis, angle).ToEulerAngles();
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Rotate this Entity by a delta rotation.
-    //----------------------------------------------------------------------------------------------------
+    
     void Entity3D::Rotate(const Rotation& rotation)
     {
         m_rotation += rotation;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Move this Entity's local location based on the translation. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::Translate(const Vector3& translation)
+    
+    void Entity3D::Translate(const Vec3& translation)
     {
         m_location += translation;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Increase the local scale by a delta scalar amount. This multiplies the current scale of each
-    ///         axis by the scalar values of deltaScale.
-    //----------------------------------------------------------------------------------------------------
+    
     void Entity3D::Scale(const float uniformScale)
     {
         m_scale *= uniformScale;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Increase the local scale by an amount on each axis. This multiplies the current local
-    ///             scale by the scale vector.
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::Scale(const Vector3& scale)
+    
+    void Entity3D::Scale(const Vec3& scale)
     {
         m_scale *= scale;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Sets this Entity's location relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetLocalLocation(const Vector3& location)
+    
+    void Entity3D::SetLocalLocation(const Vec3& location)
     {
         m_location = location;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set this Entity's orientation relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
+    
     void Entity3D::SetLocalRotation(const Rotation& rotation)
     {
         m_rotation = rotation;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set this Entity's local orientation, from euler angles. The euler angles are expected
-    ///             to be in degrees.
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetLocalRotation(const Vector3& eulerAngles)
+    
+    void Entity3D::SetLocalRotation(const Vec3& eulerAngles)
     {
         m_rotation = Rotation(eulerAngles);
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set this Entity's scale relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetLocalScale(const Vector3& scale)
+    
+    void Entity3D::SetLocalScale(const Vec3& scale)
     {
         m_scale = scale;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
@@ -136,24 +105,18 @@ namespace nes
     //     UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     // }
 
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set the Entity's location, orientation and scale relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetLocalTransform(const Vector3& location, const Rotation& rotation, const Vector3& scale)
+    void Entity3D::SetLocalTransform(const Vec3& location, const Rotation& rotation, const Vec3& scale)
     {
         m_location = location;
         m_rotation = rotation;
         m_scale = scale;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set the Entity's location, in world space. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetWorldLocation(const Vector3& location)
+    
+    void Entity3D::SetWorldLocation(const Vec3& location)
     {
         // Get our current parent location:
-        Vector3 parentLocation = Vector3::Zero();
+        Vec3 parentLocation = Vec3::Zero();
         if (m_pParent)
         {
             // Update the Parent, if necessary:
@@ -168,10 +131,7 @@ namespace nes
         m_location = location - parentLocation;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set the Entity's orientation, in world space. 
-    //----------------------------------------------------------------------------------------------------
+    
     void Entity3D::SetWorldRotation(const Rotation& rotation)
     {
         // Get our current parent orientation:
@@ -189,13 +149,10 @@ namespace nes
         m_rotation = rotation - parentRotation;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set the Entity's scale, in world space. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetWorldScale(const Vector3& scale)
+    
+    void Entity3D::SetWorldScale(const Vec3& scale)
     {
-        Vector3 parentScale = Vector3::Unit();
+        Vec3 parentScale = Vec3::One();
         if (m_pParent)
         {
             // Update the Parent, if necessary:
@@ -209,15 +166,12 @@ namespace nes
         m_scale = scale / parentScale;
         UpdateWorldTransform(m_pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set the Entity3Ds transform, in world space. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetWorldTransform(const Mat4& transform)
+    
+    void Entity3D::SetWorldTransform(const Mat44& transform)
     {
         m_worldTransformNeedsUpdate = true;
         
-        Mat4 parentTransform = Mat4::Identity();
+        Mat44 parentTransform = Mat44::Identity();
         if (m_pParent)
         {
             // Update the Parent, if necessary:
@@ -228,15 +182,15 @@ namespace nes
             parentTransform = m_pParent->GetWorldTransformMatrix();
         }
 
-        Vector3 parentTranslation;
-        Vector3 parentScale;
+        Vec3 parentTranslation;
+        Vec3 parentScale;
         Rotation parentRotation;
-        math::DecomposeMatrix(parentTransform, parentTranslation, parentRotation, parentScale);
+        parentTransform.Decompose(parentTranslation, parentRotation, parentScale);
 
-        Vector3 translation;
-        Vector3 scale;
+        Vec3 translation;
+        Vec3 scale;
         Rotation rotation;
-        math::DecomposeMatrix(transform, translation, rotation, scale);
+        transform.Decompose(translation, rotation, scale);
         
         // Convert to local space:
         m_location = translation - parentTranslation;
@@ -248,16 +202,13 @@ namespace nes
         m_onWorldTransformUpdated.Broadcast();
         PropagateTransformUpdateToChildren();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Set the Entity3Ds transform, in world space. 
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::SetWorldTransform(const Vector3& worldLocation, const Rotation& worldRotation, const Vector3& worldScale)
+    
+    void Entity3D::SetWorldTransform(const Vec3& worldLocation, const Rotation& worldRotation, const Vec3& worldScale)
     {
         m_worldTransformNeedsUpdate = true;
         
         // Calculate the Local Transform:
-        Mat4 parentTransform = Mat4::Identity();
+        Mat44 parentTransform = Mat44::Identity();
         if (m_pParent)
         {
             // Update the Parent, if necessary:
@@ -268,84 +219,60 @@ namespace nes
             parentTransform = m_pParent->GetWorldTransformMatrix();
         }
 
-        Vector3 parentTranslation;
-        Vector3 parentScale;
+        Vec3 parentTranslation;
+        Vec3 parentScale;
         Rotation parentRotation;
-        math::DecomposeMatrix(parentTransform, parentTranslation, parentRotation, parentScale);
-
+        parentTransform.Decompose(parentTranslation, parentRotation, parentScale);
+        
         // Convert to local space:
         m_location = worldLocation - parentTranslation;
-        m_rotation = worldRotation - parentRotation;
+        m_rotation = (worldRotation - parentRotation).Normalized();
         m_scale = worldScale / parentScale;
 
         // Compose our world matrix:
-        m_worldTransformMatrix = math::MakeTranslationMatrix4(worldLocation) * math::ToMat4(worldRotation) * math::MakeScaleMatrix(worldScale);
+        m_worldTransformMatrix = Mat44::ComposeTransform(worldLocation, worldRotation, worldScale);
         
         m_worldTransformNeedsUpdate = false;
         m_onWorldTransformUpdated.Broadcast();
         PropagateTransformUpdateToChildren();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Entity's location, in world space. 
-    //----------------------------------------------------------------------------------------------------
-    Vector3 Entity3D::GetLocation() const
+    
+    Vec3 Entity3D::GetLocation() const
     {
-        return math::XYZ(m_worldTransformMatrix.GetColumn(3));
+        return m_worldTransformMatrix.GetTranslation();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Entity's world orientation. 
-    //----------------------------------------------------------------------------------------------------
+    
     Rotation Entity3D::GetRotation() const
     {
-        return math::ExtractRotation(m_worldTransformMatrix);
+        return Rotation(m_worldTransformMatrix.GetRotation().ToQuaternion().ToEulerAngles() * math::RadiansToDegrees());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Entity's total world scale. 
-    //----------------------------------------------------------------------------------------------------
-    Vector3 Entity3D::GetScale() const
+    
+    Vec3 Entity3D::GetScale() const
     {
         return m_worldTransformMatrix.GetScale();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Entity's location relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
-    const Vector3& Entity3D::GetLocalLocation() const
+    
+    const Vec3& Entity3D::GetLocalLocation() const
     {
         return m_location;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Entity's rotation relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
+    
     const Rotation& Entity3D::GetLocalRotation() const
     {
         return m_rotation;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Entity's scale relative to its parent. 
-    //----------------------------------------------------------------------------------------------------
-    const Vector3& Entity3D::GetLocalScale() const
+    
+    const Vec3& Entity3D::GetLocalScale() const
     {
         return m_scale;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Local Transform in its Matrix representation. 
-    //----------------------------------------------------------------------------------------------------
-    Mat4 Entity3D::LocalTransformMatrix() const
+    
+    Mat44 Entity3D::LocalTransformMatrix() const
     {
-        return math::ComposeTransformMatrix(m_location, m_rotation, m_scale);
+        return Mat44::ComposeTransform(m_location, m_rotation, m_scale);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the World Transformation Matrix of this Entity. 
-    //----------------------------------------------------------------------------------------------------
-    const Mat4& Entity3D::GetWorldTransformMatrix() const
+    
+    const Mat44& Entity3D::GetWorldTransformMatrix() const
     {
         return m_worldTransformMatrix;
     }
@@ -359,21 +286,13 @@ namespace nes
         MarkWorldTransformDirty();
         UpdateWorldTransform(pParent, LocalTransformMatrix());
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Sets the "WorldTransformNeedsUpdate" flag to true, which will ensure that the next
-    ///             call to get or set will update the Transform appropriately, including Children.
-    //----------------------------------------------------------------------------------------------------
+    
     void Entity3D::MarkWorldTransformDirty()
     {
         m_worldTransformNeedsUpdate = true;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Updates our calculated world transformation matrix.
-    ///         Called when a Parent's transform has changed or the Parent itself has changed.
-    //----------------------------------------------------------------------------------------------------
-    void Entity3D::UpdateWorldTransform(Entity3D* pParent, const Matrix4x4& localTransform)
+    
+    void Entity3D::UpdateWorldTransform(Entity3D* pParent, const Mat44& localTransform)
     {
         // If we no longer have a parent, then our local transform translates this
         // component's local transformation to world space.
@@ -391,7 +310,7 @@ namespace nes
                 pParent->UpdateWorldTransform(pParent->m_pParent, pParent->LocalTransformMatrix());
             }
             
-            m_worldTransformMatrix = pParent->GetWorldTransformMatrix() * localTransform;
+            m_worldTransformMatrix = localTransform * pParent->GetWorldTransformMatrix();
         }
 
         // Our transform is now updated.
@@ -399,10 +318,7 @@ namespace nes
         m_onWorldTransformUpdated.Broadcast();
         PropagateTransformUpdateToChildren();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Walk down the tree, updating the world Transforms of all children.
-    //----------------------------------------------------------------------------------------------------
+    
     void Entity3D::PropagateTransformUpdateToChildren()
     {
         for (auto* pChild : m_children)
@@ -410,11 +326,7 @@ namespace nes
             pChild->UpdateWorldTransform(this, pChild->LocalTransformMatrix());
         }
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : If true, then the current World Transform is out of date. This can be caused when the
-    ///         Entity hierarchy is changed or this Entity or a parent has moved.
-    //----------------------------------------------------------------------------------------------------
+    
     bool Entity3D::WorldTransformNeedsUpdate() const
     {
         return m_worldTransformNeedsUpdate;

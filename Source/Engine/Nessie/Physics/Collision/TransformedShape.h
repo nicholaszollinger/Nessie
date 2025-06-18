@@ -5,11 +5,11 @@
 #include "ShapeFilter.h"
 #include "Core/Memory/Memory.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/Float3.h"
-#include "Math/Matrix.h"
 #include "Physics/Body/BodyID.h"
 #include "Shapes/Shape.h"
 #include "Shapes/SubShapeID.h"
+#include "Math/Scalar3.h"
+#include "Math/Mat4.h"
 
 namespace nes
 {
@@ -18,16 +18,16 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : A temporary data structure that contains a shape and a transform.
-    ///     This structure can be obtained from a body (e.g. after a broad phase query) under lock protection.
-    ///     The lock can then be release and collision detection operations can be safely performed since the
-    ///     class takes a reference on teh shape and does not use anything from the body anymore.
+    ///     This structure can be obtained from a body (e.g., after a broad phase query) under lock protection.
+    ///     The lock can then be released, and collision detection operations can be safely performed since the
+    ///     class takes a reference of the shape and does not use anything from the body anymore.
     //----------------------------------------------------------------------------------------------------
     class TransformedShape
     {
     public:
         using GetTrianglesContext = Shape::GetTrianglesContext;
         
-        Vector3                 m_shapePositionCOM;
+        Vec3                    m_shapePositionCOM;
         Quat                    m_shapeRotation;
         ConstStrongPtr<Shape>   m_pShape;
         Float3                  m_shapeScale { 1.0, 1.0, 1.0 };
@@ -38,7 +38,7 @@ namespace nes
         NES_OVERRIDE_NEW_DELETE
 
         TransformedShape() = default;
-        inline TransformedShape(const Vector3& positionCOM, const Quat& rotation, const Shape* pShape, const BodyID& bodyID, const SubShapeIDCreator& subShapeIdCreator = SubShapeIDCreator());
+        inline TransformedShape(const Vec3& positionCOM, const Quat& rotation, const Shape* pShape, const BodyID& bodyID, const SubShapeIDCreator& subShapeIdCreator = SubShapeIDCreator());
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Cast a ray and find the closest hit. Returns true if it finds a hit. Hits further than
@@ -65,7 +65,7 @@ namespace nes
         ///     were solid. For a mesh shape, this test will only provide sensible information if the mesh is a
         ///     closed manifold. For each shape that collides, 'collector' will receive a hit.
         //----------------------------------------------------------------------------------------------------
-        void                    CollidePoint(const Vector3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CollidePoint(const Vec3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter = {}) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Collide a shape and report any hits in 'collector'.
@@ -78,7 +78,7 @@ namespace nes
         ///	@param collector : Collector that receives the hits.
         ///	@param shapeFilter : Filter that allows you to reject certain collisions.
         //----------------------------------------------------------------------------------------------------
-        void                    CollideShape(const Shape* pShape, const Vector3& shapeScale, const Mat4& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const Vector3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CollideShape(const Shape* pShape, const Vec3& shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const Vec3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Cast a shape and report any hits in the collector.
@@ -89,7 +89,7 @@ namespace nes
         ///	@param collector : Collector that receives the hits.
         ///	@param shapeFilter : Filter that allows you to reject collisions.
         //----------------------------------------------------------------------------------------------------
-        void                    CastShape(const ShapeCast& shapeCast, const ShapeCastSettings& settings, const Vector3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CastShape(const ShapeCast& shapeCast, const ShapeCastSettings& settings, const Vec3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Collect the leaf transformed shapes of all leaf shapes of this shape. 'box' is the world
@@ -105,7 +105,7 @@ namespace nes
         ///	@param baseOffset : All hit results will be returned relative to this offset; can be zero to get results
         ///     in world space.
         //----------------------------------------------------------------------------------------------------
-        void                    GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vector3& baseOffset) const;
+        void                    GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vec3& baseOffset) const;
 
         //----------------------------------------------------------------------------------------------------
         //	NOTES:
@@ -125,40 +125,40 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the scale of the shape. 
         //----------------------------------------------------------------------------------------------------
-        inline Vector3          GetShapeScale() const                   { return Vector3(m_shapeScale[0], m_shapeScale[1], m_shapeScale[2]); }
+        inline Vec3             GetShapeScale() const                   { return Vec3(m_shapeScale[0], m_shapeScale[1], m_shapeScale[2]); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the scale of the shape.  
         //----------------------------------------------------------------------------------------------------
-        inline void             SetShapeScale(const Vector3& scale)     { m_shapeScale.x = scale.x; m_shapeScale.y = scale.y; m_shapeScale.z = scale.z; }
+        inline void             SetShapeScale(const Vec3& scale)        { m_shapeScale.x = scale.x; m_shapeScale.y = scale.x; m_shapeScale.z = scale.z; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculates the center of mass transform for this shape's center of mass (excluding scale). 
         //----------------------------------------------------------------------------------------------------
-        inline Mat4             GetCenterOfMassTransform() const        { return math::MakeRotationTranslationMatrix(m_shapePositionCOM, m_shapeRotation); }
+        inline Mat44            GetCenterOfMassTransform() const        { return Mat44::MakeRotationTranslation(m_shapeRotation, m_shapePositionCOM); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculates the inverse of the center of mass transform for this shape's center of mass (excluding scale). 
         //----------------------------------------------------------------------------------------------------
-        inline Mat4             GetInverseCenterOfMassTransform() const { return math::MakeInverseRotationTranslationMatrix(m_shapePositionCOM, m_shapeRotation); }
+        inline Mat44            GetInverseCenterOfMassTransform() const { return Mat44::MakeInverseRotationTranslation(m_shapeRotation, m_shapePositionCOM); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the world transform (including scale) of this transformed shape.
         /// @note : This is not from the center of mass, but in the space the shape was created.
         //----------------------------------------------------------------------------------------------------
-        inline void             SetWorldTransform(const Vector3& position, const Quat& rotation, const Vector3& scale);
+        inline void             SetWorldTransform(const Vec3& position, const Quat& rotation, const Vec3& scale);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the world transform (including scale) of this transformed shape.
         /// @note : This is not from the center of mass, but in the space the shape was created.
         //----------------------------------------------------------------------------------------------------
-        inline void             SetWorldTransform(const Mat4& transform);
+        inline void             SetWorldTransform(const Mat44& transform);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the world transform (including scale) of this transformed shape.
         /// @note : This is not from the center of mass, but in the space the shape was created.
         //----------------------------------------------------------------------------------------------------
-        inline Mat4             GetWorldTransform() const;
+        inline Mat44            GetWorldTransform() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the world space bounding box for the transformed shape. 
@@ -178,7 +178,7 @@ namespace nes
         ///     as contact normal as GetWorldSpaceSurfaceNormal() will only return face normals (and not vertex
         ///     or edge normals).
         //----------------------------------------------------------------------------------------------------
-        inline Vector3          GetWorldSpaceSurfaceNormal(const SubShapeID& subShapeID, const Vector3& position) const;
+        inline Vec3             GetWorldSpaceSurfaceNormal(const SubShapeID& subShapeID, const Vec3& position) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the vertices of the face that faces 'direction' the most (Includes any convex radius).
@@ -191,7 +191,7 @@ namespace nes
         ///	@param outVertices : Resulting face. Note that the returned face can have a single point if the shape
         ///     doesn't have polygons to return (e.g. because it's a sphere). The face will be returned in world space.
         //----------------------------------------------------------------------------------------------------
-        inline void             GetSupportingFace(const SubShapeID& subShapeID, const Vector3& direction, const Vector3& baseOffset, Shape::SupportingFace& outVertices) const;
+        inline void             GetSupportingFace(const SubShapeID& subShapeID, const Vec3& direction, const Vec3& baseOffset, Shape::SupportingFace& outVertices) const;
 
         // [TODO]: Physics Material
 

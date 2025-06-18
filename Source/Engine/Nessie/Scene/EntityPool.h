@@ -97,8 +97,8 @@ namespace nes
         NES_ASSERT(!m_idToHandleMap.contains(id));
 
         LayerHandle handle = GetNextFreeHandle();
-        NES_ASSERT(handle.ID() < m_entities.size());
-        auto& pEntity = m_entities[handle.ID()];
+        NES_ASSERT(handle.GetValue() < m_entities.size());
+        auto& pEntity = m_entities[handle.GetValue()];
 
         pEntity->m_id = id;
         pEntity->m_name = name;
@@ -116,7 +116,7 @@ namespace nes
         if (!IsValidEntity(handle))
             return;
         
-        auto& pEntity = m_entities[handle.ID()];
+        auto& pEntity = m_entities[handle.GetValue()];
         if (pEntity->IsMarkedForDestruction())
             return;
 
@@ -132,7 +132,7 @@ namespace nes
             // The Handle should be valid until this point.
             NES_ASSERT(IsValidEntity(handle));
 
-            auto& pEntity = m_entities[handle.ID()];
+            auto& pEntity = m_entities[handle.GetValue()];
             const EntityID id = pEntity->GetID();
 
             // Complete destroying the Node:
@@ -200,7 +200,7 @@ namespace nes
         if (!IsValidEntity(handle))
             return nullptr;
 
-        return m_entities[handle.ID()];
+        return m_entities[handle.GetValue()];
     }
 
     template <typename Type>
@@ -218,7 +218,7 @@ namespace nes
         if (!handle.IsValid())
             return false;
 
-        const size_t index = handle.ID();
+        const size_t index = handle.GetValue();
 
         // Case where the Handle is invalid or points to an Entity that has been destroyed.
         if (index >= m_entities.size() || m_entities[index] == nullptr || m_entities[index]->GetLayerHandle() != handle)
@@ -280,7 +280,7 @@ namespace nes
     typename TEntityPool<Type>::Iterator& TEntityPool<Type>::Iterator::operator++()
     {
         NES_ASSERT(m_pPtr != nullptr);
-        NES_ASSERTV(m_pPtr != m_pEnd, "Cannot increment past the end of the container");
+        NES_ASSERT(m_pPtr != m_pEnd, "Cannot increment past the end of the container");
 
         ++m_pPtr;
 
@@ -298,7 +298,7 @@ namespace nes
     typename TEntityPool<Type>::Iterator& TEntityPool<Type>::Iterator::operator--()
     {
         NES_ASSERT(m_pPtr != nullptr);
-        NES_ASSERTV(m_pPtr != m_pBegin, "Cannot decrement past the beginning of the container");
+        NES_ASSERT(m_pPtr != m_pBegin, "Cannot decrement past the beginning of the container");
 
         --m_pPtr;
 

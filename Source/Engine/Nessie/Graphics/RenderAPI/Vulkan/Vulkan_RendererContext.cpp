@@ -11,7 +11,7 @@
 
 #ifdef NES_WINDOW_API_GLFW
 	static std::vector<const char*> GLFW_GetRequiredExtensions();
-	static vk::SurfaceKHR GLFW_CreateSurface(vk::Instance instance, GLFWwindow* pWindow);
+	static vk::SurfaceKHR GLFW_CreateSurface(vk::Instance pInstance, GLFWwindow* pWindow);
 #else
 #error "RendererContext not setup to handle current Window API!"
 #endif
@@ -31,7 +31,7 @@ namespace nes
             .set_engine_name("Nessie")
             //.set_engine_version(props.m_engineVersion.m_value)
             .set_app_name(props.m_appName.c_str())
-            .set_app_version(props.m_appVersion.m_value)
+            .set_app_version(props.m_appVersion)
     		.enable_extensions(requiredExtensions)
             .require_api_version(1, 3, 0);
         
@@ -50,7 +50,7 @@ namespace nes
         auto instResult = instBuilder.build();
         if (!instResult)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed to build vkb::Instance!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed to build vkb::Instance!");
             return false;
         }
 
@@ -60,7 +60,7 @@ namespace nes
         m_displaySurface = GLFW_CreateSurface(m_vkbInstance.instance, checked_cast<GLFWwindow*>(pWindow->GetNativeWindowHandle()));
         if (!m_displaySurface)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed to create Surface!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed to create Surface!");
             return false;
         }
 
@@ -76,7 +76,7 @@ namespace nes
         auto selectResult = selector.select();
         if (!selectResult)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed to select Physical Device!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed to select Physical Device!");
             return false;
         }
         m_vkbPhysicalDevice = selectResult.value();
@@ -86,7 +86,7 @@ namespace nes
         auto deviceResult = vkb::DeviceBuilder(m_vkbPhysicalDevice).build();
         if (!deviceResult)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed to build Logical Device!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed to build Logical Device!");
             return false;
         }
 
@@ -97,14 +97,14 @@ namespace nes
         m_graphicsQueue = m_vkbDevice.get_queue(vkb::QueueType::graphics).value();
         if (!m_graphicsQueue)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed get Graphics Queue!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed get Graphics Queue!");
             return false;
         }
 
         m_presentQueue = m_vkbDevice.get_queue(vkb::QueueType::present).value();
         if (!m_presentQueue)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed get Present Queue!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed get Present Queue!");
             return false;
         }
 
@@ -122,7 +122,7 @@ namespace nes
 
         if (!m_graphicsCommandPool)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed to create Graphics Command Pool!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed to create Graphics Command Pool!");
             return false;
         }
 
@@ -137,7 +137,7 @@ namespace nes
         
         if (!m_descriptorPool)
         {
-            NES_LOGV("Vulkan", "Failed to initialize Vulkan! Failed to create Descriptor Pool!");
+            NES_ERROR(vulkan::kLogTag, "Failed to initialize Vulkan! Failed to create Descriptor Pool!");
             return false;
         }
 
@@ -1623,17 +1623,17 @@ std::vector<const char*> GLFW_GetRequiredExtensions()
 //		NOTES:
 //		
 ///		@brief : Create a Surface for Vulkan to render to.
-///		@param pWindow : GLFW window to create the surface for.
 ///		@param pInstance : Instance that will be rendering to the surface.
+///		@param pWindow : GLFW window to create the surface for.
 ///		@returns : True on success, false on failure.
 //----------------------------------------------------------------------------------------------------
-vk::SurfaceKHR GLFW_CreateSurface(vk::Instance instance, GLFWwindow* pWindow)
+vk::SurfaceKHR GLFW_CreateSurface(vk::Instance pInstance, GLFWwindow* pWindow)
 {
 	NES_ASSERT(pWindow != nullptr);
-	NES_ASSERT(instance != nullptr);
+	NES_ASSERT(pInstance != nullptr);
         
 	VkSurfaceKHR pSurface = nullptr;
-	NES_VULKAN_MUST_PASS(glfwCreateWindowSurface(instance, pWindow, nullptr, &pSurface));
+	NES_VULKAN_MUST_PASS(glfwCreateWindowSurface(pInstance, pWindow, nullptr, &pSurface));
 	return pSurface;
 }
 
@@ -1645,7 +1645,7 @@ namespace nes::internal
 		// If the message is important enough to show.
 		if (messageSeverity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) 
 		{
-			NES_ERRORV("Vulkan", "Validation Layer: ", pCallbackData->pMessage);
+			NES_ERROR(vulkan::kLogTag, "Validation Layer: ", pCallbackData->pMessage);
 		}
 
 		return VK_FALSE;

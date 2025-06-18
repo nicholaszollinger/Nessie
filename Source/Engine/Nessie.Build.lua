@@ -46,6 +46,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",
         projectDir .. "**.inl",
+        projectDir .. "**.natvis",
 
         -- Add the Shader files:
         projectCore.SolutionDir .. "Shaders\\**.glsl",
@@ -53,6 +54,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("stb");
+    dependencyInjector.AddFilesToProject("fmt");
     dependencyInjector.Link("yaml_cpp");
     dependencyInjector.Include("Assimp");
 

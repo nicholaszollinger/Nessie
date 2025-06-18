@@ -12,22 +12,12 @@ namespace nes
         using ThreadInitExitFunction = std::function<void(const int threadIndex)>;
 
     private:
-        static constexpr uint32_t kQueueLength = 1024;
-        using ThreadArray = std::vector<std::thread>;
-        using AvailableJobs = FixedSizeFreeList<Job>;
-        
-        AvailableJobs           m_jobs;
-        ThreadArray             m_threads;
-        std::atomic<Job*>       m_jobQueue[kQueueLength];
-        std::atomic<uint32_t>*  m_queueHeads = nullptr;
-        std::atomic<uint32_t>   m_queueTail;
-        Semaphore               m_semaphore;
-        std::atomic_bool        m_quit = false;
-        ThreadInitExitFunction  m_threadInitFunction = [](int){ };
-        ThreadInitExitFunction  m_threadExitFunction = [](int){ };
+        using ThreadArray       = std::vector<std::thread>;
+        using AvailableJobs     = FixedSizeFreeList<Job>;
+        static constexpr uint32 kQueueLength = 1024;
         
     public:
-        JobSystemThreadPool(const uint32_t maxJobs, const uint32_t maxBarriers, const int numThreads = -1);
+                            JobSystemThreadPool(const uint32 maxJobs, const uint32_t maxBarriers, const int numThreads = -1);
         virtual             ~JobSystemThreadPool() override;
 
         //----------------------------------------------------------------------------------------------------
@@ -84,5 +74,16 @@ namespace nes
         /// @brief : Entry point for a worker thread. 
         //----------------------------------------------------------------------------------------------------
         void                ThreadMain(int threadIndex);
+
+    private:
+        AvailableJobs           m_jobs;
+        ThreadArray             m_threads;
+        std::atomic<Job*>       m_jobQueue[kQueueLength];
+        std::atomic<uint32>*    m_queueHeads = nullptr;
+        std::atomic<uint32>     m_queueTail;
+        Semaphore               m_semaphore;
+        std::atomic_bool        m_quit = false;
+        ThreadInitExitFunction  m_threadInitFunction = [](int){ };
+        ThreadInitExitFunction  m_threadExitFunction = [](int){ };
     };
 }

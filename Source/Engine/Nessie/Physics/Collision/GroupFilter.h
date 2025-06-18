@@ -1,7 +1,5 @@
 // GroupFilter.h
 #pragma once
-#include <VkBootstrap.h>
-
 #include "Core/Result.h"
 #include "Core/Memory/RefCounter.h"
 #include "Core/Memory/StrongPtr.h"

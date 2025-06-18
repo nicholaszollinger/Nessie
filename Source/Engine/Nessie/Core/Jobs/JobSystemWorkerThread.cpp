@@ -45,7 +45,7 @@ namespace nes
             if (index != JobArray::kInvalidObjectIndex)
                 break;
 
-            NES_ASSERTV(false, "No Jobs available!");
+            NES_ASSERT(false, "No Jobs available!");
             std::this_thread::sleep_for(std::chrono::microseconds(100));
         }
 

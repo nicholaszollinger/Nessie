@@ -4,12 +4,12 @@
 
 namespace nes
 {
+    /// Application instance variable. This is set in the constructor of the Application.
     static Application* s_pInstance = nullptr;
+
+    /// ID of the thread that the Application is running on. Set in the constructor of the Application. 
     static std::thread::id s_mainThreadId{};
     
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Application instance.
-    //----------------------------------------------------------------------------------------------------
     Application& Application::Get()
     {
         NES_ASSERT(s_pInstance);
@@ -30,52 +30,42 @@ namespace nes
     {
         if (s_pInstance != nullptr)
         {
-            NES_CRITICALV("Application", "Attempted to create a second Application instance!");
+            NES_FATAL(kApplicationLogTag, "Attempted to create a second Application instance!");
+            //NES_FATAL("[Application]: Attempted to create a second Application instance!");
         }
 
         s_pInstance = this;
         s_mainThreadId = std::this_thread::get_id();
         m_properties.m_commandLineArgs = args;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Application's Window.
-    //----------------------------------------------------------------------------------------------------
+    
     Window& Application::GetWindow()
     {
         return m_window;
     }
     
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the Application's Window. (Const version)
-    //----------------------------------------------------------------------------------------------------
     const Window& Application::GetWindow() const
     {
         return m_window;
     }
     
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Initialize the Application.
-    ///		@returns : 
-    //----------------------------------------------------------------------------------------------------
-    Application::ExitCode Application::Init()
+    Application::EExitCode Application::Internal_Init()
     {
         NES_INIT_LEAK_DETECTOR();
-        Logger::Init(NES_LOG_DIR);
+        //Logger::Init(NES_LOG_DIR);
+        LoggerRegistry::Instance().Internal_Init();
         
         const std::string logConfigDir = NES_CONFIG_DIR;
-        Logger::LoadCategories(std::string(logConfigDir + "LogConfig.yaml"));
+        //Logger::LoadCategories(std::string(logConfigDir + "LogConfig.yaml"));
 
         // Load the Application Settings:
         auto settingsFile = YAML::LoadFile(std::string(logConfigDir + "AppConfig.yaml"));
         if (!settingsFile)
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
 
         auto application = settingsFile["Application"];
         if (!application)
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
 
         m_properties.m_appName = application["Name"].as<std::string>();
         m_properties.m_appVersion.Deserialize(application["Version"]);
@@ -83,50 +73,50 @@ namespace nes
         // Load Window Properties
         auto window = settingsFile["Window"];
         if (!window)
-            return ExitCode::FatalError;
+            return EExitCode::FatalError;
         
         WindowProperties windowProperties;
         windowProperties.m_label = window["Label"].as<std::string>();
         const auto extent = window["Extent"].as<std::array<int, 2>>();
         windowProperties.m_extent.m_width = extent[0];
         windowProperties.m_extent.m_height = extent[1];
-        windowProperties.m_windowMode = static_cast<WindowMode>(window["Mode"].as<int>());
+        windowProperties.m_windowMode = static_cast<EWindowMode>(window["Mode"].as<int>());
         windowProperties.m_isResizable = window["IsResizable"].as<bool>();
         windowProperties.m_vsyncEnabled = window["VsyncEnabled"].as<bool>();
         
         // Create the Window:
         if (!m_window.Init(*this, windowProperties))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize the Window!");
-            return ExitCode::FatalError;
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to Initialize the Window!");
+            return EExitCode::FatalError;
         }
 
         // Initialize the InputManager
         if (!m_inputManager.Init(&m_window))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to Initialize InputManager!");
-            return ExitCode::FatalError;
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to Initialize InputManager!");
+            return EExitCode::FatalError;
         }
         
         // Create the Renderer
         if (!m_renderer.Init(&m_window, m_properties))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the Renderer!");
-            return ExitCode::FatalError;
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to initialize the Renderer!");
+            return EExitCode::FatalError;
         }
         
         // Scene Manager
         if (!m_sceneManager.Init(settingsFile))
         {
-            NES_ERRORV("Application", "Failed to initialize the Application! Failed to initialize the SceneManager!");
-            return ExitCode::FatalError;
+            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to initialize the SceneManager!");
+            return EExitCode::FatalError;
         }
         
-        NES_LOGV("Application", "Initialized App: \"", m_properties.m_appName, "\" Version: ", m_properties.m_appVersion.ToString());
-        return ExitCode::Success;
+        NES_LOG(kApplicationLogTag, "Initialized App: \"{}\" Version: ", m_properties.m_appName, m_properties.m_appVersion.ToString());
+        return EExitCode::Success;
     }
 
-    Application::ExitCode Application::RunMainLoop()
+    Application::EExitCode Application::Internal_RunMainLoop()
     {
         m_timer.Start();
 
@@ -155,20 +145,12 @@ namespace nes
             m_window.ProcessEvents();
         }
 
-        return ExitCode::Success;
+        return EExitCode::Success;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief :Immediately closes the Application. This should not be called manually-it is intended
-    ///             to be called in the main function of the program after RunMainLoop(). Use Application::Quit
-    ///             to safely close the Application.
-    ///		@param exitCode : Exit code 
-    //----------------------------------------------------------------------------------------------------
-    void Application::Close([[maybe_unused]] ExitCode exitCode)
+    
+    void Application::Internal_Close([[maybe_unused]] EExitCode exitCode)
     {
-        NES_ASSERTV(IsMainThread());
+        NES_ASSERT(IsMainThread());
 
         m_renderer.WaitUntilIdle();
 
@@ -177,18 +159,14 @@ namespace nes
         m_inputManager.Shutdown();
         m_window.Close();
 
-        NES_LOGV("Application", "Application Closed");
-        Logger::Close();
+        NES_LOG(kApplicationLogTag, "Application Closed");
+        LoggerRegistry::Instance().Internal_Shutdown();
         NES_DUMP_AND_DESTROY_LEAK_DETECTOR();
 
         // Set the Instance back to nullptr.
         s_pInstance = nullptr;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Quit the Application. Note: This won't close the App immediately-it will wait until the
-    ///              the current frame has finished.
-    //----------------------------------------------------------------------------------------------------
+    
     void Application::Quit()
     {
         m_closeRequested = true;

@@ -29,45 +29,29 @@ namespace nes
     {
         SetSeed(seed);
     }
-
-    //----------------------------------------------------------------------------------------------------
-	///		@brief : Seed the RNG with a random value based on the current time.
-	//----------------------------------------------------------------------------------------------------
+	
     void Rng::SeedFromTime()
     {
         const uint64_t seed = Time::Now();
         InitState(seed);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Seed the RNG with the result from Rand().
-    //----------------------------------------------------------------------------------------------------
+	
     void Rng::SeedFromRand()
     {
         const auto seed = Rand();
         InitState(seed);
     }
-
-    //----------------------------------------------------------------------------------------------------
-	///		@brief : Seed the RNG with a given value.
-	//----------------------------------------------------------------------------------------------------
+	
     void Rng::SetSeed(uint64_t seed)
     {
         InitState(seed);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the last seed value used to initialize the RNG. Calls to Seed() will
-    ///              change this value.
-	//----------------------------------------------------------------------------------------------------
+	
     uint64_t RandomNumberGenerator::GetLastSeed() const
     {
         return m_lastSeedValue;
     }
-
-    //----------------------------------------------------------------------------------------------------
-	///		@brief : Returns a random UINT64 value.
-	//----------------------------------------------------------------------------------------------------
+	
     uint64_t Rng::Rand()
     {
         // Xoshiro256** algorithm: https://en.wikipedia.org/wiki/Xorshift
@@ -85,10 +69,7 @@ namespace nes
 
 	    return result;
     }
-
-    //----------------------------------------------------------------------------------------------------
-	///		@brief : Returns a random boolean value.
-	//----------------------------------------------------------------------------------------------------
+	
     bool Rng::RandBool()
     {
         return Rand() < kHalfRandMax;
@@ -106,4 +87,11 @@ namespace nes
 	    m_state[2] = SplitMix64(seed);
 	    m_state[3] = SplitMix64(seed);
     }
+
+	Vec2 RandomNumberGenerator::RandUnitVector2()
+	{
+    	const float angle = NormalizedRand<float>() * math::TwoPi<float>();
+    	return { std::cos(angle), std::sin(angle) };
+	}
+
 }
