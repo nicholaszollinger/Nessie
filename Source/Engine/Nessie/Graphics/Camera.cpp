@@ -1,6 +1,5 @@
 ﻿// Camera.cpp
 #include "Camera.h"
-#include "Math/VectorConversions.h"
 
 namespace nes
 {
