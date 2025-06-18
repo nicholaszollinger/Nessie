@@ -1,6 +1,5 @@
 // Body.inl
 #pragma once
-#include "Math/Detail/MatrixTransform.h"
 
 namespace nes
 {

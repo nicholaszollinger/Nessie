@@ -5,7 +5,6 @@
 #include "EntityLayer.h"
 #include "Core/Events/Event.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/Matrix.h"
 
 namespace nes
 {

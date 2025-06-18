@@ -4,7 +4,6 @@
 #include "RendererContext.h"
 #include "Application/Window.h"
 #include "Core/Generic/Color.h"
-#include "Math/Matrix.h"
 
 // [TODO]: Remove when API is set up to hide direct calls.
 #include <imgui.h>

@@ -1,6 +1,6 @@
 #pragma once
 // BezierCurve.h
-#include "Vector2.h"
+#include "Vec2.h"
 
 namespace nes
 {
@@ -12,14 +12,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class BezierCurve
     {
-        Vector2f m_start;
-        Vector2f m_end;
-        Vector2f m_control1;
-        Vector2f m_control2;
+        Vec2 m_start;
+        Vec2 m_end;
+        Vec2 m_control1;
+        Vec2 m_control2;
 
     public:
         BezierCurve();
-        BezierCurve(const float start, const float end, const Vector2f control1, const Vector2f control2);
+        BezierCurve(const float start, const float end, const Vec2 control1, const Vec2 control2);
         float Evaluate(const float t) const;
     };
 }
