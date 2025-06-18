@@ -428,8 +428,8 @@ namespace nes
                     body.m_pMotionProperties->m_islandIndex = Body::kInactiveIndex;
 
                     // Reset the velocity
-                    body.m_pMotionProperties->m_linearVelocity = Vector3::Zero();
-                    body.m_pMotionProperties->m_angularVelocity = Vector3::Zero();
+                    body.m_pMotionProperties->m_linearVelocity = Vec3::Zero();
+                    body.m_pMotionProperties->m_angularVelocity = Vec3::Zero();
                     
                     // Call the activation listener
                     if (m_pActivationListener != nullptr)

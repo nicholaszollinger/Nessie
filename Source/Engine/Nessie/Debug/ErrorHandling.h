@@ -68,7 +68,7 @@ namespace nes::internal
     /// @brief : Formats the Fatal Error message and posts the log if NES_LOGGING_ENABLED is defined. 
     //----------------------------------------------------------------------------------------------------
     template <typename ...Args>
-    inline std::string FatalErrorHelper(const LogSource& source, const LogTag& tag, TFormatString<Args...> pFormat, Args&&...args)
+    inline std::string FatalErrorHelper(const LogSource& source, [[maybe_unused]] const LogTag& tag, TFormatString<Args...> pFormat, Args&&...args)
     {
         // Format just the incoming format string and arguments
         LogMemoryBuffer buffer;

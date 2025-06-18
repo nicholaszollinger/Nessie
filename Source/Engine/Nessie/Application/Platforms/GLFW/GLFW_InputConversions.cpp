@@ -297,12 +297,12 @@ namespace nes
         m_cursorMode = mode;
     }
 
-    Vector2d InputManager::GetCursorPosition_Impl(void* pNativeWindow)
+    Double2 InputManager::GetCursorPosition_Impl(void* pNativeWindow)
     {
         NES_ASSERT(pNativeWindow != nullptr);
         GLFWwindow* pWindow = checked_cast<GLFWwindow*>(pNativeWindow);
 
-        Vector2d cursorPosition{};
+        Double2 cursorPosition{};
         glfwGetCursorPos(pWindow, &cursorPosition.x, &cursorPosition.y);
         return cursorPosition;
     }

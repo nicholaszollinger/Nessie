@@ -2,7 +2,7 @@
 #pragma once
 
 #include "BroadPhaseLayer.h"
-#include "Math/AABox.h"
+#include "Geometry/AABox.h"
 #include "Physics/Body/BodyID.h"
 #include "Physics/Collision/CollisionCollector.h"
 
@@ -66,7 +66,7 @@ namespace nes
         ///	@param broadPhaseLayerFilter : Filter to test which BroadPhaseLayers should interact with the Sphere.
         ///	@param collisionLayerFilter : Filter to test which Collision layers are valid for the Sphere.
         //----------------------------------------------------------------------------------------------------
-        virtual void CollideSphere(const Vector3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = { }, const CollisionLayerFilter& collisionLayerFilter = { }) const = 0;
+        virtual void CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = { }, const CollisionLayerFilter& collisionLayerFilter = { }) const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Bodies that intersect with the given Point and add any hits to the Collector.
@@ -75,7 +75,7 @@ namespace nes
         ///	@param broadPhaseLayerFilter : Filter to test which BroadPhaseLayers should interact with the Point.
         ///	@param collisionLayerFilter : Filter to test which Collision layers are valid for the Point.
         //----------------------------------------------------------------------------------------------------
-        virtual void CollidePoint(const Vector3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = { }, const CollisionLayerFilter& collisionLayerFilter = { }) const = 0;
+        virtual void CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = { }, const CollisionLayerFilter& collisionLayerFilter = { }) const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Bodies that intersect with the given Point and add any hits to the Collector. 

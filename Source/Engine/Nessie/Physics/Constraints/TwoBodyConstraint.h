@@ -44,18 +44,18 @@ namespace nes
         [[nodiscard]] Body*     GetBodyB() const { return m_pBodyB; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Calculates the transform that transforms from constraint space to BodyA space. The first
+        /// @brief : Calculates the matrix that transforms from constraint space to BodyA space. The first
         ///     column of the matrix is the primary constraint axis (e.g. the hinge axis / slider direction),
         ///     second column the secondary etc.
         //----------------------------------------------------------------------------------------------------
-        virtual Mat4            GetConstraintToBodyAMatrix() const = 0;
+        virtual Mat44           ConstraintToBodyAMatrix() const = 0;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Calculates the transform that transforms from constraint space to BodyB space. The first
+        /// @brief : Calculates the matrix that transforms from constraint space to BodyB space. The first
         ///     column of the matrix is the primary constraint axis (e.g. the hinge axis / slider direction),
         ///     second column the secondary etc.
         //----------------------------------------------------------------------------------------------------
-        virtual Mat4            GetConstraintToBodyBMatrix() const = 0;
+        virtual Mat44           ConstraintToBodyBMatrix() const = 0;
         
         virtual bool            Internal_IsActive() const override;
 

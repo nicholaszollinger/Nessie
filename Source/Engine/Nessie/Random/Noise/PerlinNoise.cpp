@@ -59,58 +59,30 @@ namespace nes
     {
         Seed(seed);
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Seed the Noise Generator. This is an expensive operation, so try not to do this
-    ///             often.
-    //----------------------------------------------------------------------------------------------------
+    
     void PerlinNoise2D::Seed()
     {
         m_rng.SeedFromTime();
         for (auto& m_gradient : m_gradients)
         {
-            m_gradient = m_rng.RandUnitVector2D();
+            m_gradient = m_rng.RandUnitVector2();
         }
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Seed the Noise Generator. This is an expensive operation, so try not to do this
-    ///             often.
-    ///		@param seed : Seed value to use.
-    //----------------------------------------------------------------------------------------------------
+    
     void PerlinNoise2D::Seed(const uint64_t seed)
     {
         m_rng.SetSeed(seed);
         for (auto& m_gradient : m_gradients)
         {
-            m_gradient = m_rng.RandUnitVector2D();
+            m_gradient = m_rng.RandUnitVector2();
         }
     }
-
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Returns the Seed value used to initialize PerlinNoise.
-    //----------------------------------------------------------------------------------------------------
+    
     uint64_t PerlinNoise2D::GetSeed() const
     {
         return m_rng.GetLastSeed();
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Get a Noise value at a given 2D position.
-    ///		@param x : X Position.
-    ///		@param y : Y Position.
-    ///		@param noiseInputRange : Determines the 'size' of the noise grid.
-    ///		@param octaves : Lower values will be smoother, higher values will be more detailed.
-    ///		@param persistence : Determines how much each octave contributes to the overall noise.
-    ///             Default value is 0.5f, meaning that each layer contributes evenly to the next.
-    ///		@returns : Noise value in the range [0, 1].
-    //----------------------------------------------------------------------------------------------------
+    
     float PerlinNoise2D::CalculateNoise(float x, float y, uint32_t noiseInputRange, int octaves, float persistence) const
     {
         float totalNoise = 0.f;
@@ -139,42 +111,42 @@ namespace nes
         int xi0 = math::FloorTo<int>(noiseX);
         int yi0 = math::FloorTo<int>(noiseY);
 
-        int xi1 = (xi0 + 1) & static_cast<int>(internal::kMaxTableSizeMask);
-        int yi1 = (yi0 + 1) & static_cast<int>(internal::kMaxTableSizeMask);
+        const int xi1 = (xi0 + 1) & static_cast<int>(internal::kMaxTableSizeMask);
+        const int yi1 = (yi0 + 1) & static_cast<int>(internal::kMaxTableSizeMask);
 
-        float deltaX = noiseX - xi0;
-        float deltaY = noiseY - yi0;
+        const float deltaX = noiseX - static_cast<float>(xi0);
+        const float deltaY = noiseY - static_cast<float>(yi0);
 
         xi0 &= internal::kMaxTableSizeMask;
         yi0 &= internal::kMaxTableSizeMask;
 
         // c00 == corner x0, y0
-        const Vector2f& c00 = m_gradients[internal::GetPermutationValue2D(xi0, yi0)];
+        const Vec2& c00 = m_gradients[internal::GetPermutationValue2D(xi0, yi0)];
         // c10 == corner x1, y0
-        const Vector2f& c10 = m_gradients[internal::GetPermutationValue2D(xi1, yi0)];
+        const Vec2& c10 = m_gradients[internal::GetPermutationValue2D(xi1, yi0)];
         // c01 == corner x0, y1
-        const Vector2f& c01 = m_gradients[internal::GetPermutationValue2D(xi0, yi1)];
+        const Vec2& c01 = m_gradients[internal::GetPermutationValue2D(xi0, yi1)];
         // c11 == corner x1, y1
-        const Vector2f& c11 = m_gradients[internal::GetPermutationValue2D(xi1, yi1)];
+        const Vec2& c11 = m_gradients[internal::GetPermutationValue2D(xi1, yi1)];
 
-        float x0 = deltaX;
-        float x1 = deltaX - 1.f;
-        float y0 = deltaY;
-        float y1 = deltaY - 1.f;
+        const float x0 = deltaX;
+        const float x1 = deltaX - 1.f;
+        const float y0 = deltaY;
+        const float y1 = deltaY - 1.f;
 
         // Vector2f p00 == to Corner 00 
-        Vector2f p00 = { x0, y0 };
-        Vector2f p10 = { x1, y0 };
-        Vector2f p01 = { x0, y1 };
-        Vector2f p11 = { x1, y1 };
+        const Vec2 p00 = { x0, y0 };
+        const Vec2 p10 = { x1, y0 };
+        const Vec2 p01 = { x0, y1 };
+        const Vec2 p11 = { x1, y1 };
 
         float smoothX = math::SmoothStep(deltaX);
         float smoothY = math::SmoothStep(deltaY);
 
-        float v1 = Vector2f::Dot(c00, p00);
-        float v2 = Vector2f::Dot(c10, p10);
-        float v3 = Vector2f::Dot(c01, p01);
-        float v4 = Vector2f::Dot(c11, p11);
+        float v1 = Vec2::Dot(c00, p00);
+        float v2 = Vec2::Dot(c10, p10);
+        float v3 = Vec2::Dot(c01, p01);
+        float v4 = Vec2::Dot(c11, p11);
 
         float resultX = math::Lerp(v1, v2, smoothX);
         float resultY = math::Lerp(v3, v4, smoothX);

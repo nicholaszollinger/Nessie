@@ -8,13 +8,19 @@
 
 namespace nes
 {
-    bool MassProperties::DecomposePrincipalMomentsOfInertia(Mat4& outRotation, Vector3& outDiagonal) const
+    bool MassProperties::DecomposePrincipalMomentsOfInertia(Mat44& outRotation, Vec3& outDiagonal) const
     {
         // Using eigen decomposition to get the principal components of the inertia tensor
         // See: https://en.wikipedia.org/wiki/Eigendecomposition_of_a_matrix
-        Mat3 inertia = math::ToMat3(m_inertia);
-        Mat3 eigenVec = Mat3::Identity();
-        Vector3 eigenValue;
+        const Mat33 inertia = Mat33
+        (
+            m_inertia.GetColumn3(0),
+            m_inertia.GetColumn3(1),
+            m_inertia.GetColumn3(2)
+        );
+        
+        Mat33 eigenVec = Mat33::Identity();
+        Vec3 eigenValue;
         
         if (!EigenValueSymmetric(inertia, eigenVec, eigenValue))
             return false;
@@ -26,22 +32,22 @@ namespace nes
             return eigenValue[left] > eigenValue[right]; 
         });
 
-        // Convert to a regular Mat4 and Vec3
-        outRotation = Mat4::Identity();
+        // Convert to a regular Mat44 and Vec3
+        outRotation = Mat44::Identity();
         for (int i = 0; i < 3; ++i)
         {
-            outRotation[i] = eigenVec.GetColumn(indices[i]);
+            outRotation.SetColumn3(i, eigenVec[indices[i]]);
             outDiagonal[i] = eigenValue[indices[i]];
         }
 
         // Make sure the result is left-handed.
-        if (!IsLeftHanded(outRotation.GetAxis(EAxis::X), outRotation.GetAxis(EAxis::Y), outRotation.GetAxis(EAxis::Z)))
+        if (!Vec3::IsLeftHanded(outRotation.GetAxisX(), outRotation.GetAxisY(), outRotation.GetAxisZ()))
             outRotation[3] = -outRotation[3];
 
 #if NES_LOGGING_ENABLED
         // Validate that the solution is correct, for each axis we want to make sure that the differnet in inertia is
         // smaller than some fraction of the inertia itself in that axis.
-        //Mat4 newInertia = outRotation * Mat4(outDiagonal) * outRotation.Inverse();
+        //Mat44 newInertia = outRotation * Mat44(outDiagonal) * outRotation.Inverse();
         for (int i = 0; i < 3; ++i)
         {
             // [TODO]: 
@@ -52,14 +58,14 @@ namespace nes
         return true;
     }
 
-    void MassProperties::SetMassAndInertiaOfSolidBox(const Vector3& boxSize, const float density)
+    void MassProperties::SetMassAndInertiaOfSolidBox(const Vec3& boxSize, const float density)
     {
         m_mass = boxSize.x * boxSize.y * boxSize.z * density;
 
         // Calculate inertia
-        Vector3 sizeSqr = boxSize * boxSize;
-        Vector3 scale = (sizeSqr.Swizzle<ESwizzle::Y, ESwizzle::X, ESwizzle::X>() + sizeSqr.Swizzle<ESwizzle::Z, ESwizzle::Z, ESwizzle::Y>()) * (m_mass / 12.f);
-        m_inertia = Mat4::Scale(scale);
+        const Vec3 sizeSqr = boxSize * boxSize;
+        const Vec3 scale = (sizeSqr.Swizzle<ESwizzleY, ESwizzleX, ESwizzleX>() + sizeSqr.Swizzle<ESwizzleZ, ESwizzleZ, ESwizzleY>()) * (m_mass / 12.f);
+        m_inertia = Mat44::MakeScale(scale);
     }
 
     void MassProperties::ScaleToMass(const float mass)
@@ -81,28 +87,28 @@ namespace nes
 
         else
         {
-            // Otherwise just set the mass.
+            // Otherwise, just set the mass.
             m_mass = mass;
         }
     }
 
-    void MassProperties::Rotate(const Mat4& rotation)
+    void MassProperties::Rotate(const Mat44& rotation)
     {
-        m_inertia = (math::ToMat3(rotation) * math::ToMat3(m_inertia)) * math::ToMat3(rotation.Transposed());
+        m_inertia = rotation.Multiply3x3(m_inertia).Multiply3x3RightTransposed(rotation);
     }
 
-    void MassProperties::Translate(const Vector3& translation)
+    void MassProperties::Translate(const Vec3& translation)
     {
         // Transform the inertia using the parallel axis theorem: I' = I + m * (translation^2 E - translation translation^T)
         // Where I is the original body's inertia and E the identity matrix
         // See: https://en.wikipedia.org/wiki/Parallel_axis_theorem
-        m_inertia += (Mat4::Scale(translation.Dot(translation)) - Mat4::OuterProduct(translation, translation)) * m_mass;
+        m_inertia += (Mat44::MakeScale(translation.Dot(translation)) - Mat44::OuterProduct(translation, translation)) * m_mass;
 
         // Ensure that inertia is a 3x3 matrix, adding inertia causes the bottom right element to change
-        m_inertia[3] = Vector4(0.f, 0.f, 0.f, 1.f);
+        m_inertia.SetColumn4(3, Vec4(0.f, 0.f, 0.f, 1.f));
     }
 
-    void MassProperties::Scale(const Vector3& scale)
+    void MassProperties::Scale(const Vec3& scale)
     {
         // See: https://en.wikipedia.org/wiki/Moment_of_inertia#Inertia_tensor
         // The diagonal of the inertia tensor can be calculated like this:
@@ -113,14 +119,14 @@ namespace nes
         // We want to isolate the terms x_k, y_k and z_k:
         // d = [0.5, 0.5, 0.5].[Ixx, Iyy, Izz]
         // [sum_{k = 1 to n}(m_k * x_k^2), sum_{k = 1 to n}(m_k * y_k^2), sum_{k = 1 to n}(m_k * z_k^2)] = [d, d, d] - [Ixx, Iyy, Izz]
-        const Vector3 diagonal = m_inertia.GetDiagonal3();
-        const Vector3 xyzSqr = Vector3::Replicate(Vector3::Replicate(0.5f).Dot(diagonal)) - diagonal;
+        const Vec3 diagonal = m_inertia.GetDiagonal3();
+        const Vec3 xyzSqr = Vec3::Replicate(Vec3::Replicate(0.5f).Dot(diagonal)) - diagonal;
 
         // When scaling a shape these terms change like this:
         // sum_{k = 1 to n}(m_k * (scale_x * x_k)^2) = scale_x^2 * sum_{k = 1 to n}(m_k * x_k^2)
         // Same for y_k and z_k
         // Using these terms we can calculate the new diagonal of the inertia tensor:
-        const Vector3 xyzScaledSqr = scale * scale * xyzSqr;
+        const Vec3 xyzScaledSqr = scale * scale * xyzSqr;
         const float iXX = xyzScaledSqr.y + xyzScaledSqr.z; 
         const float iYY = xyzScaledSqr.x + xyzScaledSqr.z; 
         const float iZZ = xyzScaledSqr.x + xyzScaledSqr.y;
@@ -156,13 +162,13 @@ namespace nes
         m_inertia[3][3] = 1.f;
     }
 
-    Vector3 MassProperties::GetEquivalentSolidBoxSize(const float mass, const Vector3& inertiaDiagonal)
+    Vec3 MassProperties::GetEquivalentSolidBoxSize(const float mass, const Vec3& inertiaDiagonal)
     {
         // Moment of inertia of a solid box has diagonal equal to:
         // mass / 12 * [size.y^2 + size.z^2, size.x^2 + size.z^2, size.x^2 + size.y^2]
         // Solving for size.x, size.y and size.z (since diagonal and mass are known.
-        Vector3 diagonal = inertiaDiagonal * (12.f / mass);
-        return Vector3
+        Vec3 diagonal = inertiaDiagonal * (12.f / mass);
+        return Vec3
         (
             std::sqrt(0.5f * (-diagonal[0] + diagonal[1] + diagonal[2])),
             std::sqrt(0.5f * (diagonal[0] - diagonal[1] + diagonal[2])),

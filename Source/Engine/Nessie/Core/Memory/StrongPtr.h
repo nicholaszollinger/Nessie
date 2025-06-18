@@ -65,10 +65,10 @@ namespace nes
 
         /// Friend Functions:
         template <typename ObjectType, typename...CtorParams> requires nes::ValidConstructorForType<ObjectType, CtorParams...>
-        friend static StrongPtr<ObjectType> Create(CtorParams&&...params);
+        friend StrongPtr<ObjectType>        Create(CtorParams&&...params);
 
         template <typename To, typename From> requires nes::TypeIsBaseOrDerived<To, From>
-        friend static StrongPtr<To>         Cast(const StrongPtr<From>& ptr);
+        friend StrongPtr<To>                Cast(const StrongPtr<From>& ptr);
         
         void                                AddRef() const;
         void                                RemoveRef();
@@ -147,7 +147,7 @@ namespace nes
 
         /// Friend functions
         template <typename To, typename From> requires nes::TypeIsBaseOrDerived<To, From>
-        friend static ConstStrongPtr<To>    Cast(const ConstStrongPtr<From>& ptr);
+        friend ConstStrongPtr<To>           Cast(const ConstStrongPtr<From>& ptr);
 
         void                                AddRef() const;
         void                                RemoveRef();

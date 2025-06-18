@@ -8,24 +8,24 @@ namespace nes
     namespace physics
     {
         /// If objects are closer than this distance, they are considered to be colliding. Used for GJK. Unit: meter.
-        static constexpr float kDefaultCollisionTolerance = 1.0e-4f;
+        static constexpr float  kDefaultCollisionTolerance = 1.0e-4f;
 
         /// A factor that determines the accuracy of the penetration depth calculation. If the change of the
         /// squared distance is less than the tolerance * currentPenetrationDepth^2 the algorithm will terminate.
         /// - This stops when there's less than a 1% change.
-        static constexpr float kDefaultPenetrationTolerance = 1.0e-4f;
+        static constexpr float  kDefaultPenetrationTolerance = 1.0e-4f;
 
         /// How much padding to add around objects.
-        static constexpr float kDefaultConvexRadius = 0.05f;
+        static constexpr float  kDefaultConvexRadius = 0.05f;
 
         /// Used by (Tapered)CapsuleShape to determine when supporting phase is an edge rather than a point. Unit: meter.
-        static constexpr float kCapsuleProjectionSlop = 0.02f;
+        static constexpr float  kCapsuleProjectionSlop = 0.02f;
 
         /// Maximum number of jobs to allow.
-        static constexpr int kMaxPhysicsJobs = 2048;
+        static constexpr int    kMaxPhysicsJobs = 2048;
 
         /// Maximum number of barriers to allow.
-        static constexpr int kMaxPhysicsBarriers = 8;
+        static constexpr int    kMaxPhysicsBarriers = 8;
     }
     
     //----------------------------------------------------------------------------------------------------
@@ -85,10 +85,10 @@ namespace nes
 
         /// Number of solver velocity iterations to run.
         /// Note that this needs to be >= 2 in order for friction to work. Friction is applied using the non-penetration impulse from the previous iteration. 
-        unsigned int m_numVelocitySteps = 10;
+        uint        m_numVelocitySteps = 10;
 
         /// Number of solver position iterations to run.
-        unsigned int m_numPositionSteps = 2;
+        uint        m_numPositionSteps = 2;
         
         /// Minimal velocity needed before a collision can be elastic. If the relative velocity between colliding objects
         /// in the direction of the contact normal is lower than this, the restitution will be zero regardless of the configured

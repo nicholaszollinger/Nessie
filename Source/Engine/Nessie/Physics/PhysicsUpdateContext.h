@@ -5,7 +5,7 @@
 #include "Core/StaticArray.h"
 #include "Core/Jobs/JobSystem.h"
 #include "Core/Memory/STLStackAllocator.h"
-#include "Math/Vector3.h"
+#include "Math/Vec3.h"
 
 namespace nes
 {
@@ -67,11 +67,11 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             struct CCDBody
             {
-                explicit CCDBody(BodyID bodyID1, const Vector3& deltaPos, const float linearCastThresholdSqr, float maxPenetration);
+                explicit CCDBody(BodyID bodyID1, const Vec3& deltaPos, const float linearCastThresholdSqr, float maxPenetration);
 
-                Vector3         m_deltaPosition;
-                Vector3         m_contactNormal;
-                Vector3         m_contactPointOn2;
+                Vec3            m_deltaPosition;
+                Vec3            m_contactNormal;
+                Vec3            m_contactPointOn2;
                 BodyID          m_bodyID1;
                 BodyID          m_bodyID2;
                 //SubShapeID      m_subShapeID2;

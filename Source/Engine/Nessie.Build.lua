@@ -46,6 +46,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",
         projectDir .. "**.inl",
+        projectDir .. "**.natvis",
 
         -- Add the Shader files:
         projectCore.SolutionDir .. "Shaders\\**.glsl",

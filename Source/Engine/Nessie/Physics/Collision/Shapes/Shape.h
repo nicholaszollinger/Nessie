@@ -5,8 +5,8 @@
 #include "Core/StaticArray.h"
 #include "Core/Generic/Color.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/AABox.h"
-#include "Math/Float3.h"
+#include "Geometry/AABox.h"
+#include "Math/Scalar3.h"
 #include "Physics/Body/MassProperties.h"
 #include "Physics/Collision/BackFaceMode.h"
 #include "Physics/Collision/CollisionCollector.h"
@@ -152,7 +152,7 @@ namespace nes
     class Shape : public RefTarget<Shape>
     {
     public:
-        using SupportingFace = StaticArray<Vector3, 32>;
+        using SupportingFace = StaticArray<Vec3, 32>;
         using ShapeResult = ShapeSettings::ShapeResult;
 
         //----------------------------------------------------------------------------------------------------
@@ -188,7 +188,7 @@ namespace nes
         /// @brief : All shapes are centered around their center of mass (COM). This function returns the center
         ///     of mass position that needs to be applied to transform the shape to where it was created.
         //----------------------------------------------------------------------------------------------------
-        virtual Vector3         GetCenterOfMass() const                         { return Vector3::Zero(); }
+        virtual Vec3            GetCenterOfMass() const                         { return Vec3::Zero(); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the local bounding box including the convex radius. This box is centered around the
@@ -201,7 +201,7 @@ namespace nes
         ///     space first. This function can be overridden to return a closer fitting world space bounding
         ///     box; by default, it will just transform what GetLocalBounds() returns.
         //----------------------------------------------------------------------------------------------------
-        virtual AABox           GetWorldBounds(const Mat4& centerOfMassTransform, const Vector3& scale) const;
+        virtual AABox           GetWorldBounds(const Mat44& centerOfMassTransform, const Vec3& scale) const;
         
         //----------------------------------------------------------------------------------------------------
         // ?
@@ -240,7 +240,7 @@ namespace nes
         /// @note : When you have a CollideShapeResult or ShapeCastResult you should use -m_penetrationAxis.Normalized() as
         ///     a contact normal as GetSurfaceNormal() will only return the face normal (not the vertex or edge normals).
         //----------------------------------------------------------------------------------------------------
-        virtual Vector3         GetSurfaceNormal(const SubShapeID& subShapeID, const Vector3& localSurfacePosition) const = 0;
+        virtual Vec3            GetSurfaceNormal(const SubShapeID& subShapeID, const Vec3& localSurfacePosition) const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the vertices of the face that faces 'direction' the most (includes any convex radius).
@@ -253,7 +253,7 @@ namespace nes
         ///	@param outVertices : The resulting face. The returned face can be empty if the shape doesn't have
         ///     polygons to return (e.g. because it's a sphere). The face will be returned in world space. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, [[maybe_unused]] const Vector3& direction, [[maybe_unused]] const Vector3& scale, [[maybe_unused]] const Mat4& centerOfMassTransform, [[maybe_unused]] SupportingFace& outVertices) const { /* Nothing */ }
+        virtual void            GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, [[maybe_unused]] const Vec3& direction, [[maybe_unused]] const Vec3& scale, [[maybe_unused]] const Mat44& centerOfMassTransform, [[maybe_unused]] SupportingFace& outVertices) const { /* Nothing */ }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the user data of a particular sub shape ID. Corresponds to the value stored in Shape::GetUserData()
@@ -270,7 +270,7 @@ namespace nes
         ///	@param outRemainder : The remainder of the sub shape ID after removing the sub shape.
         ///	@returns : Direct child sub shape and its transform, not that the body ID and sub shape ID will be invalid.
         //----------------------------------------------------------------------------------------------------
-        virtual TransformedShape GetSubShapeTransformedShape(const SubShapeID& subShapeID, const Vector3& positionCOM, const Quat& rotation, const Vector3& scale, SubShapeID& outRemainder) const;
+        virtual TransformedShape GetSubShapeTransformedShape(const SubShapeID& subShapeID, const Vec3& positionCOM, const Quat& rotation, const Vec3& scale, SubShapeID& outRemainder) const;
 
         // [TODO]: Submerged Volume
 
@@ -301,7 +301,7 @@ namespace nes
         ///     from 'position' if you want to test against the shape in the space it was created).
         /// @note : For a mesh shape, this test will only provide sensible information if the mesh is a closed manifold.
         //----------------------------------------------------------------------------------------------------
-        virtual void            CollidePoint(const Vector3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter = {}) const = 0;
+        virtual void            CollidePoint(const Vec3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter = {}) const = 0;
 
         // [TODO]: Soft Body Collision
         
@@ -315,7 +315,7 @@ namespace nes
         ///	@param collector : Collector that stores all the transformed shapes.
         ///	@param shapeFilter : Filter to determine if this shape should collide with the current sub shape.
         //----------------------------------------------------------------------------------------------------
-        virtual void            CollectTransformedShapes(const AABox& box, const Vector3& positionCOM, const Quat& rotation, const Vector3& scale, const SubShapeIDCreator& subShapeIDCreator, TransformedShapeCollector& collector, const ShapeFilter& shapeFilter) const;
+        virtual void            CollectTransformedShapes(const AABox& box, const Vec3& positionCOM, const Quat& rotation, const Vec3& scale, const SubShapeIDCreator& subShapeIDCreator, TransformedShapeCollector& collector, const ShapeFilter& shapeFilter) const;
         
         //----------------------------------------------------------------------------------------------------
         //	NOTES:
@@ -328,7 +328,7 @@ namespace nes
         ///     should be set to.
         ///	@param collector : The transformed shapes will be passed to this collector.
         //----------------------------------------------------------------------------------------------------
-        virtual void            TransformShape(const Mat4& centerOfMassTransform, TransformedShapeCollector& collector) const;
+        virtual void            TransformShape(const Mat44& centerOfMassTransform, TransformedShapeCollector& collector) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Scale this shape.
@@ -338,7 +338,7 @@ namespace nes
         ///     it was created - most other functions apply the scale in the space of the leaf shapes and from
         ///     the center of mass!
         //----------------------------------------------------------------------------------------------------
-        ShapeResult             ScaleShape(const Vector3& scale) const;
+        ShapeResult             ScaleShape(const Vec3& scale) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : To start iterating over triangles, call this function first.
@@ -348,7 +348,7 @@ namespace nes
         ///	@param rotation : Describes the rotation of the shape.
         ///	@param scale : Describes the scale of the shape.
         //----------------------------------------------------------------------------------------------------
-        virtual void            GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vector3& positionCOM, const Quat& rotation, const Vector3& scale) const = 0;
+        virtual void            GetTrianglesStart(GetTrianglesContext& context, const AABox& box, const Vec3& positionCOM, const Quat& rotation, const Vec3& scale) const = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Call this repeatedly to get all triangles in the box.
@@ -383,7 +383,7 @@ namespace nes
         ///     * RotatedTranslatedShape: Scale must not cause shear in the child shape.
         ///     * CompoundShape: Scale must not cause shear in any of the child shapes.
         //----------------------------------------------------------------------------------------------------
-        virtual bool            IsValidScale(const Vector3& scale) const;
+        virtual bool            IsValidScale(const Vec3& scale) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : This function will make sure that if you wrap this shape in a ScaledShape that the scale
@@ -394,14 +394,14 @@ namespace nes
         ///	@param scale : The local space scale for this shape. 
         ///	@returns : Scale that can be used to wrap this shape in a ScaledShape. IsValidScale() will return true for this scale.
         //----------------------------------------------------------------------------------------------------
-        virtual Vector3         MakeScaleValid(const Vector3& scale) const;
+        virtual Vec3            MakeScaleValid(const Vec3& scale) const;
 
     protected:
         //----------------------------------------------------------------------------------------------------
         /// @brief : A fallback version of CollidePoint() that uses a ray cast and counts the number of hits to
         ///     determine if the point is inside the shape or not. Odd number of hits means inside, even number of hits means outside.
         //----------------------------------------------------------------------------------------------------
-        static void             CollidePointUsingRayCast(const Shape& shape, const Vector3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter);
+        static void             CollidePointUsingRayCast(const Shape& shape, const Vec3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter);
 
     private:
         uint64_t                m_userData = 0;

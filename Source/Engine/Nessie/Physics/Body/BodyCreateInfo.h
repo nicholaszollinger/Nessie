@@ -23,10 +23,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct BodyCreateInfo
     {
-        Vector3                 m_position                      = Vector3::Zero();                      /// Position of the body (not center of mass).
+        Vec3                    m_position                      = Vec3::Zero();                      /// Position of the body (not center of mass).
         Quat                    m_rotation                      = Quat::Identity();                     /// Rotation of the body
-        Vector3                 m_linearVelocity                = Vector3::Zero();                      /// World space linear velocity of the center of mass (m/s). 
-        Vector3                 m_angularVelocity               = Vector3::Zero();                      /// World space angular velocity (rad/s).
+        Vec3                    m_linearVelocity                = Vec3::Zero();                      /// World space linear velocity of the center of mass (m/s). 
+        Vec3                    m_angularVelocity               = Vec3::Zero();                      /// World space angular velocity (rad/s).
         
         uint64_t                m_userData                      = 0;                                    /// User data value.
         
@@ -63,8 +63,8 @@ namespace nes
 
     public:
         BodyCreateInfo() = default;
-        BodyCreateInfo(const ShapeSettings* pSettings, const Vector3& position, const Quat& rotation, EBodyMotionType motionType, CollisionLayer layer);
-        BodyCreateInfo(const Shape* pShape, const Vector3& position, const Quat& rotation, EBodyMotionType motionType, CollisionLayer layer);
+        BodyCreateInfo(const ShapeSettings* pSettings, const Vec3& position, const Quat& rotation, EBodyMotionType motionType, CollisionLayer layer);
+        BodyCreateInfo(const Shape* pShape, const Vec3& position, const Quat& rotation, EBodyMotionType motionType, CollisionLayer layer);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get access to the shape settings object. This contains serializable (non-runtime optimized)

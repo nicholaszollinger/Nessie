@@ -132,6 +132,10 @@ namespace nes
                         eigenValP -= h;
                         eigenValQ += h;
 
+                        //matCopy[column].SetComponent(row, copyPQ);
+                        //outEigenValues.SetComponent(row, eigenValP);
+                        //outEigenValues.SetComponent(column, eigenValQ);
+
                         #define NES_EVS_ROTATE(mat, row1, column1, row2, column2)   \
                             g = mat[column1][row1],							        \
                             h = mat[column2][row2],							        \
@@ -139,10 +143,25 @@ namespace nes
                             mat[column2][row2] = h + s * (g - h * tau)
 
                         size_t j;
-                        for (j = 0; j < row; ++j)                       NES_EVS_ROTATE(matCopy, j, row, j, column);
-                        for (j = row + 1; j < row; ++j)                 NES_EVS_ROTATE(matCopy, row, j, j, column);
-                        for (j = column + 1; j < MatrixType::N; ++j)    NES_EVS_ROTATE(matCopy, row, j, column, j);
-                        for (j = 0; j < MatrixType::N; ++j)             NES_EVS_ROTATE(outEigenVectors, j, row, j, column);
+                        for (j = 0; j < row; ++j)
+                        {
+                            NES_EVS_ROTATE(matCopy, j, row, j, column);
+                        }
+                        
+                        for (j = row + 1; j < row; ++j)
+                        {
+                            NES_EVS_ROTATE(matCopy, row, j, j, column);
+                        }
+                            
+                        for (j = column + 1; j < MatrixType::N; ++j)
+                        {
+                            NES_EVS_ROTATE(matCopy, row, j, column, j);
+                        }
+                        
+                        for (j = 0; j < MatrixType::N; ++j)
+                        {
+                            NES_EVS_ROTATE(outEigenVectors, j, row, j, column);
+                        }
 
                         #undef NES_EVS_ROTATE
                     }

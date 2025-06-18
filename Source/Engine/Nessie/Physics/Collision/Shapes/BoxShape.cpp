@@ -1,9 +1,8 @@
 // BoxShape.cpp
 #include "BoxShape.h"
 
-#include "Math/IntersectionQueries3.h"
-#include "Math/Geometry/RayAABox.h"
-#include "Math/SIMD/VectorRegisterF.h"
+#include "Geometry/IntersectionQueries3.h"
+#include "Geometry/RayAABox.h"
 #include "Physics/Collision/CastResult.h"
 #include "Physics/Collision/CollidePointResult.h"
 #include "Physics/Collision/RayCast.h"
@@ -13,20 +12,20 @@
 
 namespace nes
 {
-    static constexpr Vector3 kUnitBoxTriangles[] =
+    static Vec3 s_unitBoxTriangles[] =
     {
-        Vector3(-1, 1, -1),	Vector3(-1, 1, 1),	Vector3(1, 1, 1),
-        Vector3(-1, 1, -1),	Vector3(1, 1, 1),		Vector3(1, 1, -1),
-        Vector3(-1, -1, -1),	Vector3(1, -1, -1),	Vector3(1, -1, 1),
-        Vector3(-1, -1, -1),	Vector3(1, -1, 1),	Vector3(-1, -1, 1),
-        Vector3(-1, 1, -1),	Vector3(-1, -1, -1),	Vector3(-1, -1, 1),
-        Vector3(-1, 1, -1),	Vector3(-1, -1, 1),	Vector3(-1, 1, 1),
-        Vector3(1, 1, 1),		Vector3(1, -1, 1),	Vector3(1, -1, -1),
-        Vector3(1, 1, 1),		Vector3(1, -1, -1),	Vector3(1, 1, -1),
-        Vector3(-1, 1, 1),	Vector3(-1, -1, 1),	Vector3(1, -1, 1),
-        Vector3(-1, 1, 1),	Vector3(1, -1, 1),	Vector3(1, 1, 1),
-        Vector3(-1, 1, -1),	Vector3(1, 1, -1),	Vector3(1, -1, -1),
-        Vector3(-1, 1, -1),	Vector3(1, -1, -1),	Vector3(-1, -1, -1)
+        Vec3(-1, 1, -1),	Vec3(-1, 1, 1),	Vec3(1, 1, 1),
+        Vec3(-1, 1, -1),	Vec3(1, 1, 1),	Vec3(1, 1, -1),
+        Vec3(-1, -1, -1),	Vec3(1, -1, -1),	Vec3(1, -1, 1),
+        Vec3(-1, -1, -1),	Vec3(1, -1, 1),	Vec3(-1, -1, 1),
+        Vec3(-1, 1, -1),	Vec3(-1, -1, -1),	Vec3(-1, -1, 1),
+        Vec3(-1, 1, -1),	Vec3(-1, -1, 1),	Vec3(-1, 1, 1),
+        Vec3(1, 1, 1),	Vec3(1, -1, 1),	Vec3(1, -1, -1),
+        Vec3(1, 1, 1),	Vec3(1, -1, -1),	Vec3(1, 1, -1),
+        Vec3(-1, 1, 1),	Vec3(-1, -1, 1),	Vec3(1, -1, 1),
+        Vec3(-1, 1, 1),	Vec3(1, -1, 1),	Vec3(1, 1, 1),
+        Vec3(-1, 1, -1),	Vec3(1, 1, -1),	Vec3(1, -1, -1),
+        Vec3(-1, 1, -1),	Vec3(1, -1, -1),	Vec3(-1, -1, -1)
     };
 
     class BoxShape::Box final : public Support
@@ -43,7 +42,7 @@ namespace nes
             NES_ASSERT(math::IsAligned(this, alignof(Box)));
         }
 
-        virtual Vector3 GetSupport(const Vector3& direction) const override
+        virtual Vec3 GetSupport(const Vec3& direction) const override
         {
             return m_box.GetSupport(direction);
         }
@@ -55,7 +54,7 @@ namespace nes
     };
 
     
-    BoxShapeSettings::BoxShapeSettings(const Vector3& halfExtent, float convexRadius)
+    BoxShapeSettings::BoxShapeSettings(const Vec3& halfExtent, float convexRadius)
         : ConvexShapeSettings()
         , m_halfExtent(halfExtent)
         , m_convexRadius(convexRadius)
@@ -79,7 +78,7 @@ namespace nes
     {
         // Check convex radius
         if (settings.m_convexRadius < 0.f
-            || settings.m_halfExtent.ReduceMin() < settings.m_convexRadius)
+            || settings.m_halfExtent.MinComponent() < settings.m_convexRadius)
         {
             outResult.SetError("Invalid Convex Radius");
             return;
@@ -88,13 +87,13 @@ namespace nes
         outResult.Set(this);
     }
 
-    BoxShape::BoxShape(const Vector3& halfExtent, const float convexRadius)
+    BoxShape::BoxShape(const Vec3& halfExtent, const float convexRadius)
         : ConvexShape(EShapeSubType::Box)
         , m_halfExtent(halfExtent)
         , m_convexRadius(convexRadius)
     {
         NES_ASSERT(convexRadius >= 0.f);
-        NES_ASSERT(halfExtent.ReduceMin() >= convexRadius);
+        NES_ASSERT(halfExtent.MinComponent() >= convexRadius);
     }
 
     AABox BoxShape::GetLocalBounds() const
@@ -104,7 +103,7 @@ namespace nes
 
     float BoxShape::GetInnerRadius() const
     {
-        return m_halfExtent.ReduceMin();
+        return m_halfExtent.MinComponent();
     }
 
     MassProperties BoxShape::GetMassProperties() const
@@ -114,15 +113,15 @@ namespace nes
         return props;
     }
 
-    Vector3 BoxShape::GetSurfaceNormal([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& localSurfacePosition) const
+    Vec3 BoxShape::GetSurfaceNormal([[maybe_unused]] const SubShapeID& subShapeID, const Vec3& localSurfacePosition) const
     {
         NES_ASSERT(subShapeID.IsEmpty(), "Invalid subshape ID");
 
         // Get the component that is closest to the surface of the box.
-        const int index = (localSurfacePosition.Abs() - m_halfExtent).Abs().GetLowestComponentIndex();
+        const int index = (localSurfacePosition.Abs() - m_halfExtent).Abs().MinComponentIndex();
 
         // Calculate the normal
-        Vector3 normal = Vector3::Zero();
+        Vec3 normal = Vec3::Zero();
         normal[index] = localSurfacePosition[index] > 0.f ? 1.f : -1.f;
         return normal;
     }
@@ -175,24 +174,24 @@ namespace nes
         }
     }
 
-    void BoxShape::CollidePoint(const Vector3& point, const SubShapeIDCreator& subShapeIDCreator,
+    void BoxShape::CollidePoint(const Vec3& point, const SubShapeIDCreator& subShapeIDCreator,
         CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
     {
         // Test Shape filter
         if (!shapeFilter.ShouldCollide(this, subShapeIDCreator.GetID()))
             return;
 
-        if (VectorRegisterF::LesserOrEqual(point.Abs(), m_halfExtent).TestAllXYZTrue())
+        if (Vec3::LessOrEqual(point.Abs(), m_halfExtent).TestAllXYZTrue())
         {
             collector.AddHit({ TransformedShape::GetBodyID(collector.GetContext()), subShapeIDCreator.GetID() });
         }
         
     }
 
-    void BoxShape::GetTrianglesStart(GetTrianglesContext& context, [[maybe_unused]] const AABox& box, const Vector3& positionCOM,
-        const Quat& rotation, const Vector3& scale) const
+    void BoxShape::GetTrianglesStart(GetTrianglesContext& context, [[maybe_unused]] const AABox& box, const Vec3& positionCOM,
+        const Quat& rotation, const Vec3& scale) const
     {
-        new (&context) GetTrianglesContextVertexList(positionCOM, rotation, scale, math::MakeScaleMatrix(m_halfExtent), kUnitBoxTriangles, std::size(kUnitBoxTriangles));
+        new (&context) GetTrianglesContextVertexList(positionCOM, rotation, scale, Mat44::MakeScale(m_halfExtent), s_unitBoxTriangles, std::size(s_unitBoxTriangles));
     }
 
     int BoxShape::GetTrianglesNext(GetTrianglesContext& context, int maxTrianglesRequested,
@@ -203,13 +202,13 @@ namespace nes
 
     float BoxShape::GetVolume() const
     {
-        return GetLocalBounds().GetVolume();
+        return GetLocalBounds().Volume();
     }
 
     const ConvexShape::Support* BoxShape::GetSupportFunction(ESupportMode mode, SupportBuffer& buffer,
-        const Vector3& scale) const
+        const Vec3& scale) const
     {
-        Vector3 scaledHalfExtent = scale.Abs() * m_halfExtent;
+        Vec3 scaledHalfExtent = scale.Abs() * m_halfExtent;
 
         switch (mode)
         {
@@ -226,8 +225,8 @@ namespace nes
             {
                 // Reduce the box by our convex radius
                 float convexRadius = ScaleHelpers::ScaleConvexRadius(m_convexRadius, scale);
-                Vector3 convexRadius3 = Vector3::Replicate(convexRadius);
-                Vector3 reducedHalfExtent = scaledHalfExtent - convexRadius3;
+                Vec3 convexRadius3 = Vec3::Replicate(convexRadius);
+                Vec3 reducedHalfExtent = scaledHalfExtent - convexRadius3;
                 AABox box = AABox(-reducedHalfExtent, reducedHalfExtent);
                 NES_ASSERT(box.IsValid());
                 
@@ -239,17 +238,16 @@ namespace nes
         return nullptr;
     }
 
-    void BoxShape::GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& direction, const Vector3& scale,
-        const Mat4& centerOfMassTransform, SupportingFace& outVertices) const
+    void BoxShape::GetSupportingFace([[maybe_unused]] const SubShapeID& subShapeID, const Vec3& direction, const Vec3& scale, const Mat44& centerOfMassTransform, SupportingFace& outVertices) const
     {
         NES_ASSERT(subShapeID.IsEmpty(), "Invalid subshape ID");
 
-        Vector3 scaledHalfExtent = scale.Abs() * m_halfExtent;
+        Vec3 scaledHalfExtent = scale.Abs() * m_halfExtent;
         const AABox box(-scaledHalfExtent, scaledHalfExtent);
         box.GetSupportingFace(direction, outVertices);
 
         // Transform to world space
-        for (Vector3& vertex : outVertices)
+        for (Vec3& vertex : outVertices)
         {
             vertex = centerOfMassTransform.TransformPoint(vertex);
         }

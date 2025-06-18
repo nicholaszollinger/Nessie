@@ -37,8 +37,8 @@ namespace nes
         {
             static constexpr uint32_t kBinding = 0;
 
-            Mat4 m_projectionMatrix = Mat4::Identity();
-            Mat4 m_viewMatrix = Mat4::Identity();
+            Mat44 m_projectionMatrix = Mat44::Identity();
+            Mat44 m_viewMatrix = Mat44::Identity();
         };
 
         struct PhysicsTick final : public TickFunction
@@ -57,7 +57,7 @@ namespace nes
     public:
         struct GeometryPushConstants
         {
-            Mat4 m_objectMatrix = Mat4::Identity();
+            Mat44 m_objectMatrix = Mat44::Identity();
             // Note: This is only here because the Material is trivial for now.
             // a full material might not make sense as a push constant and should be
             // moved to a Uniform Buffer.
@@ -93,11 +93,11 @@ namespace nes
         void                EditorDrawEntityNode(Entity3D& entity);
         void                EditorDrawComponentNode(StrongPtr<Entity3DComponent>& component);
         void                EditorDrawComponentProperties(StrongPtr<Entity3DComponent>& component);
-        bool                EditorDrawPropertyVector3(const char* pLabel, Vector3& value);
+        bool                EditorDrawPropertyVec3(const char* pLabel, Vec3& value);
         bool                EditorDrawPropertyRotation(const char* pLabel, Rotation& value);
         bool                EditorDrawPropertyFloat(const char* pLabel, float& value);
         bool                EditorDrawPropertyBool(const char* pLabel, bool& value);
-        bool                EditorDrawPropertyTransform(const char* pLabel, Vector3& location, Rotation& rotation, Vector3& scale);
+        bool                EditorDrawPropertyTransform(const char* pLabel, Vec3& location, Rotation& rotation, Vec3& scale);
         bool                EditorDrawPropertyLinearColor(const char* pLabel, LinearColor& value);
 
         void                CreateRenderResources();

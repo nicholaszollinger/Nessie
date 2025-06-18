@@ -256,7 +256,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::NotifyShapeChanged(const BodyID& bodyID, const Vector3& previousCenterOfMass,
+    void BodyInterface::NotifyShapeChanged(const BodyID& bodyID, const Vec3& previousCenterOfMass,
         bool updateMassProperties, EBodyActivationMode activationMode) const
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
@@ -319,7 +319,7 @@ namespace nes
         return kInvalidCollisionLayer;
     }
 
-    void BodyInterface::SetPositionAndRotation(const BodyID& bodyID, const Vector3& position, const Quat& rotation,
+    void BodyInterface::SetPositionAndRotation(const BodyID& bodyID, const Vec3& position, const Quat& rotation,
         EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
@@ -343,7 +343,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::SetPositionAndRotationWhenChanged(const BodyID& bodyID, const Vector3& position,
+    void BodyInterface::SetPositionAndRotationWhenChanged(const BodyID& bodyID, const Vec3& position,
         const Quat& rotation, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
@@ -371,7 +371,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::GetPositionAndRotation(const BodyID& bodyID, Vector3& outPosition, Quat& outRotation) const
+    void BodyInterface::GetPositionAndRotation(const BodyID& bodyID, Vec3& outPosition, Quat& outRotation) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -382,12 +382,12 @@ namespace nes
         }
         else
         {
-            outPosition = Vector3::Zero();
+            outPosition = Vec3::Zero();
             outRotation = Quat::Identity();
         }
     }
 
-    void BodyInterface::SetPosition(const BodyID& bodyID, const Vector3& position, EBodyActivationMode activationMode)
+    void BodyInterface::SetPosition(const BodyID& bodyID, const Vec3& position, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -409,22 +409,22 @@ namespace nes
         }
     }
 
-    Vector3 BodyInterface::GetPosition(const BodyID& bodyID) const
+    Vec3 BodyInterface::GetPosition(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             return lock.GetBody().GetPosition();
         
-        return Vector3::Zero();
+        return Vec3::Zero();
     }
 
-    Vector3 BodyInterface::GetCenterOfMassPosition(const BodyID& bodyID) const
+    Vec3 BodyInterface::GetCenterOfMassPosition(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             return lock.GetBody().GetCenterOfMassPosition();
         
-        return Vector3::Zero();
+        return Vec3::Zero();
     }
 
     void BodyInterface::SetRotation(const BodyID& bodyID, const Quat& rotation, EBodyActivationMode activationMode)
@@ -458,25 +458,25 @@ namespace nes
         return Quat::Identity();
     }
 
-    Mat4 BodyInterface::GetWorldTransform(const BodyID& bodyID) const
+    Mat44 BodyInterface::GetWorldTransform(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             return lock.GetBody().GetWorldTransform();
         
-        return Mat4::Identity();
+        return Mat44::Identity();
     }
 
-    Mat4 BodyInterface::GetCenterOfMassTransform(const BodyID& bodyID) const
+    Mat44 BodyInterface::GetCenterOfMassTransform(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             return lock.GetBody().GetCenterOfMassTransform();
         
-        return Mat4::Identity();
+        return Mat44::Identity();
     }
 
-    void BodyInterface::MoveKinematic(const BodyID& bodyID, const Vector3& targetPosition, const Quat& targetRotation,
+    void BodyInterface::MoveKinematic(const BodyID& bodyID, const Vec3& targetPosition, const Quat& targetRotation,
         float deltaTime)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
@@ -492,8 +492,8 @@ namespace nes
         }
     }
 
-    void BodyInterface::SetLinearAndAngularVelocity(const BodyID& bodyID, const Vector3& linearVelocity,
-        const Vector3& angularVelocity)
+    void BodyInterface::SetLinearAndAngularVelocity(const BodyID& bodyID, const Vec3& linearVelocity,
+        const Vec3& angularVelocity)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -511,8 +511,8 @@ namespace nes
         }
     }
 
-    void BodyInterface::GetLinearAndAngularVelocity(const BodyID& bodyID, Vector3& outLinearVelocity,
-        Vector3& outAngularVelocity) const
+    void BodyInterface::GetLinearAndAngularVelocity(const BodyID& bodyID, Vec3& outLinearVelocity,
+        Vec3& outAngularVelocity) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -526,11 +526,11 @@ namespace nes
             }
         }
         
-        outLinearVelocity = Vector3::Zero();
-        outAngularVelocity = Vector3::Zero();
+        outLinearVelocity = Vec3::Zero();
+        outAngularVelocity = Vec3::Zero();
     }
 
-    void BodyInterface::SetLinearVelocity(const BodyID& bodyID, const Vector3& linearVelocity)
+    void BodyInterface::SetLinearVelocity(const BodyID& bodyID, const Vec3& linearVelocity)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -547,7 +547,7 @@ namespace nes
         }
     }
 
-    Vector3 BodyInterface::GetLinearVelocity(const BodyID& bodyID) const
+    Vec3 BodyInterface::GetLinearVelocity(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -559,10 +559,10 @@ namespace nes
             }
         }
         
-        return Vector3::Zero();
+        return Vec3::Zero();
     }
 
-    void BodyInterface::SetAngularVelocity(const BodyID& bodyID, const Vector3& angularVelocity)
+    void BodyInterface::SetAngularVelocity(const BodyID& bodyID, const Vec3& angularVelocity)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -579,7 +579,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddLinearVelocity(const BodyID& bodyID, const Vector3& deltaLinearVelocity)
+    void BodyInterface::AddLinearVelocity(const BodyID& bodyID, const Vec3& deltaLinearVelocity)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -595,8 +595,8 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddLinearAndAngularVelocity(const BodyID& bodyID, const Vector3& deltaLinearVelocity,
-        const Vector3& deltaAngularVelocity)
+    void BodyInterface::AddLinearAndAngularVelocity(const BodyID& bodyID, const Vec3& deltaLinearVelocity,
+        const Vec3& deltaAngularVelocity)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -614,7 +614,7 @@ namespace nes
         }
     }
 
-    Vector3 BodyInterface::GetAngularVelocity(const BodyID& bodyID) const
+    Vec3 BodyInterface::GetAngularVelocity(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -626,10 +626,10 @@ namespace nes
             }
         }
         
-        return Vector3::Zero();
+        return Vec3::Zero();
     }
 
-    Vector3 BodyInterface::GetPointVelocity(const BodyID& bodyID, const Vector3& point) const
+    Vec3 BodyInterface::GetPointVelocity(const BodyID& bodyID, const Vec3& point) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -641,11 +641,11 @@ namespace nes
             }
         }
         
-        return Vector3::Zero();
+        return Vec3::Zero();
     }
 
-    void BodyInterface::SetPositionAndRotationAndVelocity(const BodyID& bodyID, const Vector3& position,
-        const Quat& rotation, const Vector3& linearVelocity, const Vector3& angularVelocity)
+    void BodyInterface::SetPositionAndRotationAndVelocity(const BodyID& bodyID, const Vec3& position,
+        const Quat& rotation, const Vec3& linearVelocity, const Vec3& angularVelocity)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -674,7 +674,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddForce(const BodyID& bodyID, const Vector3& force, EBodyActivationMode activationMode)
+    void BodyInterface::AddForce(const BodyID& bodyID, const Vec3& force, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -690,7 +690,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddForce(const BodyID& bodyID, const Vector3& force, const Vector3& point,
+    void BodyInterface::AddForce(const BodyID& bodyID, const Vec3& force, const Vec3& point,
         EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
@@ -707,7 +707,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddTorque(const BodyID& bodyID, const Vector3& torque, EBodyActivationMode activationMode)
+    void BodyInterface::AddTorque(const BodyID& bodyID, const Vec3& torque, EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -723,7 +723,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddForceAndTorque(const BodyID& bodyID, const Vector3& force, const Vector3& torque,
+    void BodyInterface::AddForceAndTorque(const BodyID& bodyID, const Vec3& force, const Vec3& torque,
         EBodyActivationMode activationMode)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
@@ -741,7 +741,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddImpulse(const BodyID& bodyID, const Vector3& impulse)
+    void BodyInterface::AddImpulse(const BodyID& bodyID, const Vec3& impulse)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -757,7 +757,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddImpulse(const BodyID& bodyID, const Vector3& impulse, const Vector3& point)
+    void BodyInterface::AddImpulse(const BodyID& bodyID, const Vec3& impulse, const Vec3& point)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -773,7 +773,7 @@ namespace nes
         }
     }
 
-    void BodyInterface::AddAngularImpulse(const BodyID& bodyID, const Vector3& angularImpulse)
+    void BodyInterface::AddAngularImpulse(const BodyID& bodyID, const Vec3& angularImpulse)
     {
         BodyLockWrite lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
@@ -834,13 +834,13 @@ namespace nes
         return EBodyMotionQuality::Discrete;
     }
 
-    Mat4 BodyInterface::GetInverseInertia(const BodyID& bodyID) const
+    Mat44 BodyInterface::GetInverseInertia(const BodyID& bodyID) const
     {
         BodyLockRead lock(*m_pBodyLockInterface, bodyID);
         if (lock.Succeeded())
             return lock.GetBody().GetInverseInertia();
         
-        return Mat4::Identity();
+        return Mat44::Identity();
     }
 
     void BodyInterface::SetRestitution(const BodyID& bodyID, const float restitution)

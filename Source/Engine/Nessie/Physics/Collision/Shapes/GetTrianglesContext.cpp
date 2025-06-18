@@ -5,9 +5,9 @@
 
 namespace nes
 {
-    GetTrianglesContextVertexList::GetTrianglesContextVertexList(const Vector3& positionCOM, const Quat& rotation,
-        const Vector3& scale, const Mat4& localTransform, const Vector3* triangleVertices, size_t numTriangleVertices)
-            : m_localToWorld(math::MakeRotationTranslationMatrix(positionCOM, rotation) * math::MakeScaleMatrix(scale) * localTransform)
+    GetTrianglesContextVertexList::GetTrianglesContextVertexList(const Vec3& positionCOM, const Quat& rotation,
+        const Vec3& scale, const Mat44& localTransform, const Vec3* triangleVertices, size_t numTriangleVertices)
+            : m_localToWorld(Mat44::MakeRotationTranslation(rotation, positionCOM) * Mat44::MakeScale(scale) * localTransform)
             , m_pTriangleVertices(triangleVertices)
             , m_numTriangleVertices(numTriangleVertices)
             , m_isInsideOut(ScaleHelpers::IsInsideOut(scale))
@@ -26,7 +26,7 @@ namespace nes
         if (m_isInsideOut)
         {
             // Store triangles flipped
-            for (const Vector3* pVertex = m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
+            for (const Vec3* pVertex = m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
             {
                 m_localToWorld.TransformPoint(pVertex[0]).StoreFloat3(pOutTriangleVertices++);
                 m_localToWorld.TransformPoint(pVertex[2]).StoreFloat3(pOutTriangleVertices++);
@@ -36,7 +36,7 @@ namespace nes
         else
         {
             // Store triangles
-            for (const Vector3* pVertex = m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
+            for (const Vec3* pVertex = m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
             {
                 m_localToWorld.TransformPoint(pVertex[0]).StoreFloat3(pOutTriangleVertices++);
                 m_localToWorld.TransformPoint(pVertex[1]).StoreFloat3(pOutTriangleVertices++);
@@ -60,7 +60,7 @@ namespace nes
         NES_ASSERT(math::IsAligned(this, alignof(GetTrianglesContextMultiVertexList)));
     }
 
-    void GetTrianglesContextMultiVertexList::AddPart(const Mat4& localToWorld, const Vector3* pTriangleVertices, const size_t numTriangleVertices)
+    void GetTrianglesContextMultiVertexList::AddPart(const Mat44& localToWorld, const Vec3* pTriangleVertices, const size_t numTriangleVertices)
     {
         NES_ASSERT(numTriangleVertices % 3 == 0);
         m_parts.push_back({ localToWorld, pTriangleVertices, numTriangleVertices});
@@ -89,7 +89,7 @@ namespace nes
             if (m_isInsideOut)
             {
                 // Store triangles flipped
-                for (const Vector3* pVertex = part.m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + part.m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
+                for (const Vec3* pVertex = part.m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + part.m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
                 {
                     part.m_localToWorld.TransformPoint(pVertex[0]).StoreFloat3(pOutTriangleVertices++);
                     part.m_localToWorld.TransformPoint(pVertex[2]).StoreFloat3(pOutTriangleVertices++);
@@ -99,7 +99,7 @@ namespace nes
             else
             {
                 // Store triangles flipped
-                for (const Vector3* pVertex = part.m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + part.m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
+                for (const Vec3* pVertex = part.m_pTriangleVertices + m_currentVertex, *pEnd = pVertex + part.m_numTriangleVertices; pVertex < pEnd; pVertex += 3)
                 {
                     part.m_localToWorld.TransformPoint(pVertex[0]).StoreFloat3(pOutTriangleVertices++);
                     part.m_localToWorld.TransformPoint(pVertex[1]).StoreFloat3(pOutTriangleVertices++);

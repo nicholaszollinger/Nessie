@@ -46,3 +46,15 @@
     #define NES_PRECISE_MATH_BEGIN
     #define NES_PRECISE_MATH_END
 #endif
+
+#ifdef NES_FLOATING_POINT_EXCEPTIONS_ENABLED
+    #define NES_IF_FLOATING_POINT_EXCEPTIONS_ENABLED(...) __VA_ARGS__
+#else
+    #define NES_IF_FLOATING_POINT_EXCEPTIONS_ENABLED(...)
+#endif
+
+//----------------------------------------------------------------------------------------------------
+/// @brief : If true, the near and far clip planes in view matrices will be clamped to [0, 1]. Otherwise,
+///     they will be normalized to [-1, 1].
+//----------------------------------------------------------------------------------------------------
+#define NES_CLIP_VIEW_ZERO_TO_ONE 1

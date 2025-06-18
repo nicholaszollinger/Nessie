@@ -2,7 +2,7 @@
 // InputEvents.h
 #include "Input/InputCodes.h"
 #include "Core/Events/Event.h"
-#include "Math/Vector2.h"
+#include "Math/Vec2.h"
 
 namespace nes
 {
@@ -39,13 +39,13 @@ namespace nes
         EMouseButton    GetButton() const       { return m_button; }
         EMouseAction    GetAction() const       { return m_action; }
         Modifiers       GetModifiers() const    { return m_modifiers; }
-        Vector2f        GetPosition() const     { return m_position; }
+        Vec2            GetPosition() const     { return m_position; }
 
     private:
         EMouseButton    m_button    = EMouseButton::Unknown;
         EMouseAction    m_action    = EMouseAction::Unknown;
         Modifiers       m_modifiers = Modifiers{};
-        Vector2f        m_position;
+        Vec2            m_position;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -61,16 +61,16 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current position of the mouse. 
         //----------------------------------------------------------------------------------------------------
-        Vector2f GetPosition() const { return m_position; }
+        Vec2 GetPosition() const { return m_position; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the delta position that the mouse has moved since the last frame.
         //----------------------------------------------------------------------------------------------------
-        Vector2f GetDelta() const    { return m_delta; }
+        Vec2 GetDelta() const    { return m_delta; }
 
     private:
-        Vector2f m_position{};
-        Vector2f m_delta{};
+        Vec2 m_position{};
+        Vec2 m_delta{};
     };
 
 
@@ -88,6 +88,6 @@ namespace nes
         float   GetDeltaY() const { return m_delta.y; }
 
     private:
-        Vector2f m_delta{};
+        Vec2 m_delta{};
     };
 }

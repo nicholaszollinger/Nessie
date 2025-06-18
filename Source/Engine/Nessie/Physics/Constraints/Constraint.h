@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "Core/Result.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/Vector3.h"
+#include "Math/Vec3.h"
 
 namespace nes
 {
@@ -169,7 +169,7 @@ namespace nes
         ///	@param deltaCOM : The delta of the center of mass of the Body. (shape->GetCenterOfMass() -
         ///     shapeBeforeChanged->GetCenterOfMass());
         //----------------------------------------------------------------------------------------------------
-        virtual void                NotifyShapeChanged(const BodyID& bodyID, const Vector3& deltaCOM) = 0;
+        virtual void                NotifyShapeChanged(const BodyID& bodyID, const Vec3& deltaCOM) = 0;
 
         /// Solver interface
         virtual bool                Internal_IsActive() const                             { return m_isEnabled; }

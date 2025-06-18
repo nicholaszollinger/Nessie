@@ -4,9 +4,9 @@
 
 namespace nes
 {
-    void Camera::LookAt(const nes::Vector3& eyePosition, const nes::Vector3& targetPosition, const nes::Vector3& up)
+    void Camera::LookAt(const nes::Vec3& eyePosition, const nes::Vec3& targetPosition, const nes::Vec3& up)
     {
-        m_viewMatrix = math::LookAt(eyePosition, targetPosition, up);
+        m_viewMatrix = Mat44::LookAt(eyePosition, targetPosition, up);
     }
     
     void Camera::UpdateViewport(const uint32_t width, const uint32_t height, const bool flipYAxis)
@@ -15,7 +15,7 @@ namespace nes
         {
             case Perspective:
             {
-                m_projectionMatrix = math::PerspectiveFOV(m_perspectiveFOV, static_cast<float>(width), static_cast<float>(height), m_perspectiveNear, m_perspectiveFar);
+                m_projectionMatrix = Mat44::Perspective(m_perspectiveFOV, static_cast<float>(width), static_cast<float>(height), m_perspectiveNear, m_perspectiveFar);
                 break;
             }
 
@@ -24,7 +24,7 @@ namespace nes
                 const float aspect = static_cast<float>(width) / static_cast<float>(height);
                 const float orthoHalfHeight = m_orthographicSize * 0.5f;
                 const float orthoHalfWidth = orthoHalfHeight * aspect;
-                m_projectionMatrix = math::Orthographic(-orthoHalfWidth, orthoHalfWidth, -orthoHalfHeight, orthoHalfHeight, m_orthographicNear, m_orthographicFar);
+                m_projectionMatrix = Mat44::Orthographic(-orthoHalfWidth, orthoHalfWidth, -orthoHalfHeight, orthoHalfHeight, m_orthographicNear, m_orthographicFar);
                 break;
             }
         }
@@ -40,18 +40,15 @@ namespace nes
         m_perspectiveFOV = fovRadians;
         m_perspectiveNear = nearPlane;
         m_perspectiveFar = farPlane;
-        m_projectionMatrix = math::PerspectiveFOV(fovRadians, aspectRatio, nearPlane, farPlane);
+        m_projectionMatrix = Mat44::Perspective(fovRadians, aspectRatio, nearPlane, farPlane);
         if (flipYAxis)
             m_projectionMatrix[1][1] *= -1.f;
     }
     
-    Vector3 Camera::CameraViewLocation() const
+    Vec3 Camera::CameraViewLocation() const
     {
-        Mat4 inverse;
-        [[maybe_unused]] const bool result = m_viewMatrix.TryGetInverse(inverse);
-        NES_ASSERT(result);
-
-        return math::XYZ(inverse.GetColumn(3));
+        const Mat44 inverse = m_viewMatrix.Inversed();
+        return inverse.GetColumn3(3);
     }
     
     void Camera::SetPerspective(const float fovRadians, const uint32_t viewWidth, const uint32_t viewHeight, const float nearPlane,
@@ -69,19 +66,4 @@ namespace nes
         m_orthographicFar = far;
         UpdateViewport(viewWidth, viewHeight, flipYAxis);
     }
-
-    // inline void Camera::SetOrthographicSize(const float size)
-    // {
-    //     m_orthographicSize = size;
-    // }
-    //
-    // inline void Camera::SetOrthographicNearPlane(const float near)
-    // {
-    //     m_orthographicNear = near;
-    // }
-    //
-    // inline void Camera::SetOrthographicFarPlane(const float far)
-    // {
-    //     m_orthographicFar = far;
-    // }
 }

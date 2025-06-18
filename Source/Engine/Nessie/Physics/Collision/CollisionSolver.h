@@ -18,10 +18,10 @@ namespace nes
     {
     public:
         /// Function type that collides 2 shapes (see CollideShapeVsShape)
-        using CollideShape = void (*)(const Shape* pShape1, const Shape* pShape2, const Vector3& scale1, const Vector3& scale2, const Mat4& centerOfMassTransform1, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter);
+        using CollideShape = void (*)(const Shape* pShape1, const Shape* pShape2, const Vec3& scale1, const Vec3& scale2, const Mat44& centerOfMassTransform1, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter);
 
         /// Function type that casts a shape vs another shape (see CastShapeVsShapeLocalSpace)
-        using CastShape = void (*)(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vector3& scale, const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector);
+        using CastShape = void (*)(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vec3& scale, const ShapeFilter& shapeFilter, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector);
 
     private:
         static CollideShape s_collideShapeFunctions[kNumSubShapeTypes][kNumSubShapeTypes];
@@ -42,7 +42,7 @@ namespace nes
         ///	@param collector : The collector that receives the results.
         ///	@param shapeFilter : Allows selectively disabling collisions between pairs of (sub) shapes.
         //----------------------------------------------------------------------------------------------------
-        static inline void CollideShapeVsShape(const Shape* pShape1, const Shape* pShape2, const Vector3& scale1, const Vector3& scale2, const Mat4& centerOfMassTransform1, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter = { })
+        static inline void CollideShapeVsShape(const Shape* pShape1, const Shape* pShape2, const Vec3& scale1, const Vec3& scale2, const Mat44& centerOfMassTransform1, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter = { })
         {
             // [TODO]: Track Narrow phase stats
             if (shapeFilter.ShouldCollide(pShape1, subShapeIDCreator1.GetID(), pShape2, subShapeIDCreator2.GetID()))
@@ -68,7 +68,7 @@ namespace nes
         ///	@param subShapeIDCreator2 : Class that tracks the current sub shape ID for the shape we're casting against.
         ///	@param collector : The collector that receives the results.
         //----------------------------------------------------------------------------------------------------
-        static inline void CastShapeVsShapeLocalSpace(const ShapeCast& shapeCastLocal, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vector3& scale, const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector)
+        static inline void CastShapeVsShapeLocalSpace(const ShapeCast& shapeCastLocal, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vec3& scale, const ShapeFilter& shapeFilter, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector)
         {
             // [TODO]: Track Narrow phase stats
             if (shapeFilter.ShouldCollide(shapeCastLocal.m_pShape, subShapeIDCreator1.GetID(), pShape, subShapeIDCreator2.GetID()))
@@ -84,9 +84,9 @@ namespace nes
         /// @note: A shape cast contains the center of mass start of the shape, if you have the world transform
         ///     of the shape you probably want to construct it using ShapeCast::FromWorldTransform(). 
         //----------------------------------------------------------------------------------------------------
-        static inline void CastShapeVsShapeWorldSpace(const ShapeCast& shapeCastWorld, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vector3& scale, const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector)
+        static inline void CastShapeVsShapeWorldSpace(const ShapeCast& shapeCastWorld, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vec3& scale, const ShapeFilter& shapeFilter, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector)
         {
-            const ShapeCast localShapeCast = shapeCastWorld.PostTransformed(centerOfMassTransform2.InverseRotationTranslation());
+            const ShapeCast localShapeCast = shapeCastWorld.PostTransformed(centerOfMassTransform2.InversedRotationTranslation());
             CastShapeVsShapeLocalSpace(localShapeCast, shapeCastSettings, pShape, scale, shapeFilter, centerOfMassTransform2, subShapeIDCreator1, subShapeIDCreator2, collector);
         }
         
@@ -104,13 +104,13 @@ namespace nes
         /// @brief : An implementation of CollideShape that swaps pShape1 and pShape 2 and swaps the results
         ///     back, can be registered if the collision function only exists the other way around.
         //----------------------------------------------------------------------------------------------------
-        static void ReversedCollideShape(const Shape* pShape1, const Shape* pShape2, const Vector3& scale1, const Vector3& scale2, const Mat4& centerOfMassTransform1, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter);
+        static void ReversedCollideShape(const Shape* pShape1, const Shape* pShape2, const Vec3& scale1, const Vec3& scale2, const Mat44& centerOfMassTransform1, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : An implementation of CastShape that swaps pShape1 and pShape 2 and swaps the results
         ///     back, can be registered if the collision function only exists the other way around.
         //----------------------------------------------------------------------------------------------------
-        static void ReversedCastShape(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vector3& scale, const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector);
+        static void ReversedCastShape(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings, const Shape* pShape, const Vec3& scale, const ShapeFilter& shapeFilter, const Mat44& centerOfMassTransform2, const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2, CastShapeCollector& collector);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize all collision functions with a function that asserts and returns no collision. 

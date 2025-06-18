@@ -7,6 +7,7 @@
 #include "Application/Application.h"
 #include "Debug/CheckedCast.h"
 #include "GLFW/glfw3.h"
+#include "Math/Vec2.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Callback used to handle errors in GLFW.
@@ -123,7 +124,7 @@ namespace nes
             // Get the mouse position at the time of the event.
             double xPos, yPos;
             glfwGetCursorPos(pWindow, &xPos, &yPos);
-            const Vector2 mousePos(static_cast<float>(xPos), static_cast<float>(yPos));
+            const Float2 mousePos(static_cast<float>(xPos), static_cast<float>(yPos));
             const EMouseButton mouseButton = glfw::ConvertToMouseButton(button);
             const Modifiers mods = glfw::ConvertToModifiers(modifiers);
             const EMouseAction mouseAction = glfw::ConvertToMouseAction(action);
@@ -148,10 +149,10 @@ namespace nes
             Window& window = pApp->GetWindow();
 
             // New Mouse Position.
-            Vector2 position{static_cast<float>(xPos), static_cast<float>(yPos)};
+            Vec2 position{static_cast<float>(xPos), static_cast<float>(yPos)};
 
             // Calculate the relative motion from the last cursor position of the mouse.
-            Vector2 deltaPosition = position - window.m_cursorPosition;
+            Vec2 deltaPosition = Vec2(position) - Vec2(window.m_cursorPosition);
 
             // Update the last cursor position.
             window.m_cursorPosition = position;

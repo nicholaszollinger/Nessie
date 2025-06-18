@@ -29,8 +29,8 @@ namespace nes
         static void         SetCursorMode(const ECursorMode mode);
 
         static ECursorMode  GetCursorMode();
-        static Vector2      GetCursorPosition();
-        static Vector2      GetCursorDelta();
+        static Vec2         GetCursorPosition();
+        static Vec2         GetCursorDelta();
         
     private:
         //----------------------------------------------------------------------------------------------------
@@ -50,7 +50,7 @@ namespace nes
         void                Update(const double deltaTime);
 
         /// Platform Defined Implementations:
-        Vector2d            GetCursorPosition_Impl(void* pNativeWindow);
+        Double2             GetCursorPosition_Impl(void* pNativeWindow);
         bool                IsKeyDown_Impl(void* pNativeWindow, const EKeyCode key);
         bool                IsKeyUp_Impl(void* pNativeWindow, const EKeyCode key);
         bool                IsMouseButtonDown_Impl(void* pNativeWindow, const EMouseButton button);
@@ -62,7 +62,7 @@ namespace nes
         
         Window*             m_pWindow = nullptr;
         ECursorMode         m_cursorMode = ECursorMode::Visible;
-        Vector2             m_cursorPosition{};
-        Vector2             m_cursorDelta{};
+        Vec2                m_cursorPosition{};
+        Vec2                m_cursorDelta{};
     };
 }

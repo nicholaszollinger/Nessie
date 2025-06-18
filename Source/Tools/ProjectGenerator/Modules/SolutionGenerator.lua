@@ -40,27 +40,56 @@ end
 --- Create the new Visual Studio Solution.
 ---------------------------------------------------------------------------------------------------------
 function m.CreateSolution()
-    workspace (core.ProjectSettings["ProjectName"])
-        configurations (core.ProjectConfigurations)
-        location(core.SolutionDir)
-        platforms {"x64"}
-        startproject(core.ProjectSettings["StartupProject"]);
-        staticruntime "Off"
-        flags { "MultiProcessorCompile" }
+    workspace(core.ProjectSettings["ProjectName"])
+    configurations(core.ProjectConfigurations)
+    location(core.SolutionDir)
+    platforms { "x64" }
+    startproject(core.ProjectSettings["StartupProject"]);
+    staticruntime "Off"
+    flags { "MultiProcessorCompile" }
 
-        filter "platforms:x64"
-            system "Windows"
-            architecture "x64"
+    -- Windows x64
+    filter "platforms:x64"
+        system "Windows"
+        architecture "x64"
 
-        -- Reset the filter.
-        filter {}
+    -- Reset the filter.
+    filter {}
+    
+    m.EnableInstructionSets();
 
+    defines
+    {
+        "YAML_CPP_STATIC_DEFINE"
+        , "NES_CONFIG_DIR=R\"($(SolutionDir)Config\\)\""
+        , "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\""
+    }
+end
+
+function m.EnableInstructionSets()
+    filter "platforms:x64"
         defines
         {
-            "YAML_CPP_STATIC_DEFINE"
-            , "NES_CONFIG_DIR=R\"($(SolutionDir)Config\\)\""
-            , "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\""
+            "NES_USE_SSE",
+            "NES_USE_SSE4_1",
+            "NES_USE_SSE4_2",
+
+            "NES_USE_AVX",
+            "NES_USE_AVX2",
+            "NES_USE_FMADD",
+
+            "NES_USE_LZCNT",
+            "NES_USE_TZCNT",
         }
+    
+        vectorextensions "SSE2"; -- Minimum
+        vectorextensions "SSE4.1";
+        vectorextensions "SSE4.2";
+        vectorextensions "AVX";
+        vectorextensions "AVX2";
+    
+    -- Reset the filter.
+    filter{}
 end
 
 -- Return the Module.

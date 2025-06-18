@@ -1,6 +1,6 @@
 ﻿// Camera.h
 #pragma once
-#include "Math/Matrix.h"
+#include "Math/Math.h"
 
 namespace nes
 {
@@ -28,7 +28,7 @@ namespace nes
         /// @param targetPosition : The target position to look at.
         /// @param up : The basis up direction. Which direction is up when looking at the target?
         //----------------------------------------------------------------------------------------------------
-        void            LookAt(const nes::Vector3& eyePosition, const nes::Vector3& targetPosition, const nes::Vector3& up);
+        void            LookAt(const nes::Vec3& eyePosition, const nes::Vec3& targetPosition, const nes::Vec3& up);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Update the Camera's Projection Matrix based on the new viewport. 
@@ -45,14 +45,14 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the view matrix directly.
         //----------------------------------------------------------------------------------------------------
-        void            SetViewMatrix(const Mat4& viewMatrix)               { m_viewMatrix = viewMatrix; }
+        void            SetViewMatrix(const Mat44& viewMatrix)               { m_viewMatrix = viewMatrix; }
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Calculates the Camera's view location in world space based on the current view matrix.
         ///     This is an expensive call because we have to calculate the inverse of the view matrix,
         ///     so this should be done sparingly.
         //----------------------------------------------------------------------------------------------------
-        Vector3         CameraViewLocation()  const;
+        Vec3            CameraViewLocation()  const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Create a camera that uses single-point perspective. This is the standard viewing for most
@@ -131,11 +131,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         inline void     SetOrthographicFarPlane(const float farPlane)       { m_orthographicFar = farPlane; }
         
-        const Mat4&     GetProjectionMatrix() const                         { return m_projectionMatrix; }
-        Mat4&           GetProjectionMatrix()                               { return m_projectionMatrix; }
-        const Mat4&     GetViewMatrix() const                               { return m_viewMatrix; }
-        Mat4&           GetViewMatrix()                                     { return m_viewMatrix; }
-        Mat4            ViewProjectionMatrix() const                        { return m_projectionMatrix * m_viewMatrix; }
+        const Mat44&    GetProjectionMatrix() const                         { return m_projectionMatrix; }
+        Mat44&          GetProjectionMatrix()                               { return m_projectionMatrix; }
+        const Mat44&    GetViewMatrix() const                               { return m_viewMatrix; }
+        Mat44&          GetViewMatrix()                                     { return m_viewMatrix; }
+        Mat44           ViewProjectionMatrix() const                        { return m_projectionMatrix * m_viewMatrix; }
         EProjectionType GetProjectionType() const                           { return m_projectionType; }
         
         float           GetPerspectiveFOV() const                           { return m_perspectiveFOV; }
@@ -146,8 +146,8 @@ namespace nes
         float           GetOrthographicFar() const                          { return m_orthographicFar; }
 
     private:
-        Mat4            m_projectionMatrix = Mat4::Identity();
-        Mat4            m_viewMatrix = Mat4::Identity();
+        Mat44           m_projectionMatrix = Mat44::Identity();
+        Mat44           m_viewMatrix = Mat44::Identity();
         float           m_perspectiveFOV = 60.f;
         float           m_perspectiveNear = 0.01f;
         float           m_perspectiveFar = 1000.f;

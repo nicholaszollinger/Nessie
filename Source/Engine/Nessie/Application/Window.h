@@ -2,7 +2,7 @@
 #pragma once
 #include <string>
 #include "WindowEvents.h"
-#include "Math/Vector2.h"
+#include "Math/Vec2.h"
 
 namespace nes
 {
@@ -74,7 +74,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current position of the cursor in the window. 
         //----------------------------------------------------------------------------------------------------
-        const Vector2f&     GetCursorPosition() const       { return m_cursorPosition; }
+        Vec2                GetCursorPosition() const       { return m_cursorPosition; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Window can be resized. 
@@ -132,6 +132,6 @@ namespace nes
     private:
         WindowProperties    m_properties{};
         void*               m_pNativeWindowHandle = nullptr;
-        Vector2f            m_cursorPosition{};
+        Vec2                m_cursorPosition{};
     };
 }

@@ -1,11 +1,11 @@
 // ConvexShape.cpp
 #include "ConvexShape.h"
 
-#include "Math/IntersectionQueries3.h"
-#include "Math/OrientedBox.h"
-#include "Math/Geometry/ConvexSupport.h"
-#include "Math/Geometry/EPAPenetrationDepth.h"
-#include "Math/Geometry/GJKClosestPoint.h"
+#include "Geometry/IntersectionQueries3.h"
+#include "Geometry/OrientedBox.h"
+#include "Geometry/ConvexSupport.h"
+#include "Geometry/EPAPenetrationDepth.h"
+#include "Geometry/GJKClosestPoint.h"
 #include "Physics/Collision/CastResult.h"
 #include "Physics/Collision/CollidePointResult.h"
 #include "Physics/Collision/CollideShape.h"
@@ -24,24 +24,24 @@ namespace nes
     class ConvexShape::CSGetTrianglesContext
     {
     public:
-        CSGetTrianglesContext(const ConvexShape* pShape, const Vector3& positionCOM, const Quat& rotation, const Vector3& scale)
-            : m_localToWorld(math::MakeRotationTranslationMatrix(positionCOM, rotation) * math::MakeScaleMatrix(scale))
+        CSGetTrianglesContext(const ConvexShape* pShape, const Vec3& positionCOM, const Quat& rotation, const Vec3& scale)
+            : m_localToWorld(Mat44::MakeRotationTranslation(rotation, positionCOM) * Mat44::MakeScale(scale))
             , m_isInsideOut(ScaleHelpers::IsInsideOut(scale))
         {
-            m_pSupport = pShape->GetSupportFunction(ESupportMode::IncludeConvexRadius, m_supportBuffer, Vector3::Unit());
+            m_pSupport = pShape->GetSupportFunction(ESupportMode::IncludeConvexRadius, m_supportBuffer, Vec3::One());
         }
 
         SupportBuffer		m_supportBuffer;
         const Support*		m_pSupport;
-        Mat4				m_localToWorld;
+        Mat44				m_localToWorld;
         bool				m_isInsideOut;
         size_t				m_currentVertex = 0;
     };
     
-    const StaticArray<Vector3, 384> ConvexShape::s_unitSphereTriangles = []()
+    const StaticArray<Vec3, 384> ConvexShape::s_unitSphereTriangles = []()
     {
         constexpr int level = 2;
-        StaticArray<Vector3, 384> result;
+        StaticArray<Vec3, 384> result;
         GetTrianglesContextVertexList::CreateHalfUnitSphereTop(result, level);
         GetTrianglesContextVertexList::CreateHalfUnitSphereBottom(result, level);
         return result;
@@ -62,7 +62,7 @@ namespace nes
 
         // Create support function
         SupportBuffer buffer;
-        const Support* pSupport = GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer, Vector3::Unit());
+        const Support* pSupport = GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer, Vec3::One());
 
         // Cast Ray
         GJKClosestPoint gjk;
@@ -122,7 +122,7 @@ namespace nes
         }
     }
 
-    void ConvexShape::CollidePoint(const Vector3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
+    void ConvexShape::CollidePoint(const Vec3& point, const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
     {
         // Test Shape filter
         if (!shapeFilter.ShouldCollide(this, subShapeIDCreator.GetID()))
@@ -133,13 +133,13 @@ namespace nes
         {
             // Create the support function
             SupportBuffer buffer;
-            const Support* pSupport = GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer, Vector3::Unit());
+            const Support* pSupport = GetSupportFunction(ESupportMode::IncludeConvexRadius, buffer, Vec3::One());
 
             // Create the support function for point
             PointConvexSupport convexPoint { point };
 
             GJKClosestPoint gjk;
-            Vector3 vec = point;
+            Vec3 vec = point;
             if (gjk.Intersects(*pSupport, convexPoint, physics::kDefaultCollisionTolerance, vec))
             {
                 collector.AddHit({ TransformedShape::GetBodyID(collector.GetContext()), subShapeIDCreator.GetID()});
@@ -147,8 +147,8 @@ namespace nes
         }
     }
 
-    void ConvexShape::GetTrianglesStart(GetTrianglesContext& context, [[maybe_unused]] const AABox& box, const Vector3& positionCOM,
-        const Quat& rotation, const Vector3& scale) const
+    void ConvexShape::GetTrianglesStart(GetTrianglesContext& context, [[maybe_unused]] const AABox& box, const Vec3& positionCOM,
+        const Quat& rotation, const Vec3& scale) const
     {
         static_assert(sizeof(CSGetTrianglesContext) <= sizeof(GetTrianglesContext), "GetTrianglesContext is too small!");
         NES_ASSERT(math::IsAligned(&context, alignof(CSGetTrianglesContext)));
@@ -168,7 +168,7 @@ namespace nes
         if (csContext.m_isInsideOut)
         {
             // Store the triangles flipped
-            for (const Vector3* pVert = s_unitSphereTriangles.data() + csContext.m_currentVertex, *pEnd = pVert + totalNumVertices; pVert < pEnd; pVert += 3)
+            for (const Vec3* pVert = s_unitSphereTriangles.data() + csContext.m_currentVertex, *pEnd = pVert + totalNumVertices; pVert < pEnd; pVert += 3)
             {
                 (csContext.m_localToWorld.TransformPoint(csContext.m_pSupport->GetSupport(pVert[0])).StoreFloat3(outTriangleVertices++));
                 (csContext.m_localToWorld.TransformPoint(csContext.m_pSupport->GetSupport(pVert[2])).StoreFloat3(outTriangleVertices++));
@@ -178,7 +178,7 @@ namespace nes
         else
         {
             // Store triangles
-            for (const Vector3* pVert = s_unitSphereTriangles.data() + csContext.m_currentVertex, *pEnd = pVert + totalNumVertices; pVert < pEnd; pVert += 3)
+            for (const Vec3* pVert = s_unitSphereTriangles.data() + csContext.m_currentVertex, *pEnd = pVert + totalNumVertices; pVert < pEnd; pVert += 3)
             {
                 (csContext.m_localToWorld.TransformPoint(csContext.m_pSupport->GetSupport(pVert[0])).StoreFloat3(outTriangleVertices++));
                 (csContext.m_localToWorld.TransformPoint(csContext.m_pSupport->GetSupport(pVert[1])).StoreFloat3(outTriangleVertices++));
@@ -207,8 +207,8 @@ namespace nes
         }
     }
 
-    void ConvexShape::CollideConvexVsConvex(const Shape* pShape1, const Shape* pShape2, const Vector3& scale1,
-        const Vector3& scale2, const Mat4& centerOfMassTransform1, const Mat4& centerOfMassTransform2,
+    void ConvexShape::CollideConvexVsConvex(const Shape* pShape1, const Shape* pShape2, const Vec3& scale1,
+        const Vec3& scale2, const Mat44& centerOfMassTransform1, const Mat44& centerOfMassTransform2,
         const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2,
         const CollideShapeSettings& collideShapeSettings, CollideShapeCollector& collector,
         [[maybe_unused]] const ShapeFilter& shapeFilter)
@@ -220,33 +220,33 @@ namespace nes
         const ConvexShape* pConvex2 = checked_cast<const ConvexShape*>(pShape2);
 
         // Get the transforms
-        Mat4 inverseTransform1 = centerOfMassTransform1.InverseRotationTranslation();
-        Mat4 transform2To1 = inverseTransform1 * centerOfMassTransform2;
+        Mat44 inverseTransform1 = centerOfMassTransform1.InversedRotationTranslation();
+        Mat44 transform2To1 = inverseTransform1 * centerOfMassTransform2;
 
         // Get the bounding boxes
         float maxSeparationDistance = collideShapeSettings.m_maxSeparationDistance;
         AABox shape1Box = pShape1->GetLocalBounds().Scaled(scale1);
-        shape1Box.ExpandBy(Vector3::Replicate(maxSeparationDistance));
+        shape1Box.ExpandBy(Vec3::Replicate(maxSeparationDistance));
         AABox shape2Box = pShape2->GetLocalBounds().Scaled(scale2);
         
         // Check if they don't overlap
-        if (!OrientedBox(transform2To1, shape2Box).Intersects(shape1Box))
+        if (!OrientedBox(transform2To1, shape2Box).Overlaps(shape1Box))
             return;
 
         // Note: As we don't remember the penetration axis from the last iteration, and it is likely that
         // shape2 is pushed out of collision relative to shape1 by comparing their COM's, we use that as an
         // initial penetration axis: shape2.COM - shape1.COM
         // This has been seen to improve performance by approx. 1% over a fixed axis like (1, 0, 0).
-        Vector3 penetrationAxis = transform2To1.GetTranslation();
+        Vec3 penetrationAxis = transform2To1.GetTranslation();
         
         // Ensure that we do not pass in a near zero penetration axis.
         if (penetrationAxis.IsNearZero())
-            penetrationAxis = Vector3::Right();
+            penetrationAxis = Vec3::Right();
 
-        Vector3 point1;
-        Vector3 point2;
+        Vec3 point1;
+        Vec3 point2;
         EPAPenetrationDepth penDepth;
-        EPAPenetrationDepth::Status status;
+        EPAPenetrationDepth::EStatus status;
 
         // Scope to limit lifetime of the Support Buffer
         {
@@ -272,13 +272,13 @@ namespace nes
 
         switch (status)
         {
-            case EPAPenetrationDepth::Status::Colliding:
+            case EPAPenetrationDepth::EStatus::Colliding:
                 break;
             
-            case EPAPenetrationDepth::Status::NotColliding:
+            case EPAPenetrationDepth::EStatus::NotColliding:
                 return;
             
-            case EPAPenetrationDepth::Status::Indeterminate:
+            case EPAPenetrationDepth::EStatus::Indeterminate:
             {
                 // Need to run expensive EPA algorithm
 
@@ -317,19 +317,19 @@ namespace nes
         }
 
         // Check if the penetration is bigger than the early out function
-        float penetrationDepth = (point2 - point1).Magnitude() - maxSeparationDistance;
+        float penetrationDepth = (point2 - point1).Length() - maxSeparationDistance;
         if (-penetrationDepth >= collector.GetEarlyOutFraction())
             return;
 
         // Correct point1 for the added separation distance
-        float penetrationAxisLength = penetrationAxis.Magnitude();
+        float penetrationAxisLength = penetrationAxis.Length();
         if (penetrationAxisLength > 0.f)
             point1 -= penetrationAxis * (maxSeparationDistance / penetrationAxisLength);
 
         // Convert to world space
         point1 = centerOfMassTransform1.TransformPoint(point1);
         point2 = centerOfMassTransform2.TransformPoint(point2);
-        Vector3 penetrationAxisWorld = centerOfMassTransform1.TransformVector(penetrationAxis);
+        Vec3 penetrationAxisWorld = centerOfMassTransform1.TransformVector(penetrationAxis);
 
         // Create collision result
         CollideShapeResult result(point1, point2, penetrationAxisWorld, penetrationDepth, subShapeIDCreator1.GetID(), subShapeIDCreator2.GetID(), TransformedShape::GetBodyID(collector.GetContext()));
@@ -341,7 +341,7 @@ namespace nes
             pConvex1->GetSupportingFace(SubShapeID(), -penetrationAxis, scale1, centerOfMassTransform1, result.m_shape1Face);
 
             // Set the supporting face of shape 2
-            pConvex2->GetSupportingFace(SubShapeID(), transform2To1.TransformVectorTranspose(penetrationAxis), scale2, centerOfMassTransform2, result.m_shape2Face);
+            pConvex2->GetSupportingFace(SubShapeID(), transform2To1.Multiply3x3Transposed(penetrationAxis), scale2, centerOfMassTransform2, result.m_shape2Face);
         }
 
         // Add the hit to the collector.
@@ -350,7 +350,7 @@ namespace nes
     }
 
     void ConvexShape::CastConvexVsConvex(const ShapeCast& shapeCast, const ShapeCastSettings& shapeCastSettings,
-        const Shape* pShape, const Vector3& scale, [[maybe_unused]] const ShapeFilter& shapeFilter, const Mat4& centerOfMassTransform2,
+        const Shape* pShape, const Vec3& scale, [[maybe_unused]] const ShapeFilter& shapeFilter, const Mat44& centerOfMassTransform2,
         const SubShapeIDCreator& subShapeIDCreator1, const SubShapeIDCreator& subShapeIDCreator2,
         CastShapeCollector& collector)
     {
@@ -374,9 +374,9 @@ namespace nes
         // Do a raycast against the result
         EPAPenetrationDepth epa;
         float fraction = collector.GetEarlyOutFraction();
-        Vector3 contactPointA;
-        Vector3 contactPointB;
-        Vector3 contactNormal;
+        Vec3 contactPointA;
+        Vec3 contactPointB;
+        Vec3 contactNormal;
 
         if (epa.CastShape(
             shapeCast.m_centerOfMassStart
@@ -394,7 +394,7 @@ namespace nes
             // Convert to world space
             contactPointA = centerOfMassTransform2.TransformPoint(contactPointA);
             contactPointB = centerOfMassTransform2.TransformPoint(contactPointB);
-            const Vector3 contactNormalWorld = centerOfMassTransform2.TransformVector(contactNormal);
+            const Vec3 contactNormalWorld = centerOfMassTransform2.TransformVector(contactNormal);
 
             ShapeCastResult result(fraction, contactPointA, contactPointB, contactNormalWorld, false, subShapeIDCreator1.GetID(), subShapeIDCreator2.GetID(), TransformedShape::GetBodyID(collector.GetContext()));
 
@@ -406,9 +406,9 @@ namespace nes
             if (shapeCastSettings.m_collectFacesMode == ECollectFacesMode::CollectFaces)
             {
                 // Get the supporting face of shape 1
-                Mat4 transform1To2 = shapeCast.m_centerOfMassStart;
+                Mat44 transform1To2 = shapeCast.m_centerOfMassStart;
                 transform1To2.SetTranslation(transform1To2.GetTranslation() + fraction * shapeCast.m_direction);
-                pCastShape->GetSupportingFace(SubShapeID(), transform1To2.TransformVectorTranspose(-contactNormal), shapeCast.m_scale, centerOfMassTransform2 * transform1To2, result.m_shape1Face);
+                pCastShape->GetSupportingFace(SubShapeID(), transform1To2.Multiply3x3Transposed(-contactNormal), shapeCast.m_scale, centerOfMassTransform2 * transform1To2, result.m_shape1Face);
 
                 // Get the supporting face of shape 2
                 pTargetShape->GetSupportingFace(SubShapeID(), contactNormal, scale, centerOfMassTransform2, result.m_shape2Face);

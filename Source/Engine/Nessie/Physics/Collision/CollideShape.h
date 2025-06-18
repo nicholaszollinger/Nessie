@@ -4,7 +4,7 @@
 #include "ActiveEdgeMode.h"
 #include "CollectFacesMode.h"
 #include "Core/StaticArray.h"
-#include "Math/Vector3.h"
+#include "Math/Vec3.h"
 #include "Physics/PhysicsSettings.h"
 #include "Physics/Body/BodyID.h"
 #include "Shapes/SubShapeID.h"
@@ -21,11 +21,11 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct CollideShapeResult
     {
-        using Face = StaticArray<Vector3, 32>;
+        using Face = StaticArray<Vec3, 32>;
         
-        Vector3     m_contactPointOn1;
-        Vector3     m_contactPointOn2;
-        Vector3     m_penetrationAxis;
+        Vec3        m_contactPointOn1;
+        Vec3        m_contactPointOn2;
+        Vec3        m_penetrationAxis;
         float       m_penetrationDepth{};
         SubShapeID  m_subShapeID1;
         SubShapeID  m_subShapeID2;
@@ -35,7 +35,7 @@ namespace nes
         
         CollideShapeResult() = default;
         
-        CollideShapeResult(const Vector3& contactPoint1, const Vector3& contactPoint2, const Vector3& penetrationAxis, const float penetrationDepth, const SubShapeID& subShapeID1, const SubShapeID& subShapeID2, const BodyID& bodyID2)
+        CollideShapeResult(const Vec3& contactPoint1, const Vec3& contactPoint2, const Vec3& penetrationAxis, const float penetrationDepth, const SubShapeID& subShapeID1, const SubShapeID& subShapeID2, const BodyID& bodyID2)
             : m_contactPointOn1(contactPoint1)
             , m_contactPointOn2(contactPoint2)
             , m_penetrationAxis(penetrationAxis)
@@ -93,7 +93,7 @@ namespace nes
         /// When m_activeEdgeMode is CollideOnlyWithActive a movement direction can be provided. When hitting an inactive edge,
         /// the system will select the triangle normal as penetration depth only if it impedes the movement less than with the
         /// calculated penetration depth.
-        Vector3                     m_activeEdgeMovementDirection   = Vector3::Zero();
+        Vec3                        m_activeEdgeMovementDirection   = Vec3::Zero();
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -107,6 +107,6 @@ namespace nes
         float                       m_maxSeparationDistance = 0.f;
 
         /// How backfacing triangles should be treated
-        EBackFaceMode                m_backFaceMode = EBackFaceMode::IgnoreBackFaces;
+        EBackFaceMode               m_backFaceMode = EBackFaceMode::IgnoreBackFaces;
     };
 }

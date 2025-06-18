@@ -177,9 +177,9 @@ namespace nes
         // [TEMP]: 
         // Add a body to the System???
         auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
-        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vector3(20, 1, 1)), Vector3(0, 10, 0), Quat::Identity(), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
+        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vec3(20, 1, 1)), Vec3(0, 10, 0), Quat::Identity(), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
 
-        bodyInterface.SetPosition(m_testID, Vector3(0.f), EBodyActivationMode::LeaveAsIs);
+        bodyInterface.SetPosition(m_testID, Vec3(0.f), EBodyActivationMode::LeaveAsIs);
         
         for (auto& entity : m_entityPool)
         {
@@ -232,19 +232,19 @@ namespace nes
         cameraUniforms.m_viewMatrix = sceneCamera.GetViewMatrix();
         Renderer::UpdateBuffer(m_cameraUniformBuffer, 0, sizeof(SceneCameraUniforms), &cameraUniforms);
 
-        const Vector3 cameraWorldLocation = sceneCamera.CameraViewLocation();
+        const Vec3 cameraWorldLocation = sceneCamera.CameraViewLocation();
         
         // Sort Meshes based on Camera position:
         // Sort Opaque Meshes so that the closest meshes are drawn first.
         std::ranges::sort(m_opaqueMeshes, [&cameraWorldLocation](const MeshComponent* pMeshA, const MeshComponent* pMeshB)
         {
-            return Vector3::DistanceSquared(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) < Vector3::DistanceSquared(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
+            return Vec3::DistanceSqr(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) < Vec3::DistanceSqr(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
         });
 
         // Sort Transparent Meshes so that furthest meshes are drawn first.
         std::ranges::sort(m_transparentMeshes, [&cameraWorldLocation](const MeshComponent* pMeshA, const MeshComponent* pMeshB)
         {
-            return Vector3::DistanceSquared(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) > Vector3::DistanceSquared(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
+            return Vec3::DistanceSqr(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) > Vec3::DistanceSqr(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
         });
     }
     
@@ -366,7 +366,7 @@ namespace nes
                 }
                 
                 // Location
-                Vector3 location;
+                Vec3 location;
                 const auto locationNode = entityNode["Location"];
                 {
                     location.x = locationNode[0].as<float>();
@@ -384,7 +384,7 @@ namespace nes
                 }
                 
                 // Scale
-                Vector3 scale;
+                Vec3 scale;
                 const auto scaleNode = entityNode["Scale"];
                 {
                     scale.x = scaleNode[0].as<float>();
@@ -779,9 +779,9 @@ namespace nes
     }
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Draw an editable Vector3 in the Inspector. 
+    ///		@brief : Draw an editable Vec3 in the Inspector. 
     //----------------------------------------------------------------------------------------------------
-    bool World::EditorDrawPropertyVector3(const char* pLabel, Vector3& value)
+    bool World::EditorDrawPropertyVec3(const char* pLabel, Vec3& value)
     {
         ImGui::TableNextRow();
         ImGui::PushID(pLabel);
@@ -790,11 +790,9 @@ namespace nes
         ImGui::TextUnformatted(pLabel);
         ImGui::TableNextColumn();
         ImGui::SetNextItemWidth(-FLT_MIN);
-        
         bool wasChanged = ImGui::DragFloat3("##Editor", reinterpret_cast<float*>(&value));
-
         ImGui::PopID();
-
+        
         return wasChanged;
     }
 
@@ -854,7 +852,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Draw an editable Transform in the Inspector. 
     //----------------------------------------------------------------------------------------------------
-    bool World::EditorDrawPropertyTransform(const char* pLabel, Vector3& location, Rotation& rotation, Vector3& scale)
+    bool World::EditorDrawPropertyTransform(const char* pLabel, Vec3& location, Rotation& rotation, Vec3& scale)
     {
         ImGui::SeparatorText(pLabel);
         bool wasChanged = false;
@@ -864,9 +862,9 @@ namespace nes
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 2.0f); // Default twice larger
             
-            wasChanged |= EditorDrawPropertyVector3("Location", location);
+            wasChanged |= EditorDrawPropertyVec3("Location", location);
             wasChanged |= EditorDrawPropertyRotation("Rotation", rotation);
-            wasChanged |= EditorDrawPropertyVector3("Scale", scale);
+            wasChanged |= EditorDrawPropertyVec3("Scale", scale);
             ImGui::EndTable();
         }
         
@@ -910,7 +908,7 @@ namespace nes
                 vk::VertexInputBindingDescription()
                     .setBinding(0)
                     .setInputRate(vk::VertexInputRate::eVertex)
-                    .setStride(sizeof(nes::Vector3)),
+                    .setStride(sizeof(nes::Vec3)),
             },
 
             .m_vertexAttributes =
@@ -1082,7 +1080,7 @@ namespace nes
                 vk::VertexInputBindingDescription()
                     .setBinding(0)
                     .setInputRate(vk::VertexInputRate::eVertex)
-                    .setStride(sizeof(nes::Vector3)),
+                    .setStride(sizeof(nes::Vec3)),
             },
 
             .m_vertexAttributes =
@@ -1118,16 +1116,16 @@ namespace nes
         
 
         // Create a default Cube Mesh.
-        static constexpr Vector3 vertices[] =
+        static Vec3 vertices[] =
         {
-            Vector3(-0.5,  0.5, -0.5),
-            Vector3(0.5,  0.5, -0.5),
-            Vector3(0.5,  -0.5, -0.5),
-            Vector3(-0.5,  -0.5, -0.5),
-            Vector3(-0.5,  0.5, 0.5),
-            Vector3(0.5,  0.5, 0.5),
-            Vector3(0.5,  -0.5, 0.5),
-            Vector3(-0.5,  -0.5, 0.5),
+            Vec3(-0.5,  0.5, -0.5),
+            Vec3(0.5,  0.5, -0.5),
+            Vec3(0.5,  -0.5, -0.5),
+            Vec3(-0.5,  -0.5, -0.5),
+            Vec3(-0.5,  0.5, 0.5),
+            Vec3(0.5,  0.5, 0.5),
+            Vec3(0.5,  -0.5, 0.5),
+            Vec3(-0.5,  -0.5, 0.5),
         };
 
         static constexpr uint32_t indices[] =
@@ -1142,7 +1140,7 @@ namespace nes
         
         m_meshAssets.emplace_back(Mesh::Create(
             vertices
-            , sizeof(Vector3)
+            , sizeof(Vec3)
             , _countof(vertices)
             , indices
             , sizeof(uint32_t)
@@ -1196,7 +1194,7 @@ namespace nes
     {
         // static GeometryPushConstants pushConstant
         // {
-        //     .m_objectMatrix = Mat4::Identity(),
+        //     .m_objectMatrix = Mat44::Identity(),
         //     .m_baseColor = LinearColor::White()
         // };
         

@@ -24,7 +24,7 @@ namespace nes
         NES_ASSERT(pWindow);
         m_pWindow = pWindow;
 
-        // Initialize the RendererContext object:
+        // Initialize the RendererContext    object:
         // [TODO]: This should be loaded from data or handled by a function.
         RendererContext::ConfigOptions options{};
         options.m_debugLogFunc = RendererContext::s_defaultDebugLogFunction;

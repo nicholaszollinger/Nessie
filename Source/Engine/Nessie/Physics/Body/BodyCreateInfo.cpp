@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    BodyCreateInfo::BodyCreateInfo(const ShapeSettings* pSettings, const Vector3& position, const Quat& rotation, const EBodyMotionType motionType, const CollisionLayer layer)
+    BodyCreateInfo::BodyCreateInfo(const ShapeSettings* pSettings, const Vec3& position, const Quat& rotation, const EBodyMotionType motionType, const CollisionLayer layer)
         : m_position(position)
         , m_rotation(rotation)
         , m_collisionLayer(layer)
@@ -13,7 +13,7 @@ namespace nes
         //
     }
 
-    BodyCreateInfo::BodyCreateInfo(const Shape* pShape, const Vector3& position, const Quat& rotation, const EBodyMotionType motionType, const CollisionLayer layer)
+    BodyCreateInfo::BodyCreateInfo(const Shape* pShape, const Vec3& position, const Quat& rotation, const EBodyMotionType motionType, const CollisionLayer layer)
         : m_position(position)
         , m_rotation(rotation)
         , m_collisionLayer(layer)

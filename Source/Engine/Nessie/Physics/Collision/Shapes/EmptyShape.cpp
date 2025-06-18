@@ -24,7 +24,7 @@ namespace nes
     {
         MassProperties massProperties;
         massProperties.m_mass = 1.f;
-        massProperties.m_inertia = Mat4::Identity();
+        massProperties.m_inertia = Mat44::Identity();
         return massProperties;
     }
 

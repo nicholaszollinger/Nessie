@@ -1,6 +1,6 @@
 // MassProperties.h
 #pragma once
-#include "Math/Matrix.h"
+#include "Math/Math.h"
 
 namespace nes
 {
@@ -11,7 +11,7 @@ namespace nes
     struct MassProperties
     {
         /// Inertia tensor of the shape (kg m^2)
-        Mat4            m_inertia   = Mat4::Zero();
+        Mat44           m_inertia   = Mat44::Zero();
 
         /// Mass of the shape (kg).
         float           m_mass      = 0.f;
@@ -24,12 +24,12 @@ namespace nes
         ///	@param outDiagonal : The diagonal of the diagonal matrix D.
         ///	@returns : True if successful.
         //----------------------------------------------------------------------------------------------------
-        bool            DecomposePrincipalMomentsOfInertia(Mat4& outRotation, Vector3& outDiagonal) const;
+        bool            DecomposePrincipalMomentsOfInertia(Mat44& outRotation, Vec3& outDiagonal) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the mass and inertia of a box with edge size = "boxSize" and density = "density".
         //----------------------------------------------------------------------------------------------------
-        void            SetMassAndInertiaOfSolidBox(const Vector3& boxSize, const float density);
+        void            SetMassAndInertiaOfSolidBox(const Vec3& boxSize, const float density);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the mass and scale the inertia tensor to match the mass. 
@@ -39,21 +39,21 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Rotate the inertia by 3x3 matrix rotation 
         //----------------------------------------------------------------------------------------------------
-        void            Rotate(const Mat4& rotation);
+        void            Rotate(const Mat44& rotation);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Translate the inertia .
         //----------------------------------------------------------------------------------------------------
-        void            Translate(const Vector3& translation);
+        void            Translate(const Vec3& translation);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Scale the mass and inertia by "scale". Note that elements can be < 0 to flip the shape. 
         //----------------------------------------------------------------------------------------------------
-        void            Scale(const Vector3& scale);
+        void            Scale(const Vec3& scale);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculates the size of a solid box that has an inertia tensor diagonal = "inertiaDiagonal"
         //----------------------------------------------------------------------------------------------------
-        static Vector3  GetEquivalentSolidBoxSize(const float mass, const Vector3& inertiaDiagonal);
+        static Vec3     GetEquivalentSolidBoxSize(const float mass, const Vec3& inertiaDiagonal);
     };
 }

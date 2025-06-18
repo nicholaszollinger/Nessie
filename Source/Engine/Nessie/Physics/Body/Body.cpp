@@ -6,11 +6,11 @@ namespace nes
 {
     static const EmptyShape s_fixedToWorldShape;
     
-    // Initialize the Dummy Body using the boolean constructor.
+    // Initialize the Placeholder Body using the boolean constructor.
     Body Body::s_fixedToWorld(false);
     
     Body::Body(bool)
-        : m_position(Vector3::Zero())
+        : m_position(Vec3::Zero())
         , m_rotation(Quat::Identity())
         , m_pShape(&s_fixedToWorldShape)
         , m_friction(0.f)
@@ -41,8 +41,8 @@ namespace nes
                 case EBodyMotionType::Static:
                 {
                     // Stop the object
-                    m_pMotionProperties->m_linearVelocity = Vector3::Zero();
-                    m_pMotionProperties->m_angularVelocity = Vector3::Zero();
+                    m_pMotionProperties->m_linearVelocity = Vec3::Zero();
+                    m_pMotionProperties->m_angularVelocity = Vec3::Zero();
                     [[fallthrough]];
                 }
                 
@@ -67,17 +67,17 @@ namespace nes
             ResetSleepTimer();
     }
 
-    void Body::MoveKinematic(const Vector3& targetPosition, const Quat& targetRotation, const float deltaTime)
+    void Body::MoveKinematic(const Vec3& targetPosition, const Quat& targetRotation, const float deltaTime)
     {
         NES_ASSERT(IsRigidBody());
         NES_ASSERT(!IsStatic());
         NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::Read));
 
         // Calculate the center of mass at the end situation
-        const Vector3 newCOM = targetPosition + (targetRotation * m_pShape->GetCenterOfMass());
+        const Vec3 newCOM = targetPosition + (targetRotation * m_pShape->GetCenterOfMass());
         
         // Calculate the delta position and rotation
-        const Vector3 deltaPos = newCOM - m_position;
+        const Vec3 deltaPos = newCOM - m_position;
         const Quat deltaRot = targetRotation * m_rotation.Conjugate();
 
         // Move the Body
@@ -92,8 +92,8 @@ namespace nes
 
         result.m_position = GetPosition();
         result.m_rotation = GetRotation();
-        result.m_linearVelocity = m_pMotionProperties != nullptr ? m_pMotionProperties->m_linearVelocity : Vector3::Zero();
-        result.m_angularVelocity = m_pMotionProperties != nullptr ? m_pMotionProperties->m_angularVelocity : Vector3::Zero();
+        result.m_linearVelocity = m_pMotionProperties != nullptr ? m_pMotionProperties->m_linearVelocity : Vec3::Zero();
+        result.m_angularVelocity = m_pMotionProperties != nullptr ? m_pMotionProperties->m_angularVelocity : Vec3::Zero();
         result.m_collisionLayer = GetCollisionLayer();
         result.m_userData = m_userData;
         result.m_collisionGroup = GetCollisionGroup();
@@ -122,31 +122,31 @@ namespace nes
         if (m_pMotionProperties != nullptr)
         {
             const float inverseMass = m_pMotionProperties->GetInverseMass();
-            const Mat4 inverseInertia = m_pMotionProperties->GetLocalSpaceInverseInertiaUnchecked();
+            const Mat44 inverseInertia = m_pMotionProperties->GetLocalSpaceInverseInertiaUnchecked();
 
             // Set Mass
             result.m_massPropertiesOverride.m_mass = inverseMass != 0.f? 1.f / inverseMass : FLT_MAX;
 
             // Set Inertia
-            Mat3 inverseInertia3 = math::ToMat3(inverseInertia);
+            //Mat3 inverseInertia3 = math::ToMat3(inverseInertia);
             //if (inertia.SetInversed3x3(inverseInertia))
-            if (inverseInertia3.Determinant() != 0.f)
+            if (inverseInertia.Determinant3x3() != 0.f)
             {
                 // Inertia was invertible, we can use it.
-                result.m_massPropertiesOverride.m_inertia = inverseInertia3;
+                result.m_massPropertiesOverride.m_inertia = inverseInertia;
             }
 
             else
             {
-                const Vector3 diagonal = Vector3::Max(inverseInertia.GetDiagonal3(), Vector3::Replicate(FLT_MAX));
-                result.m_massPropertiesOverride.m_inertia = Mat4::Scale(diagonal.GetReciprocal());
+                const Vec3 diagonal = Vec3::Max(inverseInertia.GetDiagonal3(), Vec3::Replicate(FLT_MAX));
+                result.m_massPropertiesOverride.m_inertia = Mat44::MakeScale(diagonal.Reciprocal());
             }
         }
 
         else
         {
             result.m_massPropertiesOverride.m_mass = FLT_MAX;
-            result.m_massPropertiesOverride.m_inertia = Mat4::Scale(Vector3::Replicate(FLT_MAX));
+            result.m_massPropertiesOverride.m_inertia = Mat44::MakeScale(Vec3::Replicate(FLT_MAX));
         }
 
         result.SetShape(GetShape());
@@ -156,10 +156,10 @@ namespace nes
 
     void Body::Internal_CalculateWorldSpaceBounds()
     {
-        m_bounds = m_pShape->GetWorldBounds(GetCenterOfMassTransform(), Vector3::Unit());
+        m_bounds = m_pShape->GetWorldBounds(GetCenterOfMassTransform(), Vec3::One());
     }
 
-    void Body::Internal_SetPositionAndRotation(const Vector3& position, const Quat& rotation, bool resetSleepTimer)
+    void Body::Internal_SetPositionAndRotation(const Vec3& position, const Quat& rotation, bool resetSleepTimer)
     {
         NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
 
@@ -174,7 +174,7 @@ namespace nes
             ResetSleepTimer();
     }
 
-    void Body::Internal_UpdateCenterOfMass(const Vector3& previousCenterOfMass, bool updateMassProperties)
+    void Body::Internal_UpdateCenterOfMass(const Vec3& previousCenterOfMass, bool updateMassProperties)
     {
         // Update center of mass position so the world position for this body stays the same.
         m_position += m_rotation * (m_pShape->GetCenterOfMass() - previousCenterOfMass);
@@ -190,7 +190,7 @@ namespace nes
         NES_ASSERT(BodyAccess::CheckRights(BodyAccess::GetPositionAccess(), BodyAccess::EAccess::ReadWrite));
 
         // Get the old center of mass
-        const Vector3 oldCOM = m_pShape->GetCenterOfMass();
+        const Vec3 oldCOM = m_pShape->GetCenterOfMass();
 
         // Update the Shape
         m_pShape = pShape;
@@ -209,7 +209,7 @@ namespace nes
             return EAllowedSleep::CannotSleep;
 
         // Get the points to test
-        Vector3 points[3];
+        Vec3 points[3];
         GetSleepTestPoints(points);
 
         // [TODO]: If double precision, Get the bass offset for spheres  
@@ -220,13 +220,13 @@ namespace nes
 
             // Make point relative to base offset
             // [TODO]: If double precision, Subtract bass offset 
-            Vector3 point = points[i];
+            Vec3 point = points[i];
 
             // Encapsulate point in a sphere
-            sphere.EncapsulatePoint(point);
+            sphere.Encapsulate(point);
 
             // Test if it exceeded the max movement
-            if (sphere.m_radius > maxMovement)
+            if (sphere.GetRadius() > maxMovement)
             {
                 m_pMotionProperties->Internal_ResetSleepTestSpheres(points);
                 return EAllowedSleep::CannotSleep;

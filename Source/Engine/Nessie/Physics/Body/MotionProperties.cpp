@@ -1,6 +1,5 @@
 // MotionProperties.cpp
 #include "MotionProperties.h"
-
 #include "MassProperties.h"
 
 namespace nes
@@ -31,29 +30,29 @@ namespace nes
         if (allowedRotationAxis == 0)
         {
             // No rotation possible.
-            m_inverseInertiaDiagonal = Vector3::Zero();
+            m_inverseInertiaDiagonal = Vec3::Zero();
             m_inertiaRotation = Quat::Identity();
         }
         else
         {
             // Set inverse inertia
-            Mat4 rotation;
-            Vector3 diagonal;
+            Mat44 rotation;
+            Vec3 diagonal;
             if (massProperties.DecomposePrincipalMomentsOfInertia(rotation, diagonal)
                 && !diagonal.IsNearZero())
             {
-                m_inverseInertiaDiagonal = diagonal.GetReciprocal();
-                m_inertiaRotation = math::ToQuat(rotation);
+                m_inverseInertiaDiagonal = diagonal.Reciprocal();
+                m_inertiaRotation = rotation.ToQuaternion();
             }
             else
             {
                 // Failed! Fall back ot inertia tensor of sphere with radius 1.
-                m_inverseInertiaDiagonal = Vector3::Replicate(2.5f * m_inverseMass);
+                m_inverseInertiaDiagonal = Vec3::Replicate(2.5f * m_inverseMass);
                 m_inertiaRotation = Quat::Identity();
             }
         }
 
-        NES_ASSERT(m_inverseMass != 0.0f || m_inverseInertiaDiagonal != Vector3::Zero(), "Can't lock all axes, use a static body for this. This will crash with a division by zero later!");
+        NES_ASSERT(m_inverseMass != 0.0f || m_inverseInertiaDiagonal != Vec3::Zero(), "Can't lock all axes, use a static body for this. This will crash with a division by zero later!");
     }
 
 }

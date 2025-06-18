@@ -2,7 +2,7 @@
 #pragma once
 #include "Core/Events/MulticastDelegate.h"
 #include "Math/Rotation.h"
-#include "Math/Transform.h"
+#include "Math/Mat4.h"
 #include "Physics/Body/BodyID.h"
 #include "Scene/Entity.h"
 
@@ -22,7 +22,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Rotate this Entity by a delta angle around an axis. The angle must be in radians.
         //----------------------------------------------------------------------------------------------------
-        void                        Rotate(const float angle, const Vector3& axis);
+        void                        Rotate(const float angle, const Vec3& axis);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Rotate this Entity by a delta rotation.
@@ -32,7 +32,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Move this Entity's local location based on the translation. 
         //----------------------------------------------------------------------------------------------------
-        void                        Translate(const Vector3& translation);
+        void                        Translate(const Vec3& translation);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Increase the local scale by a delta scalar amount. This multiplies the current scale of each
@@ -44,12 +44,12 @@ namespace nes
         ///	@brief : Increase the local scale by an amount on each axis. This multiplies the current local
         ///     scale by the scale vector.
         //----------------------------------------------------------------------------------------------------
-        void                        Scale(const Vector3& scale);
+        void                        Scale(const Vec3& scale);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Sets this Entity's location relative to its parent. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetLocalLocation(const Vector3& location);
+        void                        SetLocalLocation(const Vec3& location);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set this Entity's orientation relative to its parent. 
@@ -60,22 +60,22 @@ namespace nes
         ///	@brief : Set this Entity's local orientation, from euler angles. The euler angles are expected
         ///     to be in degrees.
         //----------------------------------------------------------------------------------------------------
-        void                        SetLocalRotation(const Vector3& eulerAngles);
+        void                        SetLocalRotation(const Vec3& eulerAngles);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set this Entity's scale relative to its parent. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetLocalScale(const Vector3& scale);
+        void                        SetLocalScale(const Vec3& scale);
         
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set the Entity's location, orientation and scale relative to its parent. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetLocalTransform(const Vector3& location, const Rotation& rotation, const Vector3& scale);
+        void                        SetLocalTransform(const Vec3& location, const Rotation& rotation, const Vec3& scale);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set the Entity's location, in world space. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetWorldLocation(const Vector3& location);
+        void                        SetWorldLocation(const Vec3& location);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set the Entity's orientation, in world space. 
@@ -85,22 +85,22 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set the Entity's scale, in world space. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetWorldScale(const Vector3& scale);
+        void                        SetWorldScale(const Vec3& scale);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set the Entity3Ds transform, in world space. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetWorldTransform(const Mat4& transform);
+        void                        SetWorldTransform(const Mat44& transform);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Set the Entity3Ds transform, in world space. 
         //----------------------------------------------------------------------------------------------------
-        void                        SetWorldTransform(const Vector3& worldLocation, const Rotation& worldRotation, const Vector3& worldScale);
+        void                        SetWorldTransform(const Vec3& worldLocation, const Rotation& worldRotation, const Vec3& worldScale);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's location, in world space. 
         //----------------------------------------------------------------------------------------------------
-        Vector3                     GetLocation() const;
+        Vec3                        GetLocation() const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's world orientation. 
@@ -110,12 +110,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's total world scale. 
         //----------------------------------------------------------------------------------------------------
-        Vector3                     GetScale() const;
+        Vec3                        GetScale() const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's location relative to its parent. 
         //----------------------------------------------------------------------------------------------------
-        const Vector3&              GetLocalLocation() const;
+        const Vec3&                 GetLocalLocation() const;
         
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's rotation relative to its parent. 
@@ -125,17 +125,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's scale relative to its parent. 
         //----------------------------------------------------------------------------------------------------
-        const Vector3&              GetLocalScale() const;
+        const Vec3&                 GetLocalScale() const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Local Transform in its Matrix representation. 
         //----------------------------------------------------------------------------------------------------
-        Mat4                        LocalTransformMatrix() const;
+        Mat44                       LocalTransformMatrix() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the World Transformation Matrix of this Entity. 
         //----------------------------------------------------------------------------------------------------
-        const Mat4&                 GetWorldTransformMatrix() const;
+        const Mat44&                GetWorldTransformMatrix() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the event that is broadcast when this Entity's transform is updated. 
@@ -172,7 +172,7 @@ namespace nes
         ///	@brief : Updates our calculated world transformation matrix.
         ///     Called when a Parent's transform has changed or the Parent itself has changed.
         //----------------------------------------------------------------------------------------------------
-        void                        UpdateWorldTransform(Entity3D* pParent, const Matrix4x4& localTransform);
+        void                        UpdateWorldTransform(Entity3D* pParent, const Mat44& localTransform);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Walk down the tree, updating the world Transforms of all children.
@@ -181,11 +181,11 @@ namespace nes
         void                        RebuildPhysicsBody();
 
     private:
-        Vector3                     m_location;
+        Vec3                        m_location;
         Rotation                    m_rotation;
-        Vector3                     m_scale;
+        Vec3                        m_scale;
         WorldTransformUpdatedEvent  m_onWorldTransformUpdated{};
-        Mat4                        m_worldTransformMatrix{};
+        Mat44                       m_worldTransformMatrix{};
         bool                        m_worldTransformNeedsUpdate = false;
         BodyID                      m_bodyID{}; // The ID of the Physics Body of this Entity.
     };

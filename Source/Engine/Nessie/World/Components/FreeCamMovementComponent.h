@@ -1,7 +1,8 @@
 ﻿// FreeCamMoveComponent.h
 #pragma once
 #include "Entity3DComponent.h"
-#include "Math/Vector3.h"
+#include "Math/Vec2.h"
+#include "Math/Vec3.h"
 
 namespace nes
 {
@@ -34,8 +35,8 @@ namespace nes
         virtual void    Tick(const float deltaTime);
 
     private:
-        Vector3         m_inputMovement = Vector3::Zero();
-        Vector2         m_inputRotation = Vector2::Zero();
+        Vec3            m_inputMovement = Vec3::Zero();
+        Vec2            m_inputRotation = Vec2::Zero();
         float           m_moveSpeed = 10.f;
         float           m_turnSpeedYaw = 30.f;
         float           m_turnSpeedPitch = 20.f;

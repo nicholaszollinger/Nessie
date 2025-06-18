@@ -12,7 +12,7 @@ namespace nes
 {
     ShapeFunctions ShapeFunctions::s_registry[kNumSubShapeTypes];
     
-    AABox Shape::GetWorldBounds(const Mat4& centerOfMassTransform, const Vector3& scale) const
+    AABox Shape::GetWorldBounds(const Mat44& centerOfMassTransform, const Vec3& scale) const
     {
         return GetLocalBounds().Scaled(scale).Transformed(centerOfMassTransform);
     }
@@ -23,20 +23,20 @@ namespace nes
         return this;
     }
 
-    TransformedShape Shape::GetSubShapeTransformedShape([[maybe_unused]] const SubShapeID& subShapeID, const Vector3& positionCOM,
-        const Quat& rotation, const Vector3& scale, SubShapeID& outRemainder) const
+    TransformedShape Shape::GetSubShapeTransformedShape([[maybe_unused]] const SubShapeID& subShapeID, const Vec3& positionCOM,
+        const Quat& rotation, const Vec3& scale, SubShapeID& outRemainder) const
     {
         // We have reached the leaf shape so there is no remainder
         outRemainder = SubShapeID();
 
         // Just return the transformed shape for this shape
-        TransformedShape tShape(Vector3(positionCOM), rotation, this, BodyID());
+        TransformedShape tShape(Vec3(positionCOM), rotation, this, BodyID());
         tShape.SetShapeScale(scale);
         return tShape;
     }
 
-    void Shape::CollectTransformedShapes([[maybe_unused]] const AABox& box, const Vector3& positionCOM, const Quat& rotation,
-        const Vector3& scale, const SubShapeIDCreator& subShapeIDCreator, TransformedShapeCollector& collector,
+    void Shape::CollectTransformedShapes([[maybe_unused]] const AABox& box, const Vec3& positionCOM, const Quat& rotation,
+        const Vec3& scale, const SubShapeIDCreator& subShapeIDCreator, TransformedShapeCollector& collector,
         const ShapeFilter& shapeFilter) const
     {
         // Test the shape filter
@@ -48,18 +48,18 @@ namespace nes
         collector.AddHit(tShape);
     }
 
-    void Shape::TransformShape(const Mat4& centerOfMassTransform, TransformedShapeCollector& collector) const
+    void Shape::TransformShape(const Mat44& centerOfMassTransform, TransformedShapeCollector& collector) const
     {
-        Vector3 scale;
-        Mat4 transform = centerOfMassTransform.Decompose(scale);
-        TransformedShape tShape(transform.GetTranslation(), math::ToQuat(transform), this, BodyID(), SubShapeIDCreator());
+        Vec3 scale;
+        Mat44 transform = centerOfMassTransform.Decompose(scale);
+        TransformedShape tShape(transform.GetTranslation(), transform.ToQuaternion(), this, BodyID(), SubShapeIDCreator());
         tShape.SetShapeScale(MakeScaleValid(scale));
         collector.AddHit(tShape);
     }
 
-    Shape::ShapeResult Shape::ScaleShape(const Vector3& scale) const
+    Shape::ShapeResult Shape::ScaleShape(const Vec3& scale) const
     {
-        constexpr Vector3 unitScale = Vector3::Unit();
+        static Vec3 unitScale = Vec3::One();
 
         if (scale.IsNearZero())
         {
@@ -111,28 +111,28 @@ namespace nes
         //     const Shape* pShape = tShape.m_pShape;
         //
         //     // Construct a scaled shape if scale is not unit
-        //     Vector3 transformedScale = tShape.GetShapeScale();
+        //     Vec3 transformedScale = tShape.GetShapeScale();
         //     if (!transformedScale.IsClose(unitScale))
         //         pShape = new ScaledShape(this, transformedScale);
         //
         //     // Add the shape
-        //     compound.AddShape(Vector3(tShape.m_shapePositionCOM) - tShape.m_shapeRotation * pShape->GetCenterOfMass(), tShape.m_shapeRotation, pShape);
+        //     compound.AddShape(Vec3(tShape.m_shapePositionCOM) - tShape.m_shapeRotation * pShape->GetCenterOfMass(), tShape.m_shapeRotation, pShape);
         // }
         //
         // return compound.Create();
     }
 
-    bool Shape::IsValidScale(const Vector3& scale) const
+    bool Shape::IsValidScale(const Vec3& scale) const
     {
         return !ScaleHelpers::IsZeroScale(scale);
     }
 
-    Vector3 Shape::MakeScaleValid(const Vector3& scale) const
+    Vec3 Shape::MakeScaleValid(const Vec3& scale) const
     {
         return ScaleHelpers::MakeNonZeroScale(scale);
     }
 
-    void Shape::CollidePointUsingRayCast(const Shape& shape, const Vector3& point,
+    void Shape::CollidePointUsingRayCast(const Shape& shape, const Vec3& point,
         const SubShapeIDCreator& subShapeIDCreator, CollidePointCollector& collector, const ShapeFilter& shapeFilter)
     {
         // First test if we're inside our bounding box
@@ -160,7 +160,7 @@ namespace nes
             settings.SetBackFaceMode(EBackFaceMode::CollideWithBackFaces);
 
             // Cast a ray that's 10% longer than the height of our bounding box.
-            shape.CastRay(RayCast{point, 1.1f * bounds.Size().y * Vector3::Up() }, settings, subShapeIDCreator, hitCollector, shapeFilter);
+            shape.CastRay(RayCast{point, 1.1f * bounds.Size().y * Vec3::Up() }, settings, subShapeIDCreator, hitCollector, shapeFilter);
 
             if ((hitCollector.m_hitCount & 1) == 1)
             {

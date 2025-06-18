@@ -188,8 +188,8 @@ namespace nes
         void                    CastRay(const RayCast& ray, RayCastBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void                    CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void                    CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
-        void                    CollideSphere(const Vector3& center, const float radius, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
-        void                    CollidePoint(const Vector3& point, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void                    CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
+        void                    CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void                    CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const;
         void                    FindCollidingPairs(const BodyVector& bodies, const BodyID* activeBodiesArray, const int numActiveBodies, float speculativeContactDistance, BodyPairCollector& collector, const CollisionLayerPairFilter& layerFilter) const;
         
@@ -239,8 +239,8 @@ namespace nes
         bool                    TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32_t>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
         NodeID                  BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds);
         
-        static void             Partition(NodeID* nodeIDs, Vector3* nodeCenters, int number, int& outMidPoint);
-        static void             Partition4(NodeID* nodeIDs, Vector3* nodeCenters, int begin, int end, int* outSplitIndices);
+        static void             Partition(NodeID* nodeIDs, Vec3* nodeCenters, int number, int& outMidPoint);
+        static void             Partition4(NodeID* nodeIDs, Vec3* nodeCenters, int begin, int end, int* outSplitIndices);
         
         uint32_t                GetMaxTreeDepth(const NodeID nodeID) const;
 

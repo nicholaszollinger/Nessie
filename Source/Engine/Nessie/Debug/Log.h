@@ -60,7 +60,7 @@ namespace nes::internal
     }
 }
 
-#ifdef NES_LOGGING_ENABLED
+#if NES_LOGGING_ENABLED
 
 //----------------------------------------------------------------------------------------------------
 // Formatted Examples - For more information, see fmt documentation: https://fmt.dev/11.1/syntax/
@@ -131,7 +131,7 @@ namespace nes::internal
 
 #else
     #define NES_TRACE(...)  void(0)
-    #define NES_DLOG(...) void(0)
+    #define NES_DLOG(...)   void(0)
     #define NES_LOG(...)    void(0)
     #define NES_WARN(...)   void(0)
     #define NES_ERROR(...)  void(0)

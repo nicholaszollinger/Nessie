@@ -2,8 +2,8 @@
 #include "QuadTree.h"
 
 #include "Application/Application.h"
-#include "Math/VectorRegister.h"
-#include "Math/SIMD/AABoxSIMD.h"
+#include "Math/Vec4.h"
+#include "Geometry/AABoxSIMD.h"
 
 namespace nes
 {
@@ -12,15 +12,15 @@ namespace nes
     {
         // Initialize the Node bounds to have the min and max positions
         // switched, ensuring that no collision can occur with this Node.
-        VectorRegister val = VectorRegister::Replicate(math::kLargeFloat);
-        VectorRegister::Store(val, reinterpret_cast<float*>(&m_minX));
-        VectorRegister::Store(val, reinterpret_cast<float*>(&m_minY));
-        VectorRegister::Store(val, reinterpret_cast<float*>(&m_minZ));
+        Vec4Reg val = Vec4::Replicate(math::kLargeFloat);
+        val.StoreFloat4(reinterpret_cast<Float4*>(&m_minX));
+        val.StoreFloat4(reinterpret_cast<Float4*>(&m_minY));
+        val.StoreFloat4(reinterpret_cast<Float4*>(&m_minZ));
         
-        val = VectorRegister::Replicate(-math::kLargeFloat);
-        VectorRegister::Store(val, reinterpret_cast<float*>(&m_maxX));
-        VectorRegister::Store(val, reinterpret_cast<float*>(&m_maxY));
-        VectorRegister::Store(val, reinterpret_cast<float*>(&m_maxZ));
+        val = Vec4Reg::Replicate(-math::kLargeFloat);
+        val.StoreFloat4(reinterpret_cast<Float4*>(&m_maxX));
+        val.StoreFloat4(reinterpret_cast<Float4*>(&m_maxY));
+        val.StoreFloat4(reinterpret_cast<Float4*>(&m_maxZ));
         
         // Reset child NodeIDs.
         m_childNodeIDs[0] = NodeID::InvalidID();
@@ -39,7 +39,7 @@ namespace nes
         {
             AABox temp;
             GetChildBounds(i, temp);
-            outBounds.GrowToEncapsulate(temp);
+            outBounds.Encapsulate(temp);
         }
     }
 
@@ -47,14 +47,14 @@ namespace nes
     {
         NES_ASSERT(childIndex >= 0 && childIndex < 4);
 
-        outBounds.m_min = Vector3(m_minX[childIndex], m_minY[childIndex], m_minZ[childIndex]);
-        outBounds.m_max = Vector3(m_maxX[childIndex], m_maxY[childIndex], m_maxZ[childIndex]);
+        outBounds.m_min = Vec3(m_minX[childIndex], m_minY[childIndex], m_minZ[childIndex]);
+        outBounds.m_max = Vec3(m_maxX[childIndex], m_maxY[childIndex], m_maxZ[childIndex]);
     }
 
     void QuadTree::Node::SetChildBounds(const int childIndex, const AABox& bounds)
     {
         NES_ASSERT(childIndex >= 0 && childIndex < 4);
-        NES_ASSERT(bounds.HasValidDimensions());
+        NES_ASSERT(bounds.IsValid());
 
         // Set max first (this keeps the bounding box invalid for reading threads)
         m_maxZ[childIndex] = bounds.m_max.z;
@@ -103,7 +103,7 @@ namespace nes
         //
     }
 
-    const AABox QuadTree::kInvalidBounds(Vector3(math::kLargeFloat), Vector3(-math::kLargeFloat));
+    const AABox QuadTree::kInvalidBounds(Vec3(math::kLargeFloat), Vec3(-math::kLargeFloat));
 
     QuadTree::~QuadTree()
     {
@@ -506,10 +506,10 @@ namespace nes
                 return true;
             }
 
-            NES_INLINE int VisitNodes(const VectorRegister& boundsMinX, const VectorRegister& boundsMinY, const VectorRegister& boundsMinZ, const VectorRegister& boundsMaxX, const VectorRegister& boundsMaxY, const VectorRegister& boundsMaxZ, VectorRegisterUint& childNodeIDs, [[maybe_unused]] const int stackTop) const
+            NES_INLINE int VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, [[maybe_unused]] const int stackTop) const
             {
-                const VectorRegisterUint hitting = math::AABoxVs4AABox(m_box, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
-                return VectorRegisterUint::CountAndSortTrues(hitting, childNodeIDs);
+                const UVec4Reg hitting = math::AABoxVs4AABox(m_box, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                return UVec4Reg::CountAndSortTrues(hitting, childNodeIDs);
             }
 
             NES_INLINE void VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
@@ -523,13 +523,13 @@ namespace nes
         WalkTree(layerFilter, trackers, visitor);
     }
 
-    void QuadTree::CollideSphere([[maybe_unused]] const Vector3& center, [[maybe_unused]] const float radius, [[maybe_unused]] CollideShapeBodyCollector& collector,
+    void QuadTree::CollideSphere([[maybe_unused]] const Vec3& center, [[maybe_unused]] const float radius, [[maybe_unused]] CollideShapeBodyCollector& collector,
         [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
         NES_ASSERT(false, "Not implemented yet!"); 
     }
 
-    void QuadTree::CollidePoint([[maybe_unused]] const Vector3& point, [[maybe_unused]] CollideShapeBodyCollector& collector,
+    void QuadTree::CollidePoint([[maybe_unused]] const Vec3& point, [[maybe_unused]] CollideShapeBodyCollector& collector,
         [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
     {
         NES_ASSERT(false, "Not implemented yet!"); 
@@ -752,7 +752,7 @@ namespace nes
         // First child is the current root, not that since the tree may be modified concurrently we cannot assume that the bounds of our child will
         // be correct so we set a very large bounding box.
         newRoot.m_childNodeIDs[0] = NodeID::FromNodeIndex(rootIndex);
-        newRoot.SetChildBounds(0, AABox(Vector3(-math::kLargeFloat), Vector3(math::kLargeFloat)));
+        newRoot.SetChildBounds(0, AABox(Vec3(-math::kLargeFloat), Vec3(math::kLargeFloat)));
 
         // Second child is a new leaf.
         newRoot.m_childNodeIDs[1] = leafID;
@@ -813,8 +813,8 @@ namespace nes
         }
 
         // Calculate the centers of all bodies that are to be inserted.
-        Vector3* pCenters = NES_NEW_ARRAY(Vector3, number);
-        Vector3* pCurrent = pCenters;
+        Vec3* pCenters = NES_NEW_ARRAY(Vec3, number);
+        Vec3* pCurrent = pCenters;
         for (const NodeID* pValue = nodeIDArray, * pEnd = nodeIDArray + number; pValue < pEnd; ++pValue, ++pCurrent)
         {
             *pCurrent = GetNodeOrBodyBounds(bodies, *pValue).Center();
@@ -827,8 +827,8 @@ namespace nes
             int      m_childIndex;      /// Index of the child that we are currently processing.
             int      m_splitIndices[5]; /// Indices where the node ID's have been split to form 4 partitions.
             uint32_t m_depth;           /// Depth of this node in the tree.
-            Vector3  m_boundsMin;       /// Bounding box min, accumulated while iterating over children.
-            Vector3  m_boundsMax;       /// Bounding box max, accumulated while iterating over children.
+            Vec3  m_boundsMin;       /// Bounding box min, accumulated while iterating over children.
+            Vec3  m_boundsMax;       /// Bounding box max, accumulated while iterating over children.
         };
         static_assert(sizeof(StackEntry) == 64);
         StackEntry stack[kStackSize / 4]; // We don't process 4 ata time in this loop but 1, so the stack can be 4x as small.
@@ -838,8 +838,8 @@ namespace nes
         stack[0].m_nodeIndex = AllocateNode(maxDepthMarkChanged > 0);
         stack[0].m_childIndex = -1;
         stack[0].m_depth = 0;
-        stack[0].m_boundsMin = Vector3(math::kLargeFloat);
-        stack[0].m_boundsMax = Vector3(-math::kLargeFloat);
+        stack[0].m_boundsMin = Vec3(math::kLargeFloat);
+        stack[0].m_boundsMax = Vec3(-math::kLargeFloat);
         Partition4(nodeIDArray, pCenters, 0, number, stack[0].m_splitIndices);
 
         for (;;)
@@ -858,8 +858,8 @@ namespace nes
 
                 // Add our bounds to our parent bounds.
                 StackEntry& previous = stack[top - 1];
-                previous.m_boundsMin = Vector3::Min(previous.m_boundsMin, current.m_boundsMin);
-                previous.m_boundsMax = Vector3::Max(previous.m_boundsMax, current.m_boundsMax);
+                previous.m_boundsMin = Vec3::Min(previous.m_boundsMin, current.m_boundsMin);
+                previous.m_boundsMax = Vec3::Max(previous.m_boundsMax, current.m_boundsMax);
 
                 // Store parent node
                 Node& node = m_pAllocator->Get(current.m_nodeIndex);
@@ -905,8 +905,8 @@ namespace nes
                     }
 
                     // Encapsulate the bounding box in parent
-                    current.m_boundsMin = Vector3::Min(current.m_boundsMin, bounds.m_min);
-                    current.m_boundsMax = Vector3::Max(current.m_boundsMax, bounds.m_max);
+                    current.m_boundsMin = Vec3::Min(current.m_boundsMin, bounds.m_min);
+                    current.m_boundsMax = Vec3::Max(current.m_boundsMax, bounds.m_max);
                 }
                 else if (numBodies > 1)
                 {
@@ -918,8 +918,8 @@ namespace nes
                     newStack.m_nodeIndex = AllocateNode(maxDepthMarkChanged > nextDepth);
                     newStack.m_childIndex = -1;
                     newStack.m_depth = nextDepth;
-                    newStack.m_boundsMin = Vector3(math::kLargeFloat);
-                    newStack.m_boundsMax = Vector3(-math::kLargeFloat);
+                    newStack.m_boundsMin = Vec3(math::kLargeFloat);
+                    newStack.m_boundsMax = Vec3(-math::kLargeFloat);
                     Partition4(nodeIDArray, pCenters, low, high, newStack.m_splitIndices);
                 }
             }
@@ -936,7 +936,7 @@ namespace nes
         return NodeID::FromNodeIndex(stack[0].m_nodeIndex);
     }
 
-    void QuadTree::Partition(NodeID* nodeIDs, Vector3* nodeCenters, int number, int& outMidPoint)
+    void QuadTree::Partition(NodeID* nodeIDs, Vec3* nodeCenters, int number, int& outMidPoint)
     {
         // Handle trivial case
         if (number <= 4)
@@ -946,17 +946,17 @@ namespace nes
         }
 
         // Calculate the Bounding box of Box Centers
-        Vector3 centerMin = Vector3(math::kLargeFloat);
-        Vector3 centerMax = Vector3(-math::kLargeFloat);
-        for (const Vector3* pCenter = nodeCenters, * pEnd = nodeCenters + number; pCenter < pEnd; ++pCenter)
+        Vec3 centerMin = Vec3(math::kLargeFloat);
+        Vec3 centerMax = Vec3(-math::kLargeFloat);
+        for (const Vec3* pCenter = nodeCenters, * pEnd = nodeCenters + number; pCenter < pEnd; ++pCenter)
         {
-            Vector3 center = *pCenter;
-            centerMin = Vector3::Min(centerMin, center);
-            centerMax = Vector3::Max(centerMax, center);
+            Vec3 center = *pCenter;
+            centerMin = Vec3::Min(centerMin, center);
+            centerMax = Vec3::Max(centerMax, center);
         }
 
         // Calculate the split plane along the largest distance dimension.
-        const int dimension = (centerMax - centerMin).GetHighestComponentIndex();
+        const int dimension = (centerMax - centerMin).MaxComponentIndex();
         const float split = 0.5f * (centerMin + centerMax)[dimension];
 
         // Divide the Bodies on the split plane
@@ -997,10 +997,10 @@ namespace nes
         }
     }
 
-    void QuadTree::Partition4(NodeID* nodeIDs, Vector3* nodeCenters, const int begin, const int end, int* outSplitIndices)
+    void QuadTree::Partition4(NodeID* nodeIDs, Vec3* nodeCenters, const int begin, const int end, int* outSplitIndices)
     {
         NodeID* subIDs = nodeIDs + begin;
-        Vector3* subCenters = nodeCenters + begin;
+        Vec3* subCenters = nodeCenters + begin;
         const int number = end - begin;
 
         // Partition the entire range: 
@@ -1071,18 +1071,18 @@ namespace nes
                     //NES_ASSERT(IsAligned())
                     
                     // Load the bounds of the 4 children:
-                    VectorRegister boundsMinX = VectorRegister::Load(reinterpret_cast<const float*>(node.m_minX)); 
-                    VectorRegister boundsMinY = VectorRegister::Load(reinterpret_cast<const float*>(node.m_minY)); 
-                    VectorRegister boundsMinZ = VectorRegister::Load(reinterpret_cast<const float*>(node.m_minZ));
-                    VectorRegister boundsMaxX = VectorRegister::Load(reinterpret_cast<const float*>(node.m_maxX)); 
-                    VectorRegister boundsMaxY = VectorRegister::Load(reinterpret_cast<const float*>(node.m_maxY)); 
-                    VectorRegister boundsMaxZ = VectorRegister::Load(reinterpret_cast<const float*>(node.m_maxZ));
+                    Vec4Reg boundsMinX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minX)); 
+                    Vec4Reg boundsMinY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minY)); 
+                    Vec4Reg boundsMinZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minZ));
+                    Vec4Reg boundsMaxX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxX)); 
+                    Vec4Reg boundsMaxY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxY)); 
+                    Vec4Reg boundsMaxZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxZ));
 
                     // Load the Child IDs.
-                    VectorRegisterUint childIDs = VectorRegisterUint::Load(reinterpret_cast<const uint32_t*>(node.m_childNodeIDs));
+                    UVec4Reg childIDs = UVec4Reg::Load(reinterpret_cast<const uint32_t*>(node.m_childNodeIDs));
 
                     const int numResults = visitor.VisitNodes(boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ, childIDs, top);
-                    VectorRegisterUint::Store(childIDs, reinterpret_cast<uint32_t*>(&nodeStack[top]));
+                    UVec4Reg::Store(childIDs, reinterpret_cast<uint32_t*>(&nodeStack[top]));
                     top += numResults;
                 }
 
@@ -1155,7 +1155,7 @@ namespace nes
                         node.GetChildBounds(i, childBounds);
                         AABox realChildBounds;
                         m_pAllocator->Get(childIndex).GetNodeBounds(realChildBounds);
-                        NES_ASSERT(childBounds.Contains(realChildBounds) || !realChildBounds.HasValidDimensions());
+                        NES_ASSERT(childBounds.Contains(realChildBounds) || !realChildBounds.IsValid());
                     }
                     else
                     {
