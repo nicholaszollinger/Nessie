@@ -23,6 +23,7 @@ namespace nes
         friend class BodyManager;
         friend class BodyWithMotionProperties;
 
+    public:
         enum class EFlags : uint8_t
         {
             IsSensor                        = math::BitVal(0), /// If this Body is a Sensor. A Sensor will receive collision callbacks, but not cause collision responses.
@@ -36,31 +37,7 @@ namespace nes
 
         static constexpr uint32_t kInactiveIndex = MotionProperties::kInactiveIndex;
 
-        // 16 byte aligned
-        Vec3                    m_position;                                 /// World space position of center of mass (COM).
-        Quat                    m_rotation;                                 /// World space rotation of center of mass (COM).
-        AABox                   m_bounds;                                   /// World space bounding box of the body.
-
-        // 8 byte aligned
-        ConstStrongPtr<Shape>   m_pShape;                                   /// Shape representing the volume of the Body.
-        MotionProperties*       m_pMotionProperties = nullptr;              /// If this is a keyframed or dynamic object, this object holds all information about movement.
-        uint64_t                m_userData = 0;                             /// User data, can be used for anything by the Application.
-        CollisionGroup          m_collisionGroup;                           /// The collision group that this body belongs to. Determines if two objects can collide.
-
-        // 4 byte aligned
-        float                   m_friction;                                 /// Friction of the body. Usually between [0, 1], where 0 = no friction and 1 = friction force equals the force that presses the two bodies together. Note that bodies can have negative friction but the combined friction should never go below zero.
-        float                   m_restitution;                              /// Restitution of the body. Usually between [0, 1], where 0 = completely inelastic collision response, 1 = completely elastic collision response. Note that bodies can have negative restitution but the combined restitution should never go below zero.  
-        BodyID                  m_id;                                       /// ID of the Body, equal to the index into the bodies array.
-
-        // 2 or 4 byte aligned
-        CollisionLayer          m_collisionLayer = kInvalidCollisionLayer;  /// The collision layer that this body belongs to. Determines if two objects can collide.
-
-        // 1 byte aligned
-        BroadPhaseLayer         m_broadPhaseLayer = kInvalidBroadPhaseLayer; /// The broad phase layer that this body belongs to.
-        EBodyMotionType         m_motionType = EBodyMotionType::Static;       /// The type of motion (static, dynamic, or kinematic).
-        std::atomic<uint8_t>    m_flags = 0;                                 /// See Flags definition for details.
-        // BodyType           m_bodyType = BodyType::Rigid;
-        
+    private:
         Body() = default;       /// Private Ctor.
         explicit Body(bool);    /// Explicit constructor that initializes all members.
         
@@ -186,7 +163,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check whether this body is a sensor.
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE bool         IsSensor() const                                        { return Internal_GetFlag(EFlags::IsSensor); }
+        NES_INLINE bool         IsSensor() const                                        { return GetFlag(EFlags::IsSensor); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether kinematic objects can generate contact points against other kinematic or static
@@ -201,7 +178,7 @@ namespace nes
         /// @brief : Check if kinematic objects can generate contact points against other kinematic or static
         ///     objects.
         //----------------------------------------------------------------------------------------------------
-        inline bool             GetCollideKinematicVsNonDynamic() const                 { return Internal_GetFlag(EFlags::CollideKinematicVsNonDynamic); }
+        inline bool             GetCollideKinematicVsNonDynamic() const                 { return GetFlag(EFlags::CollideKinematicVsNonDynamic); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : If PhysicsSettings::m_useManifoldReduction is true, this allows turning off manifold reduction for this specific body.
@@ -214,7 +191,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if this body can use manifold reduction. 
         //----------------------------------------------------------------------------------------------------
-        inline bool             GetUseManifoldReduction() const                         { return Internal_GetFlag(EFlags::UseManifoldReduction); }
+        inline bool             GetUseManifoldReduction() const                         { return GetFlag(EFlags::UseManifoldReduction); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set to indicate that gyroscopic force should be applied to this body.
@@ -225,7 +202,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if gyroscopic force is being applied to this body. 
         //----------------------------------------------------------------------------------------------------
-        inline bool             GetApplyGyroscopicForce() const                         { return Internal_GetFlag(EFlags::ApplyGyroscopicForce); }
+        inline bool             GetApplyGyroscopicForce() const                         { return GetFlag(EFlags::ApplyGyroscopicForce); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set to indicate that extra effort should be made to try to remove ghost contacts (collisions
@@ -237,7 +214,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if enhanced internal edge removal is turned on
         //----------------------------------------------------------------------------------------------------
-        inline bool				GetEnhancedInternalEdgeRemoval() const                  { return Internal_GetFlag(EFlags::EnhancedInternalEdgeRemoval); }
+        inline bool				GetEnhancedInternalEdgeRemoval() const                  { return GetFlag(EFlags::EnhancedInternalEdgeRemoval); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the combination of this body and body2 should use enhanced internal edge removal.
@@ -416,13 +393,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if this Body has been added to the physics system. 
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE bool         IsInBroadPhase() const                  { return Internal_GetFlag(EFlags::IsInBroadPhase); }
+        NES_INLINE bool         IsInBroadPhase() const                  { return GetFlag(EFlags::IsInBroadPhase); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if this Body has been changed in such a way that the collision cache should
         ///     be considered invalid for any Body interacting with this Body.
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE bool         IsCollisionCacheInvalid() const         { return Internal_GetFlag(EFlags::InvalidateContactCache); }
+        NES_INLINE bool         IsCollisionCacheInvalid() const         { return GetFlag(EFlags::InvalidateContactCache); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the shape of this body. 
@@ -585,9 +562,36 @@ namespace nes
 #endif
 
     private:
-        inline void             Internal_SetFlag(const EFlags flag, bool set);
-        inline bool             Internal_GetFlag(const EFlags flag) const;
+        inline void             SetFlag(const EFlags flag, bool set);
+        inline bool             GetFlag(const EFlags flag) const;
         inline void             GetSleepTestPoints(Vec3* outPoints) const;
+
+    private:
+        // 16 byte aligned
+        Vec3                    m_position;                                 /// World space position of center of mass (COM).
+        Quat                    m_rotation;                                 /// World space rotation of center of mass (COM).
+        AABox                   m_bounds;                                   /// World space bounding box of the body.
+
+        // 8 byte aligned
+        ConstStrongPtr<Shape>   m_pShape;                                   /// Shape representing the volume of the Body.
+        MotionProperties*       m_pMotionProperties = nullptr;              /// If this is a keyframed or dynamic object, this object holds all information about movement.
+        uint64_t                m_userData = 0;                             /// User data, can be used for anything by the Application.
+        CollisionGroup          m_collisionGroup;                           /// The collision group that this body belongs to. Determines if two objects can collide.
+
+        // 4 byte aligned
+        float                   m_friction;                                 /// Friction of the body. Usually between [0, 1], where 0 = no friction and 1 = friction force equals the force that presses the two bodies together. Note that bodies can have negative friction but the combined friction should never go below zero.
+        float                   m_restitution;                              /// Restitution of the body. Usually between [0, 1], where 0 = completely inelastic collision response, 1 = completely elastic collision response. Note that bodies can have negative restitution but the combined restitution should never go below zero.  
+        BodyID                  m_id;                                       /// ID of the Body, equal to the index into the bodies array.
+
+        // 2 or 4 byte aligned
+        CollisionLayer          m_collisionLayer = kInvalidCollisionLayer;  /// The collision layer that this body belongs to. Determines if two objects can collide.
+
+        // 1 byte aligned
+        BroadPhaseLayer         m_broadPhaseLayer = kInvalidBroadPhaseLayer; /// The broad phase layer that this body belongs to.
+        EBodyMotionType         m_motionType = EBodyMotionType::Static;       /// The type of motion (static, dynamic, or kinematic).
+        std::atomic<uint8_t>    m_flags = 0;                                 /// See Flags definition for details.
+        // BodyType           m_bodyType = BodyType::Rigid;
+        
     };
 }
 

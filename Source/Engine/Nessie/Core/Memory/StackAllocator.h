@@ -36,11 +36,18 @@ namespace nes
         void*                   Allocate(const size_t size, const size_t alignment = kDefaultAlignment);
 
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : Free memory off the top stack.
+        ///	@brief : Free memory off the top stack. Memory *must* be freed in the reverse order that it was allocated.
         ///	@param pPtr : Ptr to the memory we want to free.
-        ///	@param count : Size of the memory we want to free.
+        ///	@param count : Size of the memory we want to free, in bytes
         //----------------------------------------------------------------------------------------------------
         void                    Free(std::byte* pPtr, const size_t count);
+
+        //----------------------------------------------------------------------------------------------------
+        ///	@brief : Free memory off the top stack. Memory *must* be freed in the reverse order that it was allocated.
+        ///	@param pPtr : Ptr to the memory we want to free.
+        ///	@param count : Size of the memory we want to free, in bytes
+        //----------------------------------------------------------------------------------------------------
+        void                    Free(void* pPtr, const size_t count);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Frees memory of the top of the stack until it hits a given marker. 
