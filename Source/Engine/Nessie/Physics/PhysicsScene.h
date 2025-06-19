@@ -1,5 +1,6 @@
 ﻿// PhysicsScene.h
 #pragma once
+#include "IslandBuilder.h"
 #include "PhysicsSettings.h"
 #include "PhysicsUpdateContext.h"
 #include "PhysicsUpdateErrorCodes.h"
@@ -9,7 +10,6 @@
 #include "Collision/BroadPhase/BroadPhase.h"
 #include "Constraints/ConstraintManager.h"
 #include "Core/Jobs/JobSystem.h"
-#include "Core/Memory/StackAllocator.h"
 
 namespace nes
 {
@@ -252,9 +252,8 @@ namespace nes
         /// All non-contact constraints.
         ConstraintManager               m_constraintManager{};
         
-        // [TODO]:
         /// Keeps track of connected bodies and build islands for multithreaded velocity/position update.
-        // IslandBuilder m_islandBuilder;
+        IslandBuilder                   m_islandBuilder;
 
         // [TODO]:
         /// Will split large islands into smaller groups of bodies that can be processed in parallel.

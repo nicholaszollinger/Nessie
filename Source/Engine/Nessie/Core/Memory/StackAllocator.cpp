@@ -94,9 +94,23 @@ namespace nes
         return pAlignedAddress;
     }
     
-    void StackAllocator::Free([[maybe_unused]] std::byte* pPtr, const size_t count)
+    void StackAllocator::Free(std::byte* pPtr, const size_t count)
     {
         NES_ASSERT(count > Size(), "Attempting to free more memory than what is currently allocated!");
+        if (m_pEnd - count != pPtr)
+        {
+            NES_FATAL("Freeing memory in the incorrect order!");
+        }
+        m_pEnd -= count;
+    }
+
+    void StackAllocator::Free(void* pPtr, const size_t count)
+    {
+        NES_ASSERT(count > Size(), "Attempting to free more memory than what is currently allocated!");
+        if (m_pEnd - count != pPtr)
+        {
+            NES_FATAL("Freeing memory in the incorrect order!");
+        }
         m_pEnd -= count;
     }
     

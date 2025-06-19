@@ -51,7 +51,7 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Dummy class to replace the steps calculator when we don't need the result.
+    /// @brief : Stub class to replace the steps calculator when we don't need the result.
     //----------------------------------------------------------------------------------------------------
     class DummyCalculateSolverSteps
     {

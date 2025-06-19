@@ -14,31 +14,31 @@ namespace nes
     void Body::SetIsSensor(const bool isSensor)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(EFlags::IsSensor, isSensor);
+        SetFlag(EFlags::IsSensor, isSensor);
     }
 
     void Body::SetCollideKinematicVsNonDynamic(const bool collideKinematicVsNonDynamic)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(EFlags::CollideKinematicVsNonDynamic, collideKinematicVsNonDynamic);
+        SetFlag(EFlags::CollideKinematicVsNonDynamic, collideKinematicVsNonDynamic);
     }
 
     void Body::SetUseManifoldReduction(bool useReduction)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(EFlags::UseManifoldReduction, useReduction);
+        SetFlag(EFlags::UseManifoldReduction, useReduction);
     }
 
     void Body::SetApplyGyroscopicForce(const bool apply)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(EFlags::ApplyGyroscopicForce, apply);
+        SetFlag(EFlags::ApplyGyroscopicForce, apply);
     }
 
     void Body::SetEnhancedInternalEdgeRemoval(const bool apply)
     {
         NES_ASSERT(IsRigidBody());
-        Internal_SetFlag(EFlags::EnhancedInternalEdgeRemoval, apply);
+        SetFlag(EFlags::EnhancedInternalEdgeRemoval, apply);
     }
     
     bool Body::GetEnhancedInternalEdgeRemovalWithBody(const Body& body2) const
@@ -354,7 +354,7 @@ namespace nes
         NES_ASSERT(actualBodyBounds == m_bounds, "Mismatch between cached bounding box and actual bounding box!");
     }
 
-    void Body::Internal_SetFlag(const EFlags flag, const bool set)
+    void Body::SetFlag(const EFlags flag, const bool set)
     {
         if (set)
             m_flags.fetch_or(static_cast<uint8_t>(flag), std::memory_order::relaxed);
@@ -362,7 +362,7 @@ namespace nes
             m_flags.fetch_and(~static_cast<uint8_t>(flag), std::memory_order::relaxed);
     }
 
-    bool Body::Internal_GetFlag(const EFlags flag) const
+    bool Body::GetFlag(const EFlags flag) const
     {
         return (m_flags.load(std::memory_order_relaxed) & static_cast<uint8_t>(flag)) != 0;
     }
