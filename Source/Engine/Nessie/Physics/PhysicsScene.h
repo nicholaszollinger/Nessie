@@ -1,6 +1,7 @@
 ﻿// PhysicsScene.h
 #pragma once
 #include "IslandBuilder.h"
+#include "LargeIslandSplitter.h"
 #include "PhysicsSettings.h"
 #include "PhysicsUpdateContext.h"
 #include "PhysicsUpdateErrorCodes.h"
@@ -254,10 +255,9 @@ namespace nes
         
         /// Keeps track of connected bodies and build islands for multithreaded velocity/position update.
         IslandBuilder                   m_islandBuilder;
-
-        // [TODO]:
+        
         /// Will split large islands into smaller groups of bodies that can be processed in parallel.
-        // LargeIslandSplitter m_largeIslandSplitter;
+        LargeIslandSplitter             m_largeIslandSplitter;
 
         /// Mutex for protecting m_stepListeners.
         std::mutex                      m_stepListenersMutex;
