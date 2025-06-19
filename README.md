@@ -21,10 +21,9 @@ utitlity for me if I have to zip up the project for someone else.
 # What I am Working On:
 ### Immediate:
 Over the summer, I am going to be doing some project-wide refactors, updating syntax/naming rules and splitting the code-base into smaller projects so that I can more easily maintain the system.
-- Break the engine into smaller projects
-- New Syntax Rules
-- Refactor Math classes with SIMD operations
-- Refactor Logging & Profiling code to be more robust.
+- New Syntax Rules ✅
+- Refactor Math classes with SIMD operations ✅
+- Refactor Logging & Profiling code to be more robust. ✅
 - Finish basic Physics System, with demo of different types of collisions
 
 ### Fall Goals:
