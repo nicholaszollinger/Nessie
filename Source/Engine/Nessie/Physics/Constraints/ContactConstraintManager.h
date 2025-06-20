@@ -6,10 +6,10 @@
 #include "Physics/Body/BodyPair.h"
 #include "Physics/Collision/ManifoldBetweenTwoFaces.h"
 #include "Physics/Collision/Shapes/SubShapeIDPair.h"
+#include "Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
 
 // [TODO]:
 //#include "Core/LockFreeHashMap.h"
-//#include "Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
 //#include "Physics/Constraints/ConstraintPart/DualAxisConstraintPart.h"
 
 namespace nes
@@ -41,7 +41,7 @@ namespace nes
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the system. 
-        ///	@param maxBodyPairs : Maxilgmum amount of body pairs to process (anything else will fall through the world).
+        ///	@param maxBodyPairs : Maximum amount of body pairs to process (anything else will fall through the world).
         ///     This number should generally be much higher than the max amount of contact points as there will
         ///     be lots of bodies close that are not actually touching
         ///	@param maxContactConstraints : Maximum amount of contact constraints to process (anything else will fall through the world).
