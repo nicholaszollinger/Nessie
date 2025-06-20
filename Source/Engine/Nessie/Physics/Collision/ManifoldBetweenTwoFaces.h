@@ -1,14 +1,11 @@
 // ManifoldBetweenTwoFaces.h
 #pragma once
-// [TODO]: 
-//#include "ContactListener.h"
+
+#include "Physics/Collision/CollisionListener.h"
 #include "Shapes/ConvexShape.h"
 
 namespace nes
 {
-    // [TODO]: 
-    class ContactPoints;
-
     // [TODO]: 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Remove contact points if there are > 4 (no more than 4 are needed for a stable solution)

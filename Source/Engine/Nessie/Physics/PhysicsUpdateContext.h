@@ -5,7 +5,7 @@
 #include "Core/StaticArray.h"
 #include "Core/Jobs/JobSystem.h"
 #include "Core/Memory/STLStackAllocator.h"
-#include "Math/Vec3.h"
+#include "Math/Math.h"
 
 namespace nes
 {

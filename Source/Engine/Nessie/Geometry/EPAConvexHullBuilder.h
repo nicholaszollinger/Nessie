@@ -2,7 +2,7 @@
 #pragma once
 #include <vector>
 #include "Core/StaticArray.h"
-#include "Math/Vec3.h"
+#include "Math/Math.h"
 
 namespace nes
 {

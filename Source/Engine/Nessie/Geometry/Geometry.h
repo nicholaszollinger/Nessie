@@ -1,8 +1,6 @@
 ﻿// Geometry.h
 #pragma once
-#include "Math/Vec2.h"
-#include "Math/Vec3.h"
-#include "Math/Mat4.h"
+#include "Math/Math.h"
 
 namespace nes::math
 {

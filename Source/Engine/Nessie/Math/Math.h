@@ -1,11 +1,7 @@
 ﻿// Math.h
 #pragma once
-
-#include "Generic.h"
-#include "Vec2.h"
-#include "Vec3.h"
-#include "Vec4.h"
-
-#include "Mat33.h"
-#include "Mat4.h"
-#include "Real.h"
+#include "Math/Generic.h"
+#include "Math/Vec4.h"
+#include "Math/Mat33.h"
+#include "Math/Mat4.h"
+#include "Math/Real.h"

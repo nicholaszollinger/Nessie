@@ -139,7 +139,7 @@ namespace nes
     
     Vec3 Triangle::PointFromBaryCoordinates(float bary0, float bary1, float bary2) const
     {
-        return bary0 * m_vertices[0] + bary1 * m_vertices[1] + bary2 * m_vertices[2];
+        return bary0 * Vec3(m_vertices[0]) + bary1 * Vec3(m_vertices[1]) + bary2 *  Vec3(m_vertices[2]);
     }
 
     void Triangle::CalculateBarycentricCoordinate(const Vec3& p, float& bary0, float& bary1, float& bary2) const

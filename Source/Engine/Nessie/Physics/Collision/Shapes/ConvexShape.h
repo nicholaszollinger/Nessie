@@ -3,7 +3,7 @@
 #include "Shape.h"
 #include "SubShapeID.h"
 #include "Core/StaticArray.h"
-#include "Math/Vec3.h"
+#include "Math/Math.h"
 
 namespace nes
 {

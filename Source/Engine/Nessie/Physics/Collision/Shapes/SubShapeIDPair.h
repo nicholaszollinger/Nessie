@@ -1,7 +1,7 @@
 // SubShapeIDPair.h
 #pragma once
 #include "SubShapeID.h"
-#include "Math/SIMD/UVec4Reg.h"
+#include "Math/Math.h"
 #include "Physics/Body/BodyID.h"
 
 namespace nes

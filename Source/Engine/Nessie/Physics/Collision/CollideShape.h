@@ -4,7 +4,7 @@
 #include "ActiveEdgeMode.h"
 #include "CollectFacesMode.h"
 #include "Core/StaticArray.h"
-#include "Math/Vec3.h"
+#include "Math/Math.h"
 #include "Physics/PhysicsSettings.h"
 #include "Physics/Body/BodyID.h"
 #include "Shapes/SubShapeID.h"

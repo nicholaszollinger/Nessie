@@ -1,6 +1,6 @@
 // ScaleHelpers.h
 #pragma once
-#include "Math/Vec3.h"
+#include "Math/Math.h"
 #include "Physics/PhysicsSettings.h"
 
 namespace nes::ScaleHelpers

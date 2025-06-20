@@ -3,7 +3,7 @@
 #include <cstdint>
 #include "Core/Result.h"
 #include "Core/Memory/StrongPtr.h"
-#include "Math/Vec3.h"
+#include "Math/Math.h"
 
 namespace nes
 {
