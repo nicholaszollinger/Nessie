@@ -11,10 +11,37 @@ namespace nes
     ///
     /// @see : "Constraints Derivation for Rigid Body Simulation in 3D" - Daniel Chappuis, section 2.1.1
     /// (we're not using the approximation of eq 27 but instead add the U term as in eq 55)
+    //
+    // Constraint Equation (eq 51)
+    // C = (p2 - p1) * n
+    //
+    // Jacobian (transposed) (eq 55)
+    // J^T =    ___           ___
+    //         |        -n      |
+    //         | -(r1 + u) x n  |
+    //         |        n       |
+    //         |     r2 x n     |
+    //         |--            --|
+    //
+    // Used Terms (here an in comments below, everything is in world space)
+    // n       = Constraint Axis (normalized).
+    // p1, p2  = Constraint Points.
+    // r1      = p1 - x1 
+    // r2      = p2 - x2
+    // u       = (x2 + r2 - x1 - r1) = (p2 - p1)
+    // x1, x2  = Center of Mass for the bodies.
+    // v1, v2  = Linear velocity of body1 and body2. 
+    // w1, w2  = Angular velocity of body1 and body2.
+    // M       = Mass Matrix - a diagonal matrix of the mass and inertia with diagonal = [m1, I1, m2, I2]
+    // K^-1    = (J M-1 J^T) = effective mass.
+    // b       = Velocity bias.
+    // B       = Baumgarte constant.
     //----------------------------------------------------------------------------------------------------
     class AxisConstraintPart
     {
     public:
+        AxisConstraintPart() = default;
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Templated form of CalculateConstraintProperties with the motion types baked in.
         //----------------------------------------------------------------------------------------------------

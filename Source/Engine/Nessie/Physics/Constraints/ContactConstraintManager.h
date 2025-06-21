@@ -7,10 +7,10 @@
 #include "Physics/Collision/ManifoldBetweenTwoFaces.h"
 #include "Physics/Collision/Shapes/SubShapeIDPair.h"
 #include "Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
+#include "Physics/Constraints/ConstraintPart/DualAxisConstraintPart.h"
 
 // [TODO]:
 //#include "Core/LockFreeHashMap.h"
-//#include "Physics/Constraints/ConstraintPart/DualAxisConstraintPart.h"
 
 namespace nes
 {
