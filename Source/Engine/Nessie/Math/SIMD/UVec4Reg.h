@@ -103,6 +103,11 @@ namespace nes
         NES_INLINE Vec4Reg          ReinterpretAsFloat() const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Store 4 ints to memory, aligned to 16 bytes.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE void             StoreInt4Aligned(uint32* pOutValues) const; 
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Returns a register with all components equal to this register's X Component. 
         //----------------------------------------------------------------------------------------------------
         NES_INLINE UVec4Reg         SplatX() const;

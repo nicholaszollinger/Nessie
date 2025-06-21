@@ -2,15 +2,13 @@
 #pragma once
 
 #include "Core/StaticArray.h"
+#include "Core/Thread/Containers/LockFreeHashMap.h"
 #include "Physics/PhysicsUpdateErrorCodes.h"
 #include "Physics/Body/BodyPair.h"
 #include "Physics/Collision/ManifoldBetweenTwoFaces.h"
 #include "Physics/Collision/Shapes/SubShapeIDPair.h"
 #include "Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
 #include "Physics/Constraints/ConstraintPart/DualAxisConstraintPart.h"
-
-// [TODO]:
-//#include "Core/LockFreeHashMap.h"
 
 namespace nes
 {
@@ -40,11 +38,11 @@ namespace nes
         ~ContactConstraintManager();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the system. 
-        ///	@param maxBodyPairs : Maximum amount of body pairs to process (anything else will fall through the world).
-        ///     This number should generally be much higher than the max amount of contact points as there will
-        ///     be lots of bodies close that are not actually touching
-        ///	@param maxContactConstraints : Maximum amount of contact constraints to process (anything else will fall through the world).
+        /// @brief : Initialize the system.
+        ///	@param maxBodyPairs : Maximum number of body pairs to process (anything else will fall through the world).
+        ///     This number should generally be much higher than the max number of contact points as there will
+        ///     be lots of bodies close that are not touching.
+        ///	@param maxContactConstraints : Maximum number of contact constraints to process (anything else will fall through the world).
         //----------------------------------------------------------------------------------------------------
         void                        Init(uint32_t maxBodyPairs, uint32_t maxContactConstraints);
 

@@ -39,6 +39,9 @@ namespace nes
     template <typename Type>
     concept DefaultConstructibleType = std::is_default_constructible_v<Type>;
 
+    template <typename Type>
+    concept TrivialType = std::is_trivial_v<Type>;
+
     template <typename Type, typename...ConstructorParams>
     concept ValidConstructorForType = requires(ConstructorParams&&...params)
     {

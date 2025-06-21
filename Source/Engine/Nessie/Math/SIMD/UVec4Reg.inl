@@ -168,6 +168,18 @@ namespace nes
     #endif
     }
 
+    inline void UVec4Reg::StoreInt4Aligned(uint32* pOutValues) const
+    {
+    #if defined (NES_USE_SSE)
+        _mm_store_si128(reinterpret_cast<__m128i*>(pOutValues), m_value);
+    #else
+        for (int i = 0; i < 4; ++i)
+        {
+            pOutValues[i] = m_u32[i];
+        }
+    #endif
+    }
+
     UVec4Reg UVec4Reg::SplatX() const
     {
     #if defined (NES_USE_SSE)
