@@ -25,16 +25,11 @@ namespace nes
     template <typename Type> requires requires (Type type) { std::is_same_v<Type, uint32> || std::is_same_v<Type, uint64>; }
     constexpr Type Fnv1aHashString(const char* str, const Type initialHash, const Type primeMultiplier)
     {
-        if (!str)
-            return initialHash;
-
         auto hash = initialHash;
-
-        while (*str != '\0')
+        for (const char* c = str; *c != 0; ++c)
         {
-            hash ^= static_cast<Type>(*str);
+            hash ^= static_cast<Type>(*c);
             hash *= primeMultiplier;
-            ++str;
         }
 
         return hash;
@@ -51,17 +46,12 @@ namespace nes
     {
         constexpr uint64 kInitialHash = 0xcbf29ce484222325ull;
         constexpr uint64 kPrimeMultiplier = 0x100000001b3ull;
-
-        if (!bytes)
-            return kInitialHash;
-
+        
         auto hash = kInitialHash;
-
-        for (size_t i = 0; i < size; ++i)
+        for (const std::byte* pData = bytes; pData < bytes + size; ++pData)
         {
-            hash ^= static_cast<uint64>(*bytes);
+            hash ^= static_cast<uint64>(*pData);
             hash *= kPrimeMultiplier;
-            ++bytes;
         }
 
         return hash;
@@ -91,5 +81,22 @@ namespace nes
         constexpr uint64 kPrimeMultiplier = 0x100000001b3ull;
 
         return Fnv1aHashString(str, kInitialHash, kPrimeMultiplier);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : A 64-bit hash function by Thomas Wang, Jan 1997
+    /// @see: http://web.archive.org/web/20071223173210/http://www.concentric.net/~Ttwang/tech/inthash.htm
+    //----------------------------------------------------------------------------------------------------
+    constexpr uint64 Hash64(const uint64 value)
+    {
+        uint64 hash = value;
+        hash = (~hash) + (hash << 21); // hash = (hash << 21) - hash - 1;
+        hash = hash ^ (hash >> 24);
+        hash = (hash + (hash << 3)) + (hash << 8); // hash * 265
+        hash = hash ^ (hash >> 14);
+        hash = (hash + (hash << 2)) + (hash << 4); // hash * 21
+        hash = hash ^ (hash >> 28);
+        hash = hash + (hash << 31);
+        return hash;
     }
 }

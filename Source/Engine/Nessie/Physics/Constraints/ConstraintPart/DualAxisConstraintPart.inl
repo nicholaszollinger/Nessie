@@ -1,6 +1,5 @@
 ﻿// DualAxisConstraintPart.inl
 #pragma once
-#include "Application/Application.h"
 
 namespace nes
 {

@@ -89,7 +89,7 @@ namespace nes
     ///     fixed number of buckets and fixed storage.
     /// @note : For now, this class only accepts trivial types for the Key and Value.
     //----------------------------------------------------------------------------------------------------
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     class LockFreeHashMap
     {
     public:
@@ -109,7 +109,7 @@ namespace nes
             const ValueType&        GetValue() const    { return m_value; }
             
         private:
-            template <TrivialType K, TrivialType V> friend class LockFreeHashMap;
+            template <TriviallyDestructible K, TriviallyDestructible V> friend class LockFreeHashMap;
 
             KeyType                 m_key;          /// Key for this entry.
             uint32                  m_nextOffset;   /// Offset in m_objectStorage of the next KeyValuePair entry with the same hash.
@@ -121,20 +121,24 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         class Iterator
         {
+            /// Private Ctor for internal use.
+            Iterator(MapType* pMap, const uint32 bucket, const uint32 offset) : m_pMap(pMap), m_bucket(bucket), m_offset(offset) {}
+            
+        public:
             Iterator() = default;
 
             /// Comparison operators.
             bool                    operator==(const Iterator& other) const { return m_pMap == other.m_pMap && m_bucket == other.m_bucket && m_offset == other.m_offset; }
             bool                    operator!=(const Iterator& other) const { return !(*this == other); }
 
-            /// De-reference to key value pair.
+            /// Dereference to the key value pair.
             KeyValuePair&           operator*();
 
             /// Increment iterator
             Iterator&               operator++();
             
         private:
-            template <TrivialType K, TrivialType V> friend class LockFreeHashMap;
+            template <TriviallyDestructible K, TriviallyDestructible V> friend class LockFreeHashMap;
             
             MapType*                m_pMap;
             uint32                  m_bucket;
@@ -210,7 +214,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns an array of all key value pairs.
         //----------------------------------------------------------------------------------------------------
-        inline void                 GetAllKeyValuePairs(std::vector<KeyValuePair>& outKeyValues) const;
+        inline void                 GetAllKeyValuePairs(std::vector<const KeyValuePair*>& outKeyValues) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Iterator to the first key value pair.

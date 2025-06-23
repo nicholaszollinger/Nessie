@@ -1,4 +1,4 @@
-﻿// CollisionListener.h
+﻿// ContactListener.h
 #pragma once
 #include "Core/StaticArray.h"
 #include "Math/Real.h"
@@ -85,10 +85,10 @@ namespace nes
     ///     the bodies, and you can't change the physics state.
     /// @note : During OnContactRemoved you cannot access the bodies at all, see the comments at that function.
     //----------------------------------------------------------------------------------------------------
-    class CollisionListener
+    class ContactListener
     {
     public:
-        virtual                         ~CollisionListener() = default;
+        virtual                         ~ContactListener() = default;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Called after detecting a collision between a body pair, but before calling OnContactAdded and

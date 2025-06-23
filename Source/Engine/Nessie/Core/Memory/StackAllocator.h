@@ -33,6 +33,9 @@ namespace nes
         StackAllocator& operator=(StackAllocator&& right) noexcept;
         ~StackAllocator();
 
+        template <typename Type>
+        Type*                   Allocate(const size_t count) { return static_cast<Type*>(Allocate(sizeof(Type) * count, alignof(Type))); }
+        
         void*                   Allocate(const size_t size, const size_t alignment = kDefaultAlignment);
 
         //----------------------------------------------------------------------------------------------------

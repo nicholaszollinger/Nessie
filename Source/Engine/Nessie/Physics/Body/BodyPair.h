@@ -1,6 +1,7 @@
 // BodyPair.h
 #pragma once
 #include "BodyID.h"
+#include "Core/Generic/Hash.h"
 #include "Core/Memory/Memory.h"
 
 namespace nes
@@ -22,9 +23,9 @@ namespace nes
         bool        operator< (const BodyPair& other) const { return *reinterpret_cast<const uint64_t*>(this) < *reinterpret_cast<const uint64_t*>(&other); }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : [TODO]: Get the hash for this body pair. 
+        /// @brief : Get the hash for this body pair. 
         //----------------------------------------------------------------------------------------------------
-        uint64_t    GetHash() const;
+        uint64      GetHash() const { return Hash64(*reinterpret_cast<const uint64*>(this)); }
     };
 
     static_assert(sizeof(BodyPair) == sizeof(uint64_t), "Mismatch in class size");

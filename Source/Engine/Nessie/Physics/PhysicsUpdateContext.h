@@ -11,13 +11,14 @@ namespace nes
 {
     class PhysicsScene;
     class Constraint;
+    class IslandBuilder;
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Information maintained during the PhysicsScene::Update(). 
     //----------------------------------------------------------------------------------------------------
     struct PhysicsUpdateContext
     {
-        /// Maximum supported amount of concurrent jobs.
+        /// Maximum supported number of concurrent jobs.
         static constexpr int kMaxConcurrency = 32;
         
         struct BodyPairQueue
@@ -158,19 +159,19 @@ namespace nes
             JobHandle       m_contactRemovedCallbacks;                                  /// Calls the contact removed callbacks.
 
             // [TODO]: 
-            /// SOFT BODY COLLISION
+            // SOFT BODY COLLISION
             //JobHandle       m_softBodyPrepare;
             //JobHandleArray  m_softBodyCollide;
             //JobHandleArray  m_softBodySimulate;
             //JobHandle       m_softBodyFinalize;
 
-            /// NEXT STEP
+            // NEXT STEP
             JobHandle       m_startNextStep;                                            /// Job that kicks off the next step. This is empty for the last step.
         };
 
         using Steps = std::vector<Step, STLStackAllocator<Step>>;
 
-        PhysicsScene*           m_pScene = nullptr;
+        PhysicsScene*           m_pPhysicsScene = nullptr;
         StackAllocator*         m_pAllocator = nullptr;
         JobSystem*              m_pJobSystem = nullptr;
         JobBarrier*             m_pBarrier = nullptr;
@@ -179,7 +180,7 @@ namespace nes
         std::atomic<uint32_t>   m_errors = 0;
         Constraint**            m_pActiveConstraints = nullptr;
         BodyPair*               m_pBodyPairs = nullptr;
-        //IslandBuilder*          m_pIslandBuilder;
+        IslandBuilder*          m_pIslandBuilder;
         Steps                   m_steps;
         //unsigned int            m_numSoftBodies;
         //SoftBodyUpdateContext*  m_softBodyUpdateContexts = nullptr;

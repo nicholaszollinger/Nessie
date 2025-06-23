@@ -10,6 +10,7 @@
 #include "Body/BodyManager.h"
 #include "Collision/BroadPhase/BroadPhase.h"
 #include "Constraints/ConstraintManager.h"
+#include "Constraints/ContactConstraintManager.h"
 #include "Core/Jobs/JobSystem.h"
 
 namespace nes
@@ -25,9 +26,9 @@ namespace nes
         
     public:
         /// Maximum number of bodies that is supported.
-        static constexpr uint32_t   kMaxBodiesLimit = BodyID::kMaxBodyIndex + 1;
-        //static constexpr uint32_t kMaxBodyPairsLimit = ContactConstraintManager::kMaxBodyPairsLimit;
-        //static constexpr uint32_t kMaxContactConstraintsLimit = ContactConstraints::kMaxContactConstraintsLimit;
+        static constexpr uint32   kMaxBodiesLimit = BodyID::kMaxBodyIndex + 1;
+        static constexpr uint32   kMaxBodyPairsLimit = ContactConstraintManager::kMaxBodyPairsLimit;
+        static constexpr uint32   kMaxContactConstraintsLimit = ContactConstraintManager::kMaxContactConstraintsLimit;
         
         struct CreateInfo
         {
@@ -44,18 +45,18 @@ namespace nes
             const CollisionLayerPairFilter*         m_pCollisionLayerPairFilter;
             
             /// Maximum number of Bodies that is supported.
-            uint32_t                                m_maxBodies;
+            uint32                                  m_maxBodies;
             
-            /// Number of Body Mutexes to use. Should be a power of 2 in the range [1, 64]. Use 0 to auto detect.
-            uint32_t                                m_numBodyMutexes = 0;
+            /// Number of Body Mutexes to use. Should be a power of 2 in the range [1, 64]. Use 0 to auto-detect.
+            uint32                                  m_numBodyMutexes = 0;
             
             /// Maximum number of Body Pairs to process (anything else will fall through the world). This number should
-            /// generally be much higher than the max amount of contact points as there will be lots of bodies close
-            /// that are not actually touching.
-            uint32_t                                m_maxNumBodyPairs;
+            /// generally be much higher than the max number of contact points as there will be lots of bodies close
+            /// that are not touching.
+            uint32                                  m_maxNumBodyPairs;
 
-            /// Maximum amount of contact constraints to process (anything else will fall through the world).
-            uint32_t                                m_maxNumContactConstraints;
+            /// Maximum number of contact constraints to process (anything else will fall through the world).
+            uint32                                  m_maxNumContactConstraints;
         };
     
     public:
@@ -67,12 +68,12 @@ namespace nes
         PhysicsScene& operator=(PhysicsScene&&) = delete;
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the listener that is notified whenever a body is activated or deactivated.
+        /// @brief : Set the listener which is notified whenever a body is activated or deactivated.
         //----------------------------------------------------------------------------------------------------
         void                            SetBodyActivationListener(BodyActivationListener* pListener)    { m_bodyManager.SetBodyActivationListener(pListener); }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the listener that is notified whenever a body is activated or deactivated.
+        /// @brief : Get the listener which is notified whenever a body is activated or deactivated.
         //----------------------------------------------------------------------------------------------------
         BodyActivationListener*         GetBodyActivationListener() const                               { return m_bodyManager.GetBodyActivationListener(); }
 
@@ -138,12 +139,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the Physics Settings that govern the simulation. 
         //----------------------------------------------------------------------------------------------------
-        void                            SetSettings(const PhysicsSettings& settings)        { m_settings = settings; }
+        void                            SetSettings(const PhysicsSettings& settings)        { m_physicsSettings = settings; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Physics Settings that govern the simulation.
         //----------------------------------------------------------------------------------------------------
-        const PhysicsSettings&          GetSettings() const                                 { return m_settings; } 
+        const PhysicsSettings&          GetSettings() const                                 { return m_physicsSettings; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the global gravity for the physics scene. 
+        //----------------------------------------------------------------------------------------------------
+        Vec3                            GetGravity() const                                  { return m_gravity; }
     
     private:
         using StepListeners = std::vector<PhysicsStepListener*>;
@@ -192,9 +198,8 @@ namespace nes
         /// @brief : Tries to spawn a new FindCollisions job if max concurrency hasn't been reached yet. 
         //----------------------------------------------------------------------------------------------------
         void                            TrySpawnJobFindCollisions(PhysicsUpdateContext::Step* pStep) const;
-
-    
-        //using ContactAllocator = ContactConstraintManager::ContactAllocator; 
+        
+        using ContactAllocator = ContactConstraintManager::ContactAllocator; 
         
         /// Number of constraints to process at once in JobDetermineActiveConstraints().
         static constexpr int            kDetermineActiveConstraintsBatchSize = 64;
@@ -233,7 +238,7 @@ namespace nes
         const CollisionLayerPairFilter* m_pCollisionLayerPairFilter = nullptr;
 
         /// Simulation Settings.
-        PhysicsSettings                 m_settings;
+        PhysicsSettings                 m_physicsSettings;
 
         /// Keeps track of the Bodies in the Scene.
         BodyManager                     m_bodyManager{};
@@ -245,10 +250,9 @@ namespace nes
         /// Body Interfaces
         BodyInterface                   m_bodyInterfaceNoLock;
         BodyInterface                   m_bodyInterfaceLocking;
-
-        // [TODO]:
+        
         /// The contact manager resolves all contacts during a simulation step.
-        // ContactConstraintsManager m_contactManager;
+        ContactConstraintManager        m_contactManager;
 
         /// All non-contact constraints.
         ConstraintManager               m_constraintManager{};
@@ -270,6 +274,5 @@ namespace nes
 
         /// Previous frame's delta time of one sub step to allow scaling previous frame's constraint impulses.
         float                           m_previousStepDeltaTime = 0.0f;
-        
     };
 }

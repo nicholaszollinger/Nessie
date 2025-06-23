@@ -116,14 +116,14 @@ namespace nes
     // Lock Free Hash Map
     //------------------------------------------------------------------------------------------------------------
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     typename LockFreeHashMap<KeyType, ValueType>::KeyValuePair& LockFreeHashMap<KeyType, ValueType>::Iterator::operator*()
     {
         NES_ASSERT(m_offset != kInvalidHandle);
         return *m_pMap->m_allocator.template FromOffset<KeyValuePair>(m_offset);
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     typename LockFreeHashMap<KeyType, ValueType>::Iterator& LockFreeHashMap<KeyType, ValueType>::Iterator::operator++()
     {
         NES_ASSERT(m_bucket < m_pMap->m_numBuckets);
@@ -152,7 +152,7 @@ namespace nes
         }
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     void LockFreeHashMap<KeyType, ValueType>::Init(const uint32 maxBuckets)
     {
         NES_ASSERT(maxBuckets >= 4 && math::IsPowerOf2(maxBuckets));
@@ -164,13 +164,13 @@ namespace nes
         m_buckets = static_cast<std::atomic<uint32>*>(NES_ALIGNED_ALLOC(maxBuckets * sizeof(std::atomic<uint32>), 16));
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     LockFreeHashMap<KeyType, ValueType>::~LockFreeHashMap()
     {
         NES_ALIGNED_FREE(m_buckets);
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     void LockFreeHashMap<KeyType, ValueType>::Clear()
     {
     #ifdef NES_ASSERTS_ENABLED
@@ -191,7 +191,7 @@ namespace nes
         }
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     void LockFreeHashMap<KeyType, ValueType>::SetNumBuckets(const uint32 numBuckets)
     {
         NES_ASSERT(m_numKeyValues == 0);
@@ -201,7 +201,7 @@ namespace nes
         m_numBuckets = numBuckets;
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     template <typename ... Params>
     typename LockFreeHashMap<KeyType, ValueType>::KeyValuePair* LockFreeHashMap<KeyType, ValueType>::Create(LFHMAllocatorContext& context, const KeyType& key, uint64 keyHash, const int extraBytes, Params&&... ctorParams)
     {
@@ -223,7 +223,8 @@ namespace nes
 
         // Construct a new key value pair:
         KeyValuePair* pKeyValue = m_allocator.template FromOffset<KeyValuePair>(writeOffset);
-        NES_ASSERT(reinterpret_cast<intptr_t>(pKeyValue) & alignof(KeyValuePair) == 0);
+        NES_ASSERT((reinterpret_cast<intptr_t>(pKeyValue) & alignof(KeyValuePair)) == 0);
+        
     #ifdef NES_DEBUG
         std::memset(pKeyValue, 0xcd, size);
     #endif
@@ -245,7 +246,7 @@ namespace nes
         return pKeyValue;
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     const typename LockFreeHashMap<KeyType, ValueType>::KeyValuePair* LockFreeHashMap<KeyType, ValueType>::Find(const KeyType& key, const uint64 keyHash) const
     {
         // Get the offset to the key value object from the bucket with the corresponding hash.
@@ -263,21 +264,21 @@ namespace nes
         // Not Found
         return nullptr;
     }
-
-    template <TrivialType KeyType, TrivialType ValueType>
+    
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     uint32 LockFreeHashMap<KeyType, ValueType>::ToHandle(const KeyValuePair* pKeyValuePair) const
     {
         return m_allocator.ToOffset(pKeyValuePair);
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     const typename LockFreeHashMap<KeyType, ValueType>::KeyValuePair* LockFreeHashMap<KeyType, ValueType>::FromHandle(const uint32 handle) const
     {
         return m_allocator.template FromOffset<const KeyValuePair>(handle);
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
-    void LockFreeHashMap<KeyType, ValueType>::GetAllKeyValuePairs(std::vector<KeyValuePair>& outKeyValues) const
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
+    void LockFreeHashMap<KeyType, ValueType>::GetAllKeyValuePairs(std::vector<const KeyValuePair*>& outKeyValues) const
     {
         for (const std::atomic<uint32>* pBucket = m_buckets; pBucket < m_buckets + m_numBuckets; ++pBucket)
         {
@@ -292,10 +293,10 @@ namespace nes
         }
     }
 
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     typename LockFreeHashMap<KeyType, ValueType>::Iterator LockFreeHashMap<KeyType, ValueType>::begin()
     {
-        Iterator it{ this, 0, m_buckets[0] };
+        Iterator it(this, 0, m_buckets[0]);
 
         // If it doesn't contain a valid entry, use the ++operator to find the first valid entry.
         if (it.m_offset == kInvalidHandle)
@@ -304,9 +305,9 @@ namespace nes
         return it;
     }
     
-    template <TrivialType KeyType, TrivialType ValueType>
+    template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>
     typename LockFreeHashMap<KeyType, ValueType>::Iterator LockFreeHashMap<KeyType, ValueType>::end()
     {
-        return { this, m_numBuckets, kInvalidHandle };
+        return Iterator(this, m_numBuckets, kInvalidHandle);
     }    
 }

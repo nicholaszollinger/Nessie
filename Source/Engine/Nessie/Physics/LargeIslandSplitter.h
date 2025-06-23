@@ -1,6 +1,5 @@
 ﻿// LargeIslandSplitter.h
 #pragma once
-
 #include "Core/Config.h"
 #include "Core/Thread/Atomics.h"
 

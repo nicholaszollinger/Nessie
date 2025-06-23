@@ -33,4 +33,9 @@ namespace nes
     #define NES_RVECTOR_ALIGNMENT NES_VECTOR_ALIGNMENT
     
 #endif
+
+    namespace literals
+    {
+        constexpr Real operator ""_r (const long double value) { return static_cast<Real>(value); }
+    }
 }

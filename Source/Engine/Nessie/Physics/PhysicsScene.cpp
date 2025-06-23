@@ -5,6 +5,8 @@
 namespace nes
 {
     PhysicsScene::PhysicsScene()
+        : m_contactManager(m_physicsSettings)
+        //NES_IF_ASSERTS_ENABLED(, m_constraintManager(&m_bodyManager))
     {
         //
     }

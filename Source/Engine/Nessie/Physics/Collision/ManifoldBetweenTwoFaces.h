@@ -1,7 +1,6 @@
 // ManifoldBetweenTwoFaces.h
 #pragma once
-
-#include "Physics/Collision/CollisionListener.h"
+#include "Physics/Collision/ContactListener.h"
 #include "Shapes/ConvexShape.h"
 
 namespace nes
