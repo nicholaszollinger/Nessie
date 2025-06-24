@@ -7,9 +7,7 @@
 #include "Physics/Collision/CollideShape.h"
 #include "Physics/Collision/CollisionCollector.h"
 #include "Physics/Collision/CastResult.h"
-
-// [TODO]: 
-//#include "Physics/Collision/InternalEdgeRemovingCollector.h"
+#include "Physics/Collision/InternalEdgeRemovingCollector.h"
 
 
 namespace nes
@@ -281,12 +279,17 @@ namespace nes
         MyCollector collector(pShape, shapeScale, centerOfMassTransform, collideShapeSettings, baseOffset, inCollector, *m_pBodyLockInterface, bodyFilter, shapeFilter);
         m_pBroadPhaseQuery->CollideAABox(bounds, collector, broadPhaseLayerFilter, collisionLayerFilter);
     }
+    
+    void NarrowPhaseQuery::CollideShapeWithInternalEdgeRemoval(const Shape* pShape, const Vec3 shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3 baseOffset, CollideShapeCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter, const BodyFilter& bodyFilter, const ShapeFilter& shapeFilter) const
+    {
+        // We require these settings to internal-edge removal to work.
+        CollideShapeSettings settings = collideShapeSettings;
+        settings.m_activeEdgeMode = EActiveEdgeMode::CollideWithAll;
+        settings.m_collectFacesMode = ECollectFacesMode::CollectFaces;
 
-    // [TODO]: 
-    // void NarrowPhaseQuery::CollideShapeWithInternalEdgeRemoval(const Shape* pShape, const Vec3 shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3 baseOffset, CollideShapeCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter, const BodyFilter& bodyFilter, const ShapeFilter& shapeFilter) const
-    // {
-    // 
-    // }
+        InternalEdgeRemovingCollector wrapper(collector);
+        CollideShape(pShape, shapeScale, centerOfMassTransform, settings, baseOffset, wrapper, broadPhaseLayerFilter, collisionLayerFilter, bodyFilter, shapeFilter);
+    }
 
     void NarrowPhaseQuery::CastShape(const RShapeCast& shapeCast, const ShapeCastSettings& settings, const RVec3 baseOffset, CastShapeCollector& inCollector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter, const BodyFilter& bodyFilter, const ShapeFilter& shapeFilter) const
     {

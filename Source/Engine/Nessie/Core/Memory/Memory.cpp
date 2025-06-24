@@ -290,6 +290,12 @@ namespace nes::memory::internal
         return malloc(size);
     }
 
+    void* Reallocate(void* pBlock, [[maybe_unused]] const size_t oldSize, const size_t newSize)
+    {
+        NES_ASSERT(newSize > 0);
+        return realloc(pBlock, newSize);
+    }
+
     void Free(void* pMemory)
     {
         free(pMemory);

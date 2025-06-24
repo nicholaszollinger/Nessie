@@ -75,13 +75,12 @@ namespace nes
         ///	@param shapeFilter : Filter that filters at the shape level.
         //----------------------------------------------------------------------------------------------------
         void                CollideShape(const Shape* pShape, const Vec3 shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3 baseOffset, CollideShapeCollector& inCollector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = {}, const CollisionLayerFilter& collisionLayerFilter = {}, const BodyFilter& bodyFilter = {}, const ShapeFilter& shapeFilter = {}) const;
-
-        // [TODO]: 
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Same as CollideShape, but uses InternalEdgeRemovingCollector to remove internal edges from
         ///     the collision results (a.k.a. ghost collisions).
         //----------------------------------------------------------------------------------------------------
-        //void                CollideShapeWithInternalEdgeRemoval(const Shape* pShape, const Vec3 shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3 baseOffset, CollideShapeCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = {}, const CollisionLayerFilter& collisionLayerFilter = {}, const BodyFilter& bodyFilter = {}, const ShapeFilter& shapeFilter = {}) const;
+        void                CollideShapeWithInternalEdgeRemoval(const Shape* pShape, const Vec3 shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3 baseOffset, CollideShapeCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter = {}, const CollisionLayerFilter& collisionLayerFilter = {}, const BodyFilter& bodyFilter = {}, const ShapeFilter& shapeFilter = {}) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Cast a shape into the physics scene and report any hits to inCollector.

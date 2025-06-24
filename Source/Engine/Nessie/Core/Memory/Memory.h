@@ -16,6 +16,7 @@ namespace nes::memory::internal
     /// Allocation Functions
     /// - You should be using NES_ALLOC, NES_FREE, etc.
     void*   Allocate(size_t size);
+    void*   Reallocate(void* pBlock, const size_t oldSize, const size_t newSize);
     void    Free(void* pMemory);
     void*   AlignedAllocate(size_t size, size_t alignment);
     void    AlignedFree(void* pMemory);
