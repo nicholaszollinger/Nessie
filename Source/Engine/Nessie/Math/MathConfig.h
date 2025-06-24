@@ -7,6 +7,8 @@
 // #define NES_DOUBLE_PRECISION
 
 #ifdef NES_DOUBLE_PRECISION
+#error "Double Precision classes not setup properly yet!"
+
     #define NES_IF_SINGLE_PRECISION(...)
     #define NES_IF_SINGLE_PRECISION_ELSE(singleArg, doubleArg) doubleArg
     #define NES_IF_DOUBLE_PRECISION(...) __VA_ARGS__

@@ -8,7 +8,7 @@
 
 namespace nes
 {
-    class  BroadPhaseCastResult;
+    struct BroadPhaseCastResult;
     struct RayCast;
     struct OrientedBox;
     struct AABoxCast;

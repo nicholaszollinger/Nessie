@@ -14,6 +14,8 @@
 namespace nes
 {
     struct ShapeCast;
+    struct RRayCast;
+    struct RShapeCast;
     struct CollideShapeSettings;
 
     //----------------------------------------------------------------------------------------------------
@@ -49,7 +51,7 @@ namespace nes
         ///         <code> GetWorldSpaceSurfaceNormal(hit.m_subShapeID2, ray.GetPointOnRay(hit.m_fraction))</code>
         ///     on this object.
         //----------------------------------------------------------------------------------------------------
-        bool                    CastRay(const RayCast& ray, RayCastResult& hit) const;
+        bool                    CastRay(const RRayCast& ray, RayCastResult& hit) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Cast a ray, allows collecting multiple hits. Note that this version is more flexible but also
@@ -58,14 +60,14 @@ namespace nes
         ///         <code> GetWorldSpaceSurfaceNormal(hit.m_subShapeID2, ray.GetPointOnRay(hit.m_fraction))</code>
         ///     on this object.
         //----------------------------------------------------------------------------------------------------
-        void                    CastRay(const RayCast& ray, const RayCastSettings& rayCastSettings, CastRayCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CastRay(const RRayCast& ray, const RayCastSettings& rayCastSettings, CastRayCollector& collector, const ShapeFilter& shapeFilter = {}) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Checks if the point is inside any shapes. For this test all shapes are treated as if they
         ///     were solid. For a mesh shape, this test will only provide sensible information if the mesh is a
         ///     closed manifold. For each shape that collides, 'collector' will receive a hit.
         //----------------------------------------------------------------------------------------------------
-        void                    CollidePoint(const Vec3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CollidePoint(const RVec3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter = {}) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Collide a shape and report any hits in 'collector'.
@@ -78,7 +80,7 @@ namespace nes
         ///	@param collector : Collector that receives the hits.
         ///	@param shapeFilter : Filter that allows you to reject certain collisions.
         //----------------------------------------------------------------------------------------------------
-        void                    CollideShape(const Shape* pShape, const Vec3& shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const Vec3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CollideShape(const Shape* pShape, const Vec3& shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Cast a shape and report any hits in the collector.
@@ -89,7 +91,7 @@ namespace nes
         ///	@param collector : Collector that receives the hits.
         ///	@param shapeFilter : Filter that allows you to reject collisions.
         //----------------------------------------------------------------------------------------------------
-        void                    CastShape(const ShapeCast& shapeCast, const ShapeCastSettings& settings, const Vec3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
+        void                    CastShape(const RShapeCast& shapeCast, const ShapeCastSettings& settings, const RVec3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter = {}) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Collect the leaf transformed shapes of all leaf shapes of this shape. 'box' is the world

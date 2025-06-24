@@ -86,7 +86,7 @@ namespace nes
         virtual ~CollisionCollector() = default;
 
         template <typename ResultTypeArg2>
-        explicit CollisionCollector(const CollisionCollector<ResultTypeArg2, TraitsType>& other) : m_earlyOutFraction(other.m_earlyOutFraction), m_pContext(other.m_pContext) {}
+        explicit CollisionCollector(const CollisionCollector<ResultTypeArg2, TraitsType>& other) : m_earlyOutFraction(other.GetEarlyOutFraction()), m_pContext(other.GetContext()) {}
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : If you want to reuse this Collector, call Reset before performing another Query.
