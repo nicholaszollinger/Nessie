@@ -2,11 +2,10 @@
 #pragma once
 #include "Core/Config.h"
 
-// [TODO]: 
-//NES_SUPPRESS_WARNINGS_STD_BEGIN
+NES_SUPPRESS_WARNINGS_STD_BEGIN
 #include <mutex>
 #include <shared_mutex>
-//NES_SUPPRESS_WARNINGS_STD_END
+NES_SUPPRESS_WARNINGS_STD_END
 
 namespace nes
 {
@@ -17,6 +16,8 @@ namespace nes
     {
         void lock() const {}
         void unlock() const {}
+        void lock_shared() const {}
+        void unlock_shared() const {}
     };
 
     /// Requires the functions: lock() and unlock()
@@ -27,12 +28,12 @@ namespace nes
         type.unlock();
     };
 
-    /// Requires std-style lock_shared() and unlock_shared()
+    /// Requires the functions: lock_shared() and unlock_shared()
     template <typename Type>
     concept SharedMutexType = MutexType<Type> && requires(Type type)
     {
         type.lock_shared();
-        type.unlock_shared;
+        type.unlock_shared();
     };
 
     static_assert(MutexType<NullMutex>);
