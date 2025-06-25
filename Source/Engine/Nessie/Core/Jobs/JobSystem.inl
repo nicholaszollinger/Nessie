@@ -1,15 +1,9 @@
-// JobSystem.cpp
-#include "JobSystem.h"
+﻿// JobSystem.inl
+#pragma once
 
 namespace nes
 {
-    JobSystem::JobHandle::JobHandle(Job* pJob)
-        : StrongPtr<JobSystem::Job>(pJob)
-    {
-        //
-    }
-    
-    void JobSystem::JobHandle::RemoveDependencies(const JobHandle* pHandles, const uint32_t numHandles, const int count)
+    inline void JobSystem::JobHandle::RemoveDependencies(const JobHandle* pHandles, const uint32_t numHandles, const int count)
     {
         NES_ASSERT(pHandles != nullptr);
         NES_ASSERT(numHandles > 0);
@@ -38,7 +32,7 @@ namespace nes
             pSystem->QueueJobs(pJobsToQueue, numJobsToQueue);
     }
 
-    JobSystem::Job::Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32 numDependencies)
+    inline JobSystem::Job::Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32 numDependencies)
         : m_name(pName)
         , m_pJobSystem(pSystem)
         , m_function(function)
@@ -48,17 +42,17 @@ namespace nes
         //
     }
     
-    void JobSystem::Job::ReleaseObjectImpl(Job* pThisObject) const
+    inline void JobSystem::Job::ReleaseObjectImpl(Job* pThisObject) const
     {
         m_pJobSystem->FreeJob(pThisObject);
     }
 
-    void JobSystem::Job::AddDependency(const int count)
+    inline void JobSystem::Job::AddDependency(const int count)
     {
         m_numDependencies.fetch_add(count, std::memory_order_relaxed);
     }
 
-    bool JobSystem::Job::RemoveDependency(const int count)
+    inline bool JobSystem::Job::RemoveDependency(const int count)
     {
         const uint32_t oldValue = m_numDependencies.fetch_sub(count, std::memory_order_release);
         const uint32_t newValue = oldValue - count;
@@ -67,13 +61,13 @@ namespace nes
         return newValue == 0;
     }
 
-    void JobSystem::Job::RemoveDependencyAndQueue(const int count)
+    inline void JobSystem::Job::RemoveDependencyAndQueue(const int count)
     {
         if (RemoveDependency(count))
             m_pJobSystem->QueueJob(this);
     }
 
-    bool JobSystem::Job::SetBarrier(Barrier* pBarrier)
+    inline bool JobSystem::Job::SetBarrier(Barrier* pBarrier)
     {
         intptr_t barrier = 0;
         if (m_barrier.compare_exchange_strong(barrier, reinterpret_cast<intptr_t>(pBarrier), std::memory_order_relaxed))
@@ -83,7 +77,7 @@ namespace nes
         return false;
     }
 
-    uint32 JobSystem::Job::Execute()
+    inline uint32 JobSystem::Job::Execute()
     {
         // Transition to the executing state.
         uint32 state = 0; // Assume that the dependency count is 0.

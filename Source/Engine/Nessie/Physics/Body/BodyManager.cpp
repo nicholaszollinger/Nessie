@@ -2,14 +2,40 @@
 #include "BodyManager.h"
 
 #include <functional>
+#include "BodyLock.h"
 #include "BodyActivationListener.h"
 
 namespace nes
 {
+#if NES_ASSERTS_ENABLED
+    static thread_local bool s_overrideAllowActivation = false;
+    static thread_local bool s_overrideAllowDeactivation = false;
+    
+    bool BodyManager::GetOverrideAllowActivation()
+    {
+        return s_overrideAllowActivation;
+    }
+
+    void BodyManager::SetOverrideAllowActivation(const bool allowActivation)
+    {
+        s_overrideAllowActivation = allowActivation;
+    }
+
+    bool BodyManager::GetOverrideAllowDeactivation()
+    {
+        return s_overrideAllowDeactivation;
+    }
+
+    void BodyManager::SetOverrideAllowDeactivation(const bool allowDeactivation)
+    {
+        s_overrideAllowDeactivation = allowDeactivation;
+    }
+#endif
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Helper class that combines a Body with its motion properties. 
     //----------------------------------------------------------------------------------------------------
-    class BodyWithMotionProperties : public Body
+    class BodyWithMotionProperties final : public Body
     {
     public:
         NES_OVERRIDE_NEW_DELETE
@@ -20,7 +46,7 @@ namespace nes
 
     BodyManager::~BodyManager()
     {
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
         // Destroy any bodies that are still alive
         for (Body* pBody : m_bodies)
@@ -35,7 +61,7 @@ namespace nes
 
     void BodyManager::Init(const uint32_t maxBodies, const uint32_t numBodyMutexes, const BroadPhaseLayerInterface& layerInterface)
     {
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
         uint32_t finalNumBodyMutexes = math::Clamp<uint32_t>(math::GetNextPowerOf2(numBodyMutexes == 0? 2 * std::thread::hardware_concurrency() : numBodyMutexes), 1, sizeof(MutexMask) * 8);
 
@@ -58,13 +84,14 @@ namespace nes
 
     uint32_t BodyManager::GetNumBodies() const
     {
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
+        
         return m_numBodies;
     }
 
     BodyManager::BodyStats BodyManager::GetStats() const
     {
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
         BodyStats stats;
         stats.m_numBodies = m_numBodies;
@@ -193,7 +220,7 @@ namespace nes
         // Determine the next free index:
         uint32_t index;
         {
-            std::unique_lock lock(m_bodiesMutex);
+            UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
             if (m_bodyIDFreeListStart != kBodyIDFreeListEnd)
             {
@@ -237,7 +264,7 @@ namespace nes
             return false;
 
         {
-            std::unique_lock lock(m_bodiesMutex);
+            UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
             const uint32_t index = bodyID.GetIndex();
             if (index >= m_bodies.capacity())
@@ -305,7 +332,7 @@ namespace nes
         if (count <= 0)
             return;
 
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
         // Update cached number of bodies
         NES_ASSERT(m_numBodies >= static_cast<uint32_t>(count));
@@ -314,7 +341,7 @@ namespace nes
         for (const BodyID* pID = pBodyIDs; pID < pBodyIDs + count; ++pID)
         {
             // Remove the Body
-            Body* pBody = Internal_RemoveBody(*pID);
+            Body* pBody = RemoveBody(*pID);
 
             // Clear the ID
             pBody->m_id = BodyID();
@@ -338,7 +365,7 @@ namespace nes
         if (count <= 0)
             return;
 
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
         // Update the cached number of bodies.
         NES_ASSERT(m_numBodies >= static_cast<uint32_t>(count));
@@ -347,7 +374,7 @@ namespace nes
         for (const BodyID* pID = pBodyIDs; pID < pBodyIDs + count; ++pID)
         {
             // Remove the Body
-            Body* pBody = Internal_RemoveBody(*pID);
+            Body* pBody = RemoveBody(*pID);
 
             // Free the Body
             DeleteBody(pBody);
@@ -364,10 +391,9 @@ namespace nes
         if (count <= 0)
             return;
 
-        std::unique_lock lock(m_activeBodiesMutex);
-
-        // [TODO]: 
-        //NES_ASSERT(!m_activeBodiesLocked || s_overrideAllowActivation);
+        UniqueLock lock(m_activeBodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::ActiveBodiesArray));
+        
+        NES_ASSERT(!m_activeBodiesLocked || s_overrideAllowActivation);
 
         for (const BodyID* pID = pBodyIDs; pID < pBodyIDs + count; ++pID)
         {
@@ -404,10 +430,9 @@ namespace nes
         if (count <= 0)
             return;
 
-        std::unique_lock lock(m_activeBodiesMutex);
-
-        // [TODO]: 
-        //NES_ASSERT(!m_activeBodiesLocked || s_overrideAllowDeactivation);
+        UniqueLock lock(m_activeBodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::ActiveBodiesArray));
+        
+        NES_ASSERT(!m_activeBodiesLocked || s_overrideAllowDeactivation);
 
         for (const BodyID* pID = pBodyIDs; pID < pBodyIDs + count; ++pID)
         {
@@ -444,9 +469,9 @@ namespace nes
         MotionProperties* pMotion = body.GetMotionPropertiesUnchecked();
         if (pMotion != nullptr && pMotion->GetMotionQuality() != motionQuality)
         {
-            std::unique_lock lock(m_activeBodiesMutex);
+            UniqueLock lock(m_activeBodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::ActiveBodiesArray));
 
-            //NES_ASSERT(!m_activeBodiesLocked);
+            NES_ASSERT(!m_activeBodiesLocked);
 
             bool isActive = body.IsActive();
             if (isActive && pMotion->GetMotionQuality() == EBodyMotionQuality::LinearCast)
@@ -463,20 +488,20 @@ namespace nes
     {
         // [TODO]: Profile
         // [TODO]: Delineate between rigid and soft bodies.
-        std::unique_lock lock(m_activeBodiesMutex);
+        UniqueLock lock(m_activeBodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::ActiveBodiesArray));
         outBodies.assign(m_pActiveBodies, m_pActiveBodies + m_numActiveBodies.load(std::memory_order_relaxed));
     }
 
     void BodyManager::SetBodyActivationListener(BodyActivationListener* pListener)
     {
-        std::unique_lock lock(m_activeBodiesMutex);
+        UniqueLock lock(m_activeBodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::ActiveBodiesArray));
         m_pActivationListener = pListener;
     }
 
     void BodyManager::GetBodyIDs(BodyIDVector& outBodies) const
     {
         // [TODO]: Profile
-        std::unique_lock lock(m_bodiesMutex);
+        UniqueLock lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
 
         // Reserve space for all bodies
         outBodies.clear();
@@ -521,15 +546,17 @@ namespace nes
 
     void BodyManager::LockAllBodies() const
     {
-        // [TODO]: Check Physics Lock
+        NES_IF_ASSERTS_ENABLED(PhysicsLock::CheckLock(this, EPhysicsLockTypes::PerBody));
         m_bodyMutexes.LockAll();
-        // [TODO]: Update Physics Lock.
+
+        PhysicsLock::Lock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
     }
 
     void BodyManager::UnlockAllBodies() const
     {
-        // [TODO]: Update Physics Lock.    
-        // [TODO]: Check Physics Lock
+        PhysicsLock::Unlock(m_bodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::BodiesArray));
+        
+        NES_IF_ASSERTS_ENABLED(PhysicsLock::CheckUnlock(this, EPhysicsLockTypes::PerBody));
         m_bodyMutexes.UnlockAll();
     }
 
@@ -590,7 +617,7 @@ namespace nes
 
     void BodyManager::Internal_LockRead(const MutexMask mask) const
     {
-        // [TODO]: Check Physics Lock
+        NES_IF_ASSERTS_ENABLED(PhysicsLock::CheckLock(this, EPhysicsLockTypes::PerBody));
 
         int index = 0;
         for (MutexMask current = mask; current != 0; current >>= 1, ++index)
@@ -602,7 +629,7 @@ namespace nes
 
     void BodyManager::Internal_UnlockRead(const MutexMask mask) const
     {
-        // [TODO]: Check Physics Lock
+        NES_IF_ASSERTS_ENABLED(PhysicsLock::CheckUnlock(this, EPhysicsLockTypes::PerBody));
         
         int index = 0;
         for (MutexMask current = mask; current != 0; current >>= 1, ++index)
@@ -614,7 +641,7 @@ namespace nes
 
     void BodyManager::Internal_LockWrite(const MutexMask mask) const
     {
-        // [TODO]: Check Physics Lock
+        NES_IF_ASSERTS_ENABLED(PhysicsLock::CheckLock(this, EPhysicsLockTypes::PerBody));
         
         int index = 0;
         for (MutexMask current = mask; current != 0; current >>= 1, ++index)
@@ -626,7 +653,7 @@ namespace nes
 
     void BodyManager::Internal_UnlockWrite(const MutexMask mask) const
     {
-        // [TODO]: Check Physics Lock
+        NES_IF_ASSERTS_ENABLED(PhysicsLock::CheckUnlock(this, EPhysicsLockTypes::PerBody));
         
         int index = 0;
         for (MutexMask current = mask; current != 0; current >>= 1, ++index)
@@ -692,7 +719,7 @@ namespace nes
             --m_numActiveCCDBodies;
     }
 
-    Body* BodyManager::Internal_RemoveBody(const BodyID& id)
+    Body* BodyManager::RemoveBody(const BodyID& id)
     {
         // Get the body
         const uint32_t index = id.GetIndex();

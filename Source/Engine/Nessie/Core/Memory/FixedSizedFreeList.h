@@ -7,6 +7,7 @@
 #include "Core/Config.h"
 #include "Debug/Assert.h"
 #include "Math/Generic.h"
+#include "Core/Thread/Mutex.h"
 
 namespace nes
 {
@@ -127,12 +128,11 @@ namespace nes
 
         /// Array of pages of objects.
         ObjectStorage**                 m_pPages = nullptr;
-
-        // [TODO]: Make this the Mutex wrapper class that profiles the lock contention.
+        
         /// Mutex that is used to allocate a new page if the storage runs out.
         /// This variable is aligned to the cache line to prevent false sharing with the
         /// constants used to index in to the list via "Get()".
-        alignas(NES_CACHE_LINE_SIZE) std::mutex m_pageMutex;
+        alignas(NES_CACHE_LINE_SIZE) Mutex m_pageMutex;
 
 #ifdef NES_LOGGING_ENABLED
         /// Number of objects that are currently in the free list / new pages.

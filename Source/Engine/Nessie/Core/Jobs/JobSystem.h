@@ -1,6 +1,7 @@
 // JobSystem.h
 #pragma once
 #include <functional>
+#include "Core/StaticArray.h"
 #include "Core/Memory/StrongPtr.h"
 #include "Debug/Assert.h"
 
@@ -66,7 +67,7 @@ namespace nes
             ~JobHandle() = default;
             JobHandle(const JobHandle&) = default;
             JobHandle(JobHandle&& handle) noexcept : StrongPtr<Job>(std::move(handle)) { }
-            explicit JobHandle(Job* pJob);
+            explicit JobHandle(Job* pJob) : StrongPtr<Job>(pJob) { }
 
             JobHandle& operator=(const JobHandle&) = default;
             JobHandle& operator=(JobHandle&& handle) noexcept = default;
@@ -101,9 +102,9 @@ namespace nes
             /// @brief : Helper function to remove dependencies using a static array of Job Handles.
             //----------------------------------------------------------------------------------------------------
             template <uint32_t N>
-            static inline void  RemovedDependencies(std::array<JobHandle, N>& handles, const int count = 1)
+            static inline void  RemovedDependencies(StaticArray<JobHandle, N>& handles, const int count = 1)
             {
-                RemoveDependencies(handles.data(), handles.size(), count);
+                RemoveDependencies(handles.data(), static_cast<uint32>(handles.size()), count);
             }
         };
 
@@ -168,56 +169,56 @@ namespace nes
             static constexpr intptr_t   kBarrierDoneState = ~static_cast<intptr_t>(0);
 
         public:
-            Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32 numDependencies);
+            inline Job(const char* pName/*, const Color& color*/, JobSystem* pSystem, const JobFunction& function, const uint32 numDependencies);
             
             //----------------------------------------------------------------------------------------------------
             /// @brief : Add a number of dependencies to this Job.
             //----------------------------------------------------------------------------------------------------
-            void                AddDependency(const int count);
+            inline void             AddDependency(const int count);
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Remove a number of dependencies from this Job. Returns true if the dependency counter is 0.
             //----------------------------------------------------------------------------------------------------
-            bool                RemoveDependency(const int count);
+            inline bool             RemoveDependency(const int count);
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Remove a number of dependencies from this Job and Queues the Job for execution if there
             ///     are no more dependencies.
             //----------------------------------------------------------------------------------------------------
-            void                RemoveDependencyAndQueue(const int count);
+            inline void             RemoveDependencyAndQueue(const int count);
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Set the Barrier associated to this Job.
             //----------------------------------------------------------------------------------------------------
-            bool                SetBarrier(Barrier* pBarrier);
+            inline bool             SetBarrier(Barrier* pBarrier);
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Executes the Job. Returns either the number of dependencies that this Job still has,
             ///     kExecutingState if the Job is currently running, or kDoneState if it has successfully finished.
             //----------------------------------------------------------------------------------------------------
-            uint32_t            Execute();
+            inline uint32_t         Execute();
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Returns whether this Job can be executed (m_numDependencies == 0). 
             //----------------------------------------------------------------------------------------------------
-            bool                CanBeExecuted() const  { return m_numDependencies.load(std::memory_order_relaxed) == 0; }
+            inline bool             CanBeExecuted() const  { return m_numDependencies.load(std::memory_order_relaxed) == 0; }
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Returns whether this Job has finished execution. 
             //----------------------------------------------------------------------------------------------------
-            bool                IsDone() const         { return m_numDependencies.load(std::memory_order_relaxed) == kDoneState; }
+            inline bool             IsDone() const         { return m_numDependencies.load(std::memory_order_relaxed) == kDoneState; }
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Get the JobSystem running this Job. 
             //----------------------------------------------------------------------------------------------------
-            JobSystem*          GetJobSystem() const    { return m_pJobSystem; }
-            const char*         GetName() const         { return m_name; }
+            inline JobSystem*       GetJobSystem() const    { return m_pJobSystem; }
+            inline const char*      GetName() const         { return m_name; }
 
         private:
             //----------------------------------------------------------------------------------------------------
             /// @brief : `Releasing` the Job object calls JobSystem::Free() 
             //----------------------------------------------------------------------------------------------------
-            virtual void        ReleaseObjectImpl(Job* pThisObject) const override;
+            virtual void            ReleaseObjectImpl(Job* pThisObject) const override;
             
             /*Color m_color = Color::White();*/                 // TODO 
             const char*             m_name = "Unnamed";       /// Name of the Job (should be debug only).
@@ -238,7 +239,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Maximum number of concurrently executing Jobs.
         //----------------------------------------------------------------------------------------------------
-        inline virtual int      GetMaxConcurrency() = 0;
+        inline virtual int          GetMaxConcurrency() = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a new Job. The Job will be started immediately (when beginning execution the with a JobBarrier)
@@ -250,43 +251,45 @@ namespace nes
         ///     Job depends on removes its dependency!
         ///	@returns : Handle to the newly created Job. You can use this to set up dependencies among other Jobs.
         //----------------------------------------------------------------------------------------------------
-        virtual JobHandle       CreateJob(const char* pName/*, const Color& color*/, const JobFunction& jobFunction, const uint32 numDependencies = 0) = 0;
+        virtual JobHandle           CreateJob(const char* pName/*, const Color& color*/, const JobFunction& jobFunction, const uint32 numDependencies = 0) = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create a Barrier used to wait until a set of Jobs is completed. This must be followed by
         ///     a call to DestroyBarrier() to properly clean up the barrier when it is no longer in use. 
         //----------------------------------------------------------------------------------------------------
-        virtual Barrier*        CreateBarrier() = 0;
+        virtual Barrier*            CreateBarrier() = 0;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destroy a Barrier when it is no longer used. The Barrier should be empty at this point.
         //----------------------------------------------------------------------------------------------------
-        virtual void            DestroyBarrier(Barrier* pBarrier) = 0;
+        virtual void                DestroyBarrier(Barrier* pBarrier) = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Wait for a set of Jobs to be finished.
         /// @note : Only 1 thread can be waiting on a Barrier at a time!!!
         //----------------------------------------------------------------------------------------------------
-        virtual void            WaitForJobs(Barrier* pBarrier) = 0;
+        virtual void                WaitForJobs(Barrier* pBarrier) = 0;
 
     private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add a Job to the Job queue to be executed immediately. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            QueueJob(Job* pJob) = 0;
+        virtual void                QueueJob(Job* pJob) = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add a number of Jobs to the Job Queue to be executed immediately.
         //----------------------------------------------------------------------------------------------------
-        virtual void            QueueJobs(Job** pJobs, const uint32 numHandles) = 0;
+        virtual void                QueueJobs(Job** pJobs, const uint32 numHandles) = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Free the Job object. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            FreeJob(Job* pJob) = 0;
+        virtual void                FreeJob(Job* pJob) = 0;
     };
 
     using JobHandle = JobSystem::JobHandle;
     using JobBarrier = JobSystem::Barrier;
 }
+
+#include "JobSystem.inl"
 

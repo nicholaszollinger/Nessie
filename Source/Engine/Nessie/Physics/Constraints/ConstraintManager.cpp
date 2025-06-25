@@ -7,7 +7,7 @@ namespace nes
 {
     void ConstraintManager::Add(Constraint** constraintsArray, const int numConstraints)
     {
-        std::unique_lock lock(m_mutex);
+        UniqueLock lock(m_mutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::ConstraintsArray));
 
         m_constraints.reserve(m_constraints.size() + numConstraints);
         for (Constraint** pConstraintPtr = constraintsArray, **pEnd = constraintsArray + numConstraints; pConstraintPtr < pEnd; ++pConstraintPtr)
@@ -25,7 +25,7 @@ namespace nes
 
     void ConstraintManager::Remove(Constraint** constraintsArray, const int numConstraints)
     {
-        std::unique_lock lock(m_mutex);
+        UniqueLock lock(m_mutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::ConstraintsArray));
 
         for (Constraint** pConstraintPtr = constraintsArray, **pEnd = constraintsArray + numConstraints; pConstraintPtr < pEnd; ++pConstraintPtr)
         {
@@ -51,10 +51,10 @@ namespace nes
         }
     }
 
-    ConstraintManager::ConstraintsArray ConstraintManager::GetConstraints() const
+    Constraints ConstraintManager::GetConstraints() const
     {
-        std::unique_lock lock(m_mutex);
-        ConstraintsArray copy = m_constraints;
+        UniqueLock lock(m_mutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::ConstraintsArray));
+        Constraints copy = m_constraints;
         return copy;
     }
 

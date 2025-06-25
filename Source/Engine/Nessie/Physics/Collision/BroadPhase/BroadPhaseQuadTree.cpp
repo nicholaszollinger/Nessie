@@ -21,9 +21,8 @@ namespace nes
         m_numLayers = layerInterface.GetNumBroadPhaseLayers();
         NES_ASSERT(m_numLayers < static_cast<BroadPhaseLayer::Type>(kInvalidBroadPhaseLayer));
 
-#if NES_IF_ASSERTS_ENABLED
-        // TODO later: "PhysicsLockContext"
-        //m_lockContext = pBodyManager;
+#if NES_ASSERTS_ENABLED
+        m_lockContext = pBodyManager;
 #endif
 
         m_maxBodies = m_pBodyManager->GetMaxNumBodies();
@@ -73,7 +72,7 @@ namespace nes
         // Note that nothing should be locked at this point ot avoid risking a lock inversion deadlock.
         // Note that in other places where we lock this mutex we don't use shared lock ot detect lock inversions. As long
         // as nothing else is locked this is safe. This is why the BroadphaseQuery should be the highest priority lock.
-        std::unique_lock rootLock(m_queryLocks[m_queryLockIndex ^ 1]);
+        UniqueLock rootLock(m_queryLocks[m_queryLockIndex ^ 1] NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseQuery));
 
         for (BroadPhaseLayer::Type i = 0; i < static_cast<BroadPhaseLayer::Type>(m_numLayers); ++i)
         {
@@ -83,20 +82,19 @@ namespace nes
 
     void BroadPhaseQuadTree::LockModifications()
     {
-        // [TODO]: Use Physics Lock interface when completed.
-        m_updateMutex.lock();
+        // From this point on, prevent modifications to the tree.
+        PhysicsLock::Lock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
     }
 
     void BroadPhaseQuadTree::UnlockModifications()
     {
-        // [TODO]: Use Physics Lock interface when completed.
-        m_updateMutex.unlock();
+        // From this point on, we allow modifications to the tree again.
+        PhysicsLock::Unlock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
     }
 
     BroadPhase::UpdateState BroadPhaseQuadTree::UpdatePrepare()
     {
-        // [TODO]:
-        //NES_ASSERT(m_updateMutex.is_locked());
+        NES_ASSERT(m_updateMutex.is_locked());
 
         // Create the update state
         UpdateState updateState;
@@ -108,7 +106,7 @@ namespace nes
             QuadTree& tree = m_layers[m_nextLayerToUpdate];
             m_nextLayerToUpdate = (m_nextLayerToUpdate + 1) % m_numLayers;
 
-            // If it is dirty then we update it and return.
+            // If it is dirty, then we update it and return.
             if (tree.HasBodies() || tree.IsDirty() || tree.CanBeUpdated())
             {
                 pUpdateStateImpl->m_pTree = &tree;
@@ -124,8 +122,7 @@ namespace nes
 
     void BroadPhaseQuadTree::UpdateFinalize(const UpdateState& updateState)
     {
-        // [TODO]:
-        //NES_ASSERT(m_updateMutex.is_locked());
+        NES_ASSERT(m_updateMutex.is_locked());
 
         // Check if a tree has been updated.
         const UpdateStateImpl* pUpdateStateImpl = reinterpret_cast<const UpdateStateImpl*>(&updateState);
@@ -147,7 +144,6 @@ namespace nes
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // 'New' is overriden in layer state.
-        // - TODO: I don't have the debug operations set up when overriding...
         LayerState* pLayerStates = new LayerState[m_numLayers];
 
         // Sort the bodies by BroadPhaseLayer.
@@ -212,7 +208,7 @@ namespace nes
         }
 
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
-        std::shared_lock lock(m_updateMutex);
+        SharedLock lock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
 
         BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -293,7 +289,7 @@ namespace nes
             return;
 
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
-        std::shared_lock lock(m_updateMutex);
+        SharedLock lock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
 
         const BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -349,11 +345,9 @@ namespace nes
 
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
         if (takeLock)
-            //PhysicsLock::LockShared(m_updateMutex);
-                m_updateMutex.lock_shared();
-        // [TODO]: 
-        //else
-            //NES_ASSERT(m_updateMutex.is_locked());
+            PhysicsLock::LockShared(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
+        else
+            NES_ASSERT(m_updateMutex.is_locked());
 
         const BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -386,7 +380,7 @@ namespace nes
 
         // Unlock if necessary:
         if (takeLock)
-            m_updateMutex.unlock_shared();
+            PhysicsLock::UnlockShared(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
     }
 
     void BroadPhaseQuadTree::NotifyBodiesLayerChanged(BodyID* pBodies, int number)
