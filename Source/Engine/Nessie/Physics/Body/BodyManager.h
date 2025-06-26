@@ -358,7 +358,14 @@ namespace nes
     private:
         /// Debug system that tries to limit changes to the active bodies during the PhysicsScene::Update().
         bool                                m_activeBodiesLocked = false;
-        
+    #endif
+
+    #ifdef NES_DEBUG
+    public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Validate if the cached bounding boxes are correct for all active bodies. 
+        //----------------------------------------------------------------------------------------------------
+        void                                Internal_ValidateActiveBodyBounds();
     #endif
     };
 }

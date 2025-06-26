@@ -761,5 +761,19 @@ namespace nes
         NES_ASSERT(m_numBodies == static_cast<uint32_t>(m_bodies.size() - numFreed));
     }
 #endif
+
+#if NES_DEBUG
+    // [TODO]: Validate Soft Bodies as well.
+    void BodyManager::Internal_ValidateActiveBodyBounds()
+    {
+        UniqueLock lock(m_activeBodiesMutex NES_IF_ASSERTS_ENABLED(, this, EPhysicsLockTypes::ActiveBodiesArray));
+
+        for (BodyID* pID = m_pActiveBodies, *pEnd = m_pActiveBodies + m_numActiveBodies.load(std::memory_order_relaxed); pID < pEnd; ++pID)
+        {
+            const Body* pBody = m_bodies[pID->GetIndex()];
+            pBody->Internal_ValidateCachedBounds();
+        }
+    }
+#endif
     
 }

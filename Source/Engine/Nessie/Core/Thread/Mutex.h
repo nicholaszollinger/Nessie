@@ -103,7 +103,7 @@ namespace nes
     #if NES_ASSERTS_ENABLED
         inline bool is_locked() const
         {
-            return m_lockedThreadID == std::thread::id();
+            return m_lockedThreadID != std::thread::id();
         }
     #endif
         

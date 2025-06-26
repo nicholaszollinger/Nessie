@@ -73,7 +73,8 @@ namespace nes
 
     void* StackAllocator::Allocate(const size_t size, const size_t alignment)
     {
-        NES_ASSERT(size > 0, "Size must be greater than zero!");
+        if (size == 0)
+            return nullptr;
 
         // Get the aligned address.
         std::byte* pAlignedAddress = GetAlignedPtr(m_pEnd, alignment);

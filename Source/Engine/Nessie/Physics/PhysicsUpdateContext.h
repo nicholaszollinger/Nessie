@@ -145,7 +145,7 @@ namespace nes
             JobHandleArray  m_setupVelocityConstraints;                                 /// Calculate properties for all constraints in the constraint manager.
             JobHandle       m_buildIslandsFromConstraints;                              /// Go over all constraints and assign the bodies they're attached to to an Island.
             JobHandle       m_finalizeIslands;                                          /// Finalize calculation of simulation Islands.
-            JobHandleArray  m_bodySetIslandIndex;                                       /// Set the current island index on each body. (Not used by the simulation, only for drawing purposes).
+            JobHandle       m_bodySetIslandIndex;                                       /// Set the current island index on each body. (Not used by the simulation, only for drawing purposes).
 
             // - Solve Velocity
             JobHandleArray  m_solveVelocityConstraints;                                 /// Solve the constraints in the velocity domain.
