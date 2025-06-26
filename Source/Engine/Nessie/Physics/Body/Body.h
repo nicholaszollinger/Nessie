@@ -194,6 +194,11 @@ namespace nes
         inline bool             GetUseManifoldReduction() const                         { return GetFlag(EFlags::UseManifoldReduction); }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if the combination of this body and body2 should use manifold reduction.
+        //----------------------------------------------------------------------------------------------------
+        inline bool             GetUseManifoldReductionWithBody(const Body& body2) const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Set to indicate that gyroscopic force should be applied to this body.
         ///     (aka Dzhanibekov effect, see https://en.wikipedia.org/wiki/Tennis_racket_theorem)
         //----------------------------------------------------------------------------------------------------

@@ -117,6 +117,26 @@
     #define NES_IF_ASSERTS_DISABLED(...) __VA_ARGS__
 #endif
 
+// Check if Thread Sanitizer is enabled
+#ifdef __has_feature
+    #if __has_feature(thread_sanitizer)
+        #define NES_TSAN_ENABLED
+    #endif
+#else
+    #ifdef __SANITIZE_THREAD__
+        #define NES_TSAN_ENABLED
+    #endif
+#endif
+
+#ifdef NES_TSAN_ENABLED
+    /// Attribute to disable the Thread Sanitizer for a specific function.
+    #define NES_TSAN_NO_SANITIZE_ATTRIBUTE __attribute__((no_sanitize("thread")))
+#else
+    /// Attribute to disable the Thread Sanitizer for a specific function.
+    #define NES_TSAN_NO_SANITIZE_ATTRIBUTE
+#endif
+
+
 // Standard Types
 #include <cstdint>
 using uint = unsigned int;

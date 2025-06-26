@@ -1,7 +1,7 @@
 ﻿// QuadTree.cpp
 #include "QuadTree.h"
 
-#include "Application/Application.h"
+#include "Core/Memory/STLLocalAllocator.h"
 #include "Math/Vec4.h"
 #include "Geometry/AABoxSIMD.h"
 
@@ -113,8 +113,7 @@ namespace nes
 
         // Collect all Nodes:
         Allocator::Batch freeBatch;
-        // [TODO]: 
-        std::vector<NodeID/*,STLLocalAllocator<NodeID, kStackSize>*/> nodeStack;
+        std::vector<NodeID, STLLocalAllocator<NodeID, kStackSize>> nodeStack;
         nodeStack.reserve(kStackSize);
         nodeStack.push_back(rootNode.GetNodeID());
         NES_ASSERT(nodeStack.front().IsValid());
@@ -177,11 +176,10 @@ namespace nes
         }
     }
 
-    void QuadTree::UpdatePrepare(const BodyVector& bodies, BodyTrackerArray& outTrackers, UpdateState& outState,
-        bool doFullRebuild)
+    void QuadTree::UpdatePrepare(const BodyVector& bodies, BodyTrackerArray& outTrackers, UpdateState& outState, const bool doFullRebuild)
     {
         // Assert we have no nodes pending deletion, this means DiscardOldTree wasn't called yet
-        //NES_ASSERT(m_freeNodeBatch.m_numObjects == 0);
+        NES_ASSERT(m_freeNodeBatch.m_numObjects == 0);
         m_isDirty = false;
 
         const RootNode& rootNode = GetCurrentRoot();
@@ -195,18 +193,21 @@ namespace nes
         NodeID* pCurrentNodeID = pNodeIDs;
 
         // Collect all Bodies
-        NodeID nodeStack[kStackSize];
-        nodeStack[0] = rootNode.GetNodeID();
-        NES_ASSERT(nodeStack[0].IsValid());
-        int top = 0;
+        std::vector<NodeID, STLLocalAllocator<NodeID, kStackSize>> nodeStack;
+        nodeStack.reserve(kStackSize);
+        nodeStack.push_back(rootNode.GetNodeID());
+        NES_ASSERT(nodeStack.front().IsValid());
         do
         {
-            // Check if the node is a Body.
-            NodeID nodeID = nodeStack[top];
+            // Pop node from the stack.
+            NodeID nodeID = nodeStack.back();
+            nodeStack.pop_back();
+
+            // Check if the node is a body:
             if (nodeID.IsBody())
             {
                 // Validate that we're still in the right layer.
-            #if NES_LOGGING_ENABLED
+            #if NES_ASSERTS_ENABLED
                 const uint32_t bodyIndex = nodeID.GetBodyID().GetIndex();
                 NES_ASSERT(outTrackers[bodyIndex].m_collisionLayer == bodies[bodyIndex]->GetCollisionLayer());
             #endif
@@ -215,7 +216,6 @@ namespace nes
                 *pCurrentNodeID = nodeID;
                 ++pCurrentNodeID;
             }
-
             else
             {
                 // Process normal Node.
@@ -234,31 +234,13 @@ namespace nes
                     for (NodeID childNodeID : node.m_childNodeIDs)
                     {
                         if (childNodeID.IsValid())
-                        {
-                            if (top < kStackSize)
-                            {
-                                nodeStack[top] = childNodeID;
-                                ++top;
-                            }
-                            else
-                            {
-                                NES_ASSERT(false, "Stack full!\n"
-                                    "This must be a very deep tree. Are you batch adding bodies? Or adding them one at a time?"
-                                    "If you add one at a time, you need to call OptimizeBroadPhase to rebuild the tree.");
-
-                                // Falling back to adding the node as a whole
-                                *pCurrentNodeID = childNodeID;
-                                ++pCurrentNodeID;
-                            }
-                        }
-
-                        // Mark the Node to be freed:
-                        m_pAllocator->AddObjectToBatch(m_freeNodeBatch, nodeIndex);
+                            nodeStack.push_back(childNodeID);
                     }
+
+                    m_pAllocator->AddObjectToBatch(m_freeNodeBatch, nodeIndex);
                 }
-                --top;
             }
-        } while (top >= 0);
+        } while (!nodeStack.empty());
 
         // Check that our bookkeeping matches.
         const uint32_t numNodeIDs = static_cast<uint32_t>(pCurrentNodeID - pNodeIDs);
@@ -1119,7 +1101,7 @@ namespace nes
             StackEntry(const uint32_t nodeIndex, const uint32_t parentNodeIndex) : m_nodeIndex(nodeIndex), m_parentNodeIndex(parentNodeIndex) {} 
         };
 
-        std::vector<StackEntry/*, STLLocalAllocator<StackEntry, kStackSize>*/> stack;
+        std::vector<StackEntry, STLLocalAllocator<StackEntry, kStackSize>> stack;
         stack.reserve(kStackSize);
         stack.emplace_back(nodeIndex, kInvalidNodeIndex);
 

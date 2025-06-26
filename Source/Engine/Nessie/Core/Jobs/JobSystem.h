@@ -85,7 +85,7 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             /// @brief : Increment the dependency counter of this handle's Job.
             //----------------------------------------------------------------------------------------------------
-            void                AddDependency(const int count) const           { Get()->AddDependency(count); }
+            void                AddDependency(const int count = 1) const           { Get()->AddDependency(count); }
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Decrement the dependency counter of this handle's Job.

@@ -107,7 +107,7 @@ namespace nes
             m_nextLayerToUpdate = (m_nextLayerToUpdate + 1) % m_numLayers;
 
             // If it is dirty, then we update it and return.
-            if (tree.HasBodies() || tree.IsDirty() || tree.CanBeUpdated())
+            if (tree.HasBodies() && tree.IsDirty() && tree.CanBeUpdated())
             {
                 pUpdateStateImpl->m_pTree = &tree;
                 tree.UpdatePrepare(m_pBodyManager->GetBodies(), m_trackers, pUpdateStateImpl->m_updateState, false);

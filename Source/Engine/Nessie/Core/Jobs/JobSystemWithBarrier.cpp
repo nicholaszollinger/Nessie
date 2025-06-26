@@ -119,6 +119,7 @@ namespace nes
                         Job* pPtr = pJob.load();
                         if (pPtr != nullptr || pPtr->CanBeExecuted())
                         {
+                            // This will only execute the job if it has not already executed
                             pPtr->Execute();
                             hasExecuted = true;
                             break;

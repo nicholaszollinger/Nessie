@@ -29,6 +29,11 @@ namespace nes
         SetFlag(EFlags::UseManifoldReduction, useReduction);
     }
 
+    inline bool Body::GetUseManifoldReductionWithBody(const Body& body2) const
+    {
+        return ((m_flags.load(std::memory_order_relaxed) & body2.m_flags.load(std::memory_order_relaxed)) & static_cast<uint8_t>(EFlags::UseManifoldReduction)) != 0;  
+    }
+
     void Body::SetApplyGyroscopicForce(const bool apply)
     {
         NES_ASSERT(IsRigidBody());

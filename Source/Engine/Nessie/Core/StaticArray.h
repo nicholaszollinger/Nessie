@@ -15,8 +15,8 @@ namespace nes
     template <typename ElementType, size_t N>
     class StaticArray
     {
-        static_assert(std::is_copy_constructible_v<ElementType>, "Type must be copy constructible");
-        static_assert(std::is_copy_assignable_v<ElementType>, "Type must be copy constructible");
+        static_assert((std::is_copy_constructible_v<ElementType> || std::is_trivially_copyable_v<ElementType>), "Type must be copy constructible.");
+        static_assert((std::is_copy_assignable_v<ElementType>), "Type must be copy assignable.");
         //static_assert(std::equality_comparable<ElementType>, "Type must be equality comparable");
     
     public:
@@ -226,7 +226,7 @@ namespace nes
     template <size_t M>
     StaticArray<ElementType, N>& StaticArray<ElementType, N>::operator=(const StaticArray<ElementType, M>& other)
     {
-        const size_type otherSize = other.m_size;
+        const size_type otherSize = other.size();
         NES_ASSERT(otherSize <= kCapacity);
 
         if (static_cast<const void*>(this) != static_cast<const void*>(&other))
