@@ -46,12 +46,12 @@ namespace nes
                 m_numPositionSteps = math::Max(m_numPositionSteps, m_settings.m_numPositionSteps);
         }
 
-        NES_INLINE unsigned int GetNumVelocityStepsOverride() const { return m_numVelocitySteps; }
-        NES_INLINE unsigned int GetNumPositionSteps() const         { return m_numPositionSteps; }
+        NES_INLINE unsigned int GetNumVelocitySteps() const { return m_numVelocitySteps; }
+        NES_INLINE unsigned int GetNumPositionSteps() const { return m_numPositionSteps; }
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Dummy class to replace the steps calculator when we don't need the result.
+    /// @brief : Stub class to replace the steps calculator when we don't need the result.
     //----------------------------------------------------------------------------------------------------
     class DummyCalculateSolverSteps
     {

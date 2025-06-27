@@ -1,7 +1,7 @@
 // SubShapeIDPair.h
 #pragma once
 #include "SubShapeID.h"
-#include "Math/SIMD/VectorRegisterUint.h"
+#include "Math/SIMD/UVec4Reg.h"
 #include "Physics/Body/BodyID.h"
 
 namespace nes
@@ -26,7 +26,7 @@ namespace nes
 
         inline bool         operator==(const SubShapeIDPair& other) const
         {
-            return VectorRegisterUint::Load(reinterpret_cast<const uint32_t*>(this)) == VectorRegisterUint::Load(reinterpret_cast<const uint32_t*>(&other));
+            return UVec4Reg::Load(reinterpret_cast<const uint32_t*>(this)) == UVec4Reg::Load(reinterpret_cast<const uint32_t*>(&other));
         }
 
         /// Less than operator is used to consistently order contact points for a deterministic simulation.
