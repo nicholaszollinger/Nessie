@@ -334,9 +334,9 @@ namespace nes
         m_sleepTestTimer = 0.f;
     }
 
-    EAllowedSleep MotionProperties::Internal_AccumulateSleepTime(const float deltaTime, const float timeBeforeSleep)
+    ECanSleep MotionProperties::Internal_AccumulateSleepTime(const float deltaTime, const float timeBeforeSleep)
     {
         m_sleepTestTimer += deltaTime;
-        return m_sleepTestTimer >= timeBeforeSleep? EAllowedSleep::CanSleep : EAllowedSleep::CannotSleep;
+        return m_sleepTestTimer >= timeBeforeSleep? ECanSleep::CanSleep : ECanSleep::CannotSleep;
     }
 }

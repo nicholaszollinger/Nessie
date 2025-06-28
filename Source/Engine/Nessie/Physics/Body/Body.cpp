@@ -202,11 +202,11 @@ namespace nes
         Internal_CalculateWorldSpaceBounds();
     }
 
-    EAllowedSleep Body::Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep)
+    ECanSleep Body::Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep)
     {
         // Check override & sensors will never go to sleep (they would stop detecting collisions with sleeping bodies).
         if (!m_pMotionProperties->m_canSleep || IsSensor())
-            return EAllowedSleep::CannotSleep;
+            return ECanSleep::CannotSleep;
 
         // Get the points to test
         Vec3 points[3];
@@ -229,7 +229,7 @@ namespace nes
             if (sphere.GetRadius() > maxMovement)
             {
                 m_pMotionProperties->Internal_ResetSleepTestSpheres(points);
-                return EAllowedSleep::CannotSleep;
+                return ECanSleep::CannotSleep;
             }
         }
 

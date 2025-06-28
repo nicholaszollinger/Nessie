@@ -560,7 +560,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update eligibility for sleeping. 
         //----------------------------------------------------------------------------------------------------
-        EAllowedSleep           Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep);
+        ECanSleep               Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep);
 
 #ifdef NES_LOGGING_ENABLED
         inline void             Internal_ValidateCachedBounds() const;

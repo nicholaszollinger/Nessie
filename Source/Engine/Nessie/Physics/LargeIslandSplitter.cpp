@@ -549,12 +549,6 @@ namespace nes
         splits.MarkBatchProcessed(numItemsProcessed, outLastIteration, outFinalBatch);
     }
 
-    uint32 LargeIslandSplitter::GetIslandIndex(const uint splitIslandIndex) const
-    {
-        NES_ASSERT(splitIslandIndex < m_numSplitIslands);
-        return m_splitIslands[splitIslandIndex].m_IslandIndex;
-    }
-
     void LargeIslandSplitter::PrepareForSolverPositions()
     {
         for (Splits* pSplits = m_splitIslands, *pSplitsEnd = m_splitIslands + m_numSplitIslands; pSplits < pSplitsEnd; ++pSplits)

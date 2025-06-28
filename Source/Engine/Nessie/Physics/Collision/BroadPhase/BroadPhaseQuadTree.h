@@ -32,7 +32,7 @@ namespace nes
         
         virtual void            CastRay(const RayCast& ray, RayCastBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
         virtual void            CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-                void            CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const;
+        virtual void            CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
         virtual void            CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
         virtual void            CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
         virtual void            CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;

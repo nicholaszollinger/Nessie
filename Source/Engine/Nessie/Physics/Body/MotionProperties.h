@@ -12,7 +12,7 @@ namespace nes
 {
     struct MassProperties;
 
-    enum class EAllowedSleep : uint8_t
+    enum class ECanSleep : uint8_t
     {
         CannotSleep = 0,    /// Object cannot go to sleep
         CanSleep = 1,       // Object can go to sleep
@@ -358,7 +358,7 @@ namespace nes
         
         inline void                 Internal_ResetSleepTestSpheres(const Vec3* pPoints);
         inline void                 Internal_ResetSleepTestTimer()                          { m_sleepTestTimer = 0.f; }
-        inline EAllowedSleep        Internal_AccumulateSleepTime(float deltaTime, float timeBeforeSleep);
+        inline ECanSleep            Internal_AccumulateSleepTime(float deltaTime, float timeBeforeSleep);
         
     };
 }

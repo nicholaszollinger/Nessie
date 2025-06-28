@@ -219,7 +219,7 @@ namespace nes
         /// @brief : Apply last frame's impulses as an initial guess for this frame's impulses.
         //----------------------------------------------------------------------------------------------------
         template <typename MotionPropertiesCallback>
-        void                            WarmStartVelocityConstraints(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, const MotionPropertiesCallback& motionPropertiesCallback);
+        void                            WarmStartVelocityConstraints(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, MotionPropertiesCallback& motionPropertiesCallback);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Solve velocity constraints. When almost nothing changes, this should only apply very small

@@ -1172,7 +1172,7 @@ namespace nes
     }
 
     template <typename MotionPropertiesCallback>
-    void ContactConstraintManager::WarmStartVelocityConstraints(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, const MotionPropertiesCallback& motionPropertiesCallback)
+    void ContactConstraintManager::WarmStartVelocityConstraints(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, MotionPropertiesCallback& motionPropertiesCallback)
     {
         for (const uint32* pConstraintIndex = constraintIndexBegin; pConstraintIndex < constraintIndexEnd; ++pConstraintIndex)
         {
@@ -1214,8 +1214,8 @@ namespace nes
     }
 
     // Specialize for the two body callback types.
-    template<> void ContactConstraintManager::WarmStartVelocityConstraints<CalculateSolverSteps>(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, const CalculateSolverSteps& motionPropertiesCallback);
-    template<> void ContactConstraintManager::WarmStartVelocityConstraints<DummyCalculateSolverSteps>(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, const DummyCalculateSolverSteps& motionPropertiesCallback);
+    template void ContactConstraintManager::WarmStartVelocityConstraints<CalculateSolverSteps>(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, CalculateSolverSteps& motionPropertiesCallback);
+    template void ContactConstraintManager::WarmStartVelocityConstraints<DummyCalculateSolverSteps>(const uint32* constraintIndexBegin, const uint32* constraintIndexEnd, const float warmStartImpulseRatio, DummyCalculateSolverSteps& motionPropertiesCallback);
 
     template <EBodyMotionType Type1, EBodyMotionType Type2>
     NES_INLINE bool ContactConstraintManager::SolveVelocityConstraint(ContactConstraint& constraint, MotionProperties* pMotionProps1, MotionProperties* pMotionProps2)

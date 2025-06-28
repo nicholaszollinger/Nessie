@@ -131,6 +131,11 @@ namespace nes
         virtual void        FindCollidingPairs(BodyID* pActiveBodies, int numActiveBodies, float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter, const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const = 0;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Same as BroadPhaseQuery::CastAABox(), but can be implemented in a way to take no broad phase locks.
+        //----------------------------------------------------------------------------------------------------
+        virtual void        CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const = 0;
+        
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Bounding Box of all Bodies in this Broadphase. 
         //----------------------------------------------------------------------------------------------------
         virtual AABox       GetBounds() const = 0;

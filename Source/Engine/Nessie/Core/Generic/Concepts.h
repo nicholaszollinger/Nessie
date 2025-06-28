@@ -66,4 +66,10 @@ namespace nes
 
     template <typename Type, typename ValueType>
     concept ArrayOrVectorOfType = ArrayOrVectorType<Type> && std::same_as<typename Type::value_type, ValueType>;
+
+    template <typename Type, typename ReturnType = void, typename...FuncParams>
+    concept CallableType = requires (Type type, FuncParams&&...params)
+    {
+        { type(std::forward<FuncParams>()...) } -> std::same_as<ReturnType>;
+    };
 }

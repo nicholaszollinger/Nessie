@@ -77,7 +77,7 @@
 #endif
 
 // Multithreading Configuration 
-// Define to force single threaded applications.
+// Define to force single-threaded applications.
 //#define NES_FORCE_SINGLE_THREADED
 
 #ifdef NES_FORCE_SINGLE_THREADED
@@ -135,7 +135,6 @@
     /// Attribute to disable the Thread Sanitizer for a specific function.
     #define NES_TSAN_NO_SANITIZE_ATTRIBUTE
 #endif
-
 
 // Standard Types
 #include <cstdint>

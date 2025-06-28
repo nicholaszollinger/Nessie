@@ -2,6 +2,7 @@
 #pragma once
 #include "Core/Config.h"
 #include "Core/Thread/Atomics.h"
+#include "Debug/Assert.h"
 
 namespace nes
 {
@@ -168,7 +169,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the island index of the island that was split for a particular split index. 
         //----------------------------------------------------------------------------------------------------
-        inline uint32           GetIslandIndex(const uint splitIslandIndex) const;
+        inline uint32           GetIslandIndex(const uint splitIslandIndex) const { NES_ASSERT(splitIslandIndex < m_numSplitIslands); return m_splitIslands[splitIslandIndex].m_IslandIndex; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Prepare the island splitter for iterating over the split islands again for position solving.
