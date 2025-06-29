@@ -889,7 +889,7 @@ namespace nes
         {
             // Check if there are active bodies to be processed.
             uint32 activeBodiesReadIndex = pStep->m_activeBodyReadIndex;
-            uint32 numActiveBodies = m_bodyManager.GetNumActiveBodies();
+            const uint32 numActiveBodies = m_bodyManager.GetNumActiveBodies();
             if (activeBodiesReadIndex < numActiveBodies)
             {
                 // Try to claim a batch of active bodies.

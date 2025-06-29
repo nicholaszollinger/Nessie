@@ -14,7 +14,7 @@ namespace nes
     class QuadTree
     {
         /// Index value to denote an invalid Node. 
-        static constexpr uint32_t   kInvalidNodeIndex = std::numeric_limits<uint32_t>::max();
+        static constexpr uint32_t   kInvalidNodeIndex = 0xffffffff;
         
         /// Maximum size of the Stack during a Tree Walk.
         static constexpr int        kStackSize = 128;

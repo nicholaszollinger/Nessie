@@ -10,6 +10,6 @@ namespace nes
     enum class EBodyActivationMode : uint8_t
     {   
         Activate,    /// Activate the Body, making it part of the simulation.
-        LeaveAsIs,   /// Leave the activation state as it is. This will not deactivate an active body!
+        DontActivate,   /// Leave the activation state as it is. This will not deactivate an active body!
     };
 }

@@ -33,32 +33,32 @@ Scene:
             TurnSpeedYaw: 2000.0
             TurnSpeedPitch: 2000.0
             
-      # "Player"
-      - Entity: 1
-        LayerIndex: 0
-        Name: "Player"
-        Parent: null
-        IsEnabled: true
-        Location: [0, 0, 0]
-        Rotation: [0, 0, 0]
-        Scale: [1, 1, 1]
-        Components:
+      # # "Player"
+      # - Entity: 1
+      #   LayerIndex: 0
+      #   Name: "Player"
+      #   Parent: null
+      #   IsEnabled: true
+      #   Location: [0, 0, 0]
+      #   Rotation: [0, 0, 0]
+      #   Scale: [1, 1, 1]
+      #   Components:
       
-      # "Player Mesh"
-      - Entity: 2
-        LayerIndex: 0
-        Name: "Player Mesh"
-        Parent: 1
-        IsEnabled: true
-        Location: [0, 0, 3]
-        Rotation: [0, 0, 0]
-        Scale: [1, 1, 1]
-        Components:
-          MeshComponent:
-            Name: "Mesh"
-            IsEnabled: true
-            # [TODO]: Primitive Transform Data:
-            # [TODO]: MeshID
-            # [TODO]: MaterialID
-            # [TODO]: PipelineID?
+      # # "Player Mesh"
+      # - Entity: 2
+      #   LayerIndex: 0
+      #   Name: "Player Mesh"
+      #   Parent: 1
+      #   IsEnabled: true
+      #   Location: [0, 0, 3]
+      #   Rotation: [0, 0, 0]
+      #   Scale: [1, 1, 1]
+      #   Components:
+      #     MeshComponent:
+      #       Name: "Mesh"
+      #       IsEnabled: true
+      #       # [TODO]: Primitive Transform Data:
+      #       # [TODO]: MeshID
+      #       # [TODO]: MaterialID
+      #       # [TODO]: PipelineID?
 

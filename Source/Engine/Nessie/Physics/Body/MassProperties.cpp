@@ -42,7 +42,7 @@ namespace nes
 
         // Make sure the result is left-handed.
         if (!Vec3::IsLeftHanded(outRotation.GetAxisX(), outRotation.GetAxisY(), outRotation.GetAxisZ()))
-             outRotation[2] = -outRotation[2];
+            outRotation[2] = -outRotation[2];
 
 #if NES_ASSERTS_ENABLED
         // Validate that the solution is correct, for each axis we want to make sure that the different in inertia is

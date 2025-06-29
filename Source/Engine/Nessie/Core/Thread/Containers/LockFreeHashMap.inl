@@ -223,7 +223,7 @@ namespace nes
 
         // Construct a new key value pair:
         KeyValuePair* pKeyValue = m_allocator.template FromOffset<KeyValuePair>(writeOffset);
-        NES_ASSERT((reinterpret_cast<intptr_t>(pKeyValue) & alignof(KeyValuePair)) == 0);
+        NES_ASSERT(reinterpret_cast<intptr_t>(pKeyValue) % alignof(KeyValuePair) == 0);
         
     #ifdef NES_DEBUG
         std::memset(pKeyValue, 0xcd, size);

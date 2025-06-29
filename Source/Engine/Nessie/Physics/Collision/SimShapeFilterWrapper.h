@@ -18,7 +18,7 @@ namespace nes
             , m_pBody1(pBody1)
         {
             // Fall back to an empty filter if no simulation shape filter is set. This reduces the virtual call to 'return true'.
-            m_pFinalFilter = pFilter == nullptr ? this : &m_default;
+            m_pFinalFilter = pFilter != nullptr ? this : &m_default;
         }
 
         //----------------------------------------------------------------------------------------------------

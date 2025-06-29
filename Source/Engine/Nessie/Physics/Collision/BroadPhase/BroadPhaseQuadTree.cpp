@@ -573,9 +573,9 @@ namespace nes
             NES_ASSERT(collisionLayer != kInvalidCollisionLayer);
 
             // Find the first Body with a different layer:
-            BodyID* pMid = std::upper_bound(pStart, pEnd, collisionLayer, [pTrackers](CollisionLayer layer, BodyID bodyID)
+            BodyID* pMid = std::upper_bound(pStart, pEnd, collisionLayer, [pTrackers](const CollisionLayer layer, const BodyID bodyID)
             {
-                return layer < static_cast<BroadPhaseLayer::Type>(pTrackers[bodyID.GetIndex()].m_collisionLayer);
+                return layer < pTrackers[bodyID.GetIndex()].m_collisionLayer;
             });
 
             // Loop over all broadphase layers and test the ones that we could hit:

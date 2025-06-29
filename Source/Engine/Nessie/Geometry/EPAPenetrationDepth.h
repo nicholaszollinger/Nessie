@@ -151,7 +151,7 @@ namespace nes
             SupportPoints supportPoints;
             m_gjk.GetClosestPointsSimplex(supportPoints.m_y.data(), supportPoints.m_p, supportPoints.m_q, supportPoints.m_y.GetSizeRef());
 
-            // Fill up the amount of support points to 4
+            // Fill up the number of support points to 4
             switch (supportPoints.m_y.size())
             {
                 case 1:
@@ -175,7 +175,7 @@ namespace nes
 
                 case 2:
                 {
-                    // Two vertices, create 3 extra by taking perpendicular axis and rotating it around in 120 degree increments.
+                    // Two vertices, create 3 extra by taking a perpendicular axis and rotating it around in 120 degree increments.
                     Vec3 axis = (supportPoints.m_y[1] - supportPoints.m_y[0]).Normalized();
                     Mat44 rotation = Mat44::MakeRotation(axis, math::DegreesToRadians() * 120.f);
                     Vec3 dir1 = axis.NormalizedPerpendicular();

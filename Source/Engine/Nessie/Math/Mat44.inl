@@ -1118,8 +1118,8 @@ namespace nes
 
     Quat Mat44::ToQuaternion() const
     {
-        const float tr = m_columns[0].m_f32[0] + m_columns[1].m_f32[1] + m_columns[2].m_f32[2];
-
+        const float tr = m_columns[0].m_f32[0] + m_columns[1].m_f32[1] - m_columns[2].m_f32[2];
+        
         if (tr >= 0.f)
         {
             const float s = std::sqrt(tr + 1.f);
@@ -1139,7 +1139,7 @@ namespace nes
                 i = 1;
             if (m_columns[2].m_f32[2] > m_columns[i].m_f32[i])
                 i = 2;
-
+        
             if (i == 0)
             {
                 const float s = std::sqrt(m_columns[0].m_f32[0] - (m_columns[1].m_f32[1] + m_columns[2].m_f32[2]) + 1.f);
@@ -1167,9 +1167,9 @@ namespace nes
             else
             {
                 NES_ASSERT(i == 2);
-
-                float s = sqrt(m_columns[2].m_f32[2] - (m_columns[0].m_f32[0] + m_columns[1].m_f32[1]) + 1);
-                float is = 0.5f / s;
+        
+                const float s = sqrt(m_columns[2].m_f32[2] - (m_columns[0].m_f32[0] + m_columns[1].m_f32[1]) + 1);
+                const float is = 0.5f / s;
                 return Quat
                 (
                     (m_columns[0].m_f32[2] + m_columns[2].m_f32[0]) * is,
@@ -1179,6 +1179,71 @@ namespace nes
                 );
             }
         }
+        
+        // // pg 286 of "Math Primer for Graphics and Game Development".
+        //  const float fourXSquaredMinus1 = m_columns[0][0] - m_columns[1][1] - m_columns[2][2];
+        //  const float fourYSquaredMinus1 = m_columns[1][1] - m_columns[0][0] - m_columns[2][2];
+        //  const float fourZSquaredMinus1 = m_columns[2][2] - m_columns[0][0] - m_columns[1][1];
+        //  const float fourWSquaredMinus1 = m_columns[0][0] + m_columns[1][1] + m_columns[2][2];
+        //
+        //  // Determine which of w, x, y, or z has the largest absolute value.
+        //  int biggestIndex = 3;
+        //  float fourBiggerSquaredMinus1 = fourWSquaredMinus1;
+        //  if (fourXSquaredMinus1 > fourBiggerSquaredMinus1)
+        //  {
+        //      fourBiggerSquaredMinus1 = fourXSquaredMinus1;
+        //      biggestIndex = 0;
+        //  }
+        //
+        //  if (fourYSquaredMinus1 > fourBiggerSquaredMinus1)
+        //  {
+        //      fourBiggerSquaredMinus1 = fourYSquaredMinus1;
+        //      biggestIndex = 1;
+        //  }
+        //
+        //  if (fourZSquaredMinus1 > fourBiggerSquaredMinus1)
+        //  {
+        //      fourBiggerSquaredMinus1 = fourZSquaredMinus1;
+        //      biggestIndex = 2;
+        //  }
+        //
+        //  const float biggestValue = std::sqrt(fourBiggerSquaredMinus1 + 1.f) * 0.5f;
+        //  const float mult = 0.25f / biggestValue;
+        //
+        //  switch (biggestIndex)
+        //  {
+        //      case 0: // X
+        //          return Quat(
+        //              biggestValue,
+        //              (m_columns[1][2] - m_columns[2][1]) * mult,
+        //              (m_columns[2][0] - m_columns[0][2]) * mult,
+        //              (m_columns[0][1] - m_columns[1][0]) * mult);
+        //
+        //      case 1: // Y
+        //          return Quat(
+        //              (m_columns[1][2] - m_columns[2][1]) * mult,
+        //              biggestValue,
+        //              (m_columns[0][1] + m_columns[1][0]) * mult,
+        //              (m_columns[2][0] + m_columns[0][2]) * mult);
+        //
+        //      case 2: // Z
+        //          return Quat(
+        //              (m_columns[2][0] - m_columns[0][2]) * mult,
+        //              (m_columns[0][1] + m_columns[1][0]) * mult,
+        //              biggestValue,
+        //              (m_columns[1][2] + m_columns[2][1]) * mult);
+        //
+        //      case 3: // W
+        //          return Quat(
+        //              (m_columns[0][1] - m_columns[1][0]) * mult,
+        //              (m_columns[2][0] + m_columns[0][2]) * mult,
+        //              (m_columns[1][2] + m_columns[2][1]) * mult,
+        //              biggestValue);
+        //
+        //      default:
+        //          NES_ASSERT(false);
+        //          return Quat::Identity();
+        //  }
     }
 
     Vec3 Mat44::GetScale() const

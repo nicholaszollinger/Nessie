@@ -295,7 +295,8 @@ namespace nes
                 // Links to another body, take island index from other body (This must have been filled in already since we're looping from
                 // low to high.
                 NES_ASSERT(linkTo < i);
-                uint32 islandIndex = m_bodyLinks[linkTo].m_islandIndex;
+                const uint32 islandIndex = m_bodyLinks[linkTo].m_islandIndex;
+                link.m_islandIndex = islandIndex;
 
                 // Increment the start of the next island.
                 bodyIslandStarts[islandIndex + 1]++; 
@@ -307,7 +308,7 @@ namespace nes
                 ++m_numIslands;
 
                 // Set the start of the next island to 1.
-                bodyIslandStarts[m_numIslands] = i;
+                bodyIslandStarts[m_numIslands] = 1;
             }
         }
 
