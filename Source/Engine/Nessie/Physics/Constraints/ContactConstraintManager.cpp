@@ -342,7 +342,7 @@ namespace nes
 
         // Allocate temporary constraint buffer
         NES_ASSERT(m_constraints == nullptr);
-        m_constraints = pContext->m_pAllocator->Allocate<ContactConstraint>(m_maxConstraints);
+        m_constraints = static_cast<ContactConstraint*>(pContext->m_pAllocator->Allocate(m_maxConstraints * sizeof(ContactConstraint)));
     }
 
     template <EBodyMotionType Type1, EBodyMotionType Type2>

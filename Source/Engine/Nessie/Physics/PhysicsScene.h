@@ -16,6 +16,7 @@ namespace nes
     class PhysicsStepListener;
     class JobSystem;
     class StackAllocator;
+    class SimShapeFilter;
     
     //----------------------------------------------------------------------------------------------------
     ///	@brief : Class that runs physics simulation for all registered Bodies.   
@@ -23,6 +24,7 @@ namespace nes
     class PhysicsScene
     {
         friend class World;
+        using CCDBody = PhysicsUpdateContext::Step::CCDBody;
         
     public:
         /// Maximum number of bodies that is supported.
@@ -64,6 +66,16 @@ namespace nes
 
         /// Combine function used to combine friction and restitution between bodies.
         using CombineFunction = ContactConstraintManager::CombineFunction;
+        
+        /// Advanced use only. This function is similar to CollisionSolver::CollideShapeVsShape but only used to collide bodies during simulation.
+        /// body1: The first body to collide.
+        /// body2: The second body to collide.
+        /// centerOfMassTransform1: The center of mass transform for the first body (note this will not be the actual world space position of the body, it will be made relative to some position so we can drop to single precision). 
+        /// centerOfMassTransform2: The center of mass transform for the second body.
+        /// settings: Settings that control the collision detection. Note that the implementation can freely overwrite the shape settings as needed; the caller provides a temporary that will not be used after the function returns.
+        /// collector: The collector that will receive the contact points.
+        /// shapeFilter: The shape filter that can be used to exclude shapes from colliding with one another.
+        using SimCollideBodyVsBody = std::function<void(const Body& body1, const Body& body2, const Mat44& centerOfMassTransform1, const Mat44& centerOfMassTransform2, CollideShapeSettings& settings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter)>;
     
     public:
         PhysicsScene();
@@ -120,8 +132,23 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         CombineFunction                 GetCombineRestitution() const                                   { return m_contactManager.GetCombineRestitution(); }
 
-        // [TODO]: Set/Get SimShapeFilter.
-        // [TODO]: Set/Get SimCollideBodyVsBody
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the shape filter that will be used during simulation. This can be used to exclude
+        /// shapes within a body from colliding with each other. For example, if you have a high detail
+        /// collision model when simulating to exclude a low detail collision model when casting rays.
+        /// Note that in this case, you would need to pass the inverse of pFilter to the CastRay() function.
+        ///
+        ///	@param pFilter : Filter to set. Pass in nullptr to disable the shape filter.
+        ///
+        /// @note : The PhysicsScene does not own the ShapeFilter, so make sure that it stays in memory during
+        /// the lifetime of the PhysicsScene!
+        //----------------------------------------------------------------------------------------------------
+        void                            SetSimShapeFilter(const SimShapeFilter* pFilter)                { m_pSimShapeFilter = pFilter; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the shape filter used during simulation. See SetSimShapeFilter() for more details. 
+        //----------------------------------------------------------------------------------------------------
+        const SimShapeFilter*           GetSimShapeFilter() const                                       { return m_pSimShapeFilter; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Body Interface. This interface allows you to create, remove bodies from the simulation
@@ -261,7 +288,7 @@ namespace nes
         /// @brief : Get a collision layer filter that uses the default pair filter and a specified layer to
         ///     determine if layers collide.
         //----------------------------------------------------------------------------------------------------
-        DefaultCollisionLayerFilter     GetDefaultLayerFilter(CollisionLayer layer) const               { return DefaultCollisionLayerFilter(*m_pCollisionLayerPairFilter, layer); }
+        DefaultCollisionLayerFilter     GetDefaultCollisionLayerFilter(CollisionLayer layer) const               { return DefaultCollisionLayerFilter(*m_pCollisionLayerPairFilter, layer); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the number of bodies that are in the body manager. 
@@ -319,6 +346,21 @@ namespace nes
         /// @brief : Get the bounding box of all bodies in the physics system. 
         //----------------------------------------------------------------------------------------------------
         AABox                           GetBounds() const                                               { return m_pBroadphase->GetBounds(); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use only. Set the function that will be used to collide two bodies during simulation.
+        //----------------------------------------------------------------------------------------------------
+        void                            SetSimCollideBodyVsBody(const SimCollideBodyVsBody& func)       { m_simCollideBodyVsBody = func; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use only. Get the function that will be used to collide two bodies during simulation.
+        //----------------------------------------------------------------------------------------------------
+        const SimCollideBodyVsBody&     GetSimCollideBodyVsBody() const                                 { return m_simCollideBodyVsBody; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use only. Default function that is used to collide two bodies during simulation.
+        //----------------------------------------------------------------------------------------------------
+        static void                     Internal_DefaultSimCollideBodyVsBody(const Body& body1, const Body& body2, const Mat44& centerOfMassTransform1, const Mat44& centerOfMassTransform2, CollideShapeSettings& settings, CollideShapeCollector& collector, const ShapeFilter& shapeFilter);
     
     private:
         using StepListeners = std::vector<PhysicsStepListener*>;
@@ -433,6 +475,12 @@ namespace nes
 
         /// The Broadphase does quick collision detection between body pairs.
         BroadPhase*                     m_pBroadphase = nullptr;
+        
+        /// The shape filter that is used to filter out sub shapes during simulation.
+        const SimShapeFilter*           m_pSimShapeFilter = nullptr; 
+
+        /// The collision function that is used to collide two shapes during simulation.
+        SimCollideBodyVsBody            m_simCollideBodyVsBody = &Internal_DefaultSimCollideBodyVsBody; 
 
         /// Simulation Settings.
         PhysicsSettings                 m_physicsSettings;

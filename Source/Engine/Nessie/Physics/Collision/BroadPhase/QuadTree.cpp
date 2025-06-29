@@ -2,8 +2,15 @@
 #include "QuadTree.h"
 
 #include "Core/Memory/STLLocalAllocator.h"
-#include "Math/Vec4.h"
 #include "Geometry/AABoxSIMD.h"
+#include "Geometry/OrientedBox.h"
+#include "Geometry/RayAABox.h"
+#include "Physics/Collision/RayCast.h"
+#include "Physics/Body/BodyPair.h"
+#include "Physics/Collision/AABoxCast.h"
+#include "Physics/Collision/SortReverseAndStore.h"
+#include "Physics/Collision/CastResult.h"
+#include "Physics/PhysicsLock.h"
 
 namespace nes
 {
@@ -104,6 +111,20 @@ namespace nes
     }
 
     const AABox QuadTree::kInvalidBounds(Vec3(math::kLargeFloat), Vec3(-math::kLargeFloat));
+
+    static inline void QuadTreePerformanceWarning()
+    {
+    #if NES_ASSERTS_ENABLED
+        static std::atomic<bool> triggeredReport { false };
+        bool expected = false;
+        if (triggeredReport.compare_exchange_strong(expected, true))
+        {
+            NES_WARN("QuadTree: Performance warning: Stack full!\n"
+                "This must be a very deep tree. Are you batch adding bodies through BodyInterface::AddBodiesPrepare/AddBodiesFinalize?\n"
+                "If you add lots of bodies through BodyInterface::AddBody you may need to call PhysicsScene::OptimizeBroadPhase to rebuild the tree.");
+        }
+    #endif
+    }
 
     QuadTree::~QuadTree()
     {
@@ -460,74 +481,427 @@ namespace nes
         }
     }
 
-    void QuadTree::CastRay([[maybe_unused]] const RayCast& ray, [[maybe_unused]] RayCastBodyCollector& collector, [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    void QuadTree::CastRay(const RayCast& ray, RayCastBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
     {
-        NES_ASSERT(false, "Not implemented yet!"); 
+        class Visitor
+        {
+        public:
+            NES_INLINE Visitor(const RayCast& ray, RayCastBodyCollector& collector)
+                : m_origin(ray.m_origin)
+                , m_invDirection(ray.m_direction)
+                , m_collector(collector)
+            {
+                m_fractionStack.resize(kStackSize);
+                m_fractionStack[0] = -1.f;
+            }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Returns true if further processing of the tree should be aborted.   
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE bool         ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Returns true if this node / body should be visited, false if no hit can be generated.   
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE bool         ShouldVisitNode(const int stackTop) const { return m_fractionStack[stackTop] < m_collector.GetEarlyOutFraction(); }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Visit nodes, returns the number of hits found and sorts childNodeIDs so that they are at the
+            ///     beginning of the vector.
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE int          VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, const int stackTop)
+            {
+                // Test the ray against 4 bounding boxes.
+                Vec4Reg fraction = RayAABox4(m_origin, m_invDirection, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+
+                // Sort so that the highest values are first (we want to first process closer hits, and we process the stack from top to bottom).
+                return SortReverseAndStore(fraction, m_collector.GetEarlyOutFraction(), childNodeIDs, &m_fractionStack[stackTop]);
+            }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Visit a body. Returns false if the algorithm should terminate because no hits can be generated anymore.
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE void         VisitBody(const BodyID& bodyID, const int stackTop)
+            {
+                // Store potential hit with Body
+                BroadPhaseCastResult result { bodyID, m_fractionStack[stackTop] };
+                m_collector.AddHit(result);
+            }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Called when the stack is resized. This allows us to resize the fraction stack to match the
+            ///     new stack size.
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE void         OnStackResized(const size_t newStackSize)
+            {
+                m_fractionStack.resize(newStackSize);
+            }
+
+        private:
+            Vec3                    m_origin;
+            RayInvDirection         m_invDirection;
+            RayCastBodyCollector&   m_collector;
+            std::vector<float, STLLocalAllocator<float, kStackSize>> m_fractionStack;
+        };
+
+        Visitor visitor(ray, collector);
+        WalkTree(layerFilter, trackers, visitor);
     }
 
-    void QuadTree::CastAABox([[maybe_unused]] const AABoxCast& box, [[maybe_unused]] CastShapeBodyCollector& collector, [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    void QuadTree::CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
     {
-        NES_ASSERT(false, "Not implemented yet!");
+        class Visitor
+        {
+        public:
+            NES_INLINE Visitor(const AABoxCast& box, CastShapeBodyCollector& collector)
+                : m_origin(box.m_box.Center())
+                , m_extent(box.m_box.Extent())
+                , m_invDirection(box.m_direction)
+                , m_collector(collector)
+            {
+                m_fractionStack.resize(kStackSize);
+                m_fractionStack[0] = -1.f;
+            }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Returns true if further processing of the tree should be aborted.   
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE bool         ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Returns true if this node / body should be visited, false if no hit can be generated.   
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE bool         ShouldVisitNode(const int stackTop) const { return m_fractionStack[stackTop] < m_collector.GetPositiveEarlyOutFraction(); }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Visit nodes, returns the number of hits found and sorts childNodeIDs so that they are at the
+            ///     beginning of the vector.
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE int          VisitNodes(const Vec4Reg& inBoundsMinX, const Vec4Reg& inBoundsMinY, const Vec4Reg& inBoundsMinZ, const Vec4Reg& inBoundsMaxX, const Vec4Reg& inBoundsMaxY, const Vec4Reg& inBoundsMaxZ, UVec4Reg& childNodeIDs, const int stackTop)
+            {
+                // Enlarge them by the casted AABox extents
+                Vec4Reg boundsMinX = inBoundsMinX; 
+                Vec4Reg boundsMinY = inBoundsMinY; 
+                Vec4Reg boundsMinZ = inBoundsMinZ;
+                Vec4Reg boundsMaxX = inBoundsMaxX; 
+                Vec4Reg boundsMaxY = inBoundsMaxY; 
+                Vec4Reg boundsMaxZ = inBoundsMaxZ; 
+                math::AABox4EnlargeWithExtent(m_extent, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                
+                // Test the ray against 4 bounding boxes.
+                Vec4Reg fraction = RayAABox4(m_origin, m_invDirection, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+
+                // Sort so that the highest values are first (we want to first process closer hits, and we process the stack from top to bottom).
+                return SortReverseAndStore(fraction, m_collector.GetPositiveEarlyOutFraction(), childNodeIDs, &m_fractionStack[stackTop]);
+            }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Visit a body. Returns false if the algorithm should terminate because no hits can be generated anymore.
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE void         VisitBody(const BodyID& bodyID, const int stackTop)
+            {
+                // Store potential hit with Body
+                BroadPhaseCastResult result { bodyID, m_fractionStack[stackTop] };
+                m_collector.AddHit(result);
+            }
+
+            //----------------------------------------------------------------------------------------------------
+            ///	@brief : Called when the stack is resized. This allows us to resize the fraction stack to match the
+            ///     new stack size.
+            //----------------------------------------------------------------------------------------------------
+            NES_INLINE void         OnStackResized(const size_t newStackSize)
+            {
+                m_fractionStack.resize(newStackSize);
+            }
+
+        private:
+            Vec3                    m_origin;
+            Vec3                    m_extent;
+            RayInvDirection         m_invDirection;
+            CastShapeBodyCollector& m_collector;
+            std::vector<float, STLLocalAllocator<float, kStackSize>> m_fractionStack;
+        };
+
+        Visitor visitor(box, collector);
+        WalkTree(layerFilter, trackers, visitor);
     }
 
     void QuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
     {
         class Visitor
         {
-            const AABox& m_box;
-            CollideShapeBodyCollector& m_collector;
-
         public:
-            NES_INLINE explicit Visitor(const AABox& box, CollideShapeBodyCollector& collector) : m_box(box), m_collector(collector) {}
+            NES_INLINE explicit         Visitor(const AABox& box, CollideShapeBodyCollector& collector) : m_box(box), m_collector(collector) {}
 
-            NES_INLINE bool ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
+            NES_INLINE bool             ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
 
             /// Returns true if this node / body should be visited, false if no hit can be generated.
-            NES_INLINE bool ShouldVisitNode([[maybe_unused]] int stackTop) const
+            NES_INLINE bool             ShouldVisitNode([[maybe_unused]] int stackTop) const
             {
                 return true;
             }
 
-            NES_INLINE int VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, [[maybe_unused]] const int stackTop) const
+            NES_INLINE int              VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, [[maybe_unused]] const int stackTop) const
             {
-                const UVec4Reg hitting = math::AABoxVs4AABox(m_box, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
-                return UVec4Reg::CountAndSortTrues(hitting, childNodeIDs);
+                const UVec4Reg hitting = math::AABox4VsAABox(m_box, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                return CountAndSortTrues(hitting, childNodeIDs);
             }
 
-            NES_INLINE void VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
+            NES_INLINE void             VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
             {
                 // Store the potential hit with the body.
                 m_collector.AddHit(id);
             }
+
+            NES_INLINE void             OnStackResized([[maybe_unused]] const size_t newStackSize) const { /* Nothing to do. */ }
+
+        private:
+            const AABox&                m_box;
+            CollideShapeBodyCollector&  m_collector;
         };
         
         Visitor visitor(box, collector);
         WalkTree(layerFilter, trackers, visitor);
     }
 
-    void QuadTree::CollideSphere([[maybe_unused]] const Vec3& center, [[maybe_unused]] const float radius, [[maybe_unused]] CollideShapeBodyCollector& collector,
-        [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    void QuadTree::CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
     {
-        NES_ASSERT(false, "Not implemented yet!"); 
+        class Visitor
+        {
+        public:
+            NES_INLINE Visitor(const Vec3 center, const float radius, CollideShapeBodyCollector& collector)
+                : m_centerX(center.SplatX())
+                , m_centerY(center.SplatY())
+                , m_centerZ(center.SplatZ())
+                , m_radiusSqr(Vec4Reg::Replicate(math::Squared(radius)))
+                , m_collector(collector)
+            {
+                //
+            }
+
+            NES_INLINE bool         ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
+
+            /// Returns true if this node / body should be visited, false if no hit can be generated.
+            NES_INLINE bool             ShouldVisitNode([[maybe_unused]] int stackTop) const
+            {
+                return true;
+            }
+
+            NES_INLINE int              VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, [[maybe_unused]] const int stackTop) const
+            {
+                const UVec4Reg hitting = math::AABox4VsSphere(m_centerX, m_centerY, m_centerZ, m_radiusSqr, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                return CountAndSortTrues(hitting, childNodeIDs);
+            }
+
+            NES_INLINE void             VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
+            {
+                // Store the potential hit with the body.
+                m_collector.AddHit(id);
+            }
+
+            NES_INLINE void             OnStackResized([[maybe_unused]] const size_t newStackSize) const { /* Nothing to do. */ }
+
+        private:
+            Vec4Reg                     m_centerX;
+            Vec4Reg                     m_centerY;
+            Vec4Reg                     m_centerZ;
+            Vec4Reg                     m_radiusSqr;
+            CollideShapeBodyCollector&  m_collector;
+        };
+        
+        Visitor visitor(center, radius, collector);
+        WalkTree(layerFilter, trackers, visitor);
     }
 
-    void QuadTree::CollidePoint([[maybe_unused]] const Vec3& point, [[maybe_unused]] CollideShapeBodyCollector& collector,
-        [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    void QuadTree::CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
     {
-        NES_ASSERT(false, "Not implemented yet!"); 
+        class Visitor
+        {
+        public:
+            NES_INLINE Visitor(const Vec3 point, CollideShapeBodyCollector& collector)
+                : m_point(point)
+                , m_collector(collector)
+            {
+                //
+            }
+
+            NES_INLINE bool         ShouldAbort() const { return m_collector.ShouldEarlyOut(); }
+
+            /// Returns true if this node / body should be visited, false if no hit can be generated.
+            NES_INLINE bool             ShouldVisitNode([[maybe_unused]] int stackTop) const
+            {
+                return true;
+            }
+
+            NES_INLINE int              VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, [[maybe_unused]] const int stackTop) const
+            {
+                const UVec4Reg hitting = math::AABox4VsPoint(m_point, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                return CountAndSortTrues(hitting, childNodeIDs);
+            }
+
+            NES_INLINE void             VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
+            {
+                // Store the potential hit with the body.
+                m_collector.AddHit(id);
+            }
+
+            NES_INLINE void             OnStackResized([[maybe_unused]] const size_t newStackSize) const { /* Nothing to do. */ }
+
+        private:
+            Vec3                        m_point;
+            CollideShapeBodyCollector&  m_collector;
+        };
+
+        Visitor visitor(point, collector);
+        WalkTree(layerFilter, trackers, visitor);
     }
 
-    void QuadTree::CollideOrientedBox([[maybe_unused]] const OrientedBox& box, [[maybe_unused]] CollideShapeBodyCollector& collector,
-        [[maybe_unused]] const CollisionLayerFilter& layerFilter, [[maybe_unused]] const BodyTrackerArray& trackers) const
+    void QuadTree::CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers) const
     {
-        NES_ASSERT(false, "Not implemented yet!"); 
+        class Visitor
+        {
+        public:
+            NES_INLINE Visitor(const OrientedBox& box, CollideShapeBodyCollector& collector)
+                : m_box(box)
+                , m_collector(collector)
+            {
+                //
+            }
+
+            NES_INLINE bool         ShouldAbort() const
+            {
+                return m_collector.ShouldEarlyOut();
+            }
+
+            /// Returns true if this node / body should be visited, false if no hit can be generated.
+            NES_INLINE bool             ShouldVisitNode([[maybe_unused]] int stackTop) const
+            {
+                return true;
+            }
+
+            NES_INLINE int              VisitNodes(const Vec4Reg& boundsMinX, const Vec4Reg& boundsMinY, const Vec4Reg& boundsMinZ, const Vec4Reg& boundsMaxX, const Vec4Reg& boundsMaxY, const Vec4Reg& boundsMaxZ, UVec4Reg& childNodeIDs, [[maybe_unused]] const int stackTop) const
+            {
+                const UVec4Reg hitting = math::AABox4VsBox(m_box, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                return CountAndSortTrues(hitting, childNodeIDs);
+            }
+
+            NES_INLINE void             VisitBody(const BodyID& id, [[maybe_unused]] const int stackTop)
+            {
+                // Store the potential hit with the body.
+                m_collector.AddHit(id);
+            }
+
+            NES_INLINE void             OnStackResized([[maybe_unused]] const size_t newStackSize) const
+            {
+                /* Nothing to do. */
+            }
+
+        private:
+            OrientedBox                 m_box;
+            CollideShapeBodyCollector&  m_collector;
+        };
+
+        Visitor visitor(box, collector);
+        WalkTree(layerFilter, trackers, visitor); 
     }
 
-    void QuadTree::FindCollidingPairs([[maybe_unused]] const BodyVector& bodies, [[maybe_unused]] const BodyID* activeBodiesArray,
-        [[maybe_unused]] const int numActiveBodies, [[maybe_unused]] float speculativeContactDistance, [[maybe_unused]] BodyPairCollector& collector,
-        [[maybe_unused]] const CollisionLayerPairFilter& layerFilter) const
+    void QuadTree::FindCollidingPairs(const BodyVector& bodies, const BodyID* activeBodiesArray, const int numActiveBodies, float speculativeContactDistance, BodyPairCollector& collector, const CollisionLayerPairFilter& layerFilter) const
     {
-        NES_ASSERT(false, "Not implemented yet!"); 
+        // Note that we don't lock the tree at this point. We know that the tree is not going to be swapped or deleted while finding collision pairs due to the way the jobs are scheduled in
+        // the PhysicsScene::Update. We double-check this assumption at the end of the function.
+        const RootNode& rootNode = GetCurrentRoot();
+        NES_ASSERT(rootNode.m_index != kInvalidNodeIndex);
+
+        // Assert sane input
+        NES_ASSERT(activeBodiesArray != nullptr);
+        NES_ASSERT(numActiveBodies > 0);
+
+        std::vector<NodeID, STLLocalAllocator<NodeID, kStackSize>> nodeStackArray;
+        nodeStackArray.resize(kStackSize);
+        NodeID* pNodeStack = nodeStackArray.data();
+
+        // Loop over all active bodies
+        for (int b1 = 0; b1 < numActiveBodies; ++b1)
+        {
+            BodyID body1ID = activeBodiesArray[b1];
+            const Body& body1 = *bodies[body1ID.GetIndex()];
+            NES_ASSERT(!body1.IsStatic());
+
+            // Expand the bounding box by the speculative contact distance.
+            AABox bounds1 = body1.GetWorldSpaceBounds();
+            bounds1.ExpandBy(Vec3::Replicate(speculativeContactDistance));
+
+            // Test each body with the tree
+            pNodeStack[0] = rootNode.GetNodeID();
+            int top = 0;
+            do
+            {
+                // Check if node is a body
+                NodeID childNodeID = pNodeStack[top];
+                if (childNodeID.IsBody())
+                {
+                    // Don't collide with self.
+                    const BodyID body2ID = childNodeID.GetBodyID();
+                    if (body1ID != body2ID)
+                    {
+                        // Collisions between dynamic pairs need to be picked up only once.
+                        const Body& body2 = *bodies[body2ID.GetIndex()];
+                        if (layerFilter.ShouldCollide(body1.GetCollisionLayer(), body2.GetCollisionLayer())
+                            && Body::Internal_FindCollidingPairsCanCollide(body1, body2)
+                            && bounds1.Overlaps(body2.GetWorldSpaceBounds())) // In the broadphase we widen the bounding box when a body moves - do a final check to see if the bounding boxes actually overlap.
+                        {
+                            collector.AddHit({ body1ID, body2ID}); 
+                        }
+                    }
+                }
+                else if (childNodeID.IsValid())
+                {
+                    // Process normal node
+                    const Node& node = m_pAllocator->Get(childNodeID.GetNodeIndex());
+                    NES_ASSERT(math::IsAligned(&node, NES_CACHE_LINE_SIZE));
+
+                    // Get the bounds of the 4 children
+                    const Vec4Reg boundsMinX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(&node.m_minX));
+                    const Vec4Reg boundsMinY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(&node.m_minY));
+                    const Vec4Reg boundsMinZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(&node.m_minZ));
+                    const Vec4Reg boundsMaxX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(&node.m_maxX));
+                    const Vec4Reg boundsMaxY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(&node.m_maxY));
+                    const Vec4Reg boundsMaxZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(&node.m_maxZ));
+
+                    // Test overlap
+                    const UVec4Reg overlap = math::AABox4VsAABox(bounds1, boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ);
+                    const int numResults = overlap.CountTrues();
+                    if (numResults > 0)
+                    {
+                        // Load the ids for the 4 children
+                        UVec4Reg childIDs = UVec4Reg::LoadInt4Aligned(reinterpret_cast<const uint32*>(&node.m_childNodeIDs[0]));
+
+                        // Sort so that overlaps are first.
+                        childIDs = UVec4Reg::Sort4True(overlap, childIDs);
+
+                        // Ensure there is space on the stack (falls back to the heap if there isn't).
+                        if (top + 4 >= static_cast<int>(nodeStackArray.size()))
+                        {
+                            QuadTreePerformanceWarning();
+                            nodeStackArray.resize(nodeStackArray.size() << 1);
+                            pNodeStack = nodeStackArray.data();
+                        }
+
+                        // Push them onto the stack
+                        childIDs.StoreInt4(reinterpret_cast<uint32*>(&pNodeStack[top]));
+                        top += numResults;
+                    }
+                }
+
+                --top;
+            }
+            while (top >= 0);
+        }
+
+        // Test that the root node was not swapped while finding colliding pairs.
+        // This would mean that UpdateFinalize/DiscardOldTree ran during collision detection, which should not be possible with the way the jobs are scheduled.
+        NES_ASSERT(rootNode.m_index != kInvalidNodeIndex);
+        NES_ASSERT(&rootNode == &GetCurrentRoot());
     }
 
     AABox QuadTree::GetBounds() const
@@ -1023,13 +1397,15 @@ namespace nes
     {
         const RootNode& rootNode = GetCurrentRoot();
 
-        NodeID nodeStack[kStackSize];
-        nodeStack[0] = rootNode.GetNodeID();
+        std::vector<NodeID, STLLocalAllocator<NodeID, kStackSize>> nodeStackArray;
+        nodeStackArray.resize(kStackSize);;
+        NodeID* pNodeStack = nodeStackArray.data();
+        pNodeStack[0] = rootNode.GetNodeID();
         int top = 0;
         do
         {
             // Check if the Node is a Body:
-            NodeID childNodeID = nodeStack[top];
+            NodeID childNodeID = pNodeStack[top];
             if (childNodeID.IsBody())
             {
                 const BodyID bodyID = childNodeID.GetBodyID();
@@ -1046,34 +1422,31 @@ namespace nes
 
             else if (childNodeID.IsValid())
             {
-                // Check if stack can hold more Nodes
-                if (top + 4 < kStackSize)
+                if (top + 4 >= static_cast<int>(nodeStackArray.size()))
                 {
-                    const Node& node = m_pAllocator->Get(childNodeID.GetNodeIndex());
-                    //NES_ASSERT(IsAligned())
-                    
-                    // Load the bounds of the 4 children:
-                    Vec4Reg boundsMinX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minX)); 
-                    Vec4Reg boundsMinY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minY)); 
-                    Vec4Reg boundsMinZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minZ));
-                    Vec4Reg boundsMaxX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxX)); 
-                    Vec4Reg boundsMaxY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxY)); 
-                    Vec4Reg boundsMaxZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxZ));
-
-                    // Load the Child IDs.
-                    UVec4Reg childIDs = UVec4Reg::Load(reinterpret_cast<const uint32_t*>(node.m_childNodeIDs));
-
-                    const int numResults = visitor.VisitNodes(boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ, childIDs, top);
-                    UVec4Reg::Store(childIDs, reinterpret_cast<uint32_t*>(&nodeStack[top]));
-                    top += numResults;
+                    QuadTreePerformanceWarning();
+                    nodeStackArray.resize(static_cast<int>(nodeStackArray.size() << 1));
+                    pNodeStack = nodeStackArray.data();
+                    visitor.OnStackResized(nodeStackArray.size());
                 }
+                
+                const Node& node = m_pAllocator->Get(childNodeID.GetNodeIndex());
+                NES_ASSERT(math::IsAligned(&node, NES_CACHE_LINE_SIZE));
+                
+                // Load the bounds of the 4 children:
+                Vec4Reg boundsMinX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minX)); 
+                Vec4Reg boundsMinY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minY)); 
+                Vec4Reg boundsMinZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_minZ));
+                Vec4Reg boundsMaxX = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxX)); 
+                Vec4Reg boundsMaxY = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxY)); 
+                Vec4Reg boundsMaxZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxZ));
 
-                else
-                {
-                    NES_ASSERT(false, "Stack full!\n"
-                                    "This must be a very deep tree. Are you batch adding bodies? Or adding them one at a time?"
-                                    "If you add one at a time, you need to call OptimizeBroadPhase to rebuild the tree.");
-                }
+                // Load the Child IDs.
+                UVec4Reg childIDs = UVec4Reg::LoadInt4(reinterpret_cast<const uint32_t*>(node.m_childNodeIDs));
+
+                const int numResults = visitor.VisitNodes(boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ, childIDs, top);
+                childIDs.StoreInt4(reinterpret_cast<uint32_t*>(&pNodeStack[top]));
+                top += numResults;
             }
 
             // Fetch the next node until we find one that the visitor wants to see.

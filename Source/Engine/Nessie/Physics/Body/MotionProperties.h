@@ -5,7 +5,7 @@
 #include "MotionQuality.h"
 #include "MotionType.h"
 #include "Math/Quat.h"
-#include "Math/Mat4.h"
+#include "Math/Mat44.h"
 #include "Geometry/Sphere.h"
 
 namespace nes

@@ -10,8 +10,8 @@ namespace nes
         m_allowedDoFs = allowedDoFs;
 
         // Decompose DOFs
-        uint32_t allowedTranslationAxis = static_cast<uint32_t>(allowedDoFs) & 0b111; 
-        uint32_t allowedRotationAxis = (static_cast<uint32_t>(allowedDoFs) >> 3) & 0b111;
+        uint allowedTranslationAxis = static_cast<uint>(allowedDoFs) & 0b111; 
+        uint allowedRotationAxis = (static_cast<uint>(allowedDoFs) >> 3) & 0b111;
 
         // Set inverse mass
         if (allowedTranslationAxis == 0)

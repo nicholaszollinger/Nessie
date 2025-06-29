@@ -943,12 +943,12 @@ namespace nes
 	    det = _mm_div_ss(_mm_set_ss(1.0f), det);
 	    det = _mm_shuffle_ps(det, det, _MM_SHUFFLE(0, 0, 0, 0));
 
-        Mat44 result;
+	    Mat44 result;
 	    result.m_columns[0].m_value = _mm_mul_ps(det, minor0);
 	    result.m_columns[1].m_value = _mm_mul_ps(det, minor1);
 	    result.m_columns[2].m_value = _mm_mul_ps(det, minor2);
 	    result.m_columns[3].m_value = _mm_mul_ps(det, minor3);
-        return result;
+	    return result;
     #else
         float m00 = NES_RC(0, 0), m10 = NES_RC(1, 0), m20 = NES_RC(2, 0), m30 = NES_RC(3, 0);
 	    float m01 = NES_RC(0, 1), m11 = NES_RC(1, 1), m21 = NES_RC(2, 1), m31 = NES_RC(3, 1);
@@ -1118,77 +1118,66 @@ namespace nes
 
     Quat Mat44::ToQuaternion() const
     {
-        // pg 286 of "Math Primer for Graphics and Game Development".
-        const float fourXSquaredMinus1 = m_columns[0].m_f32[0] - m_columns[1].m_f32[1] - m_columns[2].m_f32[2];
-        const float fourYSquaredMinus1 = m_columns[1].m_f32[1] - m_columns[0].m_f32[0] - m_columns[2].m_f32[2];
-        const float fourZSquaredMinus1 = m_columns[2].m_f32[2] - m_columns[0].m_f32[0] - m_columns[1].m_f32[1];
-        const float fourWSquaredMinus1 = m_columns[0].m_f32[0] + m_columns[1].m_f32[1] + m_columns[2].m_f32[2];
+        const float tr = m_columns[0].m_f32[0] + m_columns[1].m_f32[1] + m_columns[2].m_f32[2];
 
-        // Determine which of w, x, y, or z has the largest absolute value.
-        int largestIndex = 0;
-        float fourBiggerSquaredMinus1 = fourWSquaredMinus1;
-        if (fourXSquaredMinus1 > fourBiggerSquaredMinus1)
+        if (tr >= 0.f)
         {
-            fourBiggerSquaredMinus1 = fourXSquaredMinus1;
-            largestIndex = 1;
+            const float s = std::sqrt(tr + 1.f);
+            const float is = 0.5f / s;
+            return Quat
+            (
+                (m_columns[1].m_f32[2] - m_columns[2].m_f32[1]) * is,
+                (m_columns[2].m_f32[0] - m_columns[0].m_f32[2]) * is,
+                (m_columns[0].m_f32[1] - m_columns[1].m_f32[0]) * is,
+                0.5f * s
+            );
         }
-
-        if (fourYSquaredMinus1 > fourBiggerSquaredMinus1)
+        else
         {
-            fourBiggerSquaredMinus1 = fourYSquaredMinus1;
-            largestIndex = 2;
-        }
+            int i = 0;
+            if (m_columns[1].m_f32[1] > m_columns[0].m_f32[0])
+                i = 1;
+            if (m_columns[2].m_f32[2] > m_columns[i].m_f32[i])
+                i = 2;
 
-        if (fourZSquaredMinus1 > fourBiggerSquaredMinus1)
-        {
-            fourBiggerSquaredMinus1 = fourZSquaredMinus1;
-            largestIndex = 2;
-        }
-
-        const float largestValue = std::sqrt(fourBiggerSquaredMinus1 + 1.f) * 0.5f;
-        const float mult = 0.25f / largestValue;
-
-        switch (largestIndex)
-        {
-            case 0: // W
+            if (i == 0)
+            {
+                const float s = std::sqrt(m_columns[0].m_f32[0] - (m_columns[1].m_f32[1] + m_columns[2].m_f32[2]) + 1.f);
+                const float is = 0.5f / s;
                 return Quat
                 (
-                    (m_columns[1][2] - m_columns[2][1]) * mult,
-                    (m_columns[2][0] - m_columns[0][2]) * mult,
-                    (m_columns[0][1] - m_columns[1][0]) * mult,
-                    largestValue
+                    0.5f * s,
+                    (m_columns[1].m_f32[0] + m_columns[0].m_f32[1]) * is,
+                    (m_columns[0].m_f32[2] + m_columns[2].m_f32[0]) * is,
+                    (m_columns[1].m_f32[2] - m_columns[2].m_f32[1]) * is
                 );
-
-            case 1: // X
+            }
+            else if (i == 1)
+            {
+                float s = sqrt(m_columns[1].m_f32[1] - (m_columns[2].m_f32[2] + m_columns[0].m_f32[0]) + 1);
+                float is = 0.5f / s;
                 return Quat
                 (
-                    largestValue,
-                    (m_columns[0][1] + m_columns[1][0]) * mult,
-                    (m_columns[2][0] + m_columns[0][2]) * mult,
-                    (m_columns[1][2] - m_columns[2][1]) * mult
+                    (m_columns[1].m_f32[0] + m_columns[0].m_f32[1]) * is,
+                    0.5f * s,
+                    (m_columns[2].m_f32[1] + m_columns[1].m_f32[2]) * is,
+                    (m_columns[2].m_f32[0] - m_columns[0].m_f32[2]) * is
                 );
+            }
+            else
+            {
+                NES_ASSERT(i == 2);
 
-            case 2: // Y
+                float s = sqrt(m_columns[2].m_f32[2] - (m_columns[0].m_f32[0] + m_columns[1].m_f32[1]) + 1);
+                float is = 0.5f / s;
                 return Quat
                 (
-                    (m_columns[0][1] + m_columns[1][0]) * mult,
-                    largestValue,
-                    (m_columns[1][2] + m_columns[2][1]) * mult,
-                    (m_columns[2][0] - m_columns[0][2]) * mult
+                    (m_columns[0].m_f32[2] + m_columns[2].m_f32[0]) * is,
+                    (m_columns[2].m_f32[1] + m_columns[1].m_f32[2]) * is,
+                    0.5f * s,
+                    (m_columns[0].m_f32[1] - m_columns[1].m_f32[0]) * is
                 );
-
-            case 3: // Z
-                return Quat
-                (
-                    (m_columns[2][0] + m_columns[0][2]) * mult,
-                    (m_columns[1][2] + m_columns[2][1]) * mult,
-                    largestValue,
-                    (m_columns[0][1] - m_columns[1][0]) * mult
-                );
-
-            default:
-                NES_ASSERT(false);
-                return Quat::Identity();
+            }
         }
     }
 

@@ -227,7 +227,7 @@ namespace nes::math
     template <ScalarType Type>
     constexpr Type Abs(const Type value)
     {
-        return value < 0 ? -value : value;
+        return value < static_cast<Type>(0)? -value : value;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -239,13 +239,13 @@ namespace nes::math
         return std::sqrt(Max(value, static_cast<Type>(0.0)));
     }
 
-    template <ScalarType Type>
+    template <MultipliableWithSelf Type>
     constexpr Type Squared(const Type value)
     {
         return value * value;
     }
 
-    template <ScalarType Type>
+    template <MultipliableWithSelf Type>
     constexpr Type Cubed(const Type value)
     {
         return value * value * value;
@@ -258,7 +258,7 @@ namespace nes::math
     ///		@param exponent : Exponent to raise the value to.
     //----------------------------------------------------------------------------------------------------
     template <ScalarType Type>
-    constexpr Type Power(const Type value, const uint32_t exponent)
+    constexpr Type Power(const Type value, const uint32 exponent)
     {
         if (exponent == 0)
         {
@@ -266,7 +266,7 @@ namespace nes::math
         }
 
         Type result = value;
-        for (uint32_t i = 1; i < exponent; ++i)
+        for (uint32 i = 1; i < exponent; ++i)
         {
             result *= value;
         }
@@ -411,7 +411,7 @@ namespace nes::math
     // [TODO]: This could move to Platform.h?
     /// @brief : Compute the number of trailing zero bits, or how many low bits are zero. 
     //----------------------------------------------------------------------------------------------------
-    inline unsigned int CountTrailingZeros(const uint32_t value)
+    inline unsigned int CountTrailingZeros(const uint32 value)
     {
     #if defined(NES_CPU_X86)
         #if defined(NES_USE_TZCNT)
@@ -436,7 +436,7 @@ namespace nes::math
     // [TODO]: This could move to Platform.h?
     /// @brief : Compute the number of leading zero bits, or how many high bits are zero. 
     //----------------------------------------------------------------------------------------------------
-    inline unsigned int CountLeadingZeros(const uint32_t value)
+    inline unsigned int CountLeadingZeros(const uint32 value)
     {
     #if defined(NES_CPU_X86)
         #if defined(NES_USE_LZCNT)
@@ -469,22 +469,32 @@ namespace nes::math
     /// @brief : Get the next higher power of 2 of a value, or the value itself if it is already a power
     ///     of 2. 
     //----------------------------------------------------------------------------------------------------
-    inline uint32_t GetNextPowerOf2(const uint32_t value)
+    inline uint32 GetNextPowerOf2(const uint32 value)
     {
-        return value <= 1? static_cast<uint32_t>(1) : static_cast<uint32_t>(1) << (32 - CountLeadingZeros(value - 1));
+        return value <= 1? static_cast<uint32>(1) : static_cast<uint32>(1) << (32 - CountLeadingZeros(value - 1));
     }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Check if the value is aligned to the passed in alignment. 
     //----------------------------------------------------------------------------------------------------
     template <typename Type>
-    inline bool IsAligned(Type value, const uint64_t alignment)
+    inline bool IsAligned(Type value, const uint64 alignment)
     {
         NES_ASSERT(IsPowerOf2(alignment));
-        return (reinterpret_cast<uint64_t>(value) & (alignment - 1)) == 0; 
+        return (reinterpret_cast<uint64>(value) & (alignment - 1)) == 0; 
     }
 
-    inline unsigned int CountBits(uint32_t value)
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Align the 'value' to the next alignment in bytes.
+    //----------------------------------------------------------------------------------------------------
+    template <typename Type>
+    inline Type AlignUp(Type value, const uint64 alignment)
+    {
+        NES_ASSERT(IsPowerOf2(alignment));
+        return Type((static_cast<uint64>(value) + alignment - 1) & ~(alignment - 1));
+    }
+
+    inline unsigned int CountBits(uint32 value)
     {
     #if defined(NES_COMPILER_MSVC)
         #if defined(NES_USE_SSE4_2)

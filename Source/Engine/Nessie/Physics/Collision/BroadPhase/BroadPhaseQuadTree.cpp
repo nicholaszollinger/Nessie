@@ -424,8 +424,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CastRay(const RayCast& ray, RayCastBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CastRay(const RayCast& ray, RayCastBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -445,8 +444,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -454,8 +452,7 @@ namespace nes
         CastAABoxNoLock(box, collector, broadPhaseLayerFilter, collisionLayerFilter);
     }
 
-    void BroadPhaseQuadTree::CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
         
@@ -472,8 +469,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector,
-                                          const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -493,9 +489,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideSphere(const Vec3& center, const float radius,
-        CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter,
-        const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -515,8 +509,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -536,8 +529,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -557,9 +549,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::FindCollidingPairs(BodyID* pActiveBodies, const int numActiveBodies,
-        float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter,
-        const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const
+    void BroadPhaseQuadTree::FindCollidingPairs(BodyID* pActiveBodies, const int numActiveBodies, const float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter, const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const
     {
         const BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());

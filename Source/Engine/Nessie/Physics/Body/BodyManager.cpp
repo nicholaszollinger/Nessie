@@ -195,7 +195,6 @@ namespace nes
             pProps->m_motionQuality = createInfo.m_motionQuality;
             pProps->m_canSleep = createInfo.m_allowSleeping;
             
-            //NES_IF_LOGGING_ENABLED(pProps->m_cachedBodyType = pBody->m_bodyType);
             NES_IF_LOGGING_ENABLED(pProps->m_cachedMotionType = pBody->m_motionType);
         }
 

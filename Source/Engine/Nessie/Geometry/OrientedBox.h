@@ -1,16 +1,15 @@
 ﻿// OBB.h
 #pragma once
 #include "AABox.h"
-#include "Math/Mat4.h"
+#include "Math/Mat44.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
     ///	@brief : An Oriented Bounding Box (OBB) is a 3D box, but with an arbitrary orientation.
     //----------------------------------------------------------------------------------------------------
-    class OrientedBox
+    struct OrientedBox
     {
-    public:
         Mat44   m_orientation; /// Transform that positions and rotates the local space, axis-aligned box into world space
         Vec3    m_halfExtents; /// Half-extents (half the size of the edge) of the local space axis-aligned box.
 

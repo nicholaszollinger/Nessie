@@ -168,6 +168,18 @@ namespace nes
     #endif
     }
 
+    inline void UVec4Reg::StoreInt4(uint32* pOutValues) const
+    {
+    #if defined (NES_USE_SSE)
+        _mm_storeu_si128(reinterpret_cast<__m128i*>(pOutValues), m_value);
+    #else
+        for (int i = 0; i < 4; ++i)
+        {
+            pOutValues[i] = m_u32[i];
+        }
+    #endif
+    }
+
     inline void UVec4Reg::StoreInt4Aligned(uint32* pOutValues) const
     {
     #if defined (NES_USE_SSE)
@@ -282,6 +294,32 @@ namespace nes
     #endif
     }
 
+    UVec4Reg UVec4Reg::ShiftComponents4Minus(const int count) const
+    {
+    #if defined (NES_USE_SSE4_1)
+        alignas(UVec4Reg) static constexpr uint32 kFourMinusXShuffle[5][4] =
+        {
+            { 0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff },
+            { 0x0f0e0d0c, 0xffffffff, 0xffffffff, 0xffffffff },
+            { 0x0b0a0908, 0x0f0e0d0c, 0xffffffff, 0xffffffff },
+            { 0x07060504, 0x0b0a0908, 0x0f0e0d0c, 0xffffffff },
+            { 0x03020100, 0x07060504, 0x0b0a0908, 0x0f0e0d0c }
+        };
+    #endif
+
+    #if defined(NES_USE_SSE4_1)
+        return _mm_shuffle_epi8(m_value, *reinterpret_cast<const UVec4Reg::Type*>(kFourMinusXShuffle[count]));
+    #else
+        UVec4Reg result;
+        for (int i = 0; i < 4; ++i)
+        {
+            result.m_u32[i] = m_u32[i + 4 - count];
+        }
+        return result;
+    #endif
+        
+    }
+
     UVec4Reg UVec4Reg::Zero()
     {
     #if defined (NES_USE_SSE)
@@ -303,7 +341,19 @@ namespace nes
     #endif
     }
 
-    UVec4Reg UVec4Reg::Load(const uint32* pValues)
+    UVec4Reg UVec4Reg::LoadInt(const uint32* pValue)
+    {
+    #if defined (NES_USE_SSE)
+        return _mm_castps_si128(_mm_load_ss(reinterpret_cast<const float*>(pValue)));
+    #else
+        return UVec4Reg
+        (
+            *pValues, 0, 0, 0
+        );
+    #endif
+    }
+
+    UVec4Reg UVec4Reg::LoadInt4(const uint32* pValues)
     {
     #if defined (NES_USE_SSE)
         return _mm_loadu_si128(reinterpret_cast<const __m128i*>(pValues));
@@ -315,17 +365,29 @@ namespace nes
     #endif
     }
 
-    void UVec4Reg::Store(const UVec4Reg& vec, uint32* pOutValues)
+    UVec4Reg UVec4Reg::LoadInt4Aligned(const uint32* pValues)
     {
     #if defined (NES_USE_SSE)
-        _mm_storeu_si128(reinterpret_cast<__m128i *>(pOutValues), vec.m_value);
+        return _mm_load_si128(reinterpret_cast<const __m128i*>(pValues));
     #else
-        pOutValues[0] = vec.m_u32[0];
-        pOutValues[1] = vec.m_u32[1];
-        pOutValues[2] = vec.m_u32[2];
-        pOutValues[3] = vec.m_u32[3];
+        return UVec4Reg
+        (
+            pValues[0], pValues[1], pValues[2], pValues[3]
+        );
     #endif
     }
+
+    // void UVec4Reg::StoreInt4(const UVec4Reg& vec, uint32* pOutValues)
+    // {
+    // #if defined (NES_USE_SSE)
+    //     _mm_storeu_si128(reinterpret_cast<__m128i *>(pOutValues), vec.m_value);
+    // #else
+    //     pOutValues[0] = vec.m_u32[0];
+    //     pOutValues[1] = vec.m_u32[1];
+    //     pOutValues[2] = vec.m_u32[2];
+    //     pOutValues[3] = vec.m_u32[3];
+    // #endif
+    // }
 
     UVec4Reg UVec4Reg::Min(const UVec4Reg& a, const UVec4Reg& b)
     {
@@ -447,15 +509,15 @@ namespace nes
     #endif
     }
 
-    UVec4Reg UVec4Reg::SortTrue(const UVec4Reg& value, const UVec4Reg& index)
+    UVec4Reg UVec4Reg::Sort4True(const UVec4Reg& value, const UVec4Reg& index)
     {
-        // If value.z is false then shift W to Z.
+        // If value.z is false, then shift W to Z.
         UVec4Reg result = UVec4Reg::Select(index.Swizzle<0, 1, 3, 3>(), index, value.SplatZ());
 
-        // If value.y is false then shift Z and further to Y and further.
+        // If value.y is false, then shift Z and further to Y and further.
         result = UVec4Reg::Select(result.Swizzle<0, 2, 3, 3>(), result, value.SplatY());
 
-        // If value.x is false then shift X and further to Y and further.
+        // If value.x is false, then shift X and further to Y and further.
         result = UVec4Reg::Select(value.Swizzle<1, 2, 3, 3>(), result, value.SplatX());
 
         return result;
@@ -463,7 +525,7 @@ namespace nes
 
     int UVec4Reg::CountAndSortTrues(const UVec4Reg& value, UVec4Reg& identifiers)
     {
-        identifiers = UVec4Reg::SortTrue(value, identifiers);
+        identifiers = UVec4Reg::Sort4True(value, identifiers);
         return value.CountTrues();
     }  
 }

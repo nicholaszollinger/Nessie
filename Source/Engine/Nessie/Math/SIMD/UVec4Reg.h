@@ -103,6 +103,11 @@ namespace nes
         NES_INLINE Vec4Reg          ReinterpretAsFloat() const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Store 4 ints to memory.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE void             StoreInt4(uint32* pOutValues) const; 
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Store 4 ints to memory, aligned to 16 bytes.
         //----------------------------------------------------------------------------------------------------
         NES_INLINE void             StoreInt4Aligned(uint32* pOutValues) const; 
@@ -146,6 +151,12 @@ namespace nes
         NES_INLINE UVec4Reg         ArithmeticShiftRight() const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Shift the vector components by 4 - count floats to the left, so if count = 1, the resulting
+        ///     vector is (W, 0, 0, 0). When the count is = 3, the result vector is (Y, Z, W, 0).
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE UVec4Reg         ShiftComponents4Minus(const int count) const; 
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Returns a register with all components equal to zero. 
         //----------------------------------------------------------------------------------------------------
         static NES_INLINE UVec4Reg  Zero();
@@ -156,14 +167,19 @@ namespace nes
         static NES_INLINE UVec4Reg  Replicate(const uint32 value);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Load 4 uint32_t values into a Register.
+        /// @brief : Load a single int from memory and place it in the X component. YZW are all set to 0.
         //----------------------------------------------------------------------------------------------------
-        static NES_INLINE UVec4Reg  Load(const uint32* pValues);
+        static NES_INLINE UVec4Reg  LoadInt(const uint32* pValue);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Load 4 uint32 values into a Register.
+        //----------------------------------------------------------------------------------------------------
+        static NES_INLINE UVec4Reg  LoadInt4(const uint32* pValues);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Store 4 uint32_t values from the Register into pOutValues.
+        /// @brief : Load 4 uint32 values into a Register, aligned to 16 bytes.
         //----------------------------------------------------------------------------------------------------
-        static NES_INLINE void      Store(const UVec4Reg& vec, uint32* pOutValues);
+        static NES_INLINE UVec4Reg  LoadInt4Aligned(const uint32* pValues);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the minimum value of each component.
@@ -214,7 +230,7 @@ namespace nes
         ///	@param value : Vector value to check for true/false.
         ///	@param index : The indices that you want to check and sort.
         //----------------------------------------------------------------------------------------------------
-        static NES_INLINE UVec4Reg  SortTrue(const UVec4Reg& value, const UVec4Reg& index);
+        static NES_INLINE UVec4Reg  Sort4True(const UVec4Reg& value, const UVec4Reg& index);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Shift the elements so that the identifiers that correspond with the trues in "value" come first.

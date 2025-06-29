@@ -42,16 +42,15 @@ namespace nes
 
         // Make sure the result is left-handed.
         if (!Vec3::IsLeftHanded(outRotation.GetAxisX(), outRotation.GetAxisY(), outRotation.GetAxisZ()))
-            outRotation[3] = -outRotation[3];
+             outRotation[2] = -outRotation[2];
 
-#if NES_LOGGING_ENABLED
-        // Validate that the solution is correct, for each axis we want to make sure that the differnet in inertia is
+#if NES_ASSERTS_ENABLED
+        // Validate that the solution is correct, for each axis we want to make sure that the different in inertia is
         // smaller than some fraction of the inertia itself in that axis.
-        //Mat44 newInertia = outRotation * Mat44(outDiagonal) * outRotation.Inverse();
+        const Mat44 newInertia = outRotation * Mat44::MakeScale(outDiagonal) * outRotation.Inversed();
         for (int i = 0; i < 3; ++i)
         {
-            // [TODO]: 
-            //NES_ASSERT(newInertia.GetColumn(i).)
+            NES_ASSERT(newInertia.GetColumn3(i).IsClose(m_inertia.GetColumn3(i), m_inertia.GetColumn3(i).LengthSqr() * 1.0e-10f));
         }
 #endif
         

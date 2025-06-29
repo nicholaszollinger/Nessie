@@ -72,4 +72,10 @@ namespace nes
     {
         { type(std::forward<FuncParams>()...) } -> std::same_as<ReturnType>;
     };
+
+    template <typename Type>
+    concept MultipliableWithSelf = requires(Type type)
+    {
+        type * type;
+    };
 }

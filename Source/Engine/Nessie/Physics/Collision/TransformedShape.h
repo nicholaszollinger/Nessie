@@ -9,7 +9,7 @@
 #include "Shapes/Shape.h"
 #include "Shapes/SubShapeID.h"
 #include "Math/Scalar3.h"
-#include "Math/Mat4.h"
+#include "Math/Mat44.h"
 
 namespace nes
 {

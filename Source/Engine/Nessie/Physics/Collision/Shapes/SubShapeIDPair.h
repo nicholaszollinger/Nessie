@@ -28,7 +28,7 @@ namespace nes
 
         inline bool         operator==(const SubShapeIDPair& other) const
         {
-            return UVec4Reg::Load(reinterpret_cast<const uint32_t*>(this)) == UVec4Reg::Load(reinterpret_cast<const uint32_t*>(&other));
+            return UVec4Reg::LoadInt4(reinterpret_cast<const uint32_t*>(this)) == UVec4Reg::LoadInt4(reinterpret_cast<const uint32_t*>(&other));
         }
 
         /// Less than operator is used to consistently order contact points for a deterministic simulation.
