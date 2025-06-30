@@ -908,7 +908,7 @@ namespace nes
                             //
                         }
 
-                        virtual void AddHit(const BodyPair& result) override
+                        virtual void AddHit(const BodyPair& pair) override
                         {
                             // Check if we have space in our write queue.
                             PhysicsUpdateContext::BodyPairQueue& queue = m_pStep->m_bodyPairQueues[m_jobIndex];
@@ -916,12 +916,12 @@ namespace nes
                             if (bodyPairsInQueue >= m_pStep->m_maxBodyPairsPerQueue)
                             {
                                 // The buffer is full, process the pair now:
-                                m_pStep->m_pContext->m_pPhysicsScene->ProcessBodyPair(m_contactAllocator, result);
+                                m_pStep->m_pContext->m_pPhysicsScene->ProcessBodyPair(m_contactAllocator, pair);
                             }
                             else
                             {
                                 // Store the pair in our own queue
-                                m_pStep->m_pContext->m_pBodyPairs[m_jobIndex * m_pStep->m_maxBodyPairsPerQueue + queue.m_writeIndex % m_pStep->m_maxBodyPairsPerQueue] = result;
+                                m_pStep->m_pContext->m_pBodyPairs[m_jobIndex * m_pStep->m_maxBodyPairsPerQueue + queue.m_writeIndex % m_pStep->m_maxBodyPairsPerQueue] = pair;
                                 ++queue.m_writeIndex;
                             }
                         }
@@ -2256,7 +2256,7 @@ namespace nes
                         }
 
                         // Calculate the normal
-                        Vec3 worldSpaceNormal = result.m_penetrationAxis.Normalized();
+                        const Vec3 worldSpaceNormal = result.m_penetrationAxis.Normalized();
 
                         // Check if we can add it to an existing manifold.
                         Manifolds::iterator manifold;
@@ -2278,7 +2278,7 @@ namespace nes
                             {
                                 // Full, find the manifold with the least amount of penetration.
                                 manifold = m_manifolds.begin();
-                                for (Manifolds::iterator m = m_manifolds.begin(); m != m_manifolds.end(); ++m)
+                                for (Manifolds::iterator m = m_manifolds.begin() + 1; m < m_manifolds.end(); ++m)
                                 {
                                     if (m->m_penetrationDepth < manifold->m_penetrationDepth)
                                         manifold = m;
@@ -2422,7 +2422,7 @@ namespace nes
                 // Perform collision detection between the two shapes.
                 m_simCollideBodyVsBody(*pBody1, *pBody2, transform1, transform2, settings, collector, shapeFilter.GetFilter());
 
-                constraintCreated |= collector.m_constraintCreated;
+                constraintCreated = collector.m_constraintCreated;
             }
         }
 

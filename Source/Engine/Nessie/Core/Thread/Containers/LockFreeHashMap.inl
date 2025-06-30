@@ -94,7 +94,7 @@ namespace nes
         if (m_end - m_begin < blockSize + finalAlignment)
         {
             // Allocate a new block
-            m_allocator.Allocate(blockSize, m_begin, m_end);
+            m_allocator.Allocate(m_blockSize, m_begin, m_end);
 
             // Update alignment
             finalAlignment = (alignment - (m_begin & alignmentMask)) & alignmentMask;

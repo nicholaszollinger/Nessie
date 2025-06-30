@@ -146,7 +146,7 @@ namespace nes
                 nodeStack.pop_back();
                 NES_ASSERT(!nodeID.IsBody());
 
-                const uint32_t nodeIndex = nodeID.GetNodeIndex();
+                const uint32 nodeIndex = nodeID.GetNodeIndex();
                 const Node& node = m_pAllocator->Get(nodeIndex);
 
                 // Recurse and get all child nodes:
@@ -199,6 +199,11 @@ namespace nes
 
     void QuadTree::UpdatePrepare(const BodyVector& bodies, BodyTrackerArray& outTrackers, UpdateState& outState, const bool doFullRebuild)
     {
+#if NES_ASSERTS_ENABLED
+        // We only read positions.
+        BodyAccess::GrantScope scope (BodyAccess::EAccess::None, BodyAccess::EAccess::Read);
+#endif
+        
         // Assert we have no nodes pending deletion, this means DiscardOldTree wasn't called yet
         NES_ASSERT(m_freeNodeBatch.m_numObjects == 0);
         m_isDirty = false;
@@ -229,7 +234,7 @@ namespace nes
             {
                 // Validate that we're still in the right layer.
             #if NES_ASSERTS_ENABLED
-                const uint32_t bodyIndex = nodeID.GetBodyID().GetIndex();
+                const uint32 bodyIndex = nodeID.GetBodyID().GetIndex();
                 NES_ASSERT(outTrackers[bodyIndex].m_collisionLayer == bodies[bodyIndex]->GetCollisionLayer());
             #endif
 
@@ -240,12 +245,12 @@ namespace nes
             else
             {
                 // Process normal Node.
-                const uint32_t nodeIndex = nodeID.GetNodeIndex();
+                const uint32 nodeIndex = nodeID.GetNodeIndex();
                 const Node& node = m_pAllocator->Get(nodeIndex);
 
                 if (!node.m_isChanged && !doFullRebuild)
                 {
-                    // Node is unchanged, treat it as a while.
+                    // Node is unchanged, treat it as a whole.
                     *pCurrentNodeID = nodeID;
                     ++pCurrentNodeID;
                 }
@@ -264,7 +269,7 @@ namespace nes
         } while (!nodeStack.empty());
 
         // Check that our bookkeeping matches.
-        const uint32_t numNodeIDs = static_cast<uint32_t>(pCurrentNodeID - pNodeIDs);
+        const uint32 numNodeIDs = static_cast<uint32>(pCurrentNodeID - pNodeIDs);
         NES_ASSERT(doFullRebuild? numNodeIDs == m_numBodies : numNodeIDs <= m_numBodies);
 
         // This will be the new Root NodeID.
@@ -275,16 +280,16 @@ namespace nes
             // those nodes get recreated every time when we rebuild the tree. This balances the amount of
             // time we spend on rebuilding the tree ('unchanged' nodes will be put in the new tree as a whole)
             // vs the quality of the built tree.
-            constexpr unsigned int kMaxDepthMarkChanged = 5;
+            constexpr uint kMaxDepthMarkChanged = 5;
 
             // Build the new Tree:
             AABox rootBounds;
             rootNodeID = BuildTree(bodies, outTrackers, pNodeIDs, static_cast<int>(numNodeIDs), kMaxDepthMarkChanged, rootBounds);
 
-            // For a single Body we allocate a new Root Node.
+            // For a single Body, we allocate a new Root Node.
             if (rootNodeID.IsBody())
             {
-                const uint32_t rootIndex = AllocateNode(false);
+                const uint32 rootIndex = AllocateNode(false);
                 Node& root = m_pAllocator->Get(rootIndex);
                 root.SetChildBounds(0, rootBounds);
                 root.m_childNodeIDs[0] = rootNodeID;
@@ -295,7 +300,7 @@ namespace nes
         else
         {
             // Empty tree, create the Root Node
-            const uint32_t rootIndex = AllocateNode(false);
+            const uint32 rootIndex = AllocateNode(false);
             rootNodeID = NodeID::FromNodeIndex(rootIndex);
         }
         
@@ -306,7 +311,7 @@ namespace nes
     void QuadTree::UpdateFinalize([[maybe_unused]] const BodyVector& bodies, [[maybe_unused]] const BodyTrackerArray& trackers, const UpdateState& state)
     {
         // Tree Building is complete, now we switch the old with the new tree.
-        uint32_t newRootIndex = m_rootNodeIndex ^ 1;
+        uint32 newRootIndex = m_rootNodeIndex ^ 1;
         RootNode& newRootNode = m_rootNodes[newRootIndex];
         {
             // Note: We don't need to lock here as the old tree stays available so any queries
@@ -389,7 +394,7 @@ namespace nes
             else
             {
                 // Process normal node
-                const uint32_t nodeIndex = childNodeID.GetNodeIndex();
+                const uint32 nodeIndex = childNodeID.GetNodeIndex();
                 const Node& node = m_pAllocator->Get(nodeIndex);
                 for (NodeID subChildNodeID : node.m_childNodeIDs)
                 {
@@ -426,8 +431,8 @@ namespace nes
             NES_ASSERT(bodies[pCurrent->GetIndex()]->GetID() == *pCurrent, "Provided BodyID doesn't match the BodyID in the BodyManager!");
 
             // Get the Location of the Body
-            uint32_t nodeIndex;
-            uint32_t childNodeIndex;
+            uint32 nodeIndex;
+            uint32 childNodeIndex;
             GetBodyLocation(trackers, *pCurrent, nodeIndex, childNodeIndex);
 
             // First we reset our internal bookkeeping
@@ -464,8 +469,8 @@ namespace nes
             const AABox& newBounds = pBody->GetWorldSpaceBounds();
 
             // Get the Location of the Body
-            uint32_t nodeIndex;
-            uint32_t childNodeIndex;
+            uint32 nodeIndex;
+            uint32 childNodeIndex;
             GetBodyLocation(trackers, *pCurrent, nodeIndex, childNodeIndex);
 
             // Widen the bounds for the Node
@@ -906,7 +911,7 @@ namespace nes
 
     AABox QuadTree::GetBounds() const
     {
-        const uint32_t nodeIndex = GetCurrentRoot().m_index;
+        const uint32 nodeIndex = GetCurrentRoot().m_index;
         NES_ASSERT(nodeIndex != kInvalidNodeIndex);
         const Node& node = m_pAllocator->Get(nodeIndex);
 
@@ -915,28 +920,26 @@ namespace nes
         return bounds;
     }
 
-    void QuadTree::GetBodyLocation(const BodyTrackerArray& trackers, const BodyID bodyID, uint32_t& outNodeIndex,
-                                   uint32_t& outChildIndex) const
+    void QuadTree::GetBodyLocation(const BodyTrackerArray& trackers, const BodyID bodyID, uint32& outNodeIndex, uint32& outChildIndex) const
     {
-        const uint32_t bodyLocation = trackers[bodyID.GetIndex()].m_bodyLocation;
+        const uint32 bodyLocation = trackers[bodyID.GetIndex()].m_bodyLocation;
         NES_ASSERT(bodyLocation != BodyTracker::kInvalidBodyLocation);
         outNodeIndex = bodyLocation & BodyTracker::kBodyIndexMask;
         outChildIndex = bodyLocation >> BodyTracker::kChildIndexShift;
         NES_ASSERT(m_pAllocator->Get(outNodeIndex).m_childNodeIDs[outChildIndex] == bodyID, "Make sure that the body is in the node where it should be!");
     }
 
-    void QuadTree::SetBodyLocation(BodyTrackerArray& trackers, const BodyID bodyID, const uint32_t nodeIndex,
-        const uint32_t childIndex) const
+    void QuadTree::SetBodyLocation(BodyTrackerArray& trackers, const BodyID bodyID, const uint32 nodeIndex, const uint32 childIndex) const
     {
-        NES_ASSERT(nodeIndex < BodyTracker::kBodyIndexMask);
+        NES_ASSERT(nodeIndex <= BodyTracker::kBodyIndexMask);
         NES_ASSERT(childIndex < 4);
         NES_ASSERT(m_pAllocator->Get(nodeIndex).m_childNodeIDs[childIndex] == bodyID, "Make sure that the body is in the node where it should be!");
         trackers[bodyID.GetIndex()].m_bodyLocation = nodeIndex + (childIndex << BodyTracker::kChildIndexShift);
 
 #if NES_LOGGING_ENABLED
         // Validate GetBodyLocation
-        uint32_t vNodeIndex;
-        uint32_t vChildIndex;
+        uint32 vNodeIndex;
+        uint32 vChildIndex;
         GetBodyLocation(trackers, bodyID, vNodeIndex, vChildIndex);
         NES_ASSERT(vNodeIndex == nodeIndex);
         NES_ASSERT(vChildIndex == childIndex);
@@ -953,7 +956,7 @@ namespace nes
         if (nodeID.IsNode())
         {
             // Node:
-            uint32_t nodeIndex = nodeID.GetNodeIndex();
+            const uint32 nodeIndex = nodeID.GetNodeIndex();
             const Node& node = m_pAllocator->Get(nodeIndex);
 
             AABox bounds;
@@ -965,9 +968,9 @@ namespace nes
         return bodies[nodeID.GetBodyID().GetIndex()]->GetWorldSpaceBounds();   
     }
 
-    void QuadTree::MarkNodeAndParentsChanged(uint32_t nodeIndex)
+    void QuadTree::MarkNodeAndParentsChanged(uint32 nodeIndex)
     {
-        uint32_t currentIndex = nodeIndex;
+        uint32 currentIndex = nodeIndex;
 
         do
         {
@@ -986,9 +989,9 @@ namespace nes
         while (currentIndex != kInvalidNodeIndex);
     }
 
-    void QuadTree::WidenAndMarkNodeAndParentsChanged(const uint32_t nodeIndex, const AABox& newBounds)
+    void QuadTree::WidenAndMarkNodeAndParentsChanged(const uint32 nodeIndex, const AABox& newBounds)
     {
-        uint32_t currentIndex = nodeIndex;
+        uint32 currentIndex = nodeIndex;
 
         for (;;)
         {
@@ -997,7 +1000,7 @@ namespace nes
             node.m_isChanged = true;
 
             // Get the parent
-            uint32_t parentNodeIndex = node.m_parentNodeIndex;
+            uint32 parentNodeIndex = node.m_parentNodeIndex;
             if (parentNodeIndex == kInvalidNodeIndex)
                 break;
 
@@ -1030,9 +1033,9 @@ namespace nes
         }
     }
 
-    uint32_t QuadTree::AllocateNode(bool isChanged)
+    uint32 QuadTree::AllocateNode(bool isChanged)
     {
-        uint32_t index = m_pAllocator->ConstructObject(isChanged);
+        const uint32 index = m_pAllocator->ConstructObject(isChanged);
         if (index == Allocator::kInvalidObjectIndex)
         {
             // If you're running out of nodes, you're most likely adding too many individual bodies to the tree.
@@ -1059,7 +1062,7 @@ namespace nes
         const bool leafIsNode = leafID.IsNode();
         if (leafIsNode)
         {
-            uint32_t leafIndex = leafID.GetNodeIndex();
+            uint32 leafIndex = leafID.GetNodeIndex();
             m_pAllocator->Get(leafIndex).m_parentNodeIndex = nodeIndex;
         }
 
@@ -1067,7 +1070,7 @@ namespace nes
         Node& node = m_pAllocator->Get(nodeIndex);
 
         // Find an empty child node
-        for (uint32_t childIndex = 0; childIndex < 4; ++childIndex)
+        for (uint32 childIndex = 0; childIndex < 4; ++childIndex)
         {
             // Check if we can claim the Child Node
             if (node.m_childNodeIDs[childIndex].CompareExchange(NodeID::InvalidID(), leafID))
@@ -1095,14 +1098,14 @@ namespace nes
         return false;
     }
 
-    bool QuadTree::TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32_t>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies)
+    bool QuadTree::TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies)
     {
         // Grab the old root
-        uint32_t rootIndex = rootNodeIndex;
+        uint32 rootIndex = rootNodeIndex;
         Node& root = m_pAllocator->Get(rootIndex);
 
         // Create the new root, marking it as changed as we're not creating a very efficient tree at this point.
-        const uint32_t newRootIndex = AllocateNode(true);
+        const uint32 newRootIndex = AllocateNode(true);
         Node& newRoot = m_pAllocator->Get(newRootIndex);
         
         // First child is the current root, not that since the tree may be modified concurrently we cannot assume that the bounds of our child will
@@ -1118,7 +1121,7 @@ namespace nes
         const bool leafIsNode = leafID.IsNode();
         if (leafIsNode)
         {
-            const uint32_t leafIndex = leafID.GetNodeIndex();
+            const uint32 leafIndex = leafID.GetNodeIndex();
             m_pAllocator->Get(leafIndex).m_parentNodeIndex = newRootIndex;
         }
 
@@ -1145,7 +1148,7 @@ namespace nes
         return false;
     }
 
-    QuadTree::NodeID QuadTree::BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds)
+    QuadTree::NodeID QuadTree::BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* pNodeIDs, int number, uint maxDepthMarkChanged, AABox& outBounds)
     {
         // Trivial case: No Bodies in the tree
         if (number == 0)
@@ -1157,21 +1160,22 @@ namespace nes
         // Trivial case: When we have 1 body or node, return it.
         if (number == 1)
         {
-            if (nodeIDArray->IsNode())
+            if (pNodeIDs->IsNode())
             {
                 // When returning an existing node as root, ensure that no parent has been set
-                Node& node = m_pAllocator->Get(nodeIDArray->GetNodeIndex());
+                Node& node = m_pAllocator->Get(pNodeIDs->GetNodeIndex());
                 node.m_parentNodeIndex = kInvalidNodeIndex;
             }
 
-            outBounds = GetNodeOrBodyBounds(bodies, *nodeIDArray);
-            return *nodeIDArray;
+            outBounds = GetNodeOrBodyBounds(bodies, *pNodeIDs);
+            return *pNodeIDs;
         }
 
         // Calculate the centers of all bodies that are to be inserted.
         Vec3* pCenters = NES_NEW_ARRAY(Vec3, number);
+        NES_ASSERT(math::IsAligned(pCenters, NES_VECTOR_ALIGNMENT));
         Vec3* pCurrent = pCenters;
-        for (const NodeID* pValue = nodeIDArray, * pEnd = nodeIDArray + number; pValue < pEnd; ++pValue, ++pCurrent)
+        for (const NodeID* pValue = pNodeIDs, *pEnd = pNodeIDs + number; pValue < pEnd; ++pValue, ++pCurrent)
         {
             *pCurrent = GetNodeOrBodyBounds(bodies, *pValue).Center();
         }
@@ -1179,15 +1183,15 @@ namespace nes
         // The algorithm is a recursive tree build, but to avoid the call overhead, we keep track of a stack here.
         struct StackEntry
         {
-            uint32_t m_nodeIndex;       /// Node index of the Node that is generated.
-            int      m_childIndex;      /// Index of the child that we are currently processing.
-            int      m_splitIndices[5]; /// Indices where the node ID's have been split to form 4 partitions.
-            uint32_t m_depth;           /// Depth of this node in the tree.
-            Vec3  m_boundsMin;       /// Bounding box min, accumulated while iterating over children.
-            Vec3  m_boundsMax;       /// Bounding box max, accumulated while iterating over children.
+            uint32  m_nodeIndex;       /// Node index of the Node that is generated.
+            int     m_childIndex;      /// Index of the child that we are currently processing.
+            int     m_splitIndices[5]; /// Indices where the node ID's have been split to form 4 partitions.
+            uint32  m_depth;           /// Depth of this node in the tree.
+            Vec3    m_boundsMin;       /// Bounding box min, accumulated while iterating over children.
+            Vec3    m_boundsMax;       /// Bounding box max, accumulated while iterating over children.
         };
         static_assert(sizeof(StackEntry) == 64);
-        StackEntry stack[kStackSize / 4]; // We don't process 4 ata time in this loop but 1, so the stack can be 4x as small.
+        StackEntry stack[kStackSize / 4]; // We don't process 4 at a time in this loop but 1, so the stack can be 4x as small.
         int top = 0;
 
         // Create the root Node
@@ -1196,7 +1200,7 @@ namespace nes
         stack[0].m_depth = 0;
         stack[0].m_boundsMin = Vec3(math::kLargeFloat);
         stack[0].m_boundsMax = Vec3(-math::kLargeFloat);
-        Partition4(nodeIDArray, pCenters, 0, number, stack[0].m_splitIndices);
+        Partition4(pNodeIDs, pCenters, 0, number, stack[0].m_splitIndices);
 
         for (;;)
         {
@@ -1240,7 +1244,7 @@ namespace nes
                 if (numBodies == 1)
                 {
                     // Get the Body Info
-                    const NodeID childNodeID = nodeIDArray[low];
+                    const NodeID childNodeID = pNodeIDs[low];
                     const AABox bounds = GetNodeOrBodyBounds(bodies, childNodeID);
 
                     // Update the current Node
@@ -1270,13 +1274,13 @@ namespace nes
                     ++top;
                     StackEntry& newStack = stack[top];
                     NES_ASSERT(top < (kStackSize / 4));
-                    const uint32_t nextDepth = current.m_depth + 1;
+                    const uint32 nextDepth = current.m_depth + 1;
                     newStack.m_nodeIndex = AllocateNode(maxDepthMarkChanged > nextDepth);
                     newStack.m_childIndex = -1;
                     newStack.m_depth = nextDepth;
                     newStack.m_boundsMin = Vec3(math::kLargeFloat);
                     newStack.m_boundsMax = Vec3(-math::kLargeFloat);
-                    Partition4(nodeIDArray, pCenters, low, high, newStack.m_splitIndices);
+                    Partition4(pNodeIDs, pCenters, low, high, newStack.m_splitIndices);
                 }
             }
         }
@@ -1376,13 +1380,13 @@ namespace nes
         outSplitIndices[4] = end;
     }
 
-    uint32_t QuadTree::GetMaxTreeDepth(const NodeID nodeID) const
+    uint32 QuadTree::GetMaxTreeDepth(const NodeID nodeID) const
     {
         // Reached a leaf:
         if (!nodeID.IsValid() || nodeID.IsBody())
             return 0;
 
-        unsigned int maxDepth = 0;
+        uint maxDepth = 0;
         const Node& node = m_pAllocator->Get(nodeID.GetNodeIndex());
         for (const NodeID childNodeID : node.m_childNodeIDs)
         {
@@ -1442,10 +1446,10 @@ namespace nes
                 Vec4Reg boundsMaxZ = Vec4Reg::LoadFloat4Aligned(reinterpret_cast<const Float4*>(node.m_maxZ));
 
                 // Load the Child IDs.
-                UVec4Reg childIDs = UVec4Reg::LoadInt4(reinterpret_cast<const uint32_t*>(node.m_childNodeIDs));
+                UVec4Reg childIDs = UVec4Reg::LoadInt4(reinterpret_cast<const uint32*>(node.m_childNodeIDs));
 
                 const int numResults = visitor.VisitNodes(boundsMinX, boundsMinY, boundsMinZ, boundsMaxX, boundsMaxY, boundsMaxZ, childIDs, top);
-                childIDs.StoreInt4(reinterpret_cast<uint32_t*>(&pNodeStack[top]));
+                childIDs.StoreInt4(reinterpret_cast<uint32*>(&pNodeStack[top]));
                 top += numResults;
             }
 
@@ -1461,24 +1465,24 @@ namespace nes
     }
 
 #if NES_LOGGING_ENABLED
-    void QuadTree::ValidateTree(const BodyVector& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const
+    void QuadTree::ValidateTree(const BodyVector& bodies, const BodyTrackerArray& trackers, uint32 nodeIndex, uint32 numExpectedBodies) const
     {
         NES_ASSERT(nodeIndex != kInvalidNodeIndex);
 
         struct StackEntry
         {
-            uint32_t m_nodeIndex;
-            uint32_t m_parentNodeIndex;
+            uint32 m_nodeIndex;
+            uint32 m_parentNodeIndex;
             
             StackEntry() = default;
-            StackEntry(const uint32_t nodeIndex, const uint32_t parentNodeIndex) : m_nodeIndex(nodeIndex), m_parentNodeIndex(parentNodeIndex) {} 
+            StackEntry(const uint32 nodeIndex, const uint32 parentNodeIndex) : m_nodeIndex(nodeIndex), m_parentNodeIndex(parentNodeIndex) {} 
         };
 
         std::vector<StackEntry, STLLocalAllocator<StackEntry, kStackSize>> stack;
         stack.reserve(kStackSize);
         stack.emplace_back(nodeIndex, kInvalidNodeIndex);
 
-        uint32_t numBodies = 0;
+        uint32 numBodies = 0;
 
         do
         {
@@ -1501,7 +1505,7 @@ namespace nes
                     if (childNodeID.IsNode())
                     {
                         // Child is a node, recurse
-                        const uint32_t childIndex = childNodeID.GetNodeIndex();
+                        const uint32 childIndex = childNodeID.GetNodeIndex();
                         stack.emplace_back(childIndex, current.m_nodeIndex);
 
                         // Validate that the bounding box is bigger or equal to the bounds in the tree
@@ -1518,8 +1522,8 @@ namespace nes
                         ++numBodies;
 
                         // Check if tracker matches position of body
-                        uint32_t currentNodeIndex;
-                        uint32_t childIndex;
+                        uint32 currentNodeIndex;
+                        uint32 childIndex;
                         GetBodyLocation(trackers, childNodeID.GetBodyID(), currentNodeIndex, childIndex);
                         NES_ASSERT(currentNodeIndex == current.m_nodeIndex);
                         NES_ASSERT(static_cast<int>(childIndex) == i);

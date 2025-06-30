@@ -14,7 +14,7 @@ namespace nes
     class QuadTree
     {
         /// Index value to denote an invalid Node. 
-        static constexpr uint32_t   kInvalidNodeIndex = 0xffffffff;
+        static constexpr uint32     kInvalidNodeIndex = 0xffffffff;
         
         /// Maximum size of the Stack during a Tree Walk.
         static constexpr int        kStackSize = 128;
@@ -29,7 +29,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         class NodeID
         {
-            explicit constexpr NodeID(uint32_t id) : m_id(id) {}
+            explicit constexpr NodeID(const uint32 id) : m_id(id) {}
         
         public:
             constexpr NodeID() = default;
@@ -41,7 +41,7 @@ namespace nes
                 return nodeID;
             }
             
-            static constexpr NodeID FromNodeIndex(const uint32_t index)
+            static constexpr NodeID FromNodeIndex(const uint32 index)
             {
                 NES_ASSERT((index & kIsNode) == 0);
                 return NodeID(index | kIsNode);
@@ -55,13 +55,13 @@ namespace nes
             constexpr bool          IsNode() const                          { return (m_id & kIsNode) != 0; }
     
             constexpr BodyID        GetBodyID() const                       { NES_ASSERT(IsBody()); return BodyID(m_id); }
-            constexpr uint32_t      GetNodeIndex() const                    { NES_ASSERT(IsNode()); return m_id & ~kIsNode; }
+            constexpr uint32        GetNodeIndex() const                    { NES_ASSERT(IsNode()); return m_id & ~kIsNode; }
 
         private:
             friend class AtomicNodeID;
             
-            static constexpr uint32_t kIsNode = BodyID::kBroadPhaseBit;
-            uint32_t                  m_id = kInvalidNodeIndex;
+            static constexpr uint32 kIsNode = BodyID::kBroadPhaseBit;
+            uint32                  m_id = kInvalidNodeIndex;
         };
 
         //----------------------------------------------------------------------------------------------------
@@ -91,7 +91,7 @@ namespace nes
             bool                    CompareExchange(NodeID oldID, NodeID newID) { return m_id.compare_exchange_strong(oldID.m_id, newID.m_id); }
 
         private:
-            std::atomic<uint32_t>   m_id;
+            std::atomic<uint32>     m_id;
         };
 
         //----------------------------------------------------------------------------------------------------
@@ -116,11 +116,11 @@ namespace nes
             /// Index of the Parent Node.
             /// This can be unreliable during the UpdatePrepare/Finalize() functions as a Node may be
             /// relinked to the newly built tree.
-            std::atomic<uint32_t>   m_parentNodeIndex = kInvalidNodeIndex;
-            std::atomic<uint32_t>   m_isChanged;
+            std::atomic<uint32>     m_parentNodeIndex = kInvalidNodeIndex;
+            std::atomic<uint32>     m_isChanged;
 
             /// Padding to align to 124 bytes
-            uint32_t                m_padding = 0;
+            uint32                  m_padding = 0;
             
             void                    GetNodeBounds(AABox& outBounds) const;
             void                    GetChildBounds(int childIndex, AABox& outBounds) const;
@@ -135,13 +135,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct BodyTracker
         {
-            static constexpr uint32_t           kInvalidBodyLocation = std::numeric_limits<uint32_t>::max();
-            static constexpr uint32_t           kBodyIndexMask = 0x3fffffff;
-            static constexpr uint32_t           kChildIndexShift = 30;
+            static constexpr uint32             kInvalidBodyLocation = std::numeric_limits<uint32>::max();
+            static constexpr uint32             kBodyIndexMask = 0x3fffffff;
+            static constexpr uint32             kChildIndexShift = 30;
             
             std::atomic<BroadPhaseLayer::Type>  m_broadPhaseLayer = static_cast<BroadPhaseLayer::Type>(kInvalidBroadPhaseLayer);
             std::atomic<CollisionLayer>         m_collisionLayer = kInvalidCollisionLayer;
-            std::atomic<uint32_t>               m_bodyLocation{ kInvalidBodyLocation }; /// Location of the Body in the Quadtree.
+            std::atomic<uint32>                 m_bodyLocation{ kInvalidBodyLocation }; /// Location of the Body in the Quadtree.
             
             BodyTracker() = default;
             BodyTracker(const BodyTracker& other);
@@ -208,14 +208,14 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct RootNode
         {
-            std::atomic<uint32_t> m_index{ kInvalidNodeIndex };
+            std::atomic<uint32> m_index{ kInvalidNodeIndex };
             
             NodeID              GetNodeID() const { return NodeID::FromNodeIndex(m_index); }
         };
 
     private:
-        void                    GetBodyLocation(const BodyTrackerArray& trackers, BodyID bodyID, uint32_t& outNodeIndex, uint32_t& outChildIndex) const;
-        void                    SetBodyLocation(BodyTrackerArray& trackers, BodyID bodyID, uint32_t nodeIndex, uint32_t childIndex) const;
+        void                    GetBodyLocation(const BodyTrackerArray& trackers, BodyID bodyID, uint32& outNodeIndex, uint32& outChildIndex) const;
+        void                    SetBodyLocation(BodyTrackerArray& trackers, BodyID bodyID, uint32 nodeIndex, uint32 childIndex) const;
         static void             InvalidateBodyLocation(BodyTrackerArray& trackers, BodyID bodyID);
         
         //----------------------------------------------------------------------------------------------------
@@ -231,24 +231,24 @@ namespace nes
         RootNode&               GetCurrentRoot()       { return m_rootNodes[m_rootNodeIndex]; }
 
         AABox                   GetNodeOrBodyBounds(const BodyVector& bodies, NodeID nodeID) const;
-        void                    MarkNodeAndParentsChanged(uint32_t nodeIndex);
-        void                    WidenAndMarkNodeAndParentsChanged(uint32_t nodeIndex, const AABox& newBounds);
+        void                    MarkNodeAndParentsChanged(uint32 nodeIndex);
+        void                    WidenAndMarkNodeAndParentsChanged(uint32 nodeIndex, const AABox& newBounds);
 
-        uint32_t                AllocateNode(bool isChanged);
+        uint32                  AllocateNode(bool isChanged);
         bool                    TryInsertLeaf(BodyTrackerArray& trackers, int nodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
-        bool                    TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32_t>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
-        NodeID                  BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* nodeIDArray, int number, unsigned int maxDepthMarkChanged, AABox& outBounds);
+        bool                    TryCreateNewRoot(BodyTrackerArray& trackers, std::atomic<uint32>& rootNodeIndex, NodeID leafID, const AABox& leafBounds, int numLeafBodies);
+        NodeID                  BuildTree(const BodyVector& bodies, BodyTrackerArray& trackers, NodeID* pNodeIDs, int number, uint maxDepthMarkChanged, AABox& outBounds);
         
         static void             Partition(NodeID* nodeIDs, Vec3* nodeCenters, int number, int& outMidPoint);
         static void             Partition4(NodeID* nodeIDs, Vec3* nodeCenters, int begin, int end, int* outSplitIndices);
         
-        uint32_t                GetMaxTreeDepth(const NodeID nodeID) const;
+        uint32                  GetMaxTreeDepth(const NodeID nodeID) const;
 
         template <typename Visitor>
         NES_INLINE void         WalkTree(const CollisionLayerFilter& layerFilter, const BodyTrackerArray& trackers, Visitor& visitor) const;
 
 #ifdef NES_DEBUG
-        void                    ValidateTree(const BodyVector& bodies, const BodyTrackerArray& trackers, uint32_t nodeIndex, uint32_t numExpectedBodies) const;
+        void                    ValidateTree(const BodyVector& bodies, const BodyTrackerArray& trackers, uint32 nodeIndex, uint32 numExpectedBodies) const;
 #endif
 
     private:
@@ -263,13 +263,13 @@ namespace nes
         /// This is aligned to be in a different cache line from the 'Allocator' pointer to prevent
         /// cross-thread syncs when reading nodes.
         alignas (NES_CACHE_LINE_SIZE)
-        std::atomic<uint32_t>   m_numBodies;
+        std::atomic<uint32>     m_numBodies;
         
         /// Roots of the two internal tree structures. When updating, we activate the new tree and keep
         /// the old tree alive for queries that are in progress until the next time that DiscardOldTree() is
         /// called.
         RootNode                m_rootNodes[2];
-        std::atomic<uint32_t>   m_rootNodeIndex{ 0 };
+        std::atomic<uint32>     m_rootNodeIndex{ 0 };
 
         /// Flag to keep track of changes to the broadphase. If False, we don't need to UpdatePrepare/Finalize().
         std::atomic<bool>       m_isDirty = false;

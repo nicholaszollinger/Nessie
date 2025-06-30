@@ -512,13 +512,13 @@ namespace nes
     UVec4Reg UVec4Reg::Sort4True(const UVec4Reg& value, const UVec4Reg& index)
     {
         // If value.z is false, then shift W to Z.
-        UVec4Reg result = UVec4Reg::Select(index.Swizzle<0, 1, 3, 3>(), index, value.SplatZ());
+        UVec4Reg result = UVec4Reg::Select(index.Swizzle<ESwizzleX, ESwizzleY, ESwizzleW, ESwizzleW>(), index, value.SplatZ());
 
         // If value.y is false, then shift Z and further to Y and further.
-        result = UVec4Reg::Select(result.Swizzle<0, 2, 3, 3>(), result, value.SplatY());
+        result = UVec4Reg::Select(result.Swizzle<ESwizzleX, ESwizzleZ, ESwizzleW, ESwizzleW>(), result, value.SplatY());
 
         // If value.x is false, then shift X and further to Y and further.
-        result = UVec4Reg::Select(value.Swizzle<1, 2, 3, 3>(), result, value.SplatX());
+        result = UVec4Reg::Select(result.Swizzle<ESwizzleY, ESwizzleZ, ESwizzleW, ESwizzleW>(), result, value.SplatX());
 
         return result;
     }

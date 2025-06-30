@@ -13,16 +13,16 @@
     </Type>
 
     <Type Name="nes::Mat33">
-        <DisplayString>{m_columns[0].m_f32[0]}, {m_columns[1].m_f32[0]}, {m_columns[2].m_f32[0]} | {m_columns[0].m_f32[1]}, {m_columns[1].m_f32[1]}, {m_columns[2].m_f32[1]} | {m_columns[0].m_f32[2]}, {m_columns[1].m_f32[2]}, {m_columns[2].m_f32[2]}</DisplayString>
+        <DisplayString>{m_columns[0].x}, {m_columns[1].x}, {m_columns[2].x} | {m_columns[0].y}, {m_columns[1].y}, {m_columns[2].y} | {m_columns[0].z}, {m_columns[1].z}, {m_columns[2].z}</DisplayString>
         <Expand>
             <Synthetic Name="[Row 0]">
-                <DisplayString>{m_columns[0].m_f32[0]}, {m_columns[1].m_f32[0]}, {m_columns[2].m_f32[0]}</DisplayString>
+                <DisplayString>{m_columns[0].x}, {m_columns[1].x}, {m_columns[2].x}</DisplayString>
             </Synthetic>
             <Synthetic Name="[Row 1]">
-                <DisplayString>{m_columns[0].m_f32[1]}, {m_columns[1].m_f32[1]}, {m_columns[2].m_f32[1]}</DisplayString>
+                <DisplayString>{m_columns[0].y}, {m_columns[1].y}, {m_columns[2].y}</DisplayString>
             </Synthetic>
             <Synthetic Name="[Row 2]">
-                <DisplayString>{m_columns[0].m_f32[2]}, {m_columns[1].m_f32[2]}, {m_columns[2].m_f32[2]}</DisplayString>
+                <DisplayString>{m_columns[0].z}, {m_columns[1].z}, {m_columns[2].z}</DisplayString>
             </Synthetic>
         </Expand>
     </Type>
@@ -54,6 +54,15 @@
                 <ValuePointer>(value_type *)m_elements</ValuePointer>
             </ArrayItems>
         </Expand>
+    </Type>
+    
+    <!-- Physics Classes -->
+    <Type Name="nes::BodyID">
+        <DisplayString>index={m_id &amp; 0x007fffff}, Gen={(m_id >> 23) &amp; 0xff}, inBP={m_id >> 24, d}</DisplayString>
+    </Type>
+
+    <Type Name="nes::BodyManager">
+        <DisplayString>bodies={m_bodies._Mypair._Myval2._Mylast - m_bodies._Mypair._Myval2._Myfirst}, active={m_activeBodies._Mypair._Myval2._Mylast - m_activeBodies._Mypair._Myval2._Myfirst}</DisplayString>
     </Type>
     
 </AutoVisualizer>

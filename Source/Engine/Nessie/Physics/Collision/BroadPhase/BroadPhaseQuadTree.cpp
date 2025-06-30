@@ -31,14 +31,14 @@ namespace nes
         m_trackers.resize(m_maxBodies);
 
         // Initialize the Node Allocator
-        uint32_t numLeaves = static_cast<uint32_t>(m_maxBodies + 1) / 2; // Assume 50% fill.
-        uint32_t numLeavesPlusInternalNodes = numLeaves + (numLeaves + 2) / 3; // Sum(numLeaves * 4^-i) with i = [0, inf]
+        uint32 numLeaves = static_cast<uint32>(m_maxBodies + 1) / 2; // Assume 50% fill.
+        uint32 numLeavesPlusInternalNodes = numLeaves + (numLeaves + 2) / 3; // Sum(numLeaves * 4^-i) with i = [0, inf]
         m_allocator.Init(2 * numLeavesPlusInternalNodes, 256); // We use double the amount o f odes while rebuilding the tree during Update().
 
         // Initialize Sub-Trees
         m_layers = NES_NEW_ARRAY(QuadTree, m_numLayers);
 
-        for (uint32_t i = 0; i < m_numLayers; ++i)
+        for (uint32 i = 0; i < m_numLayers; ++i)
         {
             m_layers[i].Init(m_allocator);
 
@@ -51,7 +51,7 @@ namespace nes
         FrameSync();
         LockModifications();
 
-        for (uint32_t i = 0; i < m_numLayers; ++i)
+        for (uint32 i = 0; i < m_numLayers; ++i)
         {
             QuadTree& tree = m_layers[i];
             if (tree.HasBodies())
@@ -101,7 +101,7 @@ namespace nes
         UpdateStateImpl* pUpdateStateImpl = reinterpret_cast<UpdateStateImpl*>(&updateState);
 
         // Loop until we've seen all layers
-        for (uint32_t i = 0; i < m_numLayers; ++i)
+        for (uint32 i = 0; i < m_numLayers; ++i)
         {
             QuadTree& tree = m_layers[m_nextLayerToUpdate];
             m_nextLayerToUpdate = (m_nextLayerToUpdate + 1) % m_numLayers;
@@ -179,7 +179,7 @@ namespace nes
             // Keep track in which tree we placed the object:
             for (const BodyID* pBodyID = pStart; pBodyID < pMid; ++pBodyID)
             {
-                const uint32_t index = pBodyID->GetIndex();
+                const uint32 index = pBodyID->GetIndex();
                 NES_ASSERT(bodies[index]->GetID() == *pBodyID);
                 NES_ASSERT(!bodies[index]->IsInBroadPhase());
 
@@ -227,7 +227,7 @@ namespace nes
                 // Mark Added to the Broadphase
                 for (const BodyID* pBodyID = layerState.m_pBodyStart; pBodyID < layerState.m_pBodyEnd; ++pBodyID)
                 {
-                    const uint32_t index = pBodyID->GetIndex();
+                    const uint32 index = pBodyID->GetIndex();
                     NES_ASSERT(bodies[index]->GetID() == *pBodyID);
                     NES_ASSERT(m_trackers[index].m_broadPhaseLayer == broadPhaseLayer);
                     NES_ASSERT(m_trackers[index].m_collisionLayer == bodies[index]->GetCollisionLayer());
@@ -266,7 +266,7 @@ namespace nes
                 // Reset the tracking info for each Body:
                 for (const BodyID* pBodyID = layerState.m_pBodyStart; pBodyID < layerState.m_pBodyEnd; ++pBodyID)
                 {
-                    const uint32_t index = pBodyID->GetIndex();
+                    const uint32 index = pBodyID->GetIndex();
                     NES_ASSERT(bodies[index]->GetID() == *pBodyID);
                     NES_ASSERT(!bodies[index]->IsInBroadPhase()); // They shouldn't have this flag set yet.
 
@@ -321,7 +321,7 @@ namespace nes
             // Reset our tracking information
             for (const BodyID* pBodyID = pStart; pBodyID < pMid; ++pBodyID)
             {
-                const uint32_t index = pBodyID->GetIndex();
+                const uint32 index = pBodyID->GetIndex();
 
                 // Reset the tracker info:
                 Tracker& tracker = m_trackers[index];
@@ -394,7 +394,7 @@ namespace nes
 
         for (BodyID* pBodyID = pBodies + number - 1; pBodyID >= pBodies; --pBodyID)
         {
-            const uint32_t index = pBodyID->GetIndex();
+            const uint32 index = pBodyID->GetIndex();
             NES_ASSERT(bodies[index]->GetID() == *pBodyID);
             
             const Body* pBody = bodies[index];

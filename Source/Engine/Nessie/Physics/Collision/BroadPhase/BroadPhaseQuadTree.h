@@ -15,31 +15,31 @@ namespace nes
         virtual ~BroadPhaseQuadTree() override;
 
     public:
-        virtual void            Init(BodyManager* pBodyManager, const BroadPhaseLayerInterface& layerInterface) override;
-        virtual void            Optimize() override;
-        virtual void            FrameSync() override;
-        virtual void            LockModifications() override;
-        virtual void            UnlockModifications() override;
-        virtual UpdateState     UpdatePrepare() override;
-        virtual void            UpdateFinalize(const UpdateState& updateState) override;
+        virtual void                Init(BodyManager* pBodyManager, const BroadPhaseLayerInterface& layerInterface) override;
+        virtual void                Optimize() override;
+        virtual void                FrameSync() override;
+        virtual void                LockModifications() override;
+        virtual void                UnlockModifications() override;
+        virtual UpdateState         UpdatePrepare() override;
+        virtual void                UpdateFinalize(const UpdateState& updateState) override;
 
-        virtual AddState        AddBodiesPrepare(BodyID* pBodies, int number) override;
-        virtual void            AddBodiesFinalize(BodyID* pBodies, int number, AddState addState) override;
-        virtual void            AddBodiesAbort(BodyID* pBodies, int number, AddState addState) override;
-        virtual void            RemoveBodies(BodyID* pBodies, int number) override;
-        virtual void            NotifyBodiesAABBChanged(BodyID* pBodies, int number, bool takeLock) override;
-        virtual void            NotifyBodiesLayerChanged(BodyID* pBodies, int number) override;
+        virtual AddState            AddBodiesPrepare(BodyID* pBodies, int number) override;
+        virtual void                AddBodiesFinalize(BodyID* pBodies, int number, AddState addState) override;
+        virtual void                AddBodiesAbort(BodyID* pBodies, int number, AddState addState) override;
+        virtual void                RemoveBodies(BodyID* pBodies, int number) override;
+        virtual void                NotifyBodiesAABBChanged(BodyID* pBodies, int number, bool takeLock) override;
+        virtual void                NotifyBodiesLayerChanged(BodyID* pBodies, int number) override;
         
-        virtual void            CastRay(const RayCast& ray, RayCastBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
-        virtual void            FindCollidingPairs(BodyID* pActiveBodies, int numActiveBodies, float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter, const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const override;
+        virtual void                CastRay(const RayCast& ray, RayCastBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const override;
+        virtual void                FindCollidingPairs(BodyID* pActiveBodies, int numActiveBodies, float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter, const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const override;
         
-        virtual AABox           GetBounds() const override;
+        virtual AABox               GetBounds() const override;
 
     private:
         //----------------------------------------------------------------------------------------------------
@@ -49,9 +49,9 @@ namespace nes
         {
             NES_OVERRIDE_NEW_DELETE
 
-            BodyID*             m_pBodyStart = nullptr;
-            BodyID*             m_pBodyEnd = nullptr;
-            QuadTree::AddState  m_addState;
+            BodyID*                 m_pBodyStart = nullptr;
+            BodyID*                 m_pBodyEnd = nullptr;
+            QuadTree::AddState      m_addState;
         };
         
         //----------------------------------------------------------------------------------------------------
@@ -59,8 +59,8 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct UpdateStateImpl
         {
-            QuadTree*              m_pTree = nullptr;
-            QuadTree::UpdateState  m_updateState;
+            QuadTree*               m_pTree = nullptr;
+            QuadTree::UpdateState   m_updateState;
         };
 
         using Tracker = QuadTree::BodyTracker;
@@ -86,10 +86,10 @@ namespace nes
 
         /// One Quadtree per BroadPhaseLayer.
         QuadTree*                   m_layers = nullptr;
-        uint32_t                    m_numLayers = 0;
+        uint32                      m_numLayers = 0;
 
         /// This is the next tree to update in UpdatePrepare();
-        uint32_t                    m_nextLayerToUpdate = 0;
+        uint32                      m_nextLayerToUpdate = 0;
 
         /// Mutex that prevents object modification during UpdatePrepare()/UpdateFinalize().
         SharedMutex                 m_updateMutex;
@@ -100,6 +100,6 @@ namespace nes
         mutable SharedMutex         m_queryLocks[2];
 
         /// Index indicates which Query Lock is currently active. It alternates between 0 and 1.
-        std::atomic<uint32_t>       m_queryLockIndex {0};
+        std::atomic<uint32>         m_queryLockIndex {0};
     };
 }
