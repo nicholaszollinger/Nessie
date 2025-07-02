@@ -1,23 +1,27 @@
-#pragma once
 // EntryPoint.h
+#pragma once
 #include "Application.h"
 
 #if defined(NES_PLATFORM_WINDOWS)
-#define NES_MAIN()                                                                  \
-int main(int argc, char** argv)                                                     \
-{                                                                                   \
-    nes::CommandLineArgs args = {static_cast<size_t>(argc), argv };                 \
-                                                                                    \
-    nes::Application app(args);                                                     \
-    auto code = app.Internal_Init();                                                \
-                                                                                    \
-    if (code == nes::Application::EExitCode::Success)                               \
-    {                                                                               \
-        code = app.Internal_RunMainLoop();                                          \
-    }                                                                               \
-                                                                                    \
-    app.Internal_Close(code);                                                       \
-                                                                                    \
-    return static_cast<int>(code);                                                  \
+#define NES_MAIN()                                                          \
+int main(int argc, char** argv)                                             \
+{                                                                           \
+    NES_INIT_LEAK_DETECTOR();                                               \
+    nes::LoggerRegistry::Instance().Internal_Init();                        \
+    nes::CommandLineArgs args = {static_cast<size_t>(argc), argv };         \
+                                                                            \
+    nes::Application* app = nes::CreateApplication(args);                   \
+    NES_ASSERT(app != nullptr);                                             \
+                                                                            \
+    if (app->Internal_Init())                                               \
+    {                                                                       \
+        app->Internal_RunMainLoop();                                        \
+    }                                                                       \
+                                                                            \
+    NES_DELETE(app);                                                        \
+    nes::LoggerRegistry::Instance().Internal_Shutdown();                    \
+    NES_DUMP_AND_DESTROY_LEAK_DETECTOR();                                   \
+                                                                            \
+    return 0;                                                               \
 }                                                                                   
 #endif

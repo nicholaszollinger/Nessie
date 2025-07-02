@@ -2,6 +2,7 @@
 -- Premake Documentation: https://premake.github.io/docs/
 
 local projectCore = require ("ProjectCore");
+local dependencyInjector = require ("DependencyInjector");
 
 local libFolder = projectCore.ProjectIntermediateLibsLocation .. "Nessie\\";
 
@@ -117,9 +118,54 @@ function p.Link(projectDir)
     end
 end
 
-function p.Include(projectDir)
-    includedirs { projectDir }
+function p.SetIncludeThirdPartyDirs()
+    -- Include directories for third party files.
 
+    dependencyInjector.Include("imgui");
+    dependencyInjector.Include("yaml_cpp");
+    defines { "YAML_CPP_STATIC_DEFINE" }
+    
+    dependencyInjector.Include("fmt");
+
+    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
+    if (renderAPI == nil) then
+        projectCore.PrintError("Failed to load RenderAPI! No RenderAPI value set in the Project File!");
+        return false;
+    end
+
+    -- Ensure that the RenderAPI is valid on the Platform.
+    if (renderAPI == "SDL") then
+        -- Only available on Windows for now.
+        if (_TARGET_OS == "windows") then
+            defines
+            {
+                "_RENDER_API_SDL"
+            }
+            dependencyInjector.Link("SDL");
+            return true;
+        end
+    elseif (renderAPI == "Vulkan") then
+        -- Only available on Windows for now.
+        if (_TARGET_OS == "windows") then
+            defines
+            {
+                "_RENDER_API_VULKAN"
+            }
+
+            dependencyInjector.Link("glfw");
+            dependencyInjector.Include("Vulkan");
+            return true;
+        end
+    end
+end
+
+function p.Include(projectDir)
+    -- TODO: Remove the project dir include, and update all paths 
+    -- in Nessie files to have the "Nessie/...". This is to make the sub
+    -- projects that might have similarly named files not get confused.
+    includedirs { projectDir }
+    includedirs { p.BuildDirectory }
+    p.SetIncludeThirdPartyDirs();
 end
 
 return p;

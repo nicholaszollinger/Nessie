@@ -84,6 +84,23 @@ namespace nes
         PhysicsScene& operator=(const PhysicsScene&) = delete;
         PhysicsScene(PhysicsScene&&) = delete;
         PhysicsScene& operator=(PhysicsScene&&) = delete;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize the Physics Scene. Must be called before using the scene. 
+        //----------------------------------------------------------------------------------------------------
+        void                            Init(const CreateInfo& createInfo);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Runs the simulation.
+        ///     The World steps for a total of deltaTime seconds. This is divided in collisionSteps iterations.
+        ///     Each iteration consists of collision detection followed by an integration step.
+        ///     This function internally spawns jobs using the pJobSystem and waits for them to complete, so no
+        ///     jobs will be running when this function returns.
+        ///     The stack allocator is used, for example, to store a list of bodies that are in contact, how they
+        ///     form islands together and the data to solve contacts between bodies. At the end of the function,
+        ///     all allocated memory will have been freed.
+        //----------------------------------------------------------------------------------------------------
+        EPhysicsUpdateErrorCode         Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the listener which is notified whenever a body is activated or deactivated.
@@ -373,23 +390,6 @@ namespace nes
         class BodiesToSleep;
         
     private:
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the Physics Scene. Must be called before using the scene. 
-        //----------------------------------------------------------------------------------------------------
-        void                            Init(const CreateInfo& createInfo);
-        
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Runs the simulation.
-        ///     The World steps for a total of deltaTime seconds. This is divided in collisionSteps iterations.
-        ///     Each iteration consists of collision detection followed by an integration step.
-        ///     This function internally spawns jobs using the pJobSystem and waits for them to complete, so no
-        ///     jobs will be running when this function returns.
-        ///     The stack allocator is used, for example, to store a list of bodies that are in contact, how they
-        ///     form islands together and the data to solve contacts between bodies. At the end of the function,
-        ///     all allocated memory will have been freed.
-        //----------------------------------------------------------------------------------------------------
-        EPhysicsUpdateErrorCode         Update(const float deltaTime, int collisionSteps, StackAllocator* pAllocator, JobSystem* pJobSystem);
-        
         // Job Entry Points.
         void                            JobStepListeners(PhysicsUpdateContext::Step* pStep);
         void                            JobDetermineActiveConstraints(PhysicsUpdateContext::Step* pStep) const;

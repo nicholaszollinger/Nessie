@@ -18,7 +18,7 @@ namespace nes
 {
     NES_DEFINE_LOG_TAG(kGLFWLogTag, "GLFW", Warn);
     
-    bool Window::Init(Application& app, const WindowProperties& props)
+    bool ApplicationWindow::Internal_Init(Application& app, const WindowProperties& props)
     {
         m_properties = props;
 
@@ -146,7 +146,7 @@ namespace nes
         glfwSetCursorPosCallback(pWindow, [](GLFWwindow* pWindow, const double xPos, const double yPos)
         {
             Application* pApp = checked_cast<Application*>(glfwGetWindowUserPointer(pWindow));
-            Window& window = pApp->GetWindow();
+            ApplicationWindow& window = pApp->GetWindow();
 
             // New Mouse Position.
             Vec2 position{static_cast<float>(xPos), static_cast<float>(yPos)};
@@ -217,12 +217,12 @@ namespace nes
         return true;
     }
 
-    void Window::ProcessEvents()
+    void ApplicationWindow::Internal_ProcessEvents()
     {
         glfwPollEvents();
     }
 
-    void Window::Close()
+    void ApplicationWindow::Close()
     {
         glfwDestroyWindow(checked_cast<GLFWwindow*>(m_pNativeWindowHandle));
         m_pNativeWindowHandle = nullptr;
@@ -232,28 +232,28 @@ namespace nes
         glfwTerminate();
     }
 
-    bool Window::ShouldClose()
+    bool ApplicationWindow::ShouldClose()
     {
         return glfwWindowShouldClose(checked_cast<GLFWwindow*>(m_pNativeWindowHandle));
     }
 
-    void Window::SetIsMinimized(const bool minimized)
+    void ApplicationWindow::SetIsMinimized(const bool minimized)
     {
         m_properties.m_isMinimized = minimized;
     }
 
-    void Window::SetVsync(const bool enabled)
+    void ApplicationWindow::SetVsync(const bool enabled)
     {
         m_properties.m_vsyncEnabled = enabled;
         glfwSwapInterval(enabled ? 1 : 0);
     }
 
-    WindowExtent Window::Resize(const WindowExtent& extent)
+    WindowExtent ApplicationWindow::Resize(const WindowExtent& extent)
     {
         return Resize(extent.m_width, extent.m_height);
     }
 
-    WindowExtent Window::Resize(const uint32_t width, const uint32_t height)
+    WindowExtent ApplicationWindow::Resize(const uint32_t width, const uint32_t height)
     {
         GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_pNativeWindowHandle);
         glfwSetWindowSize(pWindow, static_cast<int>(width), static_cast<int>(height));

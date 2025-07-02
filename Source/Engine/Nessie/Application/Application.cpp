@@ -4,21 +4,55 @@
 
 namespace nes
 {
-    /// Application instance variable. This is set in the constructor of the Application.
-    static Application* s_pInstance = nullptr;
-
-    /// ID of the thread that the Application is running on. Set in the constructor of the Application. 
-    static std::thread::id s_mainThreadId{};
+    /// Static instance set in the Application's constructor.
+    static Application* g_pApplication = nullptr;
     
+    /// ID of the thread that the Application is running on. 
+    static std::thread::id s_mainThreadId{};
+
+    Application::Application(ApplicationProperties&& appProps, const WindowProperties& windowProps)
+        : m_properties(std::move(appProps))
+    {
+        // Set static variables.
+        NES_ASSERT(g_pApplication == nullptr);
+        g_pApplication = this;
+        s_mainThreadId = std::this_thread::get_id();
+
+        // Create the Window:
+        m_pWindow = NES_NEW(ApplicationWindow());
+        if (!m_pWindow->Internal_Init(*this, windowProps))
+        {
+            NES_FATAL("Failed to create window!");
+        }
+
+        // Initialize the Input Manager.
+        if (!m_inputManager.Init(m_pWindow))
+        {
+            NES_FATAL("Failed to initialize input manager!");
+        }
+    }
+
     Application& Application::Get()
     {
-        NES_ASSERT(s_pInstance);
-        return *s_pInstance;
+        NES_ASSERT(g_pApplication != nullptr);
+        return *g_pApplication;
+    }
+
+    ApplicationWindow& Application::GetWindow()
+    {
+        NES_ASSERT(m_pWindow != nullptr);
+        return *m_pWindow;
+    }
+
+    const ApplicationWindow& Application::GetWindow() const
+    {
+        NES_ASSERT(m_pWindow != nullptr);
+        return *m_pWindow;
     }
 
     bool Application::IsMainThread()
     {
-        return std::this_thread::get_id() == s_mainThreadId; 
+        return s_mainThreadId == std::this_thread::get_id();
     }
 
     std::thread::id Application::GetMainThreadID()
@@ -26,160 +60,50 @@ namespace nes
         return s_mainThreadId;
     }
 
-    Application::Application(const CommandLineArgs& args)
-    {
-        if (s_pInstance != nullptr)
-        {
-            NES_FATAL(kApplicationLogTag, "Attempted to create a second Application instance!");
-            //NES_FATAL("[Application]: Attempted to create a second Application instance!");
-        }
-
-        s_pInstance = this;
-        s_mainThreadId = std::this_thread::get_id();
-        m_properties.m_commandLineArgs = args;
-    }
-    
-    Window& Application::GetWindow()
-    {
-        return m_window;
-    }
-    
-    const Window& Application::GetWindow() const
-    {
-        return m_window;
-    }
-    
-    Application::EExitCode Application::Internal_Init()
-    {
-        NES_INIT_LEAK_DETECTOR();
-        //Logger::Init(NES_LOG_DIR);
-        LoggerRegistry::Instance().Internal_Init();
-        
-        const std::string logConfigDir = NES_CONFIG_DIR;
-        //Logger::LoadCategories(std::string(logConfigDir + "LogConfig.yaml"));
-
-        // Load the Application Settings:
-        auto settingsFile = YAML::LoadFile(std::string(logConfigDir + "AppConfig.yaml"));
-        if (!settingsFile)
-            return EExitCode::FatalError;
-
-        auto application = settingsFile["Application"];
-        if (!application)
-            return EExitCode::FatalError;
-
-        m_properties.m_appName = application["Name"].as<std::string>();
-        m_properties.m_appVersion.Deserialize(application["Version"]);
-
-        // Load Window Properties
-        auto window = settingsFile["Window"];
-        if (!window)
-            return EExitCode::FatalError;
-        
-        WindowProperties windowProperties;
-        windowProperties.m_label = window["Label"].as<std::string>();
-        const auto extent = window["Extent"].as<std::array<int, 2>>();
-        windowProperties.m_extent.m_width = extent[0];
-        windowProperties.m_extent.m_height = extent[1];
-        windowProperties.m_windowMode = static_cast<EWindowMode>(window["Mode"].as<int>());
-        windowProperties.m_isResizable = window["IsResizable"].as<bool>();
-        windowProperties.m_vsyncEnabled = window["VsyncEnabled"].as<bool>();
-        
-        // Create the Window:
-        if (!m_window.Init(*this, windowProperties))
-        {
-            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to Initialize the Window!");
-            return EExitCode::FatalError;
-        }
-
-        // Initialize the InputManager
-        if (!m_inputManager.Init(&m_window))
-        {
-            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to Initialize InputManager!");
-            return EExitCode::FatalError;
-        }
-        
-        // Create the Renderer
-        if (!m_renderer.Init(&m_window, m_properties))
-        {
-            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to initialize the Renderer!");
-            return EExitCode::FatalError;
-        }
-        
-        // Scene Manager
-        if (!m_sceneManager.Init(settingsFile))
-        {
-            NES_ERROR(kApplicationLogTag, "Failed to initialize the Application! Failed to initialize the SceneManager!");
-            return EExitCode::FatalError;
-        }
-        
-        NES_LOG(kApplicationLogTag, "Initialized App: \"{}\" Version: ", m_properties.m_appName, m_properties.m_appVersion.ToString());
-        return EExitCode::Success;
-    }
-
-    Application::EExitCode Application::Internal_RunMainLoop()
+    void Application::Internal_RunMainLoop()
     {
         m_timer.Start();
-
-        while (!m_window.ShouldClose() && !m_closeRequested)
+        
+        while (!m_pWindow->ShouldClose() && !m_shouldQuit)
         {
+            // Update Frame Time:
             const double deltaTime = m_timer.Tick<Timer::Seconds>();
             m_timeSinceStartup += deltaTime;
+            m_lastFrameTime = deltaTime * 1000.f;
+            m_fps = 1.f / static_cast<float>(deltaTime);
             
-            // [TODO]: Sync with the Render Thread.
-            // [TODO]: Sync with the Resource Thread.
-        
-            // Update:
-            ProcessAppEvents();
-            m_inputManager.Update(deltaTime);
-            m_sceneManager.Update(deltaTime);
-        
-            // Submitting to Renderer:
-            if (m_renderer.BeginFrame())
+            OnFrameBegin();
             {
-                m_sceneManager.PreRender();
-                m_sceneManager.Render();
+                // Update input state.
+                m_inputManager.Update(deltaTime);
                 
-                m_renderer.EndFrame();
+                // Run the Application frame.
+                RunFrame(deltaTime);
+                
+                // Process Window events:
+                m_pWindow->Internal_ProcessEvents();
             }
-            
-            m_window.ProcessEvents();
+            OnFrameEnd();
         }
 
-        return EExitCode::Success;
+        Shutdown();
     }
-    
-    void Application::Internal_Close([[maybe_unused]] EExitCode exitCode)
+
+    void Application::Shutdown()
     {
-        NES_ASSERT(IsMainThread());
+        OnAppShutdown();
 
-        m_renderer.WaitUntilIdle();
-
-        m_sceneManager.Shutdown();
-        m_renderer.Shutdown();
+        // Shutdown the input manager.
         m_inputManager.Shutdown();
-        m_window.Close();
 
-        NES_LOG(kApplicationLogTag, "Application Closed");
-        LoggerRegistry::Instance().Internal_Shutdown();
-        NES_DUMP_AND_DESTROY_LEAK_DETECTOR();
+        // Close the window.
+        if (m_pWindow)
+        {
+            m_pWindow->Close();
+            NES_SAFE_DELETE(m_pWindow);
+        }
 
-        // Set the Instance back to nullptr.
-        s_pInstance = nullptr;
+        // Release the instance.
+        g_pApplication = nullptr;
     }
-    
-    void Application::Quit()
-    {
-        m_closeRequested = true;
-    }
-
-    void Application::PushEvent(Event& e)
-    {
-        m_sceneManager.OnEvent(e);
-    }
-
-    void Application::ProcessAppEvents()
-    {
-        // [TODO]: Process the Event Queue.
-    }
-
 }

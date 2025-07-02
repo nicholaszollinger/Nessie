@@ -37,7 +37,7 @@ namespace nes::internal
 
 namespace nes
 {
-    class Window;
+    class ApplicationWindow;
     struct ApplicationProperties;
     
     //----------------------------------------------------------------------------------------------------
@@ -332,7 +332,7 @@ namespace nes
         uint32_t m_currentFrameIndex = 0;
         
     public:
-        bool Init(Window* pWindow, const ApplicationProperties& props, const ConfigOptions& options);
+        bool Init(ApplicationWindow* pWindow, const ApplicationProperties& props, const ConfigOptions& options);
         void Shutdown();
 
         //-----------------------------------------------------------------------------------------------------------

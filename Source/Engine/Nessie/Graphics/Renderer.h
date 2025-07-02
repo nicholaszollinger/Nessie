@@ -2,7 +2,7 @@
 #pragma once
 #include "Mesh.h"
 #include "RendererContext.h"
-#include "Application/Window.h"
+#include "Application/ApplicationWindow.h"
 #include "Core/Generic/Color.h"
 
 // [TODO]: Remove when API is set up to hide direct calls.
@@ -130,7 +130,7 @@ namespace nes
         static Renderer&                Instance();
 
         
-        bool                            Init(Window* pWindow, const ApplicationProperties& appProperties);
+        bool                            Init(ApplicationWindow* pWindow, const ApplicationProperties& appProperties);
         void                            Shutdown();
 
         //----------------------------------------------------------------------------------------------------
@@ -165,7 +165,7 @@ namespace nes
     private:
         friend class Application;
         RendererContext*                m_pRenderContext = nullptr;
-        Window*                         m_pWindow = nullptr;
+        ApplicationWindow*              m_pWindow = nullptr;
         GAP311::VulkanShaderLibrary*    m_pShaderLibrary = nullptr;
 
         vk::CommandBuffer               m_commandBuffer{};  /// The current frame's command buffer to handle incoming draw calls.

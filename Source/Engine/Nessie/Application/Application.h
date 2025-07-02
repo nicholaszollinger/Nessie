@@ -1,19 +1,17 @@
 // Application.h
 #pragma once
-#include "Window.h"
+#include "ApplicationWindow.h"
 #include "Core/Generic/Version.h"
 #include "Core/Time/Timer.h"
 #include "Debug/Assert.h"
-#include "Graphics/Renderer.h"
 #include "Input/InputManager.h"
-#include "Scene/SceneManager.h"
 
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kApplicationLogTag, "Application", Info);
     
     class Platform;
-    class Window;
+    class ApplicationWindow;
     class Event;
 
     //-----------------------------------------------------------------------------------------------------------------------------
@@ -42,123 +40,141 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ApplicationProperties
     {
-        CommandLineArgs m_commandLineArgs{};    /// Command line arguments sent to the App Executable.
-        std::string     m_appName{};            /// Application Name.
-        Version         m_appVersion{};         /// Application Version.
+        CommandLineArgs m_commandLineArgs{};        /// Command line arguments sent to the App Executable.
+        std::string     m_appName{};                /// Application Name.
+        Version         m_appVersion{};             /// Application Version.
+        bool            m_isMultithreaded = true;
     };
-}
 
-namespace nes
-{
     //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Application runs the game loop and processes events.
+    /// @brief : Base Application class.  
     //----------------------------------------------------------------------------------------------------
     class Application
     {
     public:
-        enum class EExitCode
-        {
-            Success = 0,
-            FatalError = -1,
-        };
-
-    public:
-        explicit Application(const CommandLineArgs& args);
-        
+        Application(ApplicationProperties&& appProps, const WindowProperties& windowProps);
         Application(const Application&) = delete;
-        Application& operator=(const Application&) = delete;
         Application(Application&&) noexcept = delete;
+        Application& operator=(const Application&) = delete;
         Application& operator=(Application&&) noexcept = delete;
+        virtual ~Application() = default;
 
     public:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the static instance of the Application. 
         //----------------------------------------------------------------------------------------------------
-        static Application&     Get();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Returns true if the caller is on the Main Thread. 
-        //----------------------------------------------------------------------------------------------------
-        static bool             IsMainThread();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the thread ID of the main thread the program is executing on. 
-        //----------------------------------------------------------------------------------------------------
-        static std::thread::id  GetMainThreadID();
+        static Application&         Get();
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Manually push an event to the Application, to be handled immediately.
+        /// @brief : Push an event to the Application.
         //----------------------------------------------------------------------------------------------------
-        void                    PushEvent(Event& e);
-
-        //----------------------------------------------------------------------------------------------------
-        ///	@brief : Quit the Application.
-        /// @note : Note: This won't close the App immediately-it will wait until the current frame has finished.
-        //----------------------------------------------------------------------------------------------------
-        void                    Quit();
+        virtual void                PushEvent([[maybe_unused]] Event& e) {}
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Application's main window. 
         //----------------------------------------------------------------------------------------------------
-        Window&                 GetWindow();
-
+        ApplicationWindow&          GetWindow();
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Application's main window. 
         //----------------------------------------------------------------------------------------------------
-        const Window&           GetWindow() const;
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get access to the Application's Renderer, used to draw to the main window. 
-        //----------------------------------------------------------------------------------------------------
-        const Renderer&         GetRenderer() const       { return m_renderer; }
+        const ApplicationWindow&    GetWindow() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Application's Input Manager. 
         //----------------------------------------------------------------------------------------------------
-        const InputManager&     GetInputManager() const   { return m_inputManager; }
+        const InputManager&         GetInputManager() const         { return m_inputManager; }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current "frames per second" of the running application.
+        //----------------------------------------------------------------------------------------------------
+        float                       GetFPS() const                  { return m_fps; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the Application's Scene Manager. 
+        /// @brief : Get the time elapsed since the start of the Main Loop.
         //----------------------------------------------------------------------------------------------------
-        SceneManager&           GetSceneManager()         { return m_sceneManager; }
+        double                      GetTimeSinceStartup() const     { return m_timeSinceStartup; }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Quit the Application. The application will finish the current frame before closing. 
+        //----------------------------------------------------------------------------------------------------
+        void                        Quit()                          { m_shouldQuit = true; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check whether the Application should close. 
+        //----------------------------------------------------------------------------------------------------
+        bool                        ShouldQuit() const              { return m_shouldQuit; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get information about the application. 
+        //----------------------------------------------------------------------------------------------------
+        const ApplicationProperties& GetProperties() const          { return m_properties; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if the caller is on the Main Thread. 
+        //----------------------------------------------------------------------------------------------------
+        static bool                 IsMainThread();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the thread ID of the main thread the program is executing on. 
+        //----------------------------------------------------------------------------------------------------
+        static std::thread::id      GetMainThreadID();
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Function called at the start of the entry point.
         /// @note : Do not call directly! This function is to be used in the entry point of the program.
         //----------------------------------------------------------------------------------------------------
-        EExitCode               Internal_Init();
+        virtual bool                Internal_Init()                 { return true; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Runs the main loop of the application. On exit, the application will close.
         /// @note : Do not call directly! This function is to be used in the entry point of the program.
         //----------------------------------------------------------------------------------------------------
-        EExitCode               Internal_RunMainLoop();
+        void                        Internal_RunMainLoop();
+
+    protected:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Called at the beginning of a frame in the main loop, before UpdateFrame() and RenderFrame().
+        //----------------------------------------------------------------------------------------------------
+        virtual void                OnFrameBegin() {}
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Update the application.
+        ///	@param deltaTime : Delta time, in seconds.
+        //----------------------------------------------------------------------------------------------------
+        virtual void                RunFrame(const double deltaTime) = 0;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Closes the Application. 
-        ///	@param exitCode : Code returned by either the Initialization the result of running the main loop.
-        /// @note : Do not call directly! This function is to be used in the entry point of the program. Use
-        ///     Application::Quit() to close the Application from code.
+        /// @brief : Called at the end of a single application frame.
         //----------------------------------------------------------------------------------------------------
-        void                    Internal_Close(EExitCode exitCode);
+        virtual void                OnFrameEnd() {}
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Called after exiting the main loop. Use to clean up resources, etc.
+        //----------------------------------------------------------------------------------------------------
+        virtual void                OnAppShutdown() {}
+
+    private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Shuts down the application; cleans up resources, etc. 
+        //----------------------------------------------------------------------------------------------------
+        void                        Shutdown();
         
-    private:
-        //----------------------------------------------------------------------------------------------------
-        // [TODO]: 
-        /// @brief : Processes all queued events.
-        //----------------------------------------------------------------------------------------------------
-        void                    ProcessAppEvents();
-    
-    private:
-        ApplicationProperties   m_properties;
-        Window                  m_window{};
-        Renderer                m_renderer{};
-        InputManager            m_inputManager{};
-        SceneManager            m_sceneManager{};
-        Timer                   m_timer{};
-        double                  m_timeSinceStartup = 0.f;
-        bool                    m_closeRequested = false;
+        ApplicationProperties       m_properties{};
+        InputManager                m_inputManager{};
+        Timer                       m_timer{};
+        ApplicationWindow*          m_pWindow = nullptr;
+        double                      m_timeSinceStartup = 0.f;
+        double                      m_lastFrameTime = 0.f;
+        float                       m_fps = 0.f;
+        bool                        m_shouldQuit = false;
     };
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Function that needs to be defined to create an application in the entry point. 
+    ///	@param args : Command line args sent to the executable.
+    ///	@returns : Application instance.
+    //----------------------------------------------------------------------------------------------------
+    extern nes::Application*     CreateApplication(const nes::CommandLineArgs& args);
 }
+

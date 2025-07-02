@@ -7,9 +7,11 @@
 #include "Components/FreeCamMovementComponent.h"
 #include "Physics/Collision/Shapes/BoxShape.h"
 #include "Physics/Collision/Shapes/EmptyShape.h"
+#include "Scene/TickManager.h"
 
 // Hack to test stb_image
 #include "stb_image.h"
+#include "Physics/Collision/CollisionSolver.h"
 
 namespace nes
 {
@@ -20,6 +22,13 @@ namespace nes
     static constexpr unsigned kNumBodyMutexes           = 0; // Autodetect
     static constexpr unsigned kMaxBodyPairs             = 65636;
     static constexpr unsigned kMaxContactConstraints    = 20480;
+
+    Body& CreateFloor(BodyInterface& bodyInterface, const float size = 200.f, const float worldScale = 1.f)
+    {
+        Body& floor = *bodyInterface.CreateBody(BodyCreateInfo(new BoxShape(worldScale * Vec3(0.5f * size, 1.f, 0.5f * size), 0.f), RVec3(worldScale * Vec3(0.f, -1.f, 0.f)), Quat::Identity(), EBodyMotionType::Static, PhysicsLayers::kNonMoving));
+        bodyInterface.AddBody(floor.GetID(), EBodyActivationMode::DontActivate);
+        return floor;
+    }
     
     World::World(Scene* pScene)
         : EntityLayer(pScene)
@@ -142,8 +151,10 @@ namespace nes
     {
         // [TODO]: This should be moved.
         // Register Shape functions
-        EmptyShape::Register();
+        CollisionSolver::Internal_Init();
+        ConvexShape::Register();
         BoxShape::Register();
+        EmptyShape::Register();
         
         // Add Tick Groups:
         auto& tickManager = TickManager::Get();
@@ -165,6 +176,7 @@ namespace nes
         m_pPhysicsScene->Init(physicsCreateInfo);
         
         m_pPhysicsScene->SetSettings(m_physicsSettings);
+        m_pPhysicsScene->SetBodyActivationListener(&m_bodyActivationListener);
         
         // Set up the Physics Tick
         m_physicsTick.SetTickInterval(1.f / 60.f);
@@ -174,12 +186,19 @@ namespace nes
         m_physicsTick.m_collisionSteps = 1;
         m_physicsTick.RegisterTick(&m_physicsTickGroup);
 
-        // [TEMP]: 
-        // Add a body to the System???
+        // [TEMP]: Simple test for the Physics System.
         auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
-        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(new BoxShape(Vec3(20, 1, 1)), Vec3(0, 10, 0), Quat::Identity(), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
-
-        bodyInterface.SetPosition(m_testID, Vec3(0.f), EBodyActivationMode::LeaveAsIs);
+        CreateFloor(bodyInterface);
+        ConstStrongPtr<Shape> boxShape = NES_NEW(BoxShape(Vec3(0.5f, 1.f, 2.f)));
+        
+        // Dynamic Body 1
+        m_testID = bodyInterface.CreateAndAddBody(BodyCreateInfo(boxShape, RVec3(0, 10, 0), Quat::Identity(), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
+        
+        // Dynamic Body 2
+        const auto id2 = bodyInterface.CreateAndAddBody(BodyCreateInfo(boxShape, RVec3(5, 10, 0), Quat::FromAxisAngle(Vec3::AxisX(), 0.25f * math::Pi()), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
+        
+        // // Dynamic Body 3
+        bodyInterface.CreateAndAddBody(BodyCreateInfo(boxShape, RVec3(10, 10, 0), Quat::FromAxisAngle(Vec3::AxisX(), 0.25f * math::Pi()), EBodyMotionType::Dynamic, PhysicsLayers::kMoving), EBodyActivationMode::Activate);
         
         for (auto& entity : m_entityPool)
         {
@@ -213,6 +232,9 @@ namespace nes
             auto& bodyInterface = m_pPhysicsScene->GetBodyInterface();
             bodyInterface.RemoveBody(m_testID);
             bodyInterface.DestroyBody(m_testID);
+
+            // Remove the body activate listener.
+            m_pPhysicsScene->SetBodyActivationListener(nullptr);
             
             NES_DELETE(m_pPhysicsScene);
         }

@@ -15,7 +15,7 @@ namespace nes
 {
     static Renderer* g_pInstance = nullptr;
     
-    bool Renderer::Init(nes::Window* pWindow, const ApplicationProperties& appProperties)
+    bool Renderer::Init(nes::ApplicationWindow* pWindow, const ApplicationProperties& appProperties)
     {
         NES_ASSERT(g_pInstance == nullptr);
         g_pInstance = this;

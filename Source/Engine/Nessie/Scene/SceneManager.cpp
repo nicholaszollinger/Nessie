@@ -4,8 +4,13 @@
 
 namespace nes
 {
+    static SceneManager* g_pSceneManager = nullptr;
+    
     bool SceneManager::Init(YAML::Node& applicationSettings)
     {
+        NES_ASSERT(g_pSceneManager == nullptr);
+        g_pSceneManager = this;
+        
         auto sceneManager = applicationSettings["SceneManager"];
         if (!sceneManager)
         {
@@ -107,6 +112,8 @@ namespace nes
         
         m_sceneMap.clear();
         m_tickManager.Shutdown();
+
+        g_pSceneManager = nullptr;
     }
 
     void SceneManager::PreRender()
@@ -131,13 +138,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void SceneManager::QueueSceneTransition([[maybe_unused]] const StringID& sceneName)
     {
-        auto& worldManager = Application::Get().GetSceneManager();
+        NES_ASSERT(g_pSceneManager != nullptr);
+        auto& sceneManager = *g_pSceneManager;
         
         // [TODO]: Should I fail here? Throw an Error?
-        if (worldManager.m_sceneToTransitionTo != StringID::GetInvalidID())
+        if (sceneManager.m_sceneToTransitionTo != StringID::GetInvalidID())
             return;
         
-        worldManager.m_sceneToTransitionTo = sceneName;
+        sceneManager.m_sceneToTransitionTo = sceneName;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -145,7 +153,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     StrongPtr<Scene> SceneManager::GetActiveScene()
     {
-        return Application::Get().GetSceneManager().m_pActiveScene;
+        NES_ASSERT(g_pSceneManager != nullptr);
+        return g_pSceneManager->m_pActiveScene;
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -153,8 +162,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     bool SceneManager::IsTransitionQueued()
     {
-        const auto& sceneManager = Application::Get().GetSceneManager();
-        return sceneManager.m_sceneToTransitionTo != StringID::GetInvalidID();
+        NES_ASSERT(g_pSceneManager != nullptr);
+        return g_pSceneManager->m_sceneToTransitionTo != StringID::GetInvalidID();
     }
 
     //----------------------------------------------------------------------------------------------------

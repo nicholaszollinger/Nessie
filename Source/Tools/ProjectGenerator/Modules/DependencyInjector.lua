@@ -285,8 +285,9 @@ function m._RegisterBuildTargetsFromFolder(folder)
 
         -- Save the Directory that it was found in.
         local scriptDirectory = path.getdirectory(file);
-        target.Directory = scriptDirectory  .. "/" .. target.Name .. "/";
+        target.BuildDirectory = scriptDirectory;
         target.BuildScript = file;
+        target.Directory = scriptDirectory  .. "/" .. target.Name .. "/";
         target.UUID = nil;
         target.Group = groupName;
         target.IsUsed = false;

@@ -8,7 +8,7 @@ namespace nes
         if (m_cachedResult.IsEmpty())
         {
             // Stores the pointer in the m_cachedResult
-            new EmptyShape(*this, m_cachedResult);
+            NES_NEW(EmptyShape(*this, m_cachedResult));
         }
         return m_cachedResult;
     }

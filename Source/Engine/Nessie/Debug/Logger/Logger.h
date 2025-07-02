@@ -96,7 +96,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the level for this Logger. Incoming logs with a lower level will be ignored.
         //----------------------------------------------------------------------------------------------------
-        void                        SetLevel(const ELogLevel level)                     { m_level.store(level, std::memory_order_relaxed); }
+        void                        SetLevel(const ELogLevel level);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the Formatter object for this Logger. This determines how logs will be written to

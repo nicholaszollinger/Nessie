@@ -1,18 +1,15 @@
--- TestGame Project Configuration.
+-- PhysicsTests Project Configuration.
 -- Premake Documentation: https://premake.github.io/docs/
 
 local projectCore = require("ProjectCore");
 
 local p = {};
-p.Name = "TestGame";
+p.Name = "PhysicsTests";
 
 function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
     kind "ConsoleApp"
-
-    dependencyInjector.Include("imgui");
-    dependencyInjector.Include("yaml_cpp");
-    dependencyInjector.Include("fmt");
+    
     dependencyInjector.Link("Nessie");
     dependencyInjector.Link("Assimp");
 
@@ -22,8 +19,6 @@ function p.ConfigureProject(projectDir, dependencyInjector)
         dependencyInjector.Link("Vulkan");
     end
 
-    defines { "YAML_CPP_STATIC_DEFINE" }
-
     filter {}
 
     disablewarnings
@@ -31,11 +26,8 @@ function p.ConfigureProject(projectDir, dependencyInjector)
         "4324", -- "'X' : structure was padded due to alignment specifier"
     }
 
-    
     files
     {
-		projectCore.SolutionDir .. "\\Config\\**.*",
-        projectCore.SolutionDir .. "\\*" .. projectCore.ProjectFileExtension;
         projectDir .. "**.h",
         projectDir .. "**.hpp",
         projectDir .. "**.cpp",

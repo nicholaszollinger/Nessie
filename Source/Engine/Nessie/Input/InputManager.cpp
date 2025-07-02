@@ -1,7 +1,7 @@
 ﻿// InputManager.cpp
 #include "InputManager.h"
 
-#include "Application/Window.h"
+#include "Application/ApplicationWindow.h"
 #include "Debug/Assert.h"
 #include "Math/Vec2.h"
 
@@ -9,7 +9,7 @@ namespace nes
 {
     static InputManager* g_pInstance = nullptr;
     
-    bool InputManager::Init(Window* pWindow)
+    bool InputManager::Init(ApplicationWindow* pWindow)
     {
         NES_ASSERT(g_pInstance == nullptr);
         NES_ASSERT(pWindow != nullptr);

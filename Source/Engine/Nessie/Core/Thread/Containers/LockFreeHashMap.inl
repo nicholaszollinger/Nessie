@@ -162,6 +162,8 @@ namespace nes
         m_maxBuckets = maxBuckets;
 
         m_buckets = static_cast<std::atomic<uint32>*>(NES_ALIGNED_ALLOC(maxBuckets * sizeof(std::atomic<uint32>), 16));
+
+        Clear();
     }
 
     template <TriviallyDestructible KeyType, TriviallyDestructible ValueType>

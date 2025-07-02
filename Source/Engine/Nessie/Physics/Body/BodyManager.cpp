@@ -744,6 +744,10 @@ namespace nes
             // [TODO]: Soft Body version.
             NES_DELETE(checked_cast<BodyWithMotionProperties*>(pBody));
         }
+        else
+        {
+            NES_DELETE(pBody);
+        }
     }
 
 #if NES_LOGGING_ENABLED

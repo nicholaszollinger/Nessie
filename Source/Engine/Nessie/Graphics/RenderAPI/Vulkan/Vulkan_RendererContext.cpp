@@ -18,7 +18,7 @@
 
 namespace nes
 {
-	bool RendererContext::Init(Window* pWindow, const ApplicationProperties& props, const ConfigOptions& options)
+	bool RendererContext::Init(ApplicationWindow* pWindow, const ApplicationProperties& props, const ConfigOptions& options)
     {
     	// [TODO]: This configuration object should be a part of some
     	// Device Specification that is loaded from Data.

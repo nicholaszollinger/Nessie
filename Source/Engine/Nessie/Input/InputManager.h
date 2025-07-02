@@ -4,7 +4,7 @@
 
 namespace nes
 {
-    class Window;
+    class ApplicationWindow;
 
     enum class ECursorMode : uint8_t
     {
@@ -32,12 +32,11 @@ namespace nes
         static Vec2         GetCursorPosition();
         static Vec2         GetCursorDelta();
         
-    private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Input Manager with the window that we will be reading input from. 
         ///	@param pWindow : The window that we are reading input from.
         //----------------------------------------------------------------------------------------------------
-        bool                Init(Window* pWindow);
+        bool                Init(ApplicationWindow* pWindow);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Shutdown the InputManager, which will set the static instance to null.
@@ -48,7 +47,8 @@ namespace nes
         /// @brief : Update current input states based on delta time.
         //----------------------------------------------------------------------------------------------------
         void                Update(const double deltaTime);
-
+        
+    private:
         /// Platform Defined Implementations:
         Double2             GetCursorPosition_Impl(void* pNativeWindow);
         bool                IsKeyDown_Impl(void* pNativeWindow, const EKeyCode key);
@@ -60,7 +60,7 @@ namespace nes
     private:
         friend class Application;
         
-        Window*             m_pWindow = nullptr;
+        ApplicationWindow*             m_pWindow = nullptr;
         ECursorMode         m_cursorMode = ECursorMode::Visible;
         Vec2                m_cursorPosition{};
         Vec2                m_cursorDelta{};

@@ -11,11 +11,28 @@
 #include "Scene/TickGroup.h"
 #include "Graphics/Renderer.h"
 
+// [TEMP]: 
+#include "Physics/Body/BodyActivationListener.h"
+
 namespace nes
 {
     struct Material;
 
     NES_DEFINE_LOG_TAG(kWorldLogTag, "World", Info);
+
+    class BodyActivateListenerTest final : public BodyActivationListener
+    {
+    public:
+        virtual void OnBodyActivated([[maybe_unused]] const BodyID& bodyID, [[maybe_unused]] uint64_t bodyUserData) override
+        {
+            NES_LOG("Body {} activated: ", bodyID.GetIndex());
+        }
+
+        virtual void OnBodyDeactivated([[maybe_unused]] const BodyID& bodyID, [[maybe_unused]] uint64_t bodyUserData) override
+        {
+            NES_LOG("Body {} deactivated: ", bodyID.GetIndex());
+        }
+    };
 
     enum class EWorldRenderMode : uint8_t
     {
@@ -125,6 +142,7 @@ namespace nes
         BroadPhaseLayerInterfaceTest            m_broadPhaseLayerInterface{};
         CollisionVsBroadPhaseLayerFilterTest    m_layerVsBroadPhaseFilter{};
         CollisionLayerPairFilterTest            m_layerPairFilter{};
+        BodyActivateListenerTest                m_bodyActivationListener{};
 
         // [TEMP]: 
         BodyID                                  m_testID;

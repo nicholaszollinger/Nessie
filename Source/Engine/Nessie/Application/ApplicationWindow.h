@@ -6,7 +6,7 @@
 
 namespace nes
 {
-    class Platform;
+    class Application;
 
     enum class EWindowMode
     {
@@ -17,8 +17,8 @@ namespace nes
 
     struct WindowExtent
     {
-        uint32_t m_width{};
-        uint32_t m_height{};
+        uint32 m_width{};
+        uint32 m_height{};
     };
     
     struct WindowProperties
@@ -34,21 +34,17 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Base Window class created by the Application. 
     //----------------------------------------------------------------------------------------------------
-    class Window
+    class ApplicationWindow
     {
-        friend class Application;
-    
-    private:
-        Window() = default;
-
     public:
-        ~Window() = default;
+        ApplicationWindow() = default;
+        ~ApplicationWindow() = default;
 
         /// No Move or Copy
-        Window(const Window&) = delete;
-        Window& operator=(const Window&) = delete;
-        Window(Window&&) noexcept = delete;
-        Window& operator=(Window&&) noexcept = delete;
+        ApplicationWindow(const ApplicationWindow&) = delete;
+        ApplicationWindow& operator=(const ApplicationWindow&) = delete;
+        ApplicationWindow(ApplicationWindow&&) noexcept = delete;
+        ApplicationWindow& operator=(ApplicationWindow&&) noexcept = delete;
 
     public:
         //----------------------------------------------------------------------------------------------------
@@ -59,7 +55,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Resize the window.
         //----------------------------------------------------------------------------------------------------
-        WindowExtent        Resize(const uint32_t width, const uint32_t height);
+        WindowExtent        Resize(const uint32 width, const uint32 height);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current extent, or size, of the window. The size will be in pixel dimensions. 
@@ -102,24 +98,6 @@ namespace nes
         bool                IsMinimized() const             { return m_properties.m_isMinimized; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the platform-specific raw window pointer. Only use if you know what you are doing.   
-        //----------------------------------------------------------------------------------------------------
-        [[nodiscard]] void* GetNativeWindowHandle() const   { return m_pNativeWindowHandle; }
-
-    private:
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the Window. Returns false on failure.
-        ///	@param app : Owning Application.
-        ///	@param props : Properites requested by the Application.
-        //----------------------------------------------------------------------------------------------------
-        bool                Init(Application& app, const WindowProperties& props);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Process window events. Must be called every frame. 
-        //----------------------------------------------------------------------------------------------------
-        void                ProcessEvents();
-
-        //----------------------------------------------------------------------------------------------------
         /// @brief : Check whether the Window needs to close. 
         //----------------------------------------------------------------------------------------------------
         bool                ShouldClose();
@@ -129,6 +107,23 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                Close();
         
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the platform-specific raw window pointer. Only use if you know what you are doing.   
+        //----------------------------------------------------------------------------------------------------
+        [[nodiscard]] void* GetNativeWindowHandle() const   { return m_pNativeWindowHandle; }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize the Window. Returns false on failure.
+        ///	@param app : Owning Application.
+        ///	@param props : Properties requested by the Application.
+        //----------------------------------------------------------------------------------------------------
+        bool                Internal_Init(Application& app, const WindowProperties& props);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Process window events. Must be called every frame. 
+        //----------------------------------------------------------------------------------------------------
+        void                Internal_ProcessEvents();
+    
     private:
         WindowProperties    m_properties{};
         void*               m_pNativeWindowHandle = nullptr;
