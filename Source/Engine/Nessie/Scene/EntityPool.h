@@ -1,7 +1,7 @@
 ﻿// SceneNodePool.h
 #pragma once
 #include "Entity.h"
-#include "Core/Memory/StrongPtr.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 
 namespace nes
 {

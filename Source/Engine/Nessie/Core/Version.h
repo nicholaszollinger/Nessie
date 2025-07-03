@@ -1,8 +1,8 @@
 // Version.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #include <string>
-#include "Resources/Serializer_Member.h"
+#include "Nessie/Resources/Serializer_Member.h"
 
 namespace nes
 {

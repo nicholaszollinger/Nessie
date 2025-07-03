@@ -5,7 +5,7 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    // I made this a non-class enum just so that I don't have to cast to uin32_t values everywhere.
+    // I made this a non-class enum just so that I don't have to cast to uin32 values everywhere.
     /// @brief : Enum indicating which component to use when swizzling a vector's components. 
     //----------------------------------------------------------------------------------------------------
     enum

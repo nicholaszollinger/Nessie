@@ -1,7 +1,7 @@
 ﻿// ScopeExit.h
 #pragma once
-#include "Config.h"
-#include "Generic/Concepts.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Core/Concepts.h"
 
 namespace nes
 {

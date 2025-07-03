@@ -1,14 +1,14 @@
 ﻿// ContactConstraintManager.cpp
 #include "ContactConstraintManager.h"
 
-#include "Physics/Constraints/CalculateSolverSteps.h"
-#include "Physics/Body/Body.h"
-#include "Physics/PhysicsUpdateContext.h"
-#include "Physics/PhysicsSettings.h"
-#include "Physics/PhysicsScene.h"
-#include "Physics/IslandBuilder.h"
-#include "Core/Memory/StackAllocator.h"
-#include "Core/QuickSort.h"
+#include "Nessie/Physics/Constraints/CalculateSolverSteps.h"
+#include "Nessie/Physics/Body/Body.h"
+#include "Nessie/Physics/PhysicsUpdateContext.h"
+#include "Nessie/Physics/PhysicsSettings.h"
+#include "Nessie/Physics/PhysicsScene.h"
+#include "Nessie/Physics/IslandBuilder.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
+#include "Nessie/Core/QuickSort.h"
 
 namespace nes
 {
@@ -133,15 +133,15 @@ namespace nes
     // ContactConstraintManager::ManifoldCache
     //----------------------------------------------------------------------------------------------------------------------------
 
-    void ContactConstraintManager::ManifoldCache::Init(const uint inMaxBodyPairs, const uint maxContactConstraints, const uint cachedManifoldSize)
+    void ContactConstraintManager::ManifoldCache::Init(const uint inMaxBodyPairs, const uint inMaxContactConstraints, const uint cachedManifoldSize)
     {
         const uint maxBodyPairs = math::Min(inMaxBodyPairs, kMaxBodyPairsLimit);
         NES_ASSERT(maxBodyPairs == inMaxBodyPairs, "Cannot support this many body pairs!");
-        NES_ASSERT(maxContactConstraints <= kMaxContactConstraintsLimit); // Should have been enforced by caller
+        NES_ASSERT(inMaxContactConstraints <= kMaxContactConstraintsLimit); // Should have been enforced by caller
 
         m_allocator.Init(static_cast<uint>(math::Min(static_cast<uint64>(maxBodyPairs) * sizeof(BodyPairMap::KeyValuePair) + cachedManifoldSize, static_cast<uint64>(~static_cast<uint>(0)))));
 
-        m_cachedManifolds.Init(math::GetNextPowerOf2(maxContactConstraints));
+        m_cachedManifolds.Init(math::GetNextPowerOf2(inMaxContactConstraints));
         m_cachedBodyPairs.Init(math::GetNextPowerOf2(maxBodyPairs));
     }
 
@@ -162,7 +162,7 @@ namespace nes
         // Minimum amount of buckets to use in the hash map.
         constexpr uint32 kMinBuckets = 1024;
 
-        // Use the next higher power of 2 of number of objects in the cache from the last frame to determine the number of buckets to
+        // Use the next higher power of 2 of the number of objects in the cache from the last frame to determine the number of buckets to
         // use this frame.
         m_cachedManifolds.SetNumBuckets(math::Min(math::Max(kMinBuckets, math::GetNextPowerOf2(expectedNumManifolds)), m_cachedManifolds.GetMaxBuckets()));
         m_cachedBodyPairs.SetNumBuckets(math::Min(math::Max(kMinBuckets, math::GetNextPowerOf2(expectedNumBodyPairs)), m_cachedBodyPairs.GetMaxBuckets()));
@@ -705,7 +705,7 @@ namespace nes
 
         // Transform the world space normal to the space of body 2 (this is usually the static body).
         const Mat44 invTransformBody2 = body2.GetInverseCenterOfMassTransform();
-        invTransformBody2.Multiply3x3(manifold.m_worldSpaceNormal).Normalize().StoreFloat3(&pNewManifold->m_contactNormal);
+        invTransformBody2.Multiply3x3(manifold.m_worldSpaceNormal).Normalized().StoreFloat3(&pNewManifold->m_contactNormal);
 
         // Settings object that gets passed to the callback.
         ContactSettings settings;
@@ -728,6 +728,8 @@ namespace nes
             const CachedManifold* pOldManifold = &pOldManifoldKeyValue->GetValue();
             pCCPStart = pOldManifold->m_contactPoints;
             pCCPEnd = pCCPStart + pOldManifold->m_numContactPoints;
+
+            pOldManifold->m_flags |= static_cast<uint16>(CachedManifold::EFlags::ContactPersisted);
         }
         else
         {
@@ -836,8 +838,8 @@ namespace nes
                 bool lambdaSet = false;
                 for (const CachedContactPoint* pCCP = pCCPStart; pCCP < pCCPEnd; ++pCCP)
                 {
-                    if (Vec3::LoadFloat3Unsafe(pCCP->m_position1).IsClose(p1LocalSpace, m_physicsSettings.m_contactNormalPreserveLambdaMaxDistSqr)
-                        && Vec3::LoadFloat3Unsafe(pCCP->m_position2).IsClose(p2LocalSpace, m_physicsSettings.m_contactNormalPreserveLambdaMaxDistSqr))
+                    if (Vec3::LoadFloat3Unsafe(pCCP->m_position1).IsClose(p1LocalSpace, m_physicsSettings.m_contactPointPreserveLambdaMaxDistSqr)
+                        && Vec3::LoadFloat3Unsafe(pCCP->m_position2).IsClose(p2LocalSpace, m_physicsSettings.m_contactPointPreserveLambdaMaxDistSqr))
                     {
                         // Get lambdas from the previous frame
                         wcp.m_nonPenetrationConstraint.SetTotalLambda(pCCP->m_nonPenetrationLambda);

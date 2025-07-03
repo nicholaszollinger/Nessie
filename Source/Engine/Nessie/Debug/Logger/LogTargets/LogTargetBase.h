@@ -1,7 +1,7 @@
 // LogTargetBase.h
 #pragma once
-#include "Core/Thread/StdMutex.h"
-#include "Debug/Logger/LogTarget.h"
+#include "Nessie/Core/Thread/StdMutex.h"
+#include "Nessie/Debug/Logger/LogTarget.h"
 
 namespace nes
 {

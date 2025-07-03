@@ -1,6 +1,6 @@
 ﻿// STLStackAllocator.h
 #pragma once
-#include "StackAllocator.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
 
 namespace nes
 {

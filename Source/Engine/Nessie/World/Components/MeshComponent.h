@@ -1,10 +1,10 @@
 ﻿// MeshComponent.h
 #pragma once
 #include "Entity3DComponent.h"
-#include "Graphics/Material.h"
-#include "Graphics/Mesh.h"
-#include "Graphics/Renderer.h"
-#include "Graphics/RendererContext.h"
+#include "Nessie/Graphics/Material.h"
+#include "Nessie/Graphics/Mesh.h"
+#include "Nessie/Graphics/Renderer.h"
+#include "Nessie/Graphics/RendererContext.h"
 
 namespace nes
 {

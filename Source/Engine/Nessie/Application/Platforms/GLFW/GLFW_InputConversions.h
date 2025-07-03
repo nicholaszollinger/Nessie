@@ -1,8 +1,8 @@
 ﻿// GLFW_InputConversions.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_WINDOW_API_GLFW
-#include "Input/InputEvents.h"
+#include "Nessie/Input/InputEvents.h"
 
 namespace nes::glfw
 {

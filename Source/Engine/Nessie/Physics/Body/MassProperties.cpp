@@ -1,10 +1,8 @@
 // MassProperties.cpp
 #include "MassProperties.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-
-#include "Core/InsertionSort.h"
-#include "Math/Detail/EigenValueSymmetric.h"
+#include "Nessie/Core/InsertionSort.h"
+#include "Nessie/Math/Detail/EigenValueSymmetric.h"
 
 namespace nes
 {

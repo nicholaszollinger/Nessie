@@ -3,16 +3,16 @@
 #include "Entity3D.h"
 #include "PhysicsLayers.h"
 #include "Components/MeshComponent.h"
-#include "Core/Generic/Color.h"
-#include "Core/Jobs/JobSystemThreadPool.h"
-#include "Physics/PhysicsScene.h"
-#include "Scene/EntityLayer.h"
-#include "Scene/EntityPool.h"
-#include "Scene/TickGroup.h"
-#include "Graphics/Renderer.h"
+#include "Nessie/Core/Color.h"
+#include "Nessie/Core/Jobs/JobSystemThreadPool.h"
+#include "Nessie/Physics/PhysicsScene.h"
+#include "Nessie/Scene/EntityLayer.h"
+#include "Nessie/Scene/EntityPool.h"
+#include "Nessie/Scene/TickGroup.h"
+#include "Nessie/Graphics/Renderer.h"
 
 // [TEMP]: 
-#include "Physics/Body/BodyActivationListener.h"
+#include "Nessie/Physics/Body/BodyActivationListener.h"
 
 namespace nes
 {

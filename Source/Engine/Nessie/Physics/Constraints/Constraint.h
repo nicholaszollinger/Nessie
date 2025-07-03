@@ -1,9 +1,9 @@
 ﻿// Constraint.h
 #pragma once
 #include <cstdint>
-#include "Core/Result.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Math/Math.h"
+#include "Nessie/Core/Result.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

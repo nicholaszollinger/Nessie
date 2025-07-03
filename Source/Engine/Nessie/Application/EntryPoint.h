@@ -1,6 +1,6 @@
 // EntryPoint.h
 #pragma once
-#include "Application.h"
+#include "Nessie/Application/Application.h"
 
 #if defined(NES_PLATFORM_WINDOWS)
 #define NES_MAIN()                                                          \

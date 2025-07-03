@@ -1,6 +1,5 @@
 // ThreadIdleEvent.cpp
-
-#include "ThreadIdleEvent.h"
+#include "Nessie/Core/Thread/ThreadIdleEvent.h"
 
 namespace nes
 {

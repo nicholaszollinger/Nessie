@@ -1,6 +1,6 @@
 // Rect.h
 #pragma once
-#include "Math/Vector2.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {
@@ -14,6 +14,8 @@ namespace nes
     template <ScalarType Type>
     struct Rect
     {
+        static_assert(false, "Do not use this class! It's broken!");
+        
         Type x;
         Type y;
         Type width;

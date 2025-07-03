@@ -1,10 +1,10 @@
 ﻿// Actor.h
 #pragma once
-#include "Core/Events/MulticastDelegate.h"
-#include "Math/Rotation.h"
-#include "Math/Mat44.h"
-#include "Physics/Body/BodyID.h"
-#include "Scene/Entity.h"
+#include "Nessie/Core/Events/MulticastDelegate.h"
+#include "Nessie/Math/Rotation.h"
+#include "Nessie/Math/Mat44.h"
+#include "Nessie/Physics/Body/BodyID.h"
+#include "Nessie/Scene/Entity.h"
 
 namespace nes
 {

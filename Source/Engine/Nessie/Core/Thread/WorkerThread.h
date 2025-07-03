@@ -1,11 +1,10 @@
-#pragma once
 // WorkerThread.h
-
+#pragma once
 #include <functional>
 #include <queue>
 #include "Thread.h"
 #include "ThreadIdleEvent.h"
-#include "Core/Generic/Concepts.h"
+#include "Nessie/Core/Concepts.h"
 
 namespace nes
 {

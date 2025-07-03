@@ -1,6 +1,5 @@
-#pragma once
 // Serializer_Member.h
-
+#pragma once
 #include "Serializer.h"
 
 //----------------------------------------------------------------------------------------------------

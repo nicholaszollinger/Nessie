@@ -1,8 +1,8 @@
 ﻿// AABox.h
 #pragma once
 #include "Plane.h"
-#include "Math/Vec4.h"
-#include "Math/Mat44.h"
+#include "Nessie/Math/Vec4.h"
+#include "Nessie/Math/Mat44.h"
 
 namespace nes
 {

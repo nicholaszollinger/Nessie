@@ -1,9 +1,9 @@
-#pragma once
 // Rng.h
+#pragma once
 #include <chrono>
 #include <limits>
-#include "Core/Generic/Concepts.h"
-#include "Math/Vec2.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {

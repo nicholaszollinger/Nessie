@@ -1,9 +1,9 @@
 // JobSystem.h
 #pragma once
 #include <functional>
-#include "Core/StaticArray.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

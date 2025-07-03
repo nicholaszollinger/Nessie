@@ -1,9 +1,9 @@
 ﻿// Vulkan_RendererContext.cpp
-#include "Graphics/RendererContext.h"
+#include "Nessie/Graphics/RendererContext.h"
 
 #ifdef NES_RENDER_API_VULKAN
-#include "Application/Application.h"
-#include "Debug/CheckedCast.h"
+#include "Nessie/Application/Application.h"
+#include "Nessie/Debug/CheckedCast.h"
 
 #ifdef NES_WINDOW_API_GLFW
 #include "GLFW/glfw3.h"

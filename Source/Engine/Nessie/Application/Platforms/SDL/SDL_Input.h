@@ -1,10 +1,10 @@
 ﻿// SDL_Input.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_WINDOW_API_SDL
 #include <SDL_events.h>
 #include <SDL_scancode.h>
-#include "Input/InputEvents.h"
+#include "Nessie/Input/InputEvents.h"
 
 namespace nes::SDL
 {

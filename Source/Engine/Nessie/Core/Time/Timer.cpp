@@ -1,5 +1,4 @@
-// HighPrecisionTimer.cpp
-
+// Timer.cpp
 #include "Timer.h"
 
 namespace nes

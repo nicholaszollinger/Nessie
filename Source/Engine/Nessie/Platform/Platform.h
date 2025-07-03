@@ -1,6 +1,6 @@
 ﻿// Platform.h
 #pragma once
-#include "Debug/Logger/LogTarget.h"
+#include "Nessie/Debug/Logger/LogTarget.h"
 
 namespace nes::platform
 {

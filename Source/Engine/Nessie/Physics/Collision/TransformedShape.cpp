@@ -6,7 +6,7 @@
 #include "CastResult.h"
 #include "Shapes/SubShapeID.h"
 #include "CollisionSolver.h"
-#include "Geometry/OrientedBox.h"
+#include "Nessie/Geometry/OrientedBox.h"
 
 namespace nes
 {

@@ -1,12 +1,11 @@
 ﻿// NarrowPhaseQuery.h
 #pragma once
-
-#include "Physics/Body/BodyFilter.h"
-#include "Physics/Body/BodyLock.h"
-#include "Physics/Body/BodyLockInterface.h"
-#include "Physics/Collision/ShapeFilter.h"
-#include "Physics/Collision/BroadPhase/BroadPhaseQuery.h"
-#include "Physics/Collision/BackFaceMode.h"
+#include "Nessie/Physics/Body/BodyFilter.h"
+#include "Nessie/Physics/Body/BodyLock.h"
+#include "Nessie/Physics/Body/BodyLockInterface.h"
+#include "Nessie/Physics/Collision/ShapeFilter.h"
+#include "Nessie/Physics/Collision/BroadPhase/BroadPhaseQuery.h"
+#include "Nessie/Physics/Collision/BackFaceMode.h"
 
 namespace nes
 {

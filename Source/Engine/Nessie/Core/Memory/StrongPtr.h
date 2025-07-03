@@ -1,5 +1,5 @@
 #pragma once
-#include "RefCounter.h"
+#include "Nessie/Core/Memory/RefCounter.h"
 
 namespace nes
 {

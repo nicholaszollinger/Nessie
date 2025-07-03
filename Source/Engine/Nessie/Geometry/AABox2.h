@@ -1,7 +1,7 @@
 ﻿// AABox2.h
 #pragma once
-#include "Math/Vec2.h"
-#include "Math/Mat44.h"
+#include "Nessie/Math/Vec2.h"
+#include "Nessie/Math/Mat44.h"
 
 namespace nes
 {

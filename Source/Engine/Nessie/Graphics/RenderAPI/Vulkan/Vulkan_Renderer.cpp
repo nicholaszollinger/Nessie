@@ -1,11 +1,11 @@
 ﻿// Vulkan_Renderer.cpp
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_RENDER_API_VULKAN
 
-#include "Core/Memory/Memory.h"
-#include "Graphics/Renderer.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Graphics/Renderer.h"
 #include "Vulkan_ShaderLibrary.hpp"
-#include "Debug/CheckedCast.h"
+#include "Nessie/Debug/CheckedCast.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"

@@ -1,5 +1,5 @@
-#pragma once
 // PerlinNoise.h
+#pragma once
 #include "../Rng.h"
 
 namespace nes

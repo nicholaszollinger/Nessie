@@ -2,7 +2,7 @@
 #pragma once
 #include <concepts>
 #include <type_traits>
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 namespace nes
 {

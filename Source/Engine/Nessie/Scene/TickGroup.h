@@ -2,7 +2,7 @@
 #pragma once
 #include <unordered_set>
 #include "TickFunction.h"
-#include "Core/String/StringID.h"
+#include "Nessie/Core/String/StringID.h"
 
 namespace nes
 {

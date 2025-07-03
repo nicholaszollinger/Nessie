@@ -6,7 +6,7 @@
 #include "Constraints/ContactConstraintManager.h"
 #include "Body/BodyManager.h"
 #include "Constraints/Constraint.h"
-#include "Core/Memory/StackAllocator.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
 
 namespace nes
 {

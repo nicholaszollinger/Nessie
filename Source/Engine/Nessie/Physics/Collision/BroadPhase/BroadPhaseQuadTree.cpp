@@ -2,8 +2,8 @@
 #include "BroadPhaseQuadTree.h"
 
 #include <shared_mutex>
-#include "Core/QuickSort.h"
-#include "Physics/Body/BodyManager.h"
+#include "Nessie/Core/QuickSort.h"
+#include "Nessie/Physics/Body/BodyManager.h"
 
 namespace nes
 {

@@ -1,6 +1,6 @@
 ﻿// InternalEdgeRemovingCollector.cpp
 #include "InternalEdgeRemovingCollector.h"
-#include "Core/QuickSort.h"
+#include "Nessie/Core/QuickSort.h"
 
 namespace nes
 {

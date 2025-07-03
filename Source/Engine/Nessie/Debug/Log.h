@@ -1,7 +1,7 @@
 ﻿// Log.h
 #pragma once
-#include "Core/Config.h"
-#include "Logger/LoggerRegistry.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Debug/Logger/LoggerRegistry.h"
 
 #undef NES_LOGGING_ENABLED
 #ifndef NES_RELEASE

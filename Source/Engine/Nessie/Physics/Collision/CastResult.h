@@ -1,8 +1,8 @@
 // CastResult.h
 #pragma once
-#include "Math/Generic.h"
-#include "Physics/Body/BodyID.h"
-#include "Shapes/SubShapeID.h"
+#include "Nessie/Math/Generic.h"
+#include "Nessie/Physics/Body/BodyID.h"
+#include "Nessie/Physics/Collision/Shapes/SubShapeID.h"
 
 namespace nes
 {

@@ -1,8 +1,8 @@
 ﻿// AxisConstraintPart.h
 #pragma once
-#include "Physics/Body/Body.h"
-#include "Physics/Constraints/ConstraintPart/SpringPart.h"
-#include "Physics/Constraints/SpringSettings.h"
+#include "Nessie/Physics/Body/Body.h"
+#include "Nessie/Physics/Constraints/ConstraintPart/SpringPart.h"
+#include "Nessie/Physics/Constraints/SpringSettings.h"
 
 namespace nes
 {

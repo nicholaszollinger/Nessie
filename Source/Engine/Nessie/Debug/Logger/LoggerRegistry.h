@@ -2,7 +2,7 @@
 #pragma once
 #include <unordered_map>
 #include "Logger.h"
-#include "Core/Thread/StdMutex.h"
+#include "Nessie/Core/Thread/StdMutex.h"
 
 namespace nes
 {

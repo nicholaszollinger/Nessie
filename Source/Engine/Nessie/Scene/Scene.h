@@ -3,8 +3,8 @@
 #include <filesystem>
 #include <functional>
 #include "EntityLayer.h"
-#include "Core/Events/Event.h"
-#include "Core/Memory/StrongPtr.h"
+#include "Nessie/Core/Events/Event.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 
 namespace nes
 {

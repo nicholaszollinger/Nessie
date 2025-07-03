@@ -3,13 +3,13 @@
 #include "BackFaceMode.h"
 #include "CollisionLayer.h"
 #include "ShapeFilter.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Physics/Body/BodyID.h"
-#include "Shapes/Shape.h"
-#include "Shapes/SubShapeID.h"
-#include "Math/Scalar3.h"
-#include "Math/Mat44.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Physics/Body/BodyID.h"
+#include "Nessie/Physics/Collision/Shapes/Shape.h"
+#include "Nessie/Physics/Collision/Shapes/SubShapeID.h"
+#include "Nessie/Math/Scalar3.h"
+#include "Nessie/Math/Mat44.h"
 
 namespace nes
 {

@@ -1,7 +1,7 @@
 ﻿// Mesh.h
 #pragma once
 #include <memory>
-#include "Graphics/RenderAPI/Vulkan/Vulkan_Core.h"
+#include "Nessie/Graphics/RenderAPI/Vulkan/Vulkan_Core.h"
 
 namespace nes
 {

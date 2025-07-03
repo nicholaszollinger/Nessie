@@ -1,5 +1,4 @@
 // InputEvents.cpp
-
 #include "InputEvents.h"
 
 namespace nes

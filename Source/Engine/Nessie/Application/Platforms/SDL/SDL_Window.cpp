@@ -1,6 +1,6 @@
 ﻿// SDL_Window.cpp
 // SDL Implementation of the Window class.
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_WINDOW_API_SDL
 #include <SDL.h>
 #include "SDL_Input.h"

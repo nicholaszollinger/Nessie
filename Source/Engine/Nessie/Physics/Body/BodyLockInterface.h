@@ -2,8 +2,8 @@
 #pragma once
 #include "Body.h"
 #include "BodyManager.h"
-#include "Physics/PhysicsLock.h"
-#include "Core/Thread/Mutex.h"
+#include "Nessie/Physics/PhysicsLock.h"
+#include "Nessie/Core/Thread/Mutex.h"
 
 namespace nes
 {

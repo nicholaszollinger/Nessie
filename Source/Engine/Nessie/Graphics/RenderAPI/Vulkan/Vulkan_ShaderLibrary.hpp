@@ -18,7 +18,7 @@
 #include <cstdarg>
 #include <fstream>
 
-#include "Graphics/RenderAPI/Vulkan/Vulkan_Core.h"
+#include "Nessie/Graphics/RenderAPI/Vulkan/Vulkan_Core.h"
 
 #if _DEBUG
 #define GAP311_SHADERLIB_ENABLE_COMPILATION 1

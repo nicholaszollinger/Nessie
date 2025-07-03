@@ -1,14 +1,13 @@
 ﻿// NarrowPhaseQuery.cpp
 #include "NarrowPhaseQuery.h"
-#include "Physics/Collision/CollisionSolver.h"
-#include "Physics/Collision/AABoxCast.h"
-#include "Physics/Collision/RayCast.h"
-#include "Physics/Collision/ShapeCast.h"
-#include "Physics/Collision/CollideShape.h"
-#include "Physics/Collision/CollisionCollector.h"
-#include "Physics/Collision/CastResult.h"
-#include "Physics/Collision/InternalEdgeRemovingCollector.h"
-
+#include "Nessie/Physics/Collision/CollisionSolver.h"
+#include "Nessie/Physics/Collision/AABoxCast.h"
+#include "Nessie/Physics/Collision/RayCast.h"
+#include "Nessie/Physics/Collision/ShapeCast.h"
+#include "Nessie/Physics/Collision/CollideShape.h"
+#include "Nessie/Physics/Collision/CollisionCollector.h"
+#include "Nessie/Physics/Collision/CastResult.h"
+#include "Nessie/Physics/Collision/InternalEdgeRemovingCollector.h"
 
 namespace nes
 {

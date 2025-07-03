@@ -1,7 +1,7 @@
 ﻿// OBB.h
 #pragma once
 #include "AABox.h"
-#include "Math/Mat44.h"
+#include "Nessie/Math/Mat44.h"
 
 namespace nes
 {

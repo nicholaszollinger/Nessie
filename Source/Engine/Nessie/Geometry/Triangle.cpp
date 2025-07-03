@@ -1,7 +1,7 @@
 ﻿// Triangle.cpp
 #include "Triangle.h"
 #include "ClosestPoint.h"
-#include "Math/Mat44.h"
+#include "Nessie/Math/Mat44.h"
 
 namespace nes
 {

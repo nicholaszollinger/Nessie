@@ -1,7 +1,7 @@
 ﻿// Sphere.h
 #pragma once
 #include "AABox.h"
-#include "Math/Math.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

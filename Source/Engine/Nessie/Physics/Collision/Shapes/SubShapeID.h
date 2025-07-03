@@ -1,7 +1,7 @@
 // SubShapeID.h
 #pragma once
-#include "Core/Memory/Memory.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

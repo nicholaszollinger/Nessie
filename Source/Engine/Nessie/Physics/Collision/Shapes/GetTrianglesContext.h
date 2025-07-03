@@ -1,6 +1,6 @@
 // GetTrianglesContext.h
 #pragma once
-#include "Physics/Collision/Shapes/Shape.h"
+#include "Nessie/Physics/Collision/Shapes/Shape.h"
 
 // [TODO]: Physics Materials.
 

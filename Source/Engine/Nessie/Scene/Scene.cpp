@@ -1,8 +1,8 @@
 // Scene.cpp
 #include "Scene.h"
 #include <yaml-cpp/yaml.h>
-#include "Debug/Assert.h"
-#include "World/World.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/World/World.h"
 
 namespace nes
 {

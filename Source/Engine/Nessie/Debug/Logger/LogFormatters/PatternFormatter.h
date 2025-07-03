@@ -1,10 +1,9 @@
 ﻿// PatternFormatter.h
 #pragma once
-
 #include <unordered_map>
 #include <vector>
 #include "CustomFlagFormatter.h"
-#include "Platform/Platform.h"
+#include "Nessie/Platform/Platform.h"
 
 namespace nes
 {

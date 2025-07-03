@@ -1,6 +1,6 @@
 ﻿// LogFormatter.h
 #pragma once
-#include "Debug/Logger/Details/LogMessage.h"
+#include "Nessie/Debug/Logger/Details/LogMessage.h"
 
 namespace nes
 {

@@ -2,9 +2,9 @@
 #pragma once
 #include "BroadPhase.h"
 #include "BroadPhase.h"
-#include "Core/Memory/FixedSizedFreeList.h"
-#include "Core/Thread/Atomics.h"
-#include "Physics/Body/BodyManager.h"
+#include "Nessie/Core/Memory/FixedSizedFreeList.h"
+#include "Nessie/Core/Thread/Atomics.h"
+#include "Nessie/Physics/Body/BodyManager.h"
 
 namespace nes
 {

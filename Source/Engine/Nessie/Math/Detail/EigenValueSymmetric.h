@@ -1,8 +1,8 @@
 // EigenValueSymmetric.h
 #pragma once
-#include "Debug/Assert.h"
-#include "Math/FPException.h"
-#include "Math/Generic.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/FPException.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {

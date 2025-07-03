@@ -1,8 +1,8 @@
 // BodyPair.h
 #pragma once
 #include "BodyID.h"
-#include "Core/Generic/Hash.h"
-#include "Core/Memory/Memory.h"
+#include "Nessie/Core/Hash.h"
+#include "Nessie/Core/Memory/Memory.h"
 
 namespace nes
 {

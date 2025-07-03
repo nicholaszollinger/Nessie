@@ -1,7 +1,7 @@
 ﻿// PhysicsLock.h
 #pragma once
-#include "Core/Thread/Mutex.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Thread/Mutex.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

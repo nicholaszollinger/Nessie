@@ -1,9 +1,9 @@
 ﻿// LockFreeHashMap.h
 #pragma once
-#include "Core/Config.h"
-#include "Core/Generic/Concepts.h"
-#include "Core/Thread/Atomics.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Core/Thread/Atomics.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {
@@ -31,19 +31,19 @@ namespace nes
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allocate a new block of data. 
-        ///	@param blockSize : Size of the block to allocate (will potentially return a smaller block if memory is full).
-        ///	@param begin : Should be the start of the first free byte in the current memory block on input. On return,
+        ///	@param inBlockSize : Size of the block to allocate (will potentially return a smaller block if memory is full).
+        ///	@param ioBegin : Should be the start of the first free byte in the current memory block on input. On return,
         ///     this will contain the start of the first free byte in allocated block.
-        ///	@param end : Should be the byte beyond the current memory block on input. On return,
+        ///	@param ioEnd : Should be the byte beyond the current memory block on input. On return,
         ///     this will contain the byte beyond the allocated block.
         //----------------------------------------------------------------------------------------------------
-        inline void                 Allocate(const uint32 blockSize, uint32& begin, uint32& end);
+        inline void                 Allocate(const uint32 inBlockSize, uint32& ioBegin, uint32& ioEnd);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Convert a pointer to an offset.
         //----------------------------------------------------------------------------------------------------
         template <typename Type>
-        inline uint32               ToOffset(const Type* pData) const;
+        inline uint32               ToOffset(const Type* inData) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Convert an offset to a pointer.
@@ -70,12 +70,12 @@ namespace nes
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allocate a data block.
-        ///	@param blockSize : Size of the block, in bytes.
-        ///	@param alignment : Alignment of the block to allocate.
+        ///	@param inSize : Size of the block, in bytes.
+        ///	@param inAlignment : Alignment of the block to allocate.
         ///	@param outWriteOffset : Offset in the buffer where the block is located.
         ///	@returns : True if the allocation succeeded.
         //----------------------------------------------------------------------------------------------------
-        inline bool                 Allocate(const uint32 blockSize, const uint32 alignment, uint32& outWriteOffset);
+        inline bool                 Allocate(const uint32 inSize, const uint32 inAlignment, uint32& outWriteOffset);
 
     private:
         LFHMAllocator&              m_allocator;

@@ -2,16 +2,16 @@
 #include "World.h"
 #include <yaml-cpp/yaml.h>
 #include "Entity3D.h"
-#include "Application/Application.h"
-#include "Components/CameraComponent.h"
-#include "Components/FreeCamMovementComponent.h"
-#include "Physics/Collision/Shapes/BoxShape.h"
-#include "Physics/Collision/Shapes/EmptyShape.h"
-#include "Scene/TickManager.h"
+#include "Nessie/Application/Application.h"
+#include "Nessie/World/Components/CameraComponent.h"
+#include "Nessie/World/Components/FreeCamMovementComponent.h"
+#include "Nessie/Physics/Collision/Shapes/BoxShape.h"
+#include "Nessie/Physics/Collision/Shapes/EmptyShape.h"
+#include "Nessie/Scene/TickManager.h"
 
 // Hack to test stb_image
 #include "stb_image.h"
-#include "Physics/Collision/CollisionSolver.h"
+#include "Nessie/Physics/Collision/CollisionSolver.h"
 
 namespace nes
 {

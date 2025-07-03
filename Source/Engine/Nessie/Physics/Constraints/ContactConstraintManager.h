@@ -1,14 +1,14 @@
 // ContactConstraintManager.h
 #pragma once
 
-#include "Core/StaticArray.h"
-#include "Core/Thread/Containers/LockFreeHashMap.h"
-#include "Physics/PhysicsUpdateErrorCodes.h"
-#include "Physics/Body/BodyPair.h"
-#include "Physics/Collision/ManifoldBetweenTwoFaces.h"
-#include "Physics/Collision/Shapes/SubShapeIDPair.h"
-#include "Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
-#include "Physics/Constraints/ConstraintPart/DualAxisConstraintPart.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Core/Thread/Containers/LockFreeHashMap.h"
+#include "Nessie/Physics/PhysicsUpdateErrorCodes.h"
+#include "Nessie/Physics/Body/BodyPair.h"
+#include "Nessie/Physics/Collision/ManifoldBetweenTwoFaces.h"
+#include "Nessie/Physics/Collision/Shapes/SubShapeIDPair.h"
+#include "Nessie/Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
+#include "Nessie/Physics/Constraints/ConstraintPart/DualAxisConstraintPart.h"
 
 namespace nes
 {
@@ -351,7 +351,7 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             /// @brief : Calculate the size, in bytes, needed beyond the size of the class to store numContactPoints. 
             //----------------------------------------------------------------------------------------------------
-            static int                  GetRequiredExtraSize(const int numContactPoints)     { return static_cast<int>(math::Max(0, numContactPoints - 1) * sizeof(CachedManifold)); }
+            static int                  GetRequiredExtraSize(const int numContactPoints)     { return static_cast<int>(math::Max(0, numContactPoints - 1) * sizeof(CachedContactPoint)); }
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Calculate the total class size needed for storing numContactPoints. 
@@ -398,7 +398,7 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             /// @brief : Initialize the cache. 
             //----------------------------------------------------------------------------------------------------
-            void                        Init(const uint inMaxBodyPairs, const uint maxContactConstraints, const uint cachedManifoldSize);
+            void                        Init(const uint inMaxBodyPairs, const uint inMaxContactConstraints, const uint cachedManifoldSize);
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : Reset all entries from the cache.

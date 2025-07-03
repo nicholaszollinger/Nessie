@@ -1,6 +1,6 @@
 ﻿// WindowsInclude.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 #ifdef NES_PLATFORM_WINDOWS
     // Prevent Windows from redefining min and max macros

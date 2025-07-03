@@ -1,8 +1,8 @@
 ﻿// ContactListener.h
 #pragma once
-#include "Core/StaticArray.h"
-#include "Math/Real.h"
-#include "Physics/Collision/Shapes/SubShapeIDPair.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Math/Real.h"
+#include "Nessie/Physics/Collision/Shapes/SubShapeIDPair.h"
 
 namespace nes
 {

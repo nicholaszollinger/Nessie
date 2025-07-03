@@ -2,8 +2,8 @@
 #pragma once
 #include "Mesh.h"
 #include "RendererContext.h"
-#include "Application/ApplicationWindow.h"
-#include "Core/Generic/Color.h"
+#include "Nessie/Application/ApplicationWindow.h"
+#include "Nessie/Core/Color.h"
 
 // [TODO]: Remove when API is set up to hide direct calls.
 #include <imgui.h>

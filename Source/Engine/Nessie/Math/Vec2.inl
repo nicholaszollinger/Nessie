@@ -1,6 +1,6 @@
 ﻿// Vec2.inl
 #pragma once
-#include "Math/SIMD/Vec4Reg.h"
+#include "Nessie/Math/SIMD/Vec4Reg.h"
 
 namespace nes
 {

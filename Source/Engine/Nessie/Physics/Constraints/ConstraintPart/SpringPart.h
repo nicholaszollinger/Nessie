@@ -1,6 +1,6 @@
 ﻿// SpringPart.h
 #pragma once
-#include "Math/Generic.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {

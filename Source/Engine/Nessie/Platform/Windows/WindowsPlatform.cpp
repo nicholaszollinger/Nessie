@@ -1,10 +1,10 @@
 ﻿// WindowsPlatform.cpp
-#include "Platform/Platform.h"
+#include "Nessie/Platform/Platform.h"
 #ifdef NES_PLATFORM_WINDOWS
 
 #include "WindowsInclude.h"
 #include "WinConsoleTarget.h"
-#include "Debug/Logger/LogTargets/MSVCTarget.h"
+#include "Nessie/Debug/Logger/LogTargets/MSVCTarget.h"
 
 namespace nes
 {

@@ -4,9 +4,9 @@
 #include "DOF.h"
 #include "MotionQuality.h"
 #include "MotionType.h"
-#include "Math/Quat.h"
-#include "Math/Mat44.h"
-#include "Geometry/Sphere.h"
+#include "Nessie/Math/Quat.h"
+#include "Nessie/Math/Mat44.h"
+#include "Nessie/Geometry/Sphere.h"
 
 namespace nes
 {

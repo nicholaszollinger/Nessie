@@ -1,7 +1,7 @@
 // StackAllocator.cpp
 #include "StackAllocator.h"
 #include "Memory.h"
-#include "Math/Real.h"
+#include "Nessie/Math/Real.h"
 
 namespace nes
 {

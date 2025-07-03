@@ -1,6 +1,6 @@
 ﻿// Ray.h
 #pragma once
-#include "Math/Math.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

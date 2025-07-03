@@ -1,8 +1,8 @@
-#pragma once
 // InputEvents.h
-#include "Input/InputCodes.h"
-#include "Core/Events/Event.h"
-#include "Math/Vec2.h"
+#pragma once
+#include "Nessie/Input/InputCodes.h"
+#include "Nessie/Core/Events/Event.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {

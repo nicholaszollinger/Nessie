@@ -1,7 +1,7 @@
 ﻿// IslandBuilder.h
 #pragma once
-#include "Core/Thread/Atomics.h"
-#include "Physics/Body/BodyID.h"
+#include "Nessie/Core/Thread/Atomics.h"
+#include "Nessie/Physics/Body/BodyID.h"
 
 namespace nes
 {

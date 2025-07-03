@@ -1,13 +1,13 @@
 ﻿// GLFW_Window.cpp
 
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_WINDOW_API_GLFW
-#include "Core/Memory/Memory.h"
+#include "Nessie/Core/Memory/Memory.h"
 #include "GLFW_InputConversions.h"
-#include "Application/Application.h"
-#include "Debug/CheckedCast.h"
+#include "Nessie/Application/Application.h"
+#include "Nessie/Debug/CheckedCast.h"
 #include "GLFW/glfw3.h"
-#include "Math/Vec2.h"
+#include "Nessie/Math/Vec2.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Callback used to handle errors in GLFW.

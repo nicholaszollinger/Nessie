@@ -1,10 +1,10 @@
 ﻿// Entity3D.cpp
 #include "Entity3D.h"
-#include "Core/Memory/Memory.h"
+#include "Nessie/Core/Memory/Memory.h"
 #include "Components/Entity3DComponent.h"
-#include "Physics/Components/ShapeComponent.h"
-#include "Scene/EntityLayer.h"
-#include "World/World.h"
+#include "Nessie/Physics/Components/ShapeComponent.h"
+#include "Nessie/Scene/EntityLayer.h"
+#include "Nessie/World/World.h"
 
 namespace nes
 {

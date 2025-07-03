@@ -1,8 +1,8 @@
 // EPAConvexHullBuilder.h
 #pragma once
 #include <vector>
-#include "Core/StaticArray.h"
-#include "Math/Math.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

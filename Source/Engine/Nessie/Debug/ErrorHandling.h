@@ -1,7 +1,7 @@
 ﻿// ErrorHandling.h
 #pragma once
 #include "Log.h"
-#include "Platform/Platform.h"
+#include "Nessie/Platform/Platform.h"
 
 namespace nes::internal
 {

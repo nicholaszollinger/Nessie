@@ -1,6 +1,7 @@
 // SceneManager.cpp
 #include "SceneManager.h"
-#include "Application/Application.h"
+#include <yaml-cpp/yaml.h>
+#include "Nessie/Application/Application.h"
 
 namespace nes
 {

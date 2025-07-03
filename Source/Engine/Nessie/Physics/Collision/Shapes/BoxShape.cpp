@@ -1,14 +1,14 @@
 // BoxShape.cpp
 #include "BoxShape.h"
 
-#include "Geometry/IntersectionQueries3.h"
-#include "Geometry/RayAABox.h"
-#include "Physics/Collision/CastResult.h"
-#include "Physics/Collision/CollidePointResult.h"
-#include "Physics/Collision/RayCast.h"
-#include "Physics/Collision/TransformedShape.h"
-#include "Physics/Collision/Shapes/GetTrianglesContext.h"
-#include "Physics/Collision/Shapes/ScaleHelpers.h"
+#include "Nessie/Geometry/IntersectionQueries3.h"
+#include "Nessie/Geometry/RayAABox.h"
+#include "Nessie/Physics/Collision/CastResult.h"
+#include "Nessie/Physics/Collision/CollidePointResult.h"
+#include "Nessie/Physics/Collision/RayCast.h"
+#include "Nessie/Physics/Collision/TransformedShape.h"
+#include "Nessie/Physics/Collision/Shapes/GetTrianglesContext.h"
+#include "Nessie/Physics/Collision/Shapes/ScaleHelpers.h"
 
 namespace nes
 {

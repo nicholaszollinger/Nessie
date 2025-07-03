@@ -1,7 +1,7 @@
 // Event.h
 #pragma once
 #include <concepts>
-#include "Core/Generic/Hash.h"
+#include "Nessie/Core/Hash.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Use this in the body of an Event class to define the EventID and GetName functions.

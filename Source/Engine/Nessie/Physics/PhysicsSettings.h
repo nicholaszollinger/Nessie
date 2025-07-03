@@ -1,7 +1,7 @@
 ﻿// PhysicsSettings.h
 #pragma once
-#include "Core/Memory/Memory.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {
@@ -81,7 +81,7 @@ namespace nes
         float       m_contactNormalCosMaxDeltaRotation = 0.99619469809174553229501040247389f; // cos(5 degrees).
 
         /// Max allowed distance between old and new contact point to preserve contact forces for warm start. Units: meter^2.
-        float       m_contactNormalPreserveLambdaMaxDistSqr = math::Squared(0.01f); // 1 cm
+        float       m_contactPointPreserveLambdaMaxDistSqr = math::Squared(0.01f); // 1 cm
 
         /// Number of solver velocity iterations to run.
         /// Note that this needs to be >= 2 in order for friction to work. Friction is applied using the non-penetration impulse from the previous iteration. 

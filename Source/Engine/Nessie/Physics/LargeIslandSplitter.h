@@ -1,8 +1,8 @@
 ﻿// LargeIslandSplitter.h
 #pragma once
-#include "Core/Config.h"
-#include "Core/Thread/Atomics.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Core/Thread/Atomics.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

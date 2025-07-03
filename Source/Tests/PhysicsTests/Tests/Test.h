@@ -1,6 +1,6 @@
 ﻿// Test.h
 #pragma once
-#include "Graphics/Camera.h"
+#include "Nessie/Graphics/Camera.h"
 #include "Nessie/Physics/PhysicsScene.h"
 #include "Nessie/Input/InputManager.h"
 

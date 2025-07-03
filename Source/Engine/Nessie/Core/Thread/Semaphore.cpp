@@ -1,9 +1,9 @@
 // Semaphore.cpp
-#include "Semaphore.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Thread/Semaphore.h"
+#include "Nessie/Debug/Assert.h"
 
 #ifdef NES_PLATFORM_WINDOWS
-#include "Platform/Windows/WindowsInclude.h"
+#include "Nessie/Platform/Windows/WindowsInclude.h"
 
 #else
 #endif

@@ -1,6 +1,6 @@
 ﻿// BodyID.h
 #pragma once
-#include "Debug/Assert.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

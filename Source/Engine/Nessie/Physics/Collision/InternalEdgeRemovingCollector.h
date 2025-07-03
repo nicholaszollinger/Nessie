@@ -1,8 +1,8 @@
 ﻿// InternalEdgeRemovingCollector.h
 #pragma once
 
-#include "Core/Memory/STLLocalAllocator.h"
-#include "Physics/Collision/CollisionSolver.h"
+#include "Nessie/Core/Memory/STLLocalAllocator.h"
+#include "Nessie/Physics/Collision/CollisionSolver.h"
 
 namespace nes
 {

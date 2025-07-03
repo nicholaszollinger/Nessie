@@ -1,11 +1,11 @@
 #include "Application.h"
 
-#include "Core/Jobs/JobSystemThreadPool.h"
+#include "Nessie/Core/Jobs/JobSystemThreadPool.h"
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Core/Memory/Memory.h"
-#include "Physics/Collision/CollisionSolver.h"
-#include "Physics/Collision/Shapes/BoxShape.h"
-#include "Physics/Collision/Shapes/EmptyShape.h"
+#include "Nessie/Physics/Collision/CollisionSolver.h"
+#include "Nessie/Physics/Collision/Shapes/BoxShape.h"
+#include "Nessie/Physics/Collision/Shapes/EmptyShape.h"
 #include "Tests/General/SimpleTest.h"
 
 static constexpr uint kNumBodies = 10240;
@@ -48,7 +48,7 @@ bool TestApplication::Internal_Init()
     //nes::LoggerRegistry::Instance().GetDefaultLogger()->SetLevel(nes::ELogLevel::Trace);
     
     // Allocate temp memory
-    m_pAllocator = NES_NEW(nes::StackAllocator(32 * 1024 * 1024));
+    m_pAllocator = NES_NEW(nes::StackAllocator(static_cast<size_t>(32 * 1024 * 1024)));
 
     // Create the job system
     m_pJobSystem = NES_NEW(nes::JobSystemThreadPool(nes::physics::kMaxPhysicsJobs, nes::physics::kMaxPhysicsBarriers, m_maxConcurrentJobs - 1));
@@ -105,8 +105,6 @@ void TestApplication::RunFrame(const double deltaTime)
     }
 
     UpdateCamera(static_cast<float>(deltaTime));
-
-    // [TODO]: Render
 }
 
 bool TestApplication::Update(const float deltaTime)
@@ -169,16 +167,20 @@ void TestApplication::PushEvent(nes::Event& e)
     else if (e.GetEventID() == nes::KeyEvent::GetStaticEventID())
     {
         auto& keyEvent = checked_cast<nes::KeyEvent&>(e);
-        // P to Pause
-        if (keyEvent.GetKeyCode() == nes::EKeyCode::P)
-        {
-            m_isPaused = !m_isPaused;
-        }
 
-        // Escape to Quit
-        else if (keyEvent.GetKeyCode() == nes::EKeyCode::Escape)
+        if (keyEvent.GetAction() == nes::EKeyAction::Pressed)
         {
-            Quit();
+            // P to Pause
+            if (keyEvent.GetKeyCode() == nes::EKeyCode::P)
+            {
+                m_isPaused = !m_isPaused;
+            }
+
+            // Escape to Quit
+            else if (keyEvent.GetKeyCode() == nes::EKeyCode::Escape)
+            {
+                Quit();
+            }
         }
     }
 }
@@ -246,6 +248,8 @@ void TestApplication::StepPhysics(nes::JobSystem* pJobSystem)
     // Step the world (with a fixed frequency).
     m_pPhysicsScene->Update(deltaTime, m_collisionSteps, m_pAllocator, pJobSystem);
 
+    //NES_LOG("Finished Step");
+    
     // Post Update
     m_pTest->PostPhysicsUpdate(deltaTime);
 }

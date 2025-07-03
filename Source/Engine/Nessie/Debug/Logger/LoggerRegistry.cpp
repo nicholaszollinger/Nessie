@@ -1,7 +1,7 @@
 ﻿// LoggerRegistry.cpp
 #include "LoggerRegistry.h"
 #include "LogFormatters/PatternFormatter.h"
-#include "Platform/Platform.h"
+#include "Nessie/Platform/Platform.h"
 
 namespace nes
 {

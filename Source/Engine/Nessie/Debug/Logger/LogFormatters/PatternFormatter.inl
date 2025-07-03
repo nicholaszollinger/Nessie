@@ -3,7 +3,7 @@
 #include "CommonFlagFormatters.h"
 #include "SourceFlagFormatters.h"
 #include "TimeFlagFormatters.h"
-#include "Debug/Logger/Details/LogFormatHelpers.h"
+#include "Nessie/Debug/Logger/Details/LogFormatHelpers.h"
 
 namespace nes
 {

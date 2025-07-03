@@ -1,7 +1,7 @@
 // RayCast.h
 #pragma once
 #include "BackFaceMode.h"
-#include "Math/Math.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

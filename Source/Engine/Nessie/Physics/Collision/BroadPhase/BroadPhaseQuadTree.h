@@ -2,7 +2,7 @@
 #pragma once
 #include "BroadPhase.h"
 #include "QuadTree.h"
-#include "Physics/PhysicsLock.h"
+#include "Nessie/Physics/PhysicsLock.h"
 
 namespace nes
 {

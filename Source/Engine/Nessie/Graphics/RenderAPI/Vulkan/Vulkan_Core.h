@@ -1,7 +1,7 @@
 ﻿// Vulkan_Core.h
 #pragma once
-#include "Core/Config.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Debug/Assert.h"
 
 #include <vulkan/vk_enum_string_helper.h>
 #pragma warning(push)

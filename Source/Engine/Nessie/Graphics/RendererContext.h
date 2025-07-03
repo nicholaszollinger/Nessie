@@ -1,8 +1,8 @@
 ﻿// RenderContext.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_RENDER_API_VULKAN
-#include "Graphics/RenderAPI/Vulkan/Vulkan_Core.h"
+#include "Nessie/Graphics/RenderAPI/Vulkan/Vulkan_Core.h"
 
 #include <functional>
 #include <optional>

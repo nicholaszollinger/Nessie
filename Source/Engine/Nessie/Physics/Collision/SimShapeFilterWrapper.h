@@ -1,8 +1,7 @@
 ﻿// SimShapeFilterWrapper.h
 #pragma once
-
-#include "Physics/Collision/SimShapeFilter.h"
-#include "Physics/Body/Body.h"
+#include "Nessie/Physics/Collision/SimShapeFilter.h"
+#include "Nessie/Physics/Body/Body.h"
 
 namespace nes
 {

@@ -1,7 +1,7 @@
 ﻿// OrientedBox2.h
 #pragma once
 #include "AABox2.h"
-#include "Math/Mat33.h"
+#include "Nessie/Math/Mat33.h"
 
 namespace nes
 {

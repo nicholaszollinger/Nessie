@@ -2,10 +2,10 @@
 
 #include "GLFW_InputConversions.h"
 
-#include "Debug/CheckedCast.h"
+#include "Nessie/Debug/CheckedCast.h"
 #ifdef NES_WINDOW_API_GLFW
 #include <GLFW/glfw3.h>
-#include "Input/InputManager.h"
+#include "Nessie/Input/InputManager.h"
 
 namespace nes::glfw
 {

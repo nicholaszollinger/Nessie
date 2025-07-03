@@ -2,8 +2,8 @@
 #pragma once
 #include "Body.h"
 #include "BodyActivationMode.h"
-#include "Core/Thread/Mutex.h"
-#include "Core/Thread/MutexArray.h"
+#include "Nessie/Core/Thread/Mutex.h"
+#include "Nessie/Core/Thread/MutexArray.h"
 
 namespace nes
 {

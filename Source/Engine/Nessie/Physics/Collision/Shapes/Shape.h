@@ -1,16 +1,16 @@
 // Shape.h
 #pragma once
 #include <cstdint>
-#include "Core/Result.h"
-#include "Core/StaticArray.h"
-#include "Core/Generic/Color.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Geometry/AABox.h"
-#include "Math/Scalar3.h"
-#include "Physics/Body/MassProperties.h"
-#include "Physics/Collision/BackFaceMode.h"
-#include "Physics/Collision/CollisionCollector.h"
-#include "Physics/Collision/ShapeFilter.h"
+#include "Nessie/Core/Result.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Core/Color.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Geometry/AABox.h"
+#include "Nessie/Math/Scalar3.h"
+#include "Nessie/Physics/Body/MassProperties.h"
+#include "Nessie/Physics/Collision/BackFaceMode.h"
+#include "Nessie/Physics/Collision/CollisionCollector.h"
+#include "Nessie/Physics/Collision/ShapeFilter.h"
 
 namespace nes
 {

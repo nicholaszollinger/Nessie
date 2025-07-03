@@ -1,5 +1,4 @@
 // PerlinNoise.cpp
-
 #include "PerlinNoise.h"
 
 namespace nes

@@ -1,9 +1,9 @@
 // Thread.cpp
-#include "Thread.h"
-#include "Core/Config.h"
+#include "Nessie/Core/Thread/Thread.h"
+#include "Nessie/Core/Config.h"
 
 #ifdef NES_PLATFORM_WINDOWS
-#include "Platform/Windows/WindowsInclude.h"
+#include "Nessie/Platform/Windows/WindowsInclude.h"
 #endif
 
 namespace nes

@@ -1,6 +1,6 @@
 // CalculateSolverSteps.h
 #pragma once
-#include "Physics/PhysicsSettings.h"
+#include "Nessie/Physics/PhysicsSettings.h"
 
 namespace nes
 {

@@ -1,7 +1,7 @@
 // JobSystemThreadPool.h
 #pragma once
 #include "JobSystemWithBarrier.h"
-#include "Core/Memory/FixedSizedFreeList.h"
+#include "Nessie/Core/Memory/FixedSizedFreeList.h"
 
 namespace nes
 {

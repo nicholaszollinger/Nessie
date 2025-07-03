@@ -1,7 +1,7 @@
 ﻿// LockFreeHashMap.inl
 #pragma once
-#include "Core/Memory/Memory.h"
-#include "Math/Math.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {
@@ -27,7 +27,7 @@ namespace nes
         m_writeOffset = 0;
     }
 
-    inline void LFHMAllocator::Allocate(const uint32 blockSize, uint32& begin, uint32& end)
+    inline void LFHMAllocator::Allocate(const uint32 inBlockSize, uint32& ioBegin, uint32& ioEnd)
     {
         // If we're already beyond the end of our buffer, then don't do an atomic addition.
         // It's possible that many keys are inserted after the allocator is full, making it possible
@@ -38,29 +38,29 @@ namespace nes
             return;
 
         // Atomically fetch a block from the bool
-        uint32 tBegin = m_writeOffset.fetch_add(blockSize, std::memory_order_relaxed);
-        const uint32 tEnd = math::Min(begin + blockSize, m_objectStorageSizeBytes);
+        uint32 begin = m_writeOffset.fetch_add(inBlockSize, std::memory_order_relaxed);
+        const uint32 end = math::Min(begin + inBlockSize, m_objectStorageSizeBytes);
 
-        if (end == tBegin)
+        if (ioEnd == begin)
         {
             // Block is allocated straight after our previous block.
-            tBegin = begin;    
+            begin = ioBegin;    
         }
         else
         {
             // Block is a new block.
-            tBegin = math::Min(tBegin, m_objectStorageSizeBytes);
+            begin = math::Min(begin, m_objectStorageSizeBytes);
         }
 
         // Store the beginning and end of the resulting block.
-        begin = tBegin;
-        end = tEnd;
+        ioBegin = begin;
+        ioEnd = end;
     }
 
     template <typename Type>
-    uint32 LFHMAllocator::ToOffset(const Type* pData) const
+    uint32 LFHMAllocator::ToOffset(const Type* inData) const
     {
-        const uint8* pByteData = reinterpret_cast<const uint8*>(pData);
+        const uint8* pByteData = reinterpret_cast<const uint8*>(inData);
         NES_ASSERT(pByteData >= m_objectStorage && pByteData < m_objectStorage + m_objectStorageSizeBytes);
         return static_cast<uint32>(pByteData - m_objectStorage);
     }
@@ -83,31 +83,31 @@ namespace nes
         //
     }
 
-    inline bool LFHMAllocatorContext::Allocate(const uint32 blockSize, const uint32 alignment, uint32& outWriteOffset)
+    inline bool LFHMAllocatorContext::Allocate(const uint32 inSize, const uint32 inAlignment, uint32& outWriteOffset)
     {
         // Calculate the bytes needed for alignment
-        NES_ASSERT(math::IsPowerOf2(alignment));
-        const uint32 alignmentMask = alignment - 1;
-        uint32 finalAlignment = (alignment - (m_begin & alignmentMask)) & alignmentMask;
-
+        NES_ASSERT(math::IsPowerOf2(inAlignment));
+        const uint32 alignmentMask = inAlignment - 1;
+        uint32 alignment = (inAlignment - (m_begin & alignmentMask)) & alignmentMask;
+        
         // Check if we have space
-        if (m_end - m_begin < blockSize + finalAlignment)
+        if (m_end - m_begin < inSize + alignment)
         {
             // Allocate a new block
             m_allocator.Allocate(m_blockSize, m_begin, m_end);
 
             // Update alignment
-            finalAlignment = (alignment - (m_begin & alignmentMask)) & alignmentMask;
+            alignment = (inAlignment - (m_begin & alignmentMask)) & alignmentMask;
 
             // Check if we have space again
-            if (m_end - m_begin < blockSize + finalAlignment)
+            if (m_end - m_begin < inSize + alignment)
                 return false;
         }
 
         // Make the allocation
-        m_begin += finalAlignment;
+        m_begin += alignment;
         outWriteOffset = m_begin;
-        m_begin += blockSize;
+        m_begin += inSize;
 
         return true;
     }

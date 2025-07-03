@@ -1,7 +1,7 @@
 ﻿// Mat4.h
 #pragma once
 #include "Scalar4.h"
-#include "Math/MathTypes.h"
+#include "Nessie/Math/MathTypes.h"
 
 namespace nes
 {

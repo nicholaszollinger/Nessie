@@ -1,13 +1,13 @@
 ﻿// PhysicsUpdateContext.h
 #pragma once
-#include "Collision/BroadPhase/BroadPhase.h"
-#include "Core/Config.h"
-#include "Core/StaticArray.h"
-#include "Core/Jobs/JobSystem.h"
-#include "Core/Memory/STLStackAllocator.h"
-#include "Physics/Collision/ContactListener.h"
-#include "Physics/Body/BodyPair.h"
-#include "Math/Math.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Physics/Collision/BroadPhase/BroadPhase.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Core/Jobs/JobSystem.h"
+#include "Nessie/Core/Memory/STLStackAllocator.h"
+#include "Nessie/Physics/Collision/ContactListener.h"
+#include "Nessie/Physics/Body/BodyPair.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

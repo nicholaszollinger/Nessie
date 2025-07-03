@@ -1,7 +1,7 @@
 ﻿// STLLocalAllocator.h
 #pragma once
-#include "STLAllocator.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/Memory/STLAllocator.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {

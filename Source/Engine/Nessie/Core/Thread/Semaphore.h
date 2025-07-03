@@ -1,7 +1,7 @@
 // Semaphore.h
 #pragma once
-#include "Atomics.h"
-#include "Core/Config.h"
+#include "Nessie/Core/Thread/Atomics.h"
+#include "Nessie/Core/Config.h"
 
 namespace nes
 {

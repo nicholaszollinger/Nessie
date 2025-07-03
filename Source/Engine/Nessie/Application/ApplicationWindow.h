@@ -1,8 +1,8 @@
 // Window.h
 #pragma once
 #include <string>
-#include "WindowEvents.h"
-#include "Math/Vec2.h"
+#include "Nessie/Application/WindowEvents.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {

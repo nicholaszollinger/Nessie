@@ -1,7 +1,7 @@
 ﻿// TickFunction.cpp
 #include "TickFunction.h"
 #include "TickManager.h"
-#include "Debug/Assert.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

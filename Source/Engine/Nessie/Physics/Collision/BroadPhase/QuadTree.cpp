@@ -1,16 +1,16 @@
 ﻿// QuadTree.cpp
 #include "QuadTree.h"
 
-#include "Core/Memory/STLLocalAllocator.h"
-#include "Geometry/AABoxSIMD.h"
-#include "Geometry/OrientedBox.h"
-#include "Geometry/RayAABox.h"
-#include "Physics/Collision/RayCast.h"
-#include "Physics/Body/BodyPair.h"
-#include "Physics/Collision/AABoxCast.h"
-#include "Physics/Collision/SortReverseAndStore.h"
-#include "Physics/Collision/CastResult.h"
-#include "Physics/PhysicsLock.h"
+#include "Nessie/Core/Memory/STLLocalAllocator.h"
+#include "Nessie/Geometry/AABoxSIMD.h"
+#include "Nessie/Geometry/OrientedBox.h"
+#include "Nessie/Geometry/RayAABox.h"
+#include "Nessie/Physics/Collision/RayCast.h"
+#include "Nessie/Physics/Body/BodyPair.h"
+#include "Nessie/Physics/Collision/AABoxCast.h"
+#include "Nessie/Physics/Collision/SortReverseAndStore.h"
+#include "Nessie/Physics/Collision/CastResult.h"
+#include "Nessie/Physics/PhysicsLock.h"
 
 namespace nes
 {

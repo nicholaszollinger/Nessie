@@ -1,8 +1,7 @@
 ﻿// Memory.h
 #pragma once
-#include <cstdint>
 #include <vcruntime_new.h>
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Macro to toggle recording allocations as they happen to print out each missed allocation

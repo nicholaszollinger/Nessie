@@ -3,11 +3,11 @@
 #include <atomic>
 #include <numeric>
 
-#include "Memory.h"
-#include "Core/Config.h"
-#include "Debug/Assert.h"
-#include "Math/Generic.h"
-#include "Core/Thread/Mutex.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/Generic.h"
+#include "Nessie/Core/Thread/Mutex.h"
 
 namespace nes
 {

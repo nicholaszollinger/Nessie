@@ -1,7 +1,7 @@
 ﻿// WinConsoleTarget.h
 #pragma once
 #include <array>
-#include "Debug/Logger/LogTargets/LogTargetBase.h"
+#include "Nessie/Debug/Logger/LogTargets/LogTargetBase.h"
 
 namespace nes
 {

@@ -1,6 +1,6 @@
 ﻿// SDL_WindowContext.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_WINDOW_API_SDL
 struct SDL_Window;
 struct SDL_Renderer;

@@ -1,6 +1,6 @@
 // JobSystemWithBarrier.cpp
-#include "JobSystemWithBarrier.h"
 #include <thread>
+#include "Nessie/Core/Jobs/JobSystemWithBarrier.h"
 
 namespace nes
 {

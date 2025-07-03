@@ -1,6 +1,6 @@
 ﻿// StdMutex.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 NES_SUPPRESS_WARNINGS_STD_BEGIN
 #include <mutex>

@@ -1,9 +1,8 @@
 ﻿// InputManager.cpp
 #include "InputManager.h"
-
-#include "Application/ApplicationWindow.h"
-#include "Debug/Assert.h"
-#include "Math/Vec2.h"
+#include "Nessie/Application/ApplicationWindow.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {

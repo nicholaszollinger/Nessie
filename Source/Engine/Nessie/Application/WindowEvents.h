@@ -1,6 +1,6 @@
 // WindowEvents.h
 #pragma once
-#include "Core/Events/Event.h"
+#include "Nessie/Core/Events/Event.h"
 
 namespace nes
 {

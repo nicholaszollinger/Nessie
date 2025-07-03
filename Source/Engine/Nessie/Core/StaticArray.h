@@ -2,8 +2,8 @@
 #pragma once
 #include <cstdint>
 #include <initializer_list>
-#include "Debug/Assert.h"
-#include "Generic/Concepts.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

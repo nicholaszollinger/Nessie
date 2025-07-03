@@ -1,7 +1,7 @@
 // BoxShape.h
 #pragma once
 #include "ConvexShape.h"
-#include "Physics/PhysicsSettings.h"
+#include "Nessie/Physics/PhysicsSettings.h"
 
 namespace nes
 {

@@ -1,7 +1,7 @@
 ﻿// DualAxisConstraintPart.h
 #pragma once
-#include "Math/Math.h"
-#include "Physics/Body/Body.h"
+#include "Nessie/Math/Math.h"
+#include "Nessie/Physics/Body/Body.h"
 
 namespace nes
 {

@@ -2,9 +2,9 @@
 #include "IslandBuilder.h"
 
 #include "Body/Body.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Memory/StackAllocator.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {

@@ -1,9 +1,9 @@
 // JobSystemWorkerThread.h
 #pragma once
-#include "JobSystemWithBarrier.h"
-#include "Core/Memory/FixedSizedFreeList.h"
-#include "Core/Thread/WorkerThread.h"
-#include "Core/Thread/Containers/ThreadSafeQueue.h"
+#include "Nessie/Core/Jobs/JobSystemWithBarrier.h"
+#include "Nessie/Core/Memory/FixedSizedFreeList.h"
+#include "Nessie/Core/Thread/WorkerThread.h"
+#include "Nessie/Core/Thread/Containers/ThreadSafeQueue.h"
 
 namespace nes
 {

@@ -1,9 +1,9 @@
 ﻿// ConstraintManager.h
 #pragma once
 #include "Constraint.h"
-#include "Physics/PhysicsLock.h"
-#include "Core/Thread/Mutex.h"
-#include "Core/Memory/StrongPtr.h"
+#include "Nessie/Physics/PhysicsLock.h"
+#include "Nessie/Core/Thread/Mutex.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 
 namespace nes
 {

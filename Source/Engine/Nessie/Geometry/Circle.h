@@ -1,6 +1,6 @@
 ﻿// Circle.h
 #pragma once
-#include "Math/Vec2.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {

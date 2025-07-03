@@ -1,8 +1,8 @@
 ﻿// Vec4Reg.inl
 #pragma once
-#include "Math/Trigonometry.h"
-#include "Math/Vec3.h"
-#include "Math/Vec4.h"
+#include "Nessie/Math/Trigonometry.h"
+#include "Nessie/Math/Vec3.h"
+#include "Nessie/Math/Vec4.h"
 #include "UVec4Reg.h"
 
 namespace nes

@@ -21,7 +21,7 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     
     includedirs
     {
-		projectDir
+        p.BuildDirectory;
 	}
 
     defines 
@@ -160,10 +160,6 @@ function p.SetIncludeThirdPartyDirs()
 end
 
 function p.Include(projectDir)
-    -- TODO: Remove the project dir include, and update all paths 
-    -- in Nessie files to have the "Nessie/...". This is to make the sub
-    -- projects that might have similarly named files not get confused.
-    includedirs { projectDir }
     includedirs { p.BuildDirectory }
     p.SetIncludeThirdPartyDirs();
 end

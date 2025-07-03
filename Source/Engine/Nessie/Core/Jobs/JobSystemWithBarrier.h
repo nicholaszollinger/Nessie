@@ -1,7 +1,7 @@
 // JobSystemWithBarrier.h
 #pragma once
-#include "JobSystem.h"
-#include "Core/Thread/Semaphore.h"
+#include "Nessie/Core/Jobs/JobSystem.h"
+#include "Nessie/Core/Thread/Semaphore.h"
 
 namespace nes
 {

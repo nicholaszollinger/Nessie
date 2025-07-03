@@ -1,7 +1,7 @@
 // Thread.h
 #pragma once
 #include <thread>
-#include "Debug/Assert.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

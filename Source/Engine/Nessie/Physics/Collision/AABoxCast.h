@@ -1,7 +1,7 @@
 ﻿// AABoxCast.h
 #pragma once
-#include "Core/Memory/Memory.h"
-#include "Geometry/AABox.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Geometry/AABox.h"
 
 namespace nes
 {

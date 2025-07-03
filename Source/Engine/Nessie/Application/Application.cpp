@@ -1,6 +1,6 @@
 // Application.cpp
 #include "Application.h"
-#include "Core/Memory/Memory.h"
+#include "Nessie/Core/Memory/Memory.h"
 
 namespace nes
 {

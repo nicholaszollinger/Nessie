@@ -1,8 +1,9 @@
-#pragma once
 // Main Header for the Nessie Engine.
-// [TODO]: Add all core headers here.
+#pragma once
 
 #include <yaml-cpp/yaml.h>
-#include "Application/Application.h"
-#include "Debug/Assert.h"
-#include "Platform/Platform.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Math/Math.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Platform/Platform.h"
+#include "Nessie/Application/EntryPoint.h"

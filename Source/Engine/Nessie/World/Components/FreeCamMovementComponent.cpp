@@ -1,10 +1,10 @@
 ﻿// FreeCamMovementComponent.cpp
 #include "FreeCamMovementComponent.h"
 
-#include "Input/InputManager.h"
-#include "Scene/Scene.h"
-#include "World/Entity3D.h"
-#include "World/World.h"
+#include "Nessie/Input/InputManager.h"
+#include "Nessie/Scene/Scene.h"
+#include "Nessie/World/Entity3D.h"
+#include "Nessie/World/World.h"
 
 namespace nes
 {

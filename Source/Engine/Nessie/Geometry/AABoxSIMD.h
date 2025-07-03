@@ -1,6 +1,6 @@
 ﻿// AABoxSIMD.h
 #pragma once
-#include "Geometry/OrientedBox.h"
+#include "Nessie/Geometry/OrientedBox.h"
 
 namespace nes::math
 {

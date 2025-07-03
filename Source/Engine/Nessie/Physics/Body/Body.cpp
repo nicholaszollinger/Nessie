@@ -1,6 +1,6 @@
 ﻿// Body.cpp
 #include "Body.h"
-#include "Physics/Collision/Shapes/EmptyShape.h"
+#include "Nessie/Physics/Collision/Shapes/EmptyShape.h"
 
 namespace nes
 {

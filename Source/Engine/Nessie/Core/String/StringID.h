@@ -1,7 +1,7 @@
 // StringID.h
 #pragma once
 #include <unordered_map>
-#include "FormatString.h"
+#include "Nessie/Core/String/FormatString.h"
 
 namespace nes
 {

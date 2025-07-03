@@ -1,10 +1,10 @@
 // Application.h
 #pragma once
-#include "ApplicationWindow.h"
-#include "Core/Generic/Version.h"
-#include "Core/Time/Timer.h"
-#include "Debug/Assert.h"
-#include "Input/InputManager.h"
+#include "Nessie/Application/ApplicationWindow.h"
+#include "Nessie/Core/Version.h"
+#include "Nessie/Core/Time/Timer.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Input/InputManager.h"
 
 namespace nes
 {

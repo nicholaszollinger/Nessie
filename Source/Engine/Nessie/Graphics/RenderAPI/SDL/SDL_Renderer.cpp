@@ -1,8 +1,8 @@
 ﻿// SDL_Renderer.cpp
 
-#include "Application/Platforms/SDL/SDL_WindowContext.h"
-#include "Core/Config.h"
-#include "Debug/CheckedCast.h"
+#include "Nessie/Application/Platforms/SDL/SDL_WindowContext.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Debug/CheckedCast.h"
 
 #ifdef NES_RENDER_API_SDL
 #include <SDL.h>

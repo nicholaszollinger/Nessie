@@ -1,6 +1,5 @@
 ﻿// BodyFilter.h
 #pragma once
-
 #include "BodyID.h"
 
 namespace nes

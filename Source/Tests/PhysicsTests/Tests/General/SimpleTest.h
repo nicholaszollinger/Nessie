@@ -14,12 +14,12 @@ private:
     class Listener final : public nes::BodyActivationListener
     {
     public:
-        virtual void OnBodyActivated(const nes::BodyID& bodyID, [[maybe_unused]] const uint64_t bodyUserData) override
+        virtual void OnBodyActivated([[maybe_unused]] const nes::BodyID& bodyID, [[maybe_unused]] const uint64_t bodyUserData) override
         {
             NES_LOG("Body {} activated.", bodyID.GetIndex());
         }
 
-        virtual void OnBodyDeactivated(const nes::BodyID& bodyID, [[maybe_unused]] const uint64_t bodyUserData) override
+        virtual void OnBodyDeactivated([[maybe_unused]] const nes::BodyID& bodyID, [[maybe_unused]] const uint64_t bodyUserData) override
         {
             NES_LOG("Body {} deactivated.", bodyID.GetIndex());
         }

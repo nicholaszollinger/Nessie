@@ -1,8 +1,8 @@
 ﻿// ManifoldBetweenTwoFaces.cpp
 
-#include "Physics/Collision/ManifoldBetweenTwoFaces.h"
-#include "Physics/Constraints/ContactConstraintManager.h"
-#include "Geometry/ClipPoly.h"
+#include "Nessie/Physics/Collision/ManifoldBetweenTwoFaces.h"
+#include "Nessie/Physics/Constraints/ContactConstraintManager.h"
+#include "Nessie/Geometry/ClipPoly.h"
 
 namespace nes
 {

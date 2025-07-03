@@ -1,6 +1,6 @@
 // EPAConvexHullBuilder.cpp
 #include "EPAConvexHullBuilder.h"
-#include "Core/BinaryHeap.h"
+#include "Nessie/Core/BinaryHeap.h"
 
 namespace nes
 {

@@ -2,9 +2,9 @@
 // [TODO]: Change name to Math/Common.h
 #pragma once
 #include <cmath>
-#include "Core/Config.h"
-#include "Core/Generic/Concepts.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes::math
 {

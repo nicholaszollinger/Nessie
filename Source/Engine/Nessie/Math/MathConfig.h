@@ -1,6 +1,6 @@
 ﻿// MathConfig.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 /// Uncomment to set NES_PRECISION_TYPE to "double". This is used across all default math types.
 /// Otherwise, the precision type is "float".

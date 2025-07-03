@@ -1,6 +1,6 @@
 ﻿// Material.h
 #pragma once
-#include "Core/Generic/Color.h"
+#include "Nessie/Core/Color.h"
 
 namespace nes
 {

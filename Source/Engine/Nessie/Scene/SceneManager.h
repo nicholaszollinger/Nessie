@@ -4,8 +4,8 @@
 #include <unordered_map>
 #include "Scene.h"
 #include "TickManager.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Core/String/StringID.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Core/String/StringID.h"
 
 namespace nes
 {

@@ -1,5 +1,5 @@
-#pragma once
 // InputCodes.h
+#pragma once
 
 namespace nes
 {

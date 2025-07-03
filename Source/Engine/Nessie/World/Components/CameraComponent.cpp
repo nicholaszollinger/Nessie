@@ -1,8 +1,8 @@
 ﻿// Camera.cpp
 #include "CameraComponent.h"
-#include "Application/Application.h"
-#include "Scene/Scene.h"
-#include "World/Entity3D.h"
+#include "Nessie/Application/Application.h"
+#include "Nessie/Scene/Scene.h"
+#include "Nessie/World/Entity3D.h"
 
 namespace nes
 {

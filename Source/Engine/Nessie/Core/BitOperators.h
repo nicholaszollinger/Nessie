@@ -1,6 +1,6 @@
 // BitOperators.h
 #pragma once
-#include "Concepts.h"
+#include "Nessie/Core/Concepts.h"
 
 //-----------------------------------------------------------------------------------------------------------------------------
 ///		@brief : Create the bitwise operators for an Enum, to be able to use the enum as a bitmask.

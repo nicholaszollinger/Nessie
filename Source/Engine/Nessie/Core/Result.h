@@ -1,7 +1,7 @@
 // Result.h
 #pragma once
-#include "Core/Generic/Concepts.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

@@ -1,9 +1,9 @@
 // SubShapeIDPair.h
 #pragma once
 #include "SubShapeID.h"
-#include "Core/Generic/Hash.h"
-#include "Math/Math.h"
-#include "Physics/Body/BodyID.h"
+#include "Nessie/Core/Hash.h"
+#include "Nessie/Math/Math.h"
+#include "Nessie/Physics/Body/BodyID.h"
 
 namespace nes
 {

@@ -2,9 +2,9 @@
 #pragma once
 #include <cstdint>
 
-#include "Core/QuickSort.h"
-#include "Debug/Assert.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/QuickSort.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {

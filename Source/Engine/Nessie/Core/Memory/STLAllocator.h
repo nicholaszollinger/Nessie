@@ -1,8 +1,8 @@
 ﻿// STLAllocator.h
 #pragma once
 #include <type_traits>
-#include "Core/Memory/Memory.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

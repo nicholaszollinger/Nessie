@@ -2,7 +2,7 @@
 #include "SimpleTest.h"
 
 #include "../../Layers.h"
-#include "Physics/Collision/Shapes/BoxShape.h"
+#include "Nessie/Physics/Collision/Shapes/BoxShape.h"
 
 SimpleTest::~SimpleTest()
 {

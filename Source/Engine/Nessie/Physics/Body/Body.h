@@ -3,10 +3,10 @@
 #include "BodyCreateInfo.h"
 #include "BodyID.h"
 #include "MotionProperties.h"
-#include "Core/Generic/GenerationalID.h"
-#include "Math/Bit.h"
-#include "Physics/Collision/TransformedShape.h"
-#include "Physics/Collision/BroadPhase/BroadPhaseLayer.h"
+#include "Nessie/Core/GenerationalID.h"
+#include "Nessie/Math/Bit.h"
+#include "Nessie/Physics/Collision/TransformedShape.h"
+#include "Nessie/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
 
 namespace nes
 {

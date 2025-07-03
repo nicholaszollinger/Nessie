@@ -1,8 +1,8 @@
 // MutexArray.h
 #pragma once
-#include "Core/Config.h"
-#include "Core/Memory/Memory.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/Config.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {

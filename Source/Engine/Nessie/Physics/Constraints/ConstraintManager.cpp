@@ -1,7 +1,7 @@
 // ConstraintManager.cpp
 #include "ConstraintManager.h"
 #include "CalculateSolverSteps.h"
-#include "Core/QuickSort.h"
+#include "Nessie/Core/QuickSort.h"
 
 namespace nes
 {

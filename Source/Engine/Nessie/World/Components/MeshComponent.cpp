@@ -1,7 +1,7 @@
 ﻿// MeshComponent.cpp
 #include "MeshComponent.h"
-#include "World/World.h"
-#include "Graphics/Renderer.h"
+#include "Nessie/World/World.h"
+#include "Nessie/Graphics/Renderer.h"
 
 namespace nes
 {

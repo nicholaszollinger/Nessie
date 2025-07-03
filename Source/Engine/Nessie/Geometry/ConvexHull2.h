@@ -2,8 +2,8 @@
 #pragma once
 #include <algorithm>
 #include "Geometry.h"
-#include "Core/QuickSort.h"
-#include "Math/Vec2.h"
+#include "Nessie/Core/QuickSort.h"
+#include "Nessie/Math/Vec2.h"
 
 namespace nes
 {
