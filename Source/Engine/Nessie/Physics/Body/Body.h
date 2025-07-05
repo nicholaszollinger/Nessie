@@ -230,7 +230,7 @@ namespace nes
         /// @brief : Check if this body can go to sleep. Note that disabling sleeping on a sleeping object will
         ///     not wake it up directly.
         //----------------------------------------------------------------------------------------------------
-        inline bool             CanSleep() const                                        { return m_pMotionProperties->m_canSleep; }
+        inline bool             CanSleep() const                                        { return m_pMotionProperties->m_allowSleeping; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether this body can go to sleep. Note that disabling sleeping on a sleeping object will

@@ -193,7 +193,7 @@ namespace nes
             pProps->SetNumVelocityStepsOverride(createInfo.m_numVelocityStepsOverride);
             pProps->SetNumPositionStepsOverride(createInfo.m_numPositionStepsOverride);
             pProps->m_motionQuality = createInfo.m_motionQuality;
-            pProps->m_canSleep = createInfo.m_allowSleeping;
+            pProps->m_allowSleeping = createInfo.m_allowSleeping;
             
             NES_IF_LOGGING_ENABLED(pProps->m_cachedMotionType = pBody->m_motionType);
         }

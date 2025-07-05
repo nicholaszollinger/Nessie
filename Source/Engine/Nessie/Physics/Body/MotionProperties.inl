@@ -323,7 +323,7 @@ namespace nes
     void MotionProperties::Internal_ResetSleepTestSpheres(const Vec3* pPoints)
     {
 #ifdef NES_DOUBLE_PRECISION
-
+        // [TODO]: 
 #else
         for (int i = 0; i < 3; ++i)
         {

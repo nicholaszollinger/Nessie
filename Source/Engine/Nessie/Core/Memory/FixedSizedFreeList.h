@@ -23,27 +23,27 @@ namespace nes
         struct ObjectStorage
         {
             /// The object we are storing.
-            ObjectType              m_object;
+            ObjectType          m_object;
 
             /// When the object is freed (or in the process of being freed as a batch) this will contain
             /// the next free object. When an object is in use, it will contain the object's index in the
             /// free list.
-            std::atomic<uint32_t>   m_nextFreeObject;
+            std::atomic<uint32> m_nextFreeObject;
         };
         static_assert(alignof(ObjectStorage) == alignof(ObjectType), "Object not properly aligned");
 
     public:
-        static constexpr uint32_t   kInvalidObjectIndex = std::numeric_limits<uint32_t>::max();
-        static constexpr int        kObjectStorageSize = sizeof(ObjectStorage);
+        static constexpr uint32 kInvalidObjectIndex = std::numeric_limits<uint32_t>::max();
+        static constexpr int    kObjectStorageSize = sizeof(ObjectStorage);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : A Batch of objects to be destructed. 
         //----------------------------------------------------------------------------------------------------
         struct Batch
         {
-            uint32_t m_firstObjectIndex = kInvalidObjectIndex;
-            uint32_t m_lastObjectIndex = kInvalidObjectIndex;
-            uint32_t m_numObjects = 0;
+            uint32 m_firstObjectIndex = kInvalidObjectIndex;
+            uint32 m_lastObjectIndex = kInvalidObjectIndex;
+            uint32 m_numObjects = 0;
         };
         
     public:
@@ -75,7 +75,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless destruct an object and return it to the free pool. 
         //----------------------------------------------------------------------------------------------------
-        void                            DestructObject(const uint32_t objectIndex);
+        void                            DestructObject(const uint32 objectIndex);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless destruct an object and return it to the free pool. 
@@ -85,7 +85,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add an object to an existing batch to be destructed.
         //----------------------------------------------------------------------------------------------------
-        void                            AddObjectToBatch(Batch& batch, const uint32_t objectIndex);
+        void                            AddObjectToBatch(Batch& batch, const uint32 objectIndex);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lockless destruct batch of objects. 
@@ -95,20 +95,20 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access an object by index.
         //----------------------------------------------------------------------------------------------------
-        [[nodiscard]] ObjectType&       Get(const uint32_t objectIndex)             { return GetStorage(objectIndex).m_object; }
+        [[nodiscard]] ObjectType&       Get(const uint32 objectIndex)             { return GetStorage(objectIndex).m_object; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Access an object by index 
         //----------------------------------------------------------------------------------------------------
-        [[nodiscard]] const ObjectType& Get(const uint32_t objectIndex) const { return GetStorage(objectIndex).m_object; }
+        [[nodiscard]] const ObjectType& Get(const uint32 objectIndex) const { return GetStorage(objectIndex).m_object; }
 
-        [[nodiscard]] uint32_t          Count()          const { return m_numObjectsConstructed.load(std::memory_order_relaxed); }
-        [[nodiscard]] uint32_t          Capacity()       const { return m_numPages * m_numObjectsPerPage; }
-        [[nodiscard]] uint32_t          AllocatedSize()  const { return m_numObjectsAllocated; }
+        [[nodiscard]] uint32            Count()          const { return m_numObjectsConstructed.load(std::memory_order_relaxed); }
+        [[nodiscard]] uint32            Capacity()       const { return m_numPages * m_numObjectsPerPage; }
+        [[nodiscard]] uint32            AllocatedSize()  const { return m_numObjectsAllocated; }
         
     private:
-        const ObjectStorage&            GetStorage(const uint32_t objectIndex) const;
-        ObjectStorage&                  GetStorage(const uint32_t objectIndex);
+        const ObjectStorage&            GetStorage(const uint32 objectIndex) const;
+        ObjectStorage&                  GetStorage(const uint32 objectIndex);
 
     private:
         /// Size (in objects) of a single page.

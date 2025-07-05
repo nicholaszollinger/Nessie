@@ -62,7 +62,7 @@ namespace nes
 
     void Body::SetCanSleep(const bool canSleep)
     {
-        m_pMotionProperties->m_canSleep = canSleep;
+        m_pMotionProperties->m_allowSleeping = canSleep;
         if (canSleep)
             ResetSleepTimer();
     }
@@ -205,7 +205,7 @@ namespace nes
     ECanSleep Body::Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep)
     {
         // Check override & sensors will never go to sleep (they would stop detecting collisions with sleeping bodies).
-        if (!m_pMotionProperties->m_canSleep || IsSensor())
+        if (!m_pMotionProperties->m_allowSleeping || IsSensor())
             return ECanSleep::CannotSleep;
 
         // Get the points to test

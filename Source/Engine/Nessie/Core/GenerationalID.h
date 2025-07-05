@@ -26,7 +26,7 @@ namespace nes
     public:
         // Default initializes to an invalid ID.
         constexpr GenerationalID() = default;
-        constexpr GenerationalID(const IntergralType auto id);
+        constexpr GenerationalID(const IntegralType auto id);
 
         constexpr bool operator==(const GenerationalID& other) const = default;
 
@@ -78,7 +78,7 @@ namespace nes
     };
     
     template <UnsignedIntegralType Type>
-    constexpr GenerationalID<Type>::GenerationalID(const IntergralType auto id)
+    constexpr GenerationalID<Type>::GenerationalID(const IntegralType auto id)
     {
         NES_ASSERT(id >= 0 && id <= kGenerationMask, "Attempted to construct a GenerationalID with ID value out of range! Value must"
                                            "be greater than 0 and less than ", kGenerationMask);

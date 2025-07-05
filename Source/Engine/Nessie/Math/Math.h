@@ -6,3 +6,5 @@
 #include "Nessie/Math/Mat33.h"
 #include "Nessie/Math/Mat44.h"
 #include "Nessie/Math/Real.h"
+#include "Nessie/Math/IVec4.h"
+

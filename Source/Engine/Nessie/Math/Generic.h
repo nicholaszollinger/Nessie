@@ -460,7 +460,7 @@ namespace nes::math
     //----------------------------------------------------------------------------------------------------
     /// @brief : Returns true if the value is a power of two
     //----------------------------------------------------------------------------------------------------
-    constexpr bool IsPowerOf2(const IntergralType auto value)
+    constexpr bool IsPowerOf2(const IntegralType auto value)
     {
         return value > 0 && (value & (value - 1)) == 0;
     }

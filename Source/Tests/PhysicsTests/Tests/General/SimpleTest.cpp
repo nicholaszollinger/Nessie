@@ -21,8 +21,8 @@ void SimpleTest::Init()
     m_pBodyInterface->CreateAndAddBody(nes::BodyCreateInfo(boxShape, nes::RVec3(0, 10, 0), nes::Quat::Identity(), nes::EBodyMotionType::Dynamic, PhysicsLayers::kMoving), nes::EBodyActivationMode::Activate);
     
     // Dynamic Body 2
-    m_pBodyInterface->CreateAndAddBody(nes::BodyCreateInfo(boxShape, nes::RVec3(5, 10, 0), nes::Quat::FromAxisAngle(nes::Vec3::AxisX(), 0.25f * nes::math::Pi()), nes::EBodyMotionType::Dynamic, PhysicsLayers::kMoving), nes::EBodyActivationMode::Activate);
+    //m_pBodyInterface->CreateAndAddBody(nes::BodyCreateInfo(boxShape, nes::RVec3(5, 10, 0), nes::Quat::FromAxisAngle(nes::Vec3::AxisX(), 0.25f * nes::math::Pi()), nes::EBodyMotionType::Dynamic, PhysicsLayers::kMoving), nes::EBodyActivationMode::Activate);
         
     // Dynamic Body 3
-    m_pBodyInterface->CreateAndAddBody(nes::BodyCreateInfo(boxShape, nes::RVec3(10, 10, 0), nes::Quat::FromAxisAngle(nes::Vec3::AxisZ(), 0.25f * nes::math::Pi()), nes::EBodyMotionType::Dynamic, PhysicsLayers::kMoving), nes::EBodyActivationMode::Activate);
+    //m_pBodyInterface->CreateAndAddBody(nes::BodyCreateInfo(boxShape, nes::RVec3(10, 10, 0), nes::Quat::FromAxisAngle(nes::Vec3::AxisZ(), 0.25f * nes::math::Pi()), nes::EBodyMotionType::Dynamic, PhysicsLayers::kMoving), nes::EBodyActivationMode::Activate);
 }

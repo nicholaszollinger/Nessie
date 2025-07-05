@@ -135,7 +135,7 @@ namespace nes
         m_contactLinks[contactIndex] = math::Min(first, second); // Use the fact that invalid index is 0xfffffff; we want the active body between the two.
     }
 
-    void IslandBuilder::Finalize(const BodyID* pActiveBodies, uint32 numActiveBodies, uint32 numContacts, StackAllocator* pAllocator)
+    void IslandBuilder::Finalize(const BodyID* pActiveBodies, const uint32 numActiveBodies, const uint32 numContacts, StackAllocator* pAllocator)
     {
         m_numContacts = numContacts;
 
