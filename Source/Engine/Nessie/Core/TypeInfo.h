@@ -23,6 +23,17 @@ public:                                                                         
     [[nodiscard]] virtual const char*           GetTypename() const override    { return #_type; }       \
 private:
 
+#define NES_DEFINE_TYPE_INFO_NON_VIRTUAL(_type)                                                          \
+private:                                                                                                 \
+    static_assert(std::is_class_v<_type>, "NES_DEFINE_TYPE_INFO_NON_VIRTUAL(): _type must be a class or a struct");  \
+    static constexpr nes::TypeID                kTypeID = HashString64(#_type);                          \
+public:                                                                                                  \
+    [[nodiscard]] static constexpr nes::TypeID  GetStaticTypeID()               { return kTypeID; }      \
+    [[nodiscard]] nes::TypeID                   GetTypeID() const               { return kTypeID; }      \
+    [[nodiscard]] static const char*            GetStaticTypename()             { return #_type; }       \
+    [[nodiscard]] const char*                   GetTypename() const             { return #_type; }       \
+private:
+
 namespace nes
 {
     using TypeID = uint64;

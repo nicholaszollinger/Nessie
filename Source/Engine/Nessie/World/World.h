@@ -4,7 +4,7 @@
 #include "PhysicsLayers.h"
 #include "Components/MeshComponent.h"
 #include "Nessie/Core/Color.h"
-#include "Nessie/Core/Jobs/JobSystemThreadPool.h"
+#include "Nessie/Jobs/JobSystemThreadPool.h"
 #include "Nessie/Physics/PhysicsScene.h"
 #include "Nessie/Scene/EntityLayer.h"
 #include "Nessie/Scene/EntityPool.h"

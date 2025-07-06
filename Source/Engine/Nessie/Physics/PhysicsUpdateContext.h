@@ -3,7 +3,7 @@
 #include "Nessie/Core/Config.h"
 #include "Nessie/Physics/Collision/BroadPhase/BroadPhase.h"
 #include "Nessie/Core/StaticArray.h"
-#include "Nessie/Core/Jobs/JobSystem.h"
+#include "Nessie/Jobs/JobSystem.h"
 #include "Nessie/Core/Memory/STLStackAllocator.h"
 #include "Nessie/Physics/Collision/ContactListener.h"
 #include "Nessie/Physics/Body/BodyPair.h"

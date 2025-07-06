@@ -32,8 +32,8 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 		, "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\""
     }
 
-    -- Set the Render API based on the Project Settings:
-    p.SetRenderAPI(projectDir, dependencyInjector);
+    -- Platform specific project set up.
+    p.InitializePlatform(projectDir, dependencyInjector);
 
     disablewarnings
     {
@@ -64,99 +64,42 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 end
 
 -----------------------------------------------------------------------------------------
--- Load the RenderAPI based on the Project.json settings file.
----@param projectDir string Path to the project's Directory.
+-- Platform specific project set up.
+---@param projectDir string Path to the project's build 8rector.
 ---@param dependencyInjector table Dependency Injector module.
 ---@return boolean Success If false, then we have no valid Render API set.
 -----------------------------------------------------------------------------------------
-function p.SetRenderAPI(projectDir, dependencyInjector)
-    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
-    
-    if (renderAPI == nil) then
-        projectCore.PrintError("Failed to load RenderAPI! No RenderAPI value set in the Project File!");
-        return false;
+function p.InitializePlatform(projectDir, dependencyInjector)
+    if (_TARGET_OS == "windows") then
+        defines
+        {
+            "_RENDER_API_VULKAN"
+        }
+
+        dependencyInjector.Link("glfw");
+        dependencyInjector.Include("Vulkan");
+        return true;
     end
 
-    -- Ensure that the RenderAPI is valid on the Platform.
-    if (renderAPI == "SDL") then
-        -- Only available on Windows for now.
-        if (_TARGET_OS == "windows") then
-            defines
-            {
-                "_RENDER_API_SDL"
-            }
-            dependencyInjector.Link("SDL");
-            return true;
-        end
-    elseif (renderAPI == "Vulkan") then
-        -- Only available on Windows for now.
-        if (_TARGET_OS == "windows") then
-            defines
-            {
-                "_RENDER_API_VULKAN"
-            }
-
-            dependencyInjector.Link("glfw");
-            dependencyInjector.Include("Vulkan");
-            return true;
-        end
-    end
-
-    projectCore.PrintError("Failed to set RenderAPI! Se1ected RenderAPI, " .. renderAPI .. ", is not valid for this platform!");
+    projectCore.PrintError("Unsupported Platform!");
     return false;
 end
 
 function p.Link(projectDir)
     links { "Nessie" }
     libdirs { libFolder }
-
-    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
-    if (renderAPI == "Vulkan") then
-        defines { "_RENDER_API_VULKAN" }
-    elseif (renderAPI == "SDL") then
-        defines { "_RENDER_API_SDL" }
-    end
 end
 
 function p.SetIncludeThirdPartyDirs()
     -- Include directories for third party files.
-
     dependencyInjector.Include("imgui");
     dependencyInjector.Include("yaml_cpp");
     defines { "YAML_CPP_STATIC_DEFINE" }
-    
+
     dependencyInjector.Include("fmt");
 
-    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
-    if (renderAPI == nil) then
-        projectCore.PrintError("Failed to load RenderAPI! No RenderAPI value set in the Project File!");
-        return false;
-    end
-
-    -- Ensure that the RenderAPI is valid on the Platform.
-    if (renderAPI == "SDL") then
-        -- Only available on Windows for now.
-        if (_TARGET_OS == "windows") then
-            defines
-            {
-                "_RENDER_API_SDL"
-            }
-            dependencyInjector.Link("SDL");
-            return true;
-        end
-    elseif (renderAPI == "Vulkan") then
-        -- Only available on Windows for now.
-        if (_TARGET_OS == "windows") then
-            defines
-            {
-                "_RENDER_API_VULKAN"
-            }
-
-            dependencyInjector.Link("glfw");
-            dependencyInjector.Include("Vulkan");
-            return true;
-        end
-    end
+    -- Platform specific options.
+    p.InitializePlatform(p.BuildDirectory, dependencyInjector);
 end
 
 function p.Include(projectDir)

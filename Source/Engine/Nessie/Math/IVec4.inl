@@ -1,7 +1,7 @@
 ﻿// IVec4.inl
 #pragma once
 #include "Generic.h"
-#include "IVec4.h"
+#include "IVec3.h"
 
 namespace nes
 {
