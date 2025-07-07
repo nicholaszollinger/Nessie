@@ -1,5 +1,5 @@
 // JobSystemSingleThreaded.cpp
-#include "Nessie/Core/Jobs/JobSystemSingleThreaded.h"
+#include "Nessie/Jobs/JobSystemSingleThreaded.h"
 
 namespace nes
 {

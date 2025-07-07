@@ -1,6 +1,6 @@
 // JobSystemWorkerThread.h
 #pragma once
-#include "Nessie/Core/Jobs/JobSystemWithBarrier.h"
+#include "Nessie/Jobs/JobSystemWithBarrier.h"
 #include "Nessie/Core/Memory/FixedSizedFreeList.h"
 #include "Nessie/Core/Thread/WorkerThread.h"
 #include "Nessie/Core/Thread/Containers/ThreadSafeQueue.h"

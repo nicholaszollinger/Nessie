@@ -1,6 +1,6 @@
 // JobSystemSingleThreaded.h
 #pragma once
-#include "Nessie/Core/Jobs/JobSystem.h"
+#include "Nessie/Jobs/JobSystem.h"
 #include "Nessie/Core/Memory/FixedSizedFreeList.h"
 
 namespace nes

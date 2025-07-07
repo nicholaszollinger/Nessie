@@ -15,20 +15,20 @@ namespace nes
     {
         Buffer buffer;
         buffer.Allocate(size);
-        memcpy(buffer.m_pData, pData + srcOffset, size);
+        memcpy(buffer.m_pData, static_cast<const uint8*>(pData) + srcOffset, size);
         return buffer;
     }
     
     inline uint8& Buffer::operator[](const uint64 index)
     {
         NES_ASSERT(index < m_size);
-        return m_data[index];
+        return m_pData[index];
     }
 
     inline uint8 Buffer::operator[](const uint64 index) const
     {
         NES_ASSERT(index < m_size);
-        return m_data[index];
+        return m_pData[index];
     }
 
     inline void Buffer::Allocate(const uint64 size)
@@ -51,21 +51,21 @@ namespace nes
     template <typename Type>
     Type& Buffer::Read(const uint64 offset)
     {
-        NES_ASSERT(offset * sizeof(Type) < size);
+        NES_ASSERT(offset * sizeof(Type) < m_size);
         return *reinterpret_cast<Type*>(m_pData + offset);
     }
 
     template <typename Type>
     const Type& Buffer::Read(const uint64 offset) const
     {
-        NES_ASSERT(offset * sizeof(Type) < size);
+        NES_ASSERT(offset * sizeof(Type) < m_size);
         return *reinterpret_cast<Type*>(m_pData + offset);
     }
 
     inline void Buffer::Write(const void* pInData, const uint64 size, const uint64 srcOffset, const uint64 dstOffset)
     {
         NES_ASSERT(dstOffset + size <= m_size, "Buffer overflow!");
-        memcpy(m_pData + dstOffset, pInData + srcOffset, size);
+        memcpy(m_pData + dstOffset, static_cast<const uint8*>(pInData) + srcOffset, size);
     }
 
     inline uint8* Buffer::ReadBytes(const uint64 size, const uint64 offset) const
@@ -78,20 +78,15 @@ namespace nes
 
     inline void Buffer::ReadBytesIntoBuffer(const uint64 size, const uint64 offset, uint8* pOutBuffer) const
     {
-        NES_ASSERT(m_pBuffer != nullptr);
+        NES_ASSERT(m_pData != nullptr);
         NES_ASSERT(pOutBuffer != nullptr);
         NES_ASSERT(offset + size <= m_size, "Buffer overflow!");
         memcpy(pOutBuffer, m_pData + offset, size);
     }
 
-    inline void Buffer::Write(const void* pData, const uint64 size, uint64 offset)
-    {
-        NES_ASSERT(offset + size <= m_size, "Buffer overflow!");
-        memcpy(m_pData + offset, pData, size);
-    }
-
     inline void Buffer::ZeroInitialize()
     {
-        
+        if (m_pData != nullptr)
+            memset(m_pData, 0, m_size);
     }
 }

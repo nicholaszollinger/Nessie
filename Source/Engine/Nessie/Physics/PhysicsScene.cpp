@@ -18,7 +18,7 @@
 #include "Nessie/Physics/Constraints/ConstraintPart/AxisConstraintPart.h"
 #include "Nessie/Geometry/RayAABox.h"
 #include "Nessie/Geometry/ClosestPoint.h"
-#include "Nessie/Core/Jobs/JobSystem.h"
+#include "Nessie/Jobs/JobSystem.h"
 #include "Nessie/Core/Memory/StackAllocator.h"
 #include "Nessie/Core/QuickSort.h"
 #include "Nessie/Core/ScopeExit.h"
