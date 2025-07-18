@@ -1,9 +1,10 @@
 // Application.h
 #pragma once
-#include "Layers.h"
-#include "Nessie/Core/Jobs/JobSystem.h"
-#include "Nessie/Core/Memory/StackAllocator.h"
 #include "Nessie/Application/Application.h"
+
+#include "Layers.h"
+#include "Nessie/Jobs/JobSystemThreadPool.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
 #include "Tests/Test.h"
 #include "Utils/ContactListenerImpl.h"
 
@@ -13,7 +14,7 @@
 class TestApplication final : public nes::Application
 {
 public:
-    TestApplication(nes::ApplicationProperties&& appProps, nes::WindowProperties&& windowProps) : nes::Application(std::move(appProps), std::move(windowProps)) {}
+    TestApplication(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
 
 protected:
     //----------------------------------------------------------------------------------------------------
@@ -48,9 +49,9 @@ protected:
     
 private:
     /// Application overrides.
-    virtual bool            Internal_Init() override;
-    virtual void            RunFrame(const double deltaTime) override;
-    virtual void            OnAppShutdown() override;
+    virtual bool            Internal_AppInit() override;
+    virtual void            Internal_AppRunFrame(const float deltaTime) override;
+    virtual void            Internal_AppShutdown() override;
     virtual void            PushEvent(nes::Event& e) override;
 
     //----------------------------------------------------------------------------------------------------
@@ -116,5 +117,3 @@ private:
     bool                    m_singleStep = false;
     
 };
-
-nes::Application* CreateApplication(const nes::CommandLineArgs& args);

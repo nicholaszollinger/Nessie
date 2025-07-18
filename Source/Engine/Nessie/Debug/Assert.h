@@ -1,5 +1,5 @@
-#pragma once
 // Assert.h
+#pragma once
 #include "ErrorHandling.h"
 
 #ifdef NES_ASSERTS_ENABLED
@@ -15,7 +15,7 @@ do                                                                              
     if (!(expression))                                                                                                                  \
     {                                                                                                                                   \
         auto message = nes::internal::AssertFailedHelper(nes::internal::LogSource(__FILE__, __LINE__, __FUNCTION__), #expression, ##__VA_ARGS__); \
-        nes::Platform::HandleFatalError("Assertion Failed!", message);                                       \
+        nes::internal::HandleFatalError("Assertion Failed!", message);                                       \
         NES_BREAKPOINT;                                                                                                               \
     }                                                                                                                                   \
 } while (false)
@@ -31,6 +31,6 @@ do                                                                              
 do                                                                                                                              \
 {                                                                                                                               \
     auto message = nes::internal::FatalErrorHelper(nes::internal::LogSource(__FILE__, __LINE__, __FUNCTION__), __VA_ARGS__);    \
-    nes::Platform::HandleFatalError("Fatal Error!", message);                                                                   \
+    nes::internal::HandleFatalError("Fatal Error!", message);                                                                   \
     NES_BREAKPOINT;                                                                                                             \
 } while (false)

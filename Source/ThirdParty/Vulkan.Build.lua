@@ -129,13 +129,6 @@ function d.Link(projectDir)
             -- vkBootstrap Release folder
             projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Release\\"
         }
-
-    filter "configurations:Test"
-        libdirs 
-        {
-            -- vkBootstrap Release folder
-            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Release\\"
-        }
 end
 
 -- If we are going to build Project, validate that Vulkan is installed, and with a valid version.

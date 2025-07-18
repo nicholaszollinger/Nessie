@@ -4,20 +4,16 @@
 local projectCore = require ("ProjectCore");
 local dependencyInjector = require ("DependencyInjector");
 
-local libFolder = projectCore.ProjectIntermediateLibsLocation .. "Nessie\\";
-
 local p = {};
 p.Name = "Nessie";
 
 function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
-
-    targetdir(libFolder)
+	
+	targetdir(projectCore.DefaultLibOutDir);
     kind "StaticLib"
     language "C++"
     cppdialect "C++20"
-
-    filter {}
     
     includedirs
     {
@@ -58,9 +54,15 @@ function p.ConfigureProject(projectDir, dependencyInjector)
     dependencyInjector.AddFilesToProject("fmt");
     dependencyInjector.Link("yaml_cpp");
     dependencyInjector.Include("Assimp");
-
+    
     prebuildcommands { "{MKDIR} %[" .. projectCore.DefaultOutDir .. "]"}
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}
+    
+    filter {"configurations:Debug"}
+        -- Copy YAML PDB
+        postbuildcommands { "{COPYFILE} \"" .. projectCore.ThirdPartyDir .. "yaml_cpp\\lib\\Debug\\yaml-cppd.pdb\" \"" .. projectCore.DefaultLibOutDirPath .. "Nessie\\\""};
+    
+    filter{}
 end
 
 -----------------------------------------------------------------------------------------
@@ -87,7 +89,7 @@ end
 
 function p.Link(projectDir)
     links { "Nessie" }
-    libdirs { libFolder }
+    libdirs { projectCore.DefaultLibOutDirPath .. "Nessie/" }
 end
 
 function p.SetIncludeThirdPartyDirs()

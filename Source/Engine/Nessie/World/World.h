@@ -1,5 +1,13 @@
 ﻿// World.h
 #pragma once
+
+//-------------------------------------------------------------------------------------------------
+// Under development. The World object was previously "hacked in" for assignments last semester.
+// I am currently trying to abstract the Vulkan API, as well as ImGui. Once that is back up and
+// running, I am going to return to fix up this file.
+//-------------------------------------------------------------------------------------------------
+    
+
 #include "Entity3D.h"
 #include "PhysicsLayers.h"
 #include "Components/MeshComponent.h"
@@ -13,10 +21,11 @@
 
 // [TEMP]: 
 #include "Nessie/Physics/Body/BodyActivationListener.h"
+#include <imgui.h>
 
 namespace nes
 {
-    struct Material;
+    class Material;
 
     NES_DEFINE_LOG_TAG(kWorldLogTag, "World", Info);
 
@@ -93,7 +102,7 @@ namespace nes
 
         void                RegisterEventHandler(const EventHandler& handler);
         void                RegisterMesh(MeshComponent* pMesh);
-        GraphicsPipelinePtr GetDefaultMeshRenderPipeline() const;
+        //GraphicsPipelinePtr GetDefaultMeshRenderPipeline() const;
         
     private:
         virtual bool        InitializeLayer() override;
@@ -147,24 +156,24 @@ namespace nes
         // [TEMP]: 
         BodyID                                  m_testID;
 
-        // Render Resources:
-        std::vector<MeshComponent*>             m_transparentMeshes;
-        std::vector<MeshComponent*>             m_opaqueMeshes;
-        std::vector<GraphicsPipelinePtr>        m_defaultMeshPipelines{};
-        GraphicsPipelinePtr                     m_gridPipeline = nullptr;
-        GraphicsPipelinePtr                     m_skyboxPipeline = nullptr;
-        std::vector<std::shared_ptr<Mesh>>      m_meshAssets;
-        std::vector<std::shared_ptr<Material>>  m_materialAssets;
-        
-        RendererContext::ShaderUniform          m_cameraUniforms;
-        vk::Buffer                              m_cameraUniformBuffer;
-        
-        RendererContext::ShaderUniform          m_skyboxUniforms;
-        vk::Image                               m_skyboxCubeImage;
-        vk::ImageView                           m_skyboxCubeImageView;
-        vk::Sampler                             m_skyboxCubeSampler;
-        
-        EWorldRenderMode                        m_currentRenderMode = EWorldRenderMode::Fill;
+        // // Render Resources:
+        // std::vector<MeshComponent*>             m_transparentMeshes;
+        // std::vector<MeshComponent*>             m_opaqueMeshes;
+        // //std::vector<GraphicsPipelinePtr>        m_defaultMeshPipelines{};
+        // //GraphicsPipelinePtr                     m_gridPipeline = nullptr;
+        // //GraphicsPipelinePtr                     m_skyboxPipeline = nullptr;
+        // std::vector<std::shared_ptr<Mesh>>      m_meshAssets;
+        // std::vector<std::shared_ptr<Material>>  m_materialAssets;
+        //
+        // //RendererContext::ShaderUniform          m_cameraUniforms;
+        // vk::Buffer                              m_cameraUniformBuffer;
+        //
+        // //RendererContext::ShaderUniform          m_skyboxUniforms;
+        // vk::Image                               m_skyboxCubeImage;
+        // vk::ImageView                           m_skyboxCubeImageView;
+        // vk::Sampler                             m_skyboxCubeSampler;
+        //
+        // EWorldRenderMode                        m_currentRenderMode = EWorldRenderMode::Fill;
 
         // TEMP Editor Data:
         Entity3D*                               m_pSelectedEntity = nullptr;

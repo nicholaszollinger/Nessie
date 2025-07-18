@@ -13,8 +13,9 @@ namespace nes
             return false;
         }
 
-        const auto windowExtent = Application::Get().GetWindow().GetExtent();
-        m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
+        // [TODO]: 
+        //const auto windowExtent = Application::Get().GetWindow().GetResolution();
+        //m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
         
         // [TODO]: Subscribe to WindowResize events...
         return true;

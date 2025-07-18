@@ -272,10 +272,10 @@ namespace nes::memory::internal
 
     void DumpAndDestroyLeakDetector() {}
 
-#if NES_LOGGING_ENABLED
+    #if NES_LOGGING_ENABLED
     static void AddRecord(void*, const char*, int, uint64_t = 0) {}
     static void RemoveRecord(void*) {}
-#endif
+    #endif
 
 }
 
@@ -290,10 +290,10 @@ namespace nes::memory::internal
         return malloc(size);
     }
 
-    void* Reallocate(void* pBlock, [[maybe_unused]] const size_t oldSize, const size_t newSize)
+    void* Reallocate(void* pMemory, [[maybe_unused]] const size_t oldSize, const size_t newSize)
     {
         NES_ASSERT(newSize > 0);
-        return realloc(pBlock, newSize);
+        return realloc(pMemory, newSize);
     }
 
     void Free(void* pMemory)
@@ -305,13 +305,22 @@ namespace nes::memory::internal
     {
         NES_ASSERT(size > 0 && alignment > 0);
 
-#if defined(NES_PLATFORM_WINDOWS)
+    #if defined(NES_PLATFORM_WINDOWS)
         return _aligned_malloc(size, alignment);
-#else
-#error "AlignedAllocate() not implemented for platform".
-#endif
+    #else
+    #error "AlignedAllocate() not implemented for platform".
+    #endif
     }
 
+    void* AlignedReallocate(void* pMemory, const size_t size, const size_t alignment)
+    {
+    #if defined(NES_PLATFORM_WINDOWS)
+        return _aligned_realloc(pMemory, size, alignment);
+    #else
+    #error "AlignedReallocate() not implemented for platform".
+    #endif      
+    }
+        
     void AlignedFree(void* pMemory)
     {
 #if defined(NES_PLATFORM_WINDOWS)
@@ -336,37 +345,57 @@ namespace nes::memory::internal
 #endif
     }
 
+    void* DebugReallocate(void* pMemory, size_t newSize, const char* filename, int lineNum)
+    {
+    #if defined(NES_PLATFORM_WINDOWS)
+        void* pMem = _realloc_dbg(pMemory, newSize, 1, filename, lineNum);
+        return pMem;
+    #else
+    #error "DebugReallocate() not implemented for platform".
+    #endif
+    }
+
     void DebugFree(void* pMemory)
     {
         RemoveRecord(pMemory);
         
-#if defined(NES_PLATFORM_WINDOWS)
+    #if defined(NES_PLATFORM_WINDOWS)
         return _free_dbg(pMemory, 1);
-#else
-#error "DebugFree() not implemented for platform".
-#endif
+    #else
+    #error "DebugFree() not implemented for platform".
+    #endif
     }
 
     void* DebugAlignedAllocate(size_t size, size_t alignment, const char* filename, int lineNum)
     {
-#if defined(NES_PLATFORM_WINDOWS)
+    #if defined(NES_PLATFORM_WINDOWS)
         void* pMem =  _aligned_malloc_dbg(size, alignment, filename, lineNum);
         AddRecord(pMem, filename, lineNum);
         return pMem;
-#else
-#error "DebugAlignedAllocate() not implemented for platform".
-#endif
+    #else
+    #error "DebugAlignedAllocate() not implemented for platform".
+    #endif
+    }
+
+    void* DebugAlignedReallocate(void* pMemory, const size_t size, const size_t alignment, const char* filename, int lineNum)
+    {
+    #if defined(NES_PLATFORM_WINDOWS)
+        void* pMem =  _aligned_realloc_dbg(pMemory, size, alignment, filename, lineNum);
+        return pMem;
+    #else
+    #error "DebugAlignedReallocate() not implemented for platform".
+    #endif
     }
 
     void DebugAlignedFree(void* pMemory)
     {
         RemoveRecord(pMemory);
         
-#if defined(NES_PLATFORM_WINDOWS)
+    #if defined(NES_PLATFORM_WINDOWS)
         return _aligned_free_dbg(pMemory);
-#else
-#error "DebugAlignedFree() not implemented for platform".
-#endif
+    #else
+    #error "DebugAlignedFree() not implemented for platform".
+    #endif
     }
 }
 

@@ -3,10 +3,10 @@
 #include "Nessie/Core/Config.h"
 
 #ifdef NES_PLATFORM_WINDOWS
-#include "Nessie/Platform/Windows/WindowsInclude.h"
+#include "Nessie/Application/Windows/WindowsInclude.h"
 #endif
 
-namespace nes
+namespace nes::thread
 {
 #ifdef NES_PLATFORM_WINDOWS
     //----------------------------------------------------------------------------------------------------
@@ -38,7 +38,6 @@ namespace nes
         {
         }
     }
-
     
     void SetThreadName(const char* threadName)
     {

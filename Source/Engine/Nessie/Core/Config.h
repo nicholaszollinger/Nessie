@@ -76,25 +76,32 @@
     #define NES_IF_NOT_DEBUG(...) __VA_ARGS__ 
 #endif
 
+// Shorthand for #ifdef NES_RELEASE ... #endif
+// Should use only for single line operations. 
+#ifdef NES_RELEASE
+    #define NES_IF_RELEASE(...) __VA_ARGS__
+    #define NES_IF_NOT_RELEASE(...)
+#else
+    #define NES_IF_RELEASE(...)
+    #define NES_IF_NOT_RELEASE(...) __VA_ARGS__
+#endif
+
+
 // Multithreading Configuration 
 // Define to force single-threaded applications.
 //#define NES_FORCE_SINGLE_THREADED
 
 #ifdef NES_FORCE_SINGLE_THREADED
+    #define NES_IS_MULTI_THREADED 0
     #define NES_IF_SINGLE_THREADED(...) __VA_ARGS__
     #define NES_IF_MULTITHREADED(...)
 #else
+    #define NES_IS_MULTI_THREADED 1
     #define NES_IF_SINGLE_THREADED(...)
     #define NES_IF_MULTITHREADED(...) __VA_ARGS__
 #endif
 
-/// SDL
-#if defined(_RENDER_API_SDL)
-#define NES_RENDER_API_SDL
-#define NES_WINDOW_API_SDL
-
-/// Vulkan
-#elif defined(_RENDER_API_VULKAN)
+#if defined(_RENDER_API_VULKAN)
 #define NES_RENDER_API_VULKAN
 #define NES_WINDOW_API_GLFW
 
@@ -139,9 +146,14 @@
 // Standard Types
 #include <cstdint>
 using uint = unsigned int;
+using int8 = std::int8_t;
+using int16 = std::int16_t;
+using int32 = std::int32_t;
+using int64 = std::int64_t;
 using uint8 = std::uint8_t;
 using uint16 = std::uint16_t;
 using uint32 = std::uint32_t;
 using uint64 = std::uint64_t;
 
 #include "WarningSuppression.h"
+#include "Macro.h"

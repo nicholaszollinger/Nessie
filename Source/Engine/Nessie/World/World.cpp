@@ -9,6 +9,12 @@
 #include "Nessie/Physics/Collision/Shapes/EmptyShape.h"
 #include "Nessie/Scene/TickManager.h"
 
+//-------------------------------------------------------------------------------------------------
+// Under development. The World object was previously "hacked in" for assignments last semester.
+// I am currently trying to abstract the Vulkan API, as well as ImGui. Once that is back up and
+// running, I am going to return to fix up this file.
+//-------------------------------------------------------------------------------------------------
+
 // Hack to test stb_image
 #include "stb_image.h"
 #include "Nessie/Physics/Collision/CollisionSolver.h"
@@ -129,23 +135,25 @@ namespace nes
             return;
         }
 
-        // Register the Mesh to the appropriate array.
-        if (pMaterial->IsTransparent())
-            m_transparentMeshes.push_back(pMesh);
-        else
-            m_opaqueMeshes.push_back(pMesh);
+        // // Register the Mesh to the appropriate array.
+        // if (pMaterial->IsTransparent())
+        //     m_transparentMeshes.push_back(pMesh);
+        // else
+        //     m_opaqueMeshes.push_back(pMesh);
     }
 
-    //----------------------------------------------------------------------------------------------------
-    ///		@brief : Get the current Default Geometry Pipeline.  
-    //----------------------------------------------------------------------------------------------------
-    std::shared_ptr<nes::RendererContext::GraphicsPipeline> World::GetDefaultMeshRenderPipeline() const
-    {
-        const size_t pipelineIndex = static_cast<size_t>(m_currentRenderMode);
-        NES_ASSERT(pipelineIndex < m_defaultMeshPipelines.size());
-        auto& pCurrentPipeline = m_defaultMeshPipelines[pipelineIndex];
-        return pCurrentPipeline;
-    }
+    // //----------------------------------------------------------------------------------------------------
+    // ///		@brief : Get the current Default Geometry Pipeline.  
+    // //----------------------------------------------------------------------------------------------------
+    // std::shared_ptr<nes::RendererContext::GraphicsPipeline> World::GetDefaultMeshRenderPipeline() const
+    // {
+    //     //const size_t pipelineIndex = static_cast<size_t>(m_currentRenderMode);
+    //     //NES_ASSERT(pipelineIndex < m_defaultMeshPipelines.size());
+    //     //auto& pCurrentPipeline = m_defaultMeshPipelines[pipelineIndex];
+    //     //return pCurrentPipeline;
+    //     NES_ASSERT(false);
+    //     return nullptr;
+    // }
 
     bool World::InitializeLayer()
     {
@@ -246,70 +254,71 @@ namespace nes
         NES_DELETE(m_pPhysicsAllocator);
     }
 
-    void World::PreRender(const Camera& sceneCamera)
+    void World::PreRender(const Camera&)
     {
+        NES_ASSERT(false);
         // Update Camera Uniforms:
-        SceneCameraUniforms cameraUniforms;
-        cameraUniforms.m_projectionMatrix = sceneCamera.GetProjectionMatrix();
-        cameraUniforms.m_viewMatrix = sceneCamera.GetViewMatrix();
-        Renderer::UpdateBuffer(m_cameraUniformBuffer, 0, sizeof(SceneCameraUniforms), &cameraUniforms);
+        //SceneCameraUniforms cameraUniforms;
+        //cameraUniforms.m_projectionMatrix = sceneCamera.GetProjectionMatrix();
+        //cameraUniforms.m_viewMatrix = sceneCamera.GetViewMatrix();
+        //Renderer::UpdateBuffer(m_cameraUniformBuffer, 0, sizeof(SceneCameraUniforms), &cameraUniforms);
 
-        const Vec3 cameraWorldLocation = sceneCamera.CameraViewLocation();
+        //const Vec3 cameraWorldLocation = sceneCamera.CameraViewLocation();
         
-        // Sort Meshes based on Camera position:
-        // Sort Opaque Meshes so that the closest meshes are drawn first.
-        std::ranges::sort(m_opaqueMeshes, [&cameraWorldLocation](const MeshComponent* pMeshA, const MeshComponent* pMeshB)
-        {
-            return Vec3::DistanceSqr(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) < Vec3::DistanceSqr(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
-        });
-
-        // Sort Transparent Meshes so that furthest meshes are drawn first.
-        std::ranges::sort(m_transparentMeshes, [&cameraWorldLocation](const MeshComponent* pMeshA, const MeshComponent* pMeshB)
-        {
-            return Vec3::DistanceSqr(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) > Vec3::DistanceSqr(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
-        });
+        // // Sort Meshes based on Camera position:
+        // // Sort Opaque Meshes so that the closest meshes are drawn first.
+        // std::ranges::sort(m_opaqueMeshes, [&cameraWorldLocation](const MeshComponent* pMeshA, const MeshComponent* pMeshB)
+        // {
+        //     return Vec3::DistanceSqr(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) < Vec3::DistanceSqr(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
+        // });
+        //
+        // // Sort Transparent Meshes so that furthest meshes are drawn first.
+        // std::ranges::sort(m_transparentMeshes, [&cameraWorldLocation](const MeshComponent* pMeshA, const MeshComponent* pMeshB)
+        // {
+        //     return Vec3::DistanceSqr(cameraWorldLocation, pMeshA->GetOwner()->GetLocation()) > Vec3::DistanceSqr(cameraWorldLocation, pMeshB->GetOwner()->GetLocation());
+        // });
     }
     
     void World::Render([[maybe_unused]] const Camera& worldCamera)
     {
-        // TODO: This should be part of a RenderPass object.
-        static constexpr vk::ClearValue kClearValues[] =
+        // // TODO: This should be part of a RenderPass object.
+        // static constexpr vk::ClearValue kClearValues[] =
+        // {
+        //     vk::ClearColorValue({ 0.02f, 0.02f, 0.02f, 1.0f }),
+        //     vk::ClearDepthStencilValue(1.0f, 0),
+        // };
+        //
+        // // Full screen:
+        // const auto windowExtent = Application::Get().GetWindow().GetResolution();
+        // const vk::Rect2D renderArea = {{0, 0}, {windowExtent.m_width, windowExtent.m_height}};
+
+        //Renderer::BeginRenderPass(renderArea, kClearValues, _countof(kClearValues));
         {
-            vk::ClearColorValue({ 0.02f, 0.02f, 0.02f, 1.0f }),
-            vk::ClearDepthStencilValue(1.0f, 0),
-        };
-
-        // Full screen:
-        const auto windowExtent = Application::Get().GetWindow().GetExtent();
-        const vk::Rect2D renderArea = {{0, 0}, {windowExtent.m_width, windowExtent.m_height}};
-
-        Renderer::BeginRenderPass(renderArea, kClearValues, _countof(kClearValues));
-        {
-            RenderSkybox();
-            
-            // Render all registered Renderables:
-            auto pPipeline = GetDefaultMeshRenderPipeline();
-
-            // Render Opaque Meshes:
-            for (size_t i = 0; i < m_opaqueMeshes.size(); i++)
-            {
-                Renderer::BindDescriptorSets(pPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms });
-                m_opaqueMeshes[i]->Render();
-            }
-
-            // Render Transparent Meshes:
-            for (size_t i = 0; i < m_transparentMeshes.size(); i++)
-            {
-                Renderer::BindDescriptorSets(pPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms });
-                m_transparentMeshes[i]->Render();
-            }
-
-            RenderGrid();
-            // [TODO]: I am manually rendering the Editor stuff here. It will be moved once I have time to implement
-            // a RenderPass object. Right now, there is some issues with how they are setup in the RendererContext.
-            EditorRenderEntityHierarchy();
+            // RenderSkybox();
+            //
+            // // Render all registered Renderables:
+            // auto pPipeline = GetDefaultMeshRenderPipeline();
+            //
+            // // Render Opaque Meshes:
+            // for (size_t i = 0; i < m_opaqueMeshes.size(); i++)
+            // {
+            //     //Renderer::BindDescriptorSets(pPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms });
+            //     m_opaqueMeshes[i]->Render();
+            // }
+            //
+            // // Render Transparent Meshes:
+            // for (size_t i = 0; i < m_transparentMeshes.size(); i++)
+            // {
+            //     //Renderer::BindDescriptorSets(pPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms });
+            //     m_transparentMeshes[i]->Render();
+            // }
+            //
+            // RenderGrid();
+            // // [TODO]: I am manually rendering the Editor stuff here. It will be moved once I have time to implement
+            // // a RenderPass object. Right now, there is some issues with how they are setup in the RendererContext.
+            // EditorRenderEntityHierarchy();
         }
-        Renderer::EndRenderPass();
+        //Renderer::EndRenderPass();
     }
 
     void World::OnEvent(Event& event)
@@ -491,13 +500,13 @@ namespace nes
                     StrongPtr<MeshComponent> pMeshComponent = pEntity->AddComponent<MeshComponent>(name);
 
                     // [Hack] Setting the default pipeline for now.
-                    pMeshComponent->SetPipeline(GetDefaultMeshRenderPipeline());
+                    //pMeshComponent->SetPipeline(GetDefaultMeshRenderPipeline());
 
-                    // [TODO]: Set the mesh from an index/id.
-                    pMeshComponent->SetMesh(m_meshAssets[0]);
-                    
-                    // [TODO]: Set the material from an index/id.
-                    pMeshComponent->SetMaterial(m_materialAssets[0]);
+                    // // [TODO]: Set the mesh from an index/id.
+                    // pMeshComponent->SetMesh(m_meshAssets[0]);
+                    //
+                    // // [TODO]: Set the material from an index/id.
+                    // pMeshComponent->SetMaterial(m_materialAssets[0]);
                 }
             }
         }
@@ -526,9 +535,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void World::EditorRenderEntityHierarchy()
     {
+        NES_ASSERT(false);
         // This is thrown in so that I can debug some issues. This function should not
         // handle Renderer::BeginImGui and Renderer::EndImGui. That should be in the Scene.
-        Renderer::BeginImGui();
+        //Renderer::BeginImGui();
         if (ImGui::Begin("World"))
         {
             ImGui::SeparatorText("Hierarchy");
@@ -555,7 +565,7 @@ namespace nes
 
             ImGui::End();
         }
-        Renderer::EndImGui();
+        //Renderer::EndImGui();
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -753,8 +763,8 @@ namespace nes
                     // Update camera if necessary:
                     if (cameraNeedsUpdate)
                     {
-                        const auto extent = Application::Get().GetWindow().GetExtent();
-                        camera.UpdateViewport(extent.m_width, extent.m_height);
+                        //const auto extent = Application::Get().GetWindow().GetResolution();
+                        //camera.UpdateViewport(extent.m_width, extent.m_height);
                     }
                     
                     break;
@@ -782,12 +792,12 @@ namespace nes
                     auto pMeshComp = Cast<MeshComponent>(pComponent);
                     auto pMaterial = pMeshComp->GetMaterial();
 
-                    // Just Base Color for now.
-                    LinearColor baseColor = pMaterial->m_baseColor;
-                    if (EditorDrawPropertyLinearColor("Base Color", baseColor))
-                        pMaterial->m_baseColor = baseColor;
-
-                    break;
+                    // // Just Base Color for now.
+                    // LinearColor baseColor = pMaterial->m_baseColor;
+                    // if (EditorDrawPropertyLinearColor("Base Color", baseColor))
+                    //     pMaterial->m_baseColor = baseColor;
+                    //
+                    // break;
                 }
             
                 default:
@@ -918,292 +928,295 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void World::CreateRenderResources()
     {
-        // Camera Uniforms:
-        m_cameraUniformBuffer = Renderer::CreateUniformBuffer(sizeof(SceneCameraUniforms));
-        m_cameraUniforms = Renderer::CreateUniformForBuffer(SceneCameraUniforms::kBinding, m_cameraUniformBuffer, sizeof(SceneCameraUniforms));
-        
-         // Create Geometry3D pipelines:
-        nes::GraphicsPipelineConfig pipelineConfig =
-        {
-            .m_vertexBindings =
-            {
-                vk::VertexInputBindingDescription()
-                    .setBinding(0)
-                    .setInputRate(vk::VertexInputRate::eVertex)
-                    .setStride(sizeof(nes::Vec3)),
-            },
-
-            .m_vertexAttributes =
-            {
-                vk::VertexInputAttributeDescription()
-                    .setLocation(0)
-                    .setBinding(0)
-                    .setFormat(vk::Format::eR32G32B32Sfloat)
-                    .setOffset(0),
-            },
-
-            .m_shaderPushConstants =
-            {
-                vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(GeometryPushConstants)),
-            },
-
-            .m_shaderUniforms =
-            {
-                    m_cameraUniforms,
-            },
-            
-            .m_shaderStages =
-            {
-                vk::PipelineShaderStageCreateInfo()
-                    .setStage(vk::ShaderStageFlagBits::eVertex)
-                    .setPName("main")
-                    .setModule(Renderer::GetShader("Geometry3D.vert")),
-                vk::PipelineShaderStageCreateInfo()
-                    .setStage(vk::ShaderStageFlagBits::eFragment)
-                    .setPName("main")
-                    .setModule(Renderer::GetShader("Geometry3D.frag")),
-            },
-
-            .m_colorBlendStates =
-            {
-                vk::PipelineColorBlendAttachmentState()
-                    .setBlendEnable(true)
-                    .setColorBlendOp(vk::BlendOp::eAdd)
-                    .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-                    .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-                    .setAlphaBlendOp(vk::BlendOp::eAdd)
-                    .setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
-                    .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-                    .setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
-            },
-        };
-
-        // Fill
-        pipelineConfig.m_polygonMode = vk::PolygonMode::eFill;
-        pipelineConfig.m_cullMode = vk::CullModeFlagBits::eBack;
-        pipelineConfig.m_frontFace = vk::FrontFace::eCounterClockwise;
-        pipelineConfig.m_depthTestEnable = true;
-        pipelineConfig.m_depthCompareOp = vk::CompareOp::eLess;
-        pipelineConfig.m_depthWriteEnable = true;
-        m_defaultMeshPipelines.emplace_back(Renderer::CreatePipeline(pipelineConfig));
-        
-        // Wireframe
-        pipelineConfig.m_polygonMode = vk::PolygonMode::eLine;
-        pipelineConfig.m_cullMode = vk::CullModeFlagBits::eNone;
-        pipelineConfig.m_frontFace = vk::FrontFace::eCounterClockwise;
-        pipelineConfig.m_depthTestEnable = false;
-        pipelineConfig.m_depthCompareOp = vk::CompareOp::eNever;
-        pipelineConfig.m_depthWriteEnable = false;
-        m_defaultMeshPipelines.emplace_back(Renderer::CreatePipeline(pipelineConfig));
-        
-        // Create the Grid Pipeline
-        nes::GraphicsPipelineConfig gridPipelineConfig =
-        {
-            .m_shaderUniforms =
-            {
-                m_cameraUniforms,
-            },
-            
-            .m_shaderStages =
-            {
-                    vk::PipelineShaderStageCreateInfo()
-                        .setStage(vk::ShaderStageFlagBits::eVertex)
-                        .setPName("main")
-                        .setModule(Renderer::GetShader("Grid.vert")),
-                    vk::PipelineShaderStageCreateInfo()
-                        .setStage(vk::ShaderStageFlagBits::eFragment)
-                        .setPName("main")
-                        .setModule(Renderer::GetShader("Grid.frag")),
-                },
-
-            .m_polygonMode = vk::PolygonMode::eFill,
-            .m_cullMode = vk::CullModeFlagBits::eNone,
-            .m_frontFace = vk::FrontFace::eCounterClockwise,
-            .m_depthTestEnable = true,
-            .m_depthCompareOp = vk::CompareOp::eLess,
-            .m_depthWriteEnable = false,
-            .m_colorBlendStates =
-                {
-                vk::PipelineColorBlendAttachmentState()
-                    .setBlendEnable(true)
-                    .setColorBlendOp(vk::BlendOp::eAdd)
-                    .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
-                    .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrc1Alpha)
-                    .setAlphaBlendOp(vk::BlendOp::eAdd)
-                    .setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
-                    .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
-                    .setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
-            },
-        };
-        m_gridPipeline = Renderer::CreatePipeline(gridPipelineConfig);
-
-        // Create the Skybox Assets
-        auto& context = Renderer::GetContext();
-        
-        m_skyboxCubeSampler = context.GetDevice().createSampler(
-            vk::SamplerCreateInfo()
-                .setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
-                .setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
-                .setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
-                .setMinFilter(vk::Filter::eLinear)
-                .setMagFilter(vk::Filter::eLinear));
-
-        
-        constexpr const char* kSkyboxPaths[] =
-        {
-            "miramar_ft.png", // Front
-            "miramar_bk.png", // Back
-            "miramar_up.png", // Up
-            "miramar_dn.png", // Down
-            "miramar_rt.png", // Right
-            "miramar_lf.png", // Left
-        };
-
-        std::vector<uint8_t> cubeMapBytes{};
-        int width = 1024;
-        int height = 1024;
-        std::array<void*, 6> imagePointers{};
-        int i = 0;
-        
-        for (const auto& path : kSkyboxPaths)
-        {
-            std::string fullPath = NES_CONTENT_DIR;
-            fullPath += path;
-            
-            int channels;
-            stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
-
-            imagePointers[i] = pBytes;
-            
-            const uint8_t* pStart = static_cast<const uint8_t*>(pBytes);
-            const uint8_t* pEnd = &pStart[static_cast<uint32_t>(width * height * STBI_rgb_alpha)];
-            cubeMapBytes.insert(cubeMapBytes.end(), pStart, pEnd);
-            ++i;
-        }
-
-        std::tie(m_skyboxCubeImage, m_skyboxCubeImageView) = context.CreateCubemapImageAndView(
-            {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}
-            , vk::Format::eR8G8B8A8Unorm // TODO: Check how Hazel handles this.
-            , cubeMapBytes.data(), cubeMapBytes.size());
-
-        m_skyboxUniforms = context.CreateUniformForImage(3, m_skyboxCubeImageView, m_skyboxCubeSampler);
-
-        // Free the image data.
-        for (auto* image : imagePointers)
-        {
-            stbi_image_free(image);
-        }
-        
-        // Skybox Pipeline
-        nes::GraphicsPipelineConfig skyboxPipelineConfig =
-        {
-            .m_vertexBindings =
-            {
-                vk::VertexInputBindingDescription()
-                    .setBinding(0)
-                    .setInputRate(vk::VertexInputRate::eVertex)
-                    .setStride(sizeof(nes::Vec3)),
-            },
-
-            .m_vertexAttributes =
-            {
-                vk::VertexInputAttributeDescription()
-                    .setLocation(0)
-                    .setBinding(0)
-                    .setFormat(vk::Format::eR32G32B32Sfloat)
-                    .setOffset(0),
-            },
-            
-            .m_shaderUniforms =
-            {
-                m_cameraUniforms,
-                m_skyboxUniforms,
-            },
-            
-            .m_shaderStages =
-            {
-                vk::PipelineShaderStageCreateInfo()
-                    .setStage(vk::ShaderStageFlagBits::eVertex)
-                    .setPName("main")
-                    .setModule(Renderer::GetShader("Skybox.vert")),
-                vk::PipelineShaderStageCreateInfo()
-                    .setStage(vk::ShaderStageFlagBits::eFragment)
-                    .setPName("main")
-                    .setModule(Renderer::GetShader("Skybox.frag")),
-            },
-
-        .m_polygonMode = vk::PolygonMode::eFill,
-        };
-        m_skyboxPipeline = Renderer::CreatePipeline(skyboxPipelineConfig);
-        
-
-        // Create a default Cube Mesh.
-        static Vec3 vertices[] =
-        {
-            Vec3(-0.5,  0.5, -0.5),
-            Vec3(0.5,  0.5, -0.5),
-            Vec3(0.5,  -0.5, -0.5),
-            Vec3(-0.5,  -0.5, -0.5),
-            Vec3(-0.5,  0.5, 0.5),
-            Vec3(0.5,  0.5, 0.5),
-            Vec3(0.5,  -0.5, 0.5),
-            Vec3(-0.5,  -0.5, 0.5),
-        };
-
-        static constexpr uint32_t indices[] =
-        {
-            0, 3, 2, 0, 2, 1, // Front
-            4, 5, 7, 5, 6, 7, // Rear
-            1, 2, 6, 5, 1, 6, // Right
-            0, 4, 7, 0, 7, 3, // Left
-            5, 4, 0, 5, 0, 1, // Top
-            7, 6, 2, 7, 2, 3, // Bottom
-        };
-        
-        m_meshAssets.emplace_back(Mesh::Create(
-            vertices
-            , sizeof(Vec3)
-            , _countof(vertices)
-            , indices
-            , sizeof(uint32_t)
-            , _countof(indices)));
-        
-        // Create a default Material.
-        auto pMaterial = std::make_shared<Material>();
-        pMaterial->m_baseColor = LinearColor::White();
-        m_materialAssets.emplace_back(pMaterial);
+        NES_ASSERT(false);
+        // // Camera Uniforms:
+        // //m_cameraUniformBuffer = Renderer::CreateUniformBuffer(sizeof(SceneCameraUniforms));
+        // //m_cameraUniforms = Renderer::CreateUniformForBuffer(SceneCameraUniforms::kBinding, m_cameraUniformBuffer, sizeof(SceneCameraUniforms));
+        //
+        //  // Create Geometry3D pipelines:
+        // nes::GraphicsPipelineConfig pipelineConfig =
+        // {
+        //     .m_vertexBindings =
+        //     {
+        //         vk::VertexInputBindingDescription()
+        //             .setBinding(0)
+        //             .setInputRate(vk::VertexInputRate::eVertex)
+        //             .setStride(sizeof(nes::Vec3)),
+        //     },
+        //
+        //     .m_vertexAttributes =
+        //     {
+        //         vk::VertexInputAttributeDescription()
+        //             .setLocation(0)
+        //             .setBinding(0)
+        //             .setFormat(vk::Format::eR32G32B32Sfloat)
+        //             .setOffset(0),
+        //     },
+        //
+        //     .m_shaderPushConstants =
+        //     {
+        //         vk::PushConstantRange(vk::ShaderStageFlagBits::eVertex, 0, sizeof(GeometryPushConstants)),
+        //     },
+        //
+        //     .m_shaderUniforms =
+        //     {
+        //             m_cameraUniforms,
+        //     },
+        //     
+        //     .m_shaderStages =
+        //     {
+        //         vk::PipelineShaderStageCreateInfo()
+        //             .setStage(vk::ShaderStageFlagBits::eVertex)
+        //             .setPName("main")
+        //             //.setModule(Renderer::GetShader("Geometry3D.vert")),
+        //         vk::PipelineShaderStageCreateInfo()
+        //             .setStage(vk::ShaderStageFlagBits::eFragment)
+        //             .setPName("main")
+        //             //.setModule(Renderer::GetShader("Geometry3D.frag")),
+        //     },
+        //
+        //     .m_colorBlendStates =
+        //     {
+        //         vk::PipelineColorBlendAttachmentState()
+        //             .setBlendEnable(true)
+        //             .setColorBlendOp(vk::BlendOp::eAdd)
+        //             .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+        //             .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+        //             .setAlphaBlendOp(vk::BlendOp::eAdd)
+        //             .setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
+        //             .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+        //             .setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
+        //     },
+        // };
+        //
+        // // Fill
+        // pipelineConfig.m_polygonMode = vk::PolygonMode::eFill;
+        // pipelineConfig.m_cullMode = vk::CullModeFlagBits::eBack;
+        // pipelineConfig.m_frontFace = vk::FrontFace::eCounterClockwise;
+        // pipelineConfig.m_depthTestEnable = true;
+        // pipelineConfig.m_depthCompareOp = vk::CompareOp::eLess;
+        // pipelineConfig.m_depthWriteEnable = true;
+        // //m_defaultMeshPipelines.emplace_back(Renderer::CreatePipeline(pipelineConfig));
+        //
+        // // Wireframe
+        // pipelineConfig.m_polygonMode = vk::PolygonMode::eLine;
+        // pipelineConfig.m_cullMode = vk::CullModeFlagBits::eNone;
+        // pipelineConfig.m_frontFace = vk::FrontFace::eCounterClockwise;
+        // pipelineConfig.m_depthTestEnable = false;
+        // pipelineConfig.m_depthCompareOp = vk::CompareOp::eNever;
+        // pipelineConfig.m_depthWriteEnable = false;
+        // //m_defaultMeshPipelines.emplace_back(Renderer::CreatePipeline(pipelineConfig));
+        //
+        // // Create the Grid Pipeline
+        // nes::GraphicsPipelineConfig gridPipelineConfig =
+        // {
+        //     .m_shaderUniforms =
+        //     {
+        //         m_cameraUniforms,
+        //     },
+        //     
+        //     .m_shaderStages =
+        //     {
+        //             vk::PipelineShaderStageCreateInfo()
+        //                 .setStage(vk::ShaderStageFlagBits::eVertex)
+        //                 .setPName("main")
+        //                 //.setModule(Renderer::GetShader("Grid.vert")),
+        //             vk::PipelineShaderStageCreateInfo()
+        //                 .setStage(vk::ShaderStageFlagBits::eFragment)
+        //                 .setPName("main")
+        //                 //.setModule(Renderer::GetShader("Grid.frag")),
+        //         },
+        //
+        //     .m_polygonMode = vk::PolygonMode::eFill,
+        //     .m_cullMode = vk::CullModeFlagBits::eNone,
+        //     .m_frontFace = vk::FrontFace::eCounterClockwise,
+        //     .m_depthTestEnable = true,
+        //     .m_depthCompareOp = vk::CompareOp::eLess,
+        //     .m_depthWriteEnable = false,
+        //     .m_colorBlendStates =
+        //         {
+        //         vk::PipelineColorBlendAttachmentState()
+        //             .setBlendEnable(true)
+        //             .setColorBlendOp(vk::BlendOp::eAdd)
+        //             .setSrcColorBlendFactor(vk::BlendFactor::eSrcAlpha)
+        //             .setDstColorBlendFactor(vk::BlendFactor::eOneMinusSrc1Alpha)
+        //             .setAlphaBlendOp(vk::BlendOp::eAdd)
+        //             .setSrcAlphaBlendFactor(vk::BlendFactor::eSrcAlpha)
+        //             .setDstAlphaBlendFactor(vk::BlendFactor::eOneMinusSrcAlpha)
+        //             .setColorWriteMask(vk::ColorComponentFlagBits::eA | vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB)
+        //     },
+        // };
+        // m_gridPipeline = Renderer::CreatePipeline(gridPipelineConfig);
+        //
+        // // Create the Skybox Assets
+        // auto& context = Renderer::GetContext();
+        //
+        // m_skyboxCubeSampler = context.GetDevice().createSampler(
+        //     vk::SamplerCreateInfo()
+        //         .setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+        //         .setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+        //         .setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+        //         .setMinFilter(vk::Filter::eLinear)
+        //         .setMagFilter(vk::Filter::eLinear));
+        //
+        //
+        // constexpr const char* kSkyboxPaths[] =
+        // {
+        //     "miramar_ft.png", // Front
+        //     "miramar_bk.png", // Back
+        //     "miramar_up.png", // Up
+        //     "miramar_dn.png", // Down
+        //     "miramar_rt.png", // Right
+        //     "miramar_lf.png", // Left
+        // };
+        //
+        // std::vector<uint8_t> cubeMapBytes{};
+        // int width = 1024;
+        // int height = 1024;
+        // std::array<void*, 6> imagePointers{};
+        // int i = 0;
+        //
+        // for (const auto& path : kSkyboxPaths)
+        // {
+        //     std::string fullPath = NES_CONTENT_DIR;
+        //     fullPath += path;
+        //     
+        //     int channels;
+        //     stbi_uc* pBytes = stbi_load(fullPath.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        //
+        //     imagePointers[i] = pBytes;
+        //     
+        //     const uint8_t* pStart = static_cast<const uint8_t*>(pBytes);
+        //     const uint8_t* pEnd = &pStart[static_cast<uint32_t>(width * height * STBI_rgb_alpha)];
+        //     cubeMapBytes.insert(cubeMapBytes.end(), pStart, pEnd);
+        //     ++i;
+        // }
+        //
+        // std::tie(m_skyboxCubeImage, m_skyboxCubeImageView) = context.CreateCubemapImageAndView(
+        //     {static_cast<uint32_t>(width), static_cast<uint32_t>(height)}
+        //     , vk::Format::eR8G8B8A8Unorm // TODO: Check how Hazel handles this.
+        //     , cubeMapBytes.data(), cubeMapBytes.size());
+        //
+        // m_skyboxUniforms = context.CreateUniformForImage(3, m_skyboxCubeImageView, m_skyboxCubeSampler);
+        //
+        // // Free the image data.
+        // for (auto* image : imagePointers)
+        // {
+        //     stbi_image_free(image);
+        // }
+        //
+        // // Skybox Pipeline
+        // nes::GraphicsPipelineConfig skyboxPipelineConfig =
+        // {
+        //     .m_vertexBindings =
+        //     {
+        //         vk::VertexInputBindingDescription()
+        //             .setBinding(0)
+        //             .setInputRate(vk::VertexInputRate::eVertex)
+        //             .setStride(sizeof(nes::Vec3)),
+        //     },
+        //
+        //     .m_vertexAttributes =
+        //     {
+        //         vk::VertexInputAttributeDescription()
+        //             .setLocation(0)
+        //             .setBinding(0)
+        //             .setFormat(vk::Format::eR32G32B32Sfloat)
+        //             .setOffset(0),
+        //     },
+        //     
+        //     .m_shaderUniforms =
+        //     {
+        //         m_cameraUniforms,
+        //         m_skyboxUniforms,
+        //     },
+        //     
+        //     .m_shaderStages =
+        //     {
+        //         vk::PipelineShaderStageCreateInfo()
+        //             .setStage(vk::ShaderStageFlagBits::eVertex)
+        //             .setPName("main")
+        //             .setModule(Renderer::GetShader("Skybox.vert")),
+        //         vk::PipelineShaderStageCreateInfo()
+        //             .setStage(vk::ShaderStageFlagBits::eFragment)
+        //             .setPName("main")
+        //             .setModule(Renderer::GetShader("Skybox.frag")),
+        //     },
+        //
+        // .m_polygonMode = vk::PolygonMode::eFill,
+        // };
+        // m_skyboxPipeline = Renderer::CreatePipeline(skyboxPipelineConfig);
+        //
+        //
+        // // Create a default Cube Mesh.
+        // static Vec3 vertices[] =
+        // {
+        //     Vec3(-0.5,  0.5, -0.5),
+        //     Vec3(0.5,  0.5, -0.5),
+        //     Vec3(0.5,  -0.5, -0.5),
+        //     Vec3(-0.5,  -0.5, -0.5),
+        //     Vec3(-0.5,  0.5, 0.5),
+        //     Vec3(0.5,  0.5, 0.5),
+        //     Vec3(0.5,  -0.5, 0.5),
+        //     Vec3(-0.5,  -0.5, 0.5),
+        // };
+        //
+        // static constexpr uint32_t indices[] =
+        // {
+        //     0, 3, 2, 0, 2, 1, // Front
+        //     4, 5, 7, 5, 6, 7, // Rear
+        //     1, 2, 6, 5, 1, 6, // Right
+        //     0, 4, 7, 0, 7, 3, // Left
+        //     5, 4, 0, 5, 0, 1, // Top
+        //     7, 6, 2, 7, 2, 3, // Bottom
+        // };
+        //
+        // m_meshAssets.emplace_back(Mesh::Create(
+        //     vertices
+        //     , sizeof(Vec3)
+        //     , _countof(vertices)
+        //     , indices
+        //     , sizeof(uint32_t)
+        //     , _countof(indices)));
+        //
+        // // Create a default Material.
+        // auto pMaterial = std::make_shared<Material>();
+        // pMaterial->m_baseColor = LinearColor::White();
+        // m_materialAssets.emplace_back(pMaterial);
     }
 
     void World::FreeRenderResources()
     {
-        m_materialAssets.clear();
-        for (auto& pMesh : m_meshAssets)
-        {
-            Mesh::Free(*pMesh);
-            pMesh = nullptr;
-        }
-        
-        auto& context = Renderer::GetContext();
-        context.DestroyImageAndView(m_skyboxCubeImage, m_skyboxCubeImageView);
-        context.GetDevice().destroySampler(m_skyboxCubeSampler);
-        
-        for (auto& pPipeline : m_defaultMeshPipelines)
-        {
-            Renderer::DestroyPipeline(pPipeline);
-        }
-        Renderer::DestroyPipeline(m_gridPipeline);
-        Renderer::DestroyPipeline(m_skyboxPipeline);
-
-        Renderer::DestroyBuffer(m_cameraUniformBuffer);
-        Renderer::DestroyUniform(m_cameraUniforms);
-        Renderer::DestroyUniform(m_skyboxUniforms);
+        NES_ASSERT(false);
+        // m_materialAssets.clear();
+        // for (auto& pMesh : m_meshAssets)
+        // {
+        //     Mesh::Free(*pMesh);
+        //     pMesh = nullptr;
+        // }
+        //
+        // auto& context = Renderer::GetContext();
+        // context.DestroyImageAndView(m_skyboxCubeImage, m_skyboxCubeImageView);
+        // context.GetDevice().destroySampler(m_skyboxCubeSampler);
+        //
+        // for (auto& pPipeline : m_defaultMeshPipelines)
+        // {
+        //     Renderer::DestroyPipeline(pPipeline);
+        // }
+        // Renderer::DestroyPipeline(m_gridPipeline);
+        // Renderer::DestroyPipeline(m_skyboxPipeline);
+        //
+        // Renderer::DestroyBuffer(m_cameraUniformBuffer);
+        // Renderer::DestroyUniform(m_cameraUniforms);
+        // Renderer::DestroyUniform(m_skyboxUniforms);
     }
 
     void World::RenderSkybox()
     {
-        Renderer::BindDescriptorSets(m_skyboxPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms, m_skyboxUniforms });
-        Renderer::BindGraphicsPipeline(m_skyboxPipeline);
-        Renderer::DrawIndexed(m_meshAssets[0]->GetVertexBuffer(), m_meshAssets[0]->GetIndexBuffer(), m_meshAssets[0]->GetIndexCount());
+        NES_ASSERT(false);
+        //Renderer::BindDescriptorSets(m_skyboxPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms, m_skyboxUniforms });
+        //Renderer::BindGraphicsPipeline(m_skyboxPipeline);
+        //Renderer::DrawIndexed(m_meshAssets[0]->GetVertexBuffer(), m_meshAssets[0]->GetIndexBuffer(), m_meshAssets[0]->GetIndexCount());
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -1214,15 +1227,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     void World::RenderGrid()
     {
-        // static GeometryPushConstants pushConstant
-        // {
-        //     .m_objectMatrix = Mat44::Identity(),
-        //     .m_baseColor = LinearColor::White()
-        // };
-        
+        NES_ASSERT(false);
         //Renderer::PushShaderConstant(m_gridPipeline, vk::ShaderStageFlagBits::eAllGraphics, 0, sizeof(GeometryPushConstants), &pushConstant);
-        Renderer::BindDescriptorSets(m_gridPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms });
-        Renderer::BindGraphicsPipeline(m_gridPipeline);
-        Renderer::Draw(6, 1, 0, 0);
+        //Renderer::BindDescriptorSets(m_gridPipeline, vk::PipelineBindPoint::eGraphics, { m_cameraUniforms });
+        //Renderer::BindGraphicsPipeline(m_gridPipeline);
+        //Renderer::Draw(6, 1, 0, 0);
     }
 }

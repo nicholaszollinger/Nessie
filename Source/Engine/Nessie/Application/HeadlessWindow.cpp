@@ -1,0 +1,100 @@
+﻿// HeadlessWindow.cpp
+#include "HeadlessWindow.h"
+#include "Nessie/Core/Config.h"
+
+#ifdef NES_WINDOW_API_GLFW
+#include "GLFW/GLFWInputConversions.h"
+#include "Nessie/Application/Platform.h"
+#include "Nessie/Debug/CheckedCast.h"
+#include "GLFW/glfw3.h"
+#include "Nessie/Math/Vec2.h"
+
+namespace nes
+{
+    bool HeadlessWindow::Internal_Init(Platform& platform, const WindowDesc& desc)
+    {
+        m_description = desc;
+        m_description.m_windowResolution = { 0, 0 };
+        m_description.m_isResizable = false;
+        m_description.m_cursorMode = ECursorMode::Visible;
+
+#ifdef NES_RENDER_API_VULKAN
+        glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+#endif
+
+        // Hide the window.
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
+        // macOS: The first time a window is created, the menu bar is created.
+        // This is not desirable when writing a command line only application.
+        // Menu bar creation can be disabled with the GLFW_COCOA_MENUBAR init hint.
+        glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+
+        GLFWwindow* pWindow = glfwCreateWindow(640, 480, "", nullptr, nullptr);
+        m_pNativeWindowHandle = pWindow;
+
+        glfwSetWindowUserPointer(pWindow, &platform);
+
+        // Window Close Callback.
+        glfwSetWindowCloseCallback(pWindow, [](GLFWwindow* pWindow)
+        {
+            glfwSetWindowShouldClose(pWindow, GLFW_TRUE);
+        });
+
+        // Window Key Callback.
+        glfwSetKeyCallback(pWindow, [](GLFWwindow* pWindow, const int key, [[maybe_unused]] const int scanCode, const int action, const int modifiers)
+        {
+            auto* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+
+            const Modifiers mods = glfw::ConvertToModifiers(modifiers);
+            const EKeyCode keyCode = glfw::ConvertToKeyCode(key);
+            const EKeyAction keyAction = glfw::ConvertToKeyAction(action);
+
+            KeyEvent event(keyCode, keyAction, mods);
+            pPlatform->OnInputEvent(event);
+        });
+
+        // Mouse Button Callback.
+        glfwSetMouseButtonCallback(pWindow, [](GLFWwindow* pWindow, const int button, const int action, const int modifiers)
+        {
+            auto* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+
+            // Get the mouse position at the time of the event.
+            double xPos, yPos;
+            glfwGetCursorPos(pWindow, &xPos, &yPos);
+            const Float2 mousePos(static_cast<float>(xPos), static_cast<float>(yPos));
+            const EMouseButton mouseButton = glfw::ConvertToMouseButton(button);
+            const Modifiers mods = glfw::ConvertToModifiers(modifiers);
+            const EMouseAction mouseAction = glfw::ConvertToMouseAction(action);
+
+            MouseButtonEvent event(mouseButton, mouseAction, mods, mousePos.x, mousePos.y);
+            pPlatform->OnInputEvent(event);
+        });
+
+        // Mouse Scroll Callback.
+        glfwSetScrollCallback(pWindow, [](GLFWwindow* pWindow, const double deltaX, const double deltaY)
+        {
+            auto* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+            MouseScrollEvent event(static_cast<float>(deltaX), static_cast<float>(deltaY));
+            pPlatform->OnInputEvent(event);
+        });
+
+        // Mouse Move Callback.
+        glfwSetCursorPosCallback(pWindow, [](GLFWwindow* pWindow, const double xPos, const double yPos)
+        {
+            auto* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pWindow));
+        
+            MouseMoveEvent event(static_cast<float>(xPos), static_cast<float>(yPos));
+            pPlatform->OnInputEvent(event);
+        });
+
+        return true;
+    }
+
+    void HeadlessWindow::Internal_ProcessEvents()
+    {
+        glfwPollEvents();
+    }
+}
+
+#endif

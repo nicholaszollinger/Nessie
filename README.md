@@ -20,17 +20,20 @@ utitlity for me if I have to zip up the project for someone else.
 
 # What I am Working On:
 ### Immediate:
-Over the summer, I am going to be doing some project-wide refactors, updating syntax/naming rules and splitting the code-base into smaller projects so that I can more easily maintain the system.
+Over the summer, I am going to be doing some project-wide refactors, with the aim of getting a Physics Test scene up and running!
 - New Syntax Rules ✅
-- Refactor Math classes with SIMD operations ✅
+- Refactor Math classes with SIMD operations. ✅
 - Refactor Logging & Profiling code to be more robust. ✅
-- Finish basic Physics System, with demo of different types of collisions
+- Port Asset System Work from last semester. ✅
+- Finish basic Physics System ✅
+- Renderer Refactor, Render Thread, Debug Rendering API. ⌛
+- Create a Physics Test with boxes falling on each other.
 
 ### Fall Goals:
-- Port Asset System and Graphics work from my Graphics class assignments.
-- Render Thread
-- Asset Thread
-- Polish ECS
+Overall, I plan on having the basic structure to make small demos using my engine. Being able to load a project, edit and run all in the editor.
+- Asset System overhaul with a multithreaded architecture.
+- ECS revisit.
+- Editor UI
 - Engine vs Game Applications
 
 ### Next Year (Unless I can get to these sooner):

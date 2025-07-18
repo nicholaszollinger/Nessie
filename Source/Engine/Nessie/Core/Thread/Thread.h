@@ -6,9 +6,21 @@
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kLogTagThread, "Thread", Warn);
-    
+
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Set the name of a Thread. 
+    /// @brief : Enum to determine single vs. multithreaded state of systems.
     //----------------------------------------------------------------------------------------------------
-    void SetThreadName(const char* threadName);
+    enum class EThreadPolicy : uint8
+    {
+        SingleThreaded = 0,
+        Multithreaded
+    };
+
+    namespace thread
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the name of a Thread. 
+        //----------------------------------------------------------------------------------------------------
+        void SetThreadName(const char* threadName);
+    }
 }

@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <vector>
 #include "CustomFlagFormatter.h"
-#include "Nessie/Platform/Platform.h"
+#include "Nessie/Core/PlatformConstants.h"
 
 namespace nes
 {
@@ -72,7 +72,7 @@ namespace nes
         using CustomFlags = std::unordered_map<char, std::unique_ptr<CustomFlagFormatter>>;
 
     public:
-        explicit PatternFormatter(std::string pattern = "%+", std::string eol = nes::platform::kEOL, CustomFlags customFlags = {});
+        explicit PatternFormatter(std::string pattern = "%+", std::string eol = nes::platformConstants::kEOL, CustomFlags customFlags = {});
         
         PatternFormatter(const PatternFormatter&) = delete;
         PatternFormatter(PatternFormatter&&) noexcept = delete;

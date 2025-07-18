@@ -16,10 +16,6 @@ function d.Link(rootDir)
         links {"yaml-cpp.lib"}
         libdirs { rootDir .. "lib\\Release\\"}
 
-    filter {"configurations:Test"}
-        links {"yaml-cpp.lib"}
-        libdirs { rootDir .. "lib\\Release\\"}
-
     -- Reset the filter.
     filter{};
 end

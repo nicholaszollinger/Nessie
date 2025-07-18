@@ -20,9 +20,8 @@ namespace nes
         //
     }
 
-    MouseMoveEvent::MouseMoveEvent(const float xPos, const float yPos, const float xDelta, const float yDelta)
+    MouseMoveEvent::MouseMoveEvent(const float xPos, const float yPos)
         : m_position(xPos, yPos)
-        , m_delta(xDelta, yDelta)
     {
         //
     }

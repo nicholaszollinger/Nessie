@@ -1,6 +1,5 @@
 #include "Application.h"
 
-#include "Nessie/Core/Jobs/JobSystemThreadPool.h"
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Core/Memory/Memory.h"
 #include "Nessie/Physics/Collision/CollisionSolver.h"
@@ -38,7 +37,7 @@ nes::Mat44 TestApplication::GetCameraPivot(const float cameraHeading, const floa
     return m_pTest->GetCameraPivot(cameraHeading, cameraPitch);
 }
 
-bool TestApplication::Internal_Init()
+bool TestApplication::Internal_AppInit()
 {
     nes::CollisionSolver::Internal_Init();
     nes::ConvexShape::Register();
@@ -61,13 +60,13 @@ bool TestApplication::Internal_Init()
     return true;
 }
 
-void TestApplication::RunFrame(const double deltaTime)
+void TestApplication::Internal_AppRunFrame(const float deltaTime)
 {
     float worldDeltaTime = 0.f;
     if (m_requestedDeltaTime <= 0.f)
     {
         // If no fixed frequency update is requested, update with a variable time step.
-        worldDeltaTime = !m_isPaused || m_singleStep? static_cast<float>(deltaTime) : 0.f;
+        worldDeltaTime = !m_isPaused || m_singleStep? deltaTime : 0.f;
         m_residualDeltaTime = 0.f;
     }
     else
@@ -80,7 +79,7 @@ void TestApplication::RunFrame(const double deltaTime)
         else if (!m_isPaused)
         {
             // Calculate how much time has passed since the last render.
-            worldDeltaTime = static_cast<float>(deltaTime) + m_residualDeltaTime;
+            worldDeltaTime = deltaTime + m_residualDeltaTime;
             if (worldDeltaTime < m_requestedDeltaTime)
             {
                 // Too soon, set the residual time and don't update.
@@ -96,15 +95,25 @@ void TestApplication::RunFrame(const double deltaTime)
         }
     }
     m_singleStep = false;
-
+    
     // Update with the calculated world deltaTime
     if (!Update(worldDeltaTime))
     {
         Quit();
         return;
     }
-
+    
     UpdateCamera(static_cast<float>(deltaTime));
+}
+
+void TestApplication::Internal_AppShutdown()
+{
+    NES_SAFE_DELETE(m_pTest);
+    NES_SAFE_DELETE(m_pContactListener);
+    NES_SAFE_DELETE(m_pPhysicsScene);
+    
+    NES_SAFE_DELETE(m_pAllocator);
+    NES_SAFE_DELETE(m_pJobSystem);
 }
 
 bool TestApplication::Update(const float deltaTime)
@@ -130,54 +139,41 @@ bool TestApplication::Update(const float deltaTime)
     return true;
 }
 
-void TestApplication::OnAppShutdown()
-{
-    NES_SAFE_DELETE(m_pTest);
-    NES_SAFE_DELETE(m_pContactListener);
-    NES_SAFE_DELETE(m_pPhysicsScene);
-    
-    NES_SAFE_DELETE(m_pAllocator);
-    NES_SAFE_DELETE(m_pJobSystem);
-}
-
 void TestApplication::PushEvent(nes::Event& e)
 {
     // Mouse Event
-    if (e.GetEventID() == nes::MouseButtonEvent::GetStaticEventID())
+    if (auto* pMouseEvent = e.Cast<nes::MouseButtonEvent>())
     {
-        auto& mouseButtonEvent = checked_cast<nes::MouseButtonEvent&>(e);
-        // Right click to enable camera turning.
-        if (mouseButtonEvent.GetButton() == nes::EMouseButton::Right)
+        if (pMouseEvent->GetButton() == nes::EMouseButton::Right)
         {
-            if (mouseButtonEvent.GetAction() == nes::EMouseAction::Pressed)
+            // Right click to enable camera turning.
+            if (pMouseEvent->GetAction() == nes::EMouseAction::Pressed)
             {
                 m_cameraRotationEnabled = true;
                 nes::InputManager::SetCursorMode(nes::ECursorMode::Disabled);
             }
                     
-            else if (mouseButtonEvent.GetAction() == nes::EMouseAction::Released)
+            else if (pMouseEvent->GetAction() == nes::EMouseAction::Released)
             {
                 m_cameraRotationEnabled = false;
                 nes::InputManager::SetCursorMode(nes::ECursorMode::Visible);
             }
         }
     }
-
+    
     // Key Event
-    else if (e.GetEventID() == nes::KeyEvent::GetStaticEventID())
+    else if (auto* keyEvent = e.Cast<nes::KeyEvent>())
     {
-        auto& keyEvent = checked_cast<nes::KeyEvent&>(e);
-
-        if (keyEvent.GetAction() == nes::EKeyAction::Pressed)
+        if (keyEvent->GetAction() == nes::EKeyAction::Pressed)
         {
             // P to Pause
-            if (keyEvent.GetKeyCode() == nes::EKeyCode::P)
+            if (keyEvent->GetKeyCode() == nes::EKeyCode::P)
             {
                 m_isPaused = !m_isPaused;
             }
 
             // Escape to Quit
-            else if (keyEvent.GetKeyCode() == nes::EKeyCode::Escape)
+            else if (keyEvent->GetKeyCode() == nes::EKeyCode::Escape)
             {
                 Quit();
             }
@@ -335,23 +331,3 @@ float TestApplication::GetWorldScale() const
 {
     return m_pTest != nullptr? m_pTest->GetWorldScale() : 1.f;
 }
-
-nes::Application* nes::CreateApplication([[maybe_unused]] const nes::CommandLineArgs& args)
-{
-    nes::ApplicationProperties appProps;
-    appProps.m_appName = "Physics Tests";
-    appProps.m_commandLineArgs = args;
-    appProps.m_isMultithreaded = true;
-
-    nes::WindowProperties windowProps;
-    windowProps.m_extent = { .m_width = 1600, .m_height = 900};
-    windowProps.m_isMinimized = false;
-    windowProps.m_isResizable = false;
-    windowProps.m_label = "Physics Tests";
-    windowProps.m_vsyncEnabled = false;
-    windowProps.m_windowMode = EWindowMode::Windowed;
-    
-    return NES_NEW(TestApplication(std::move(appProps), std::move(windowProps)));
-}
-
-NES_MAIN()

@@ -1,10 +1,15 @@
 ﻿// ErrorHandling.h
 #pragma once
 #include "Log.h"
-#include "Nessie/Platform/Platform.h"
+#include "Nessie/Core/PlatformConstants.h"
 
 namespace nes::internal
 {
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : You should not call this directly. Platform-specific response to a fatal error.
+    //----------------------------------------------------------------------------------------------------
+    extern void HandleFatalError(const std::string& reason, const std::string& message);
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Formats the Assertion failed message and posts the log if NES_LOGGING_ENABLED is defined. 
     //----------------------------------------------------------------------------------------------------

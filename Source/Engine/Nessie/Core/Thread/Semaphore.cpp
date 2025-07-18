@@ -3,7 +3,7 @@
 #include "Nessie/Debug/Assert.h"
 
 #ifdef NES_PLATFORM_WINDOWS
-#include "Nessie/Platform/Windows/WindowsInclude.h"
+#include "Nessie/Application/Windows/WindowsInclude.h"
 
 #else
 #endif

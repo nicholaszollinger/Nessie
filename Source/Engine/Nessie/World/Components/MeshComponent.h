@@ -4,7 +4,6 @@
 #include "Nessie/Graphics/Material.h"
 #include "Nessie/Graphics/Mesh.h"
 #include "Nessie/Graphics/Renderer.h"
-#include "Nessie/Graphics/RendererContext.h"
 
 namespace nes
 {
@@ -30,8 +29,8 @@ namespace nes
         const std::shared_ptr<Material>&    GetMaterial() const;
         void                                SetMaterial(const std::shared_ptr<Material>& pMaterial);
         
-        void                                SetPipeline(const GraphicsPipelinePtr& pipeline);
-        GraphicsPipelinePtr                 GetPipeline() const;
+        //void                                SetPipeline(const GraphicsPipelinePtr& pipeline);
+        //GraphicsPipelinePtr                 GetPipeline() const;
 
         void                                SetMesh(const std::shared_ptr<Mesh>& pMesh);
         std::shared_ptr<Mesh>               GetMesh() const;
@@ -41,7 +40,7 @@ namespace nes
         virtual void                        OnDisabled() override;
 
     private:
-        GraphicsPipelinePtr                 m_pPipeline = nullptr;
+        //GraphicsPipelinePtr                 m_pPipeline = nullptr;
         std::shared_ptr<Mesh>               m_pMesh = nullptr;
         std::shared_ptr<Material>           m_pMaterial = nullptr;
     };

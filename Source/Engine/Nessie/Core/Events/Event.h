@@ -65,6 +65,19 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         virtual const char*   GetName() const = 0;
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if a generic event is a specific event type.
+        //----------------------------------------------------------------------------------------------------
+        template <EventType Type>
+        bool                  IsType() const { return GetEventID() == Type::GetStaticEventID(); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : If the base event class is the specific type, it will return this event as requested Type*.
+        ///     Otherwise, this will return nullptr.
+        //----------------------------------------------------------------------------------------------------
+        template <EventType Type>
+        Type*                 Cast() { return IsType<Type>() ? reinterpret_cast<Type*>(this) : nullptr; }
+
     private:
         bool m_isHandled = false;
     };

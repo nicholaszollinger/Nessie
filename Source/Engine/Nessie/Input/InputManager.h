@@ -1,35 +1,57 @@
 ﻿// InputManager.h
 #pragma once
+#include "Cursor.h"
 #include "InputEvents.h"
 
 namespace nes
 {
     class ApplicationWindow;
 
-    enum class ECursorMode : uint8_t
-    {
-        Visible,  // Cursor is visible on screen.
-        Hidden,   // Cursor is invisible, but still moves around the screen as normal.
-        Disabled, // Cursor is locked to the center of the screen, useful for things FPS cameras.
-        Captured, // The Cursor is locked to the bounds of the window.
-    };
-
     //----------------------------------------------------------------------------------------------------
-    /// @brief : InputManager is a static API to query the current input states of keys,
+    /// @brief : InputManager contains a static API to query the current input states of keys,
     ///     mouse position, etc.
     //----------------------------------------------------------------------------------------------------
     class InputManager
     {
     public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if a key is pressed. 
+        //----------------------------------------------------------------------------------------------------
         static bool         IsKeyDown(const EKeyCode key);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if a key is not pressed.
+        //----------------------------------------------------------------------------------------------------
         static bool         IsKeyUp(const EKeyCode key);
-        
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if a mouse button is pressed.
+        //----------------------------------------------------------------------------------------------------
         static bool         IsMouseButtonDown(const EMouseButton button);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if a mouse button is not pressed.
+        //----------------------------------------------------------------------------------------------------
         static bool         IsMouseButtonUp(const EMouseButton button);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set how the cursor behaves in the window.
+        //----------------------------------------------------------------------------------------------------
         static void         SetCursorMode(const ECursorMode mode);
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current cursor mode.
+        //----------------------------------------------------------------------------------------------------
         static ECursorMode  GetCursorMode();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the position of the cursor in relative to the window.
+        //----------------------------------------------------------------------------------------------------
         static Vec2         GetCursorPosition();
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the amount the cursor has moved last frame.
+        //----------------------------------------------------------------------------------------------------
         static Vec2         GetCursorDelta();
         
         //----------------------------------------------------------------------------------------------------
@@ -47,20 +69,21 @@ namespace nes
         /// @brief : Update current input states based on delta time.
         //----------------------------------------------------------------------------------------------------
         void                Update(const double deltaTime);
-        
-    private:
-        /// Platform Defined Implementations:
-        Double2             GetCursorPosition_Impl(void* pNativeWindow);
-        bool                IsKeyDown_Impl(void* pNativeWindow, const EKeyCode key);
-        bool                IsKeyUp_Impl(void* pNativeWindow, const EKeyCode key);
-        bool                IsMouseButtonDown_Impl(void* pNativeWindow, const EMouseButton button);
-        bool                IsMouseButtonUp_Impl(void* pNativeWindow, const EMouseButton button);
-        void                SetCursorMode_Impl(void* pNativeWindow, const ECursorMode mode);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Handle input events from the Window. 
+        //----------------------------------------------------------------------------------------------------
+        void                OnInputEvent(Event& event);
 
     private:
         friend class Application;
+
+        using KeyStates         = std::array<EKeyAction, static_cast<size_t>(EKeyCode::MaxNum)>;
+        using MouseButtonStates = std::array<EMouseAction, static_cast<size_t>(EMouseButton::MaxNum)>;
         
-        ApplicationWindow*             m_pWindow = nullptr;
+        KeyStates           m_keyStates;
+        MouseButtonStates   m_mouseButtonStates;
+        ApplicationWindow*  m_pWindow = nullptr;
         ECursorMode         m_cursorMode = ECursorMode::Visible;
         Vec2                m_cursorPosition{};
         Vec2                m_cursorDelta{};

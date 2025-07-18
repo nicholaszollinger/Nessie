@@ -1,174 +1,240 @@
 ﻿// Renderer.h
 #pragma once
-#include "Mesh.h"
-#include "RendererContext.h"
-#include "Nessie/Application/ApplicationWindow.h"
+#include <functional>
+#include "Device.h"
+#include "RenderCommandQueue.h"
 #include "Nessie/Core/Color.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Core/Thread/WorkerThread.h"
 
-// [TODO]: Remove when API is set up to hide direct calls.
-#include <imgui.h>
-
-namespace GAP311 { class VulkanShaderLibrary; }
+//-------------------------------------------------------------------------------------------------
+// Under development. The Renderer is being refactored as I abstract the Vulkan API.
+//-------------------------------------------------------------------------------------------------
 
 namespace nes
 {
-    NES_DEFINE_LOG_TAG(kRendererLogTag, "Renderer", Info);
+    class Camera;
+    class Material;
+    class RenderCommandBuffer;
+    class RenderPass;
     
-    class RendererContext;
-    using GraphicsPipelinePtr = std::shared_ptr<RendererContext::GraphicsPipeline>;
-
     //----------------------------------------------------------------------------------------------------
-    /// @brief : The Renderer is responsible for drawing geometry to the window, managing resources
-    ///     and operations directly with the GPU (if the system has one).
+    // The Renderer is responsible for:
+    // - Managing the RenderThread (if multithreaded).
+    // - Managing default graphics resources.
+    // - Managing the Swapchain.
+    // - Static API to issue draw commands.
+    //
+    /// @brief : The Renderer is a higher level API to issue commands to the GPU (draw commands, creating
+    /// resources, compute commands, etc.).
     //----------------------------------------------------------------------------------------------------
     class Renderer
     {
     public:
-        using ImmediateCommandFunc = std::function<void(RendererContext& context)>;
-    
-    private:
-        Renderer() = default;
-        ~Renderer() = default;
+        // [TODO]: Render Pass
+        //static void                BeginRenderPass(StrongPtr<RenderCommandBuffer> pCommandBuffer, StrongPtr<RenderPass> pRenderPass, bool explicitClear = false);
+        //static void                EndRenderPass(StrongPtr<RenderCommandBuffer> pCommandBuffer);
+
+        // [TODO]: Draw Calls 
+        //static void                RenderGeometry(StrongPtr<RenderCommandBuffer> pCommandBuffer, StrongPtr<Pipeline> pPipeline, StrongPtr<Material> pMaterial, StrongPtr<VertexBuffer> pVertexBuffer, StrongPtr<IndexBuffer> pIndexBuffer, const Mat44& transform, uint32 indexCount = 0);
+
+        // [TODO]: Get Default Resources
+
+        // [TODO]: Shaders
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Enqueue a command to run on the GPU. 
+        //----------------------------------------------------------------------------------------------------
+        template <typename FuncType>
+        static void                 Submit(FuncType&& func);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Enqueue a command to free a render resource.
+        //----------------------------------------------------------------------------------------------------
+        template <typename FuncType>
+        static void                 SubmitResourceFree(FuncType&& func);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if the current executing thread is the Render Thread.
+        //----------------------------------------------------------------------------------------------------
+        static bool                 IsRenderThread();
         
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the RenderCommandQueue of a specific frame used to release render resources. 
+        //----------------------------------------------------------------------------------------------------
+        static RenderCommandQueue&  GetRenderResourceReleaseQueue(const uint32 index);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use, call only on the Render Thread.
+        ///     Get the current frame index that we are rendering to.
+        //----------------------------------------------------------------------------------------------------
+        static uint32               RT_GetCurrentFrameIndex();
+    
     public:
-        // No Copy or Move
+        Renderer();
+        ~Renderer();
+
+        /// No Copy or Move.
         Renderer(const Renderer&) = delete;
         Renderer& operator=(const Renderer&) = delete;
-        Renderer(Renderer&&) = delete;
-        Renderer& operator=(Renderer&&) = delete;
-
-    public:
-        // BUFFERS:
-        [[nodiscard]] static vk::Buffer CreateIndexBuffer(const void* pIndices, const size_t dataTypeSize, const size_t count);
-        [[nodiscard]] static vk::Buffer CreateVertexBuffer(const void* pVertexData, const size_t vertexTypeSize, const size_t count);
-        [[nodiscard]] static vk::Buffer CreateIndexBuffer(const std::vector<uint32_t>& bufferData);
-        static void                     DestroyBuffer(vk::Buffer& buffer);
-        static void                     UpdateBuffer(vk::Buffer buffer, const size_t offset, const size_t typeSize, const void* pData);
-
-        // PIPELINE
-        //----------------------------------------------------------------------------------------------------
-        ///	@brief : Create a Graphics Pipeline that describes how to draw passed in geometry. You need to
-        ///     bind the Pipeline before making draw calls.
-        /// @param config : Configuration parameters for the Pipeline, including what Shaders to use.
-        ///	@returns : Shared pointer to the new Pipeline.
-        //----------------------------------------------------------------------------------------------------
-        static GraphicsPipelinePtr      CreatePipeline(const nes::GraphicsPipelineConfig& config);
-        static void                     DestroyPipeline(GraphicsPipelinePtr& pPipeline);
-        static void                     BindGraphicsPipeline(GraphicsPipelinePtr& pPipeline);
-        static void                     BindDescriptorSets(const GraphicsPipelinePtr& pPipeline, const vk::PipelineBindPoint bindPoint, const vk::ArrayProxy<const vk::DescriptorSet>& descriptorSets);
-
-        // SHADERS:
-        //----------------------------------------------------------------------------------------------------
-        ///	@brief : Returns the Shader Module with the given name. In Debug Mode, if compilation is enabled,
-        ///     the shader will be compiled on the fly if not already present.
-        ///	@param shaderName : Name of the Shader
-        ///	@returns : If nullptr, then no shader module with that name exists.
-        //----------------------------------------------------------------------------------------------------
-        static vk::ShaderModule         GetShader(const std::string& shaderName);
-
-        //----------------------------------------------------------------------------------------------------
-        //	NOTES:
-        // [Consider] This should probably be a member function on a Pipeline object.
-        // Should I also save the currently bound pipeline?
-        //		
-        /// @brief : Push a shader constant to the pipeline.
-        //----------------------------------------------------------------------------------------------------
-        static void                     PushShaderConstant(std::shared_ptr<RendererContext::GraphicsPipeline> pPipeline, vk::ShaderStageFlagBits shaderStage, const uint32_t offset, const uint32_t size, const void* pValues);
-
-        // UNIFORMS:
-        [[nodiscard]] static vk::Buffer CreateUniformBuffer(const size_t uniformTypeSize, void* pInitialData = nullptr);
-        [[nodiscard]] static RendererContext::ShaderUniform CreateUniformForBuffer(int binding, vk::Buffer buffer, vk::DeviceSize size, vk::DeviceSize offset = 0, vk::ShaderStageFlags stages = vk::ShaderStageFlagBits::eAllGraphics);
-        static void                     DestroyUniform(RendererContext::ShaderUniform uniform);
+        Renderer(Renderer&&) noexcept = delete;
+        Renderer& operator=(Renderer&&) noexcept = delete;
         
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : Allow recording overlay draw commands. Must be done within a Renderpass and followed
-        ///  up with a call to EndImGui().
+        /// @brief : Initialize the Renderer.
         //----------------------------------------------------------------------------------------------------
-        static void                     BeginImGui();
-        
-        //----------------------------------------------------------------------------------------------------
-        ///	@brief : Submit the Draw data for the Overlay Draw Commands. Must be done within a Renderpass
-        ///  and preceded by a call to BeginImGui();
-        //----------------------------------------------------------------------------------------------------
-        static void                     EndImGui();
-        static void                     BeginRenderPass(const vk::Rect2D& displayArea, const vk::ClearValue clearValues[], const uint32_t clearValueCount);
-        static void                     EndRenderPass();
+        bool                        Init(const RendererDesc& config);
 
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : Draw a single, non-instanced VertexBuffer.
-        ///	@param vertexBuffer : The array of vertices to submit.
-        ///	@param vertexCount : Number of vertices in the buffer.
+        /// @brief : Shutdown the renderer, cleaning up all resources. 
         //----------------------------------------------------------------------------------------------------
-        static void                     Draw(const vk::Buffer& vertexBuffer, const uint32_t vertexCount);
+        void                        Shutdown();
 
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : Draw a set number of vertices. This is used when you have an array of vertices already
-        ///     set in the shader, or if the vertices are already bound. 
+        /// @brief : Begin a new render frame. Must be called before any render commands.
         //----------------------------------------------------------------------------------------------------
-        static void                     Draw(const uint32_t vertexCount, const uint32_t instanceCount, const uint32_t firstVertex, const uint32_t firstInstance);
+        void                        BeginFrame();
 
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : Draw a single non-instanced set of vertices, using an index buffer. 
-        ///	@param vertexBuffer : Array of vertices to submit.
-        ///	@param indexBuffer : Index buffer associated with the vertex buffer.
-        ///	@param indexCount : Number of indices to draw.      
+        /// @brief : End the current render frame. Must be called after all render commands have been submitted.
         //----------------------------------------------------------------------------------------------------
-        static void                     DrawIndexed(const vk::Buffer& vertexBuffer, const vk::Buffer& indexBuffer, const uint32_t indexCount);
+        void                        EndFrame();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Handle the target window being resized, or changing it's vsync setting. 
+        //----------------------------------------------------------------------------------------------------
+        void                        UpdateSwapchain(const uint32 width, const uint32 height, const bool vsyncEnabled);
+
+        //---------------------------------------------------------------------------------------------------
+        /// @brief : Get the current frame index.
+        //----------------------------------------------------------------------------------------------------
+        uint32                      GetCurrentFrameIndex() const            { return m_currentFrameIndex; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Render a single frame. This will block until complete. 
+        //----------------------------------------------------------------------------------------------------
+        void                        RenderSingleFrame();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Signals the Render thread to begin working on the previous frame.
+        //----------------------------------------------------------------------------------------------------
+        void                        SignalRenderThread();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Swap the command queues.
+        //----------------------------------------------------------------------------------------------------
+        void                        SwapCommandQueues();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Blocks until the render thread has finished.  
+        //----------------------------------------------------------------------------------------------------
+        void                        WaitUntilRenderComplete();
         
         //----------------------------------------------------------------------------------------------------
-        //  Hack for now, until I properly delineate the API between the Context and the
-        //  Renderer. This will be done later in the semester or the summer, most likely.
-        //  For now, I am going to grab the wrapper directly.	
-        /// @brief : Get the context that stores base information about the Renderer.
+        /// @brief : Returns how long the Render thread was waiting to render the next frame.
+        /// @note : Only call while synced with the main thread.
         //----------------------------------------------------------------------------------------------------
-        static RendererContext&         GetContext();
-        
+        float                       GetRenderThreadWaitTime() const { return m_renderThreadWaitTime; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns how long it took the render thread to render the previous frame.
+        /// @note : Only call while synced with the main thread.
+        //----------------------------------------------------------------------------------------------------
+        float                       GetRenderThreadWorkTime() const { return m_renderThreadWaitTime; }
+    
     protected:
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the static Renderer instance.  
-        //----------------------------------------------------------------------------------------------------
-        static Renderer&                Instance();
-
+        enum class ERenderThreadInstruction : uint8
+        {
+            Init,
+            RenderPreviousFrame,
+            Terminate,
+        };
         
-        bool                            Init(ApplicationWindow* pWindow, const ApplicationProperties& appProperties);
-        void                            Shutdown();
+        using RenderThread = WorkerThread<ERenderThreadInstruction>;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the singleton instance of the renderer. 
+        //----------------------------------------------------------------------------------------------------
+        static Renderer*            Get();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Blocks until the Renderer is available for commands.  
+        /// @brief : Get the RenderCommandQueue to submit commands to. 
         //----------------------------------------------------------------------------------------------------
-        void                            WaitUntilIdle() const;
+        RenderCommandQueue&         GetRenderCommandSubmissionQueue() const;
 
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : Begin rendering a new frame. IMPORTANT! If this function returns false, it means that
-        ///  we have to rebuild the swapchain and *all draw commands will fail* due to the current command
-        ///  buffer and framebuffer begin null.
+        /// @brief : Get the RenderCommandQueue to execute commands from. 
         //----------------------------------------------------------------------------------------------------
-        bool                            BeginFrame();
+        RenderCommandQueue&         GetRenderCommandExecuteQueue() const;
 
         //----------------------------------------------------------------------------------------------------
-        ///	@brief : End Rendering for the current Frame. NOTE: Right now, you have to start and end a render
-        ///  pass before calling this function! Otherwise, the display image will not return to the
-        ///  proper format.
+        /// @brief : Process incoming instructions for the render thread.
         //----------------------------------------------------------------------------------------------------
-        void                            EndFrame();
+        bool                        RT_ProcessInstruction(const ERenderThreadInstruction instruction);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize ImGui. Must be called if any ImGui commands are called. 
+        /// @brief : RenderThread function. Execute render commands stored on the previous frame. 
         //----------------------------------------------------------------------------------------------------
-        void                            InitializeImGui();
+        bool                        RT_RenderPreviousFrame();
+    
+    protected:
+        RenderThread                m_renderThread;                             /// Worker thread that executes render commands.
+        RendererDesc                m_desc;                                     /// Settings passed from the Application to initialize the Renderer.
+        RenderCommandQueue*         m_resourceFreeQueues;                       /// Command queues specific for freeing resources.
+        RenderCommandQueue*         m_commandQueues[2]{};                       /// Two buffers, one to write commands to, one to execute commands from. 
+        std::atomic<uint32>         m_commandQueueWriteIndex{0};          /// Index of the command queue that we are submitting commands to.
+        Swapchain*                  m_pSwapchain = nullptr;                     /// Object that manages the target framebuffer to render to.
+        uint32                      m_currentFrameIndex = 0;                    /// 
 
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Cleanup ImGui subsystem.
-        //----------------------------------------------------------------------------------------------------
-        void                            ShutdownImGui();
-
-    private:
-        friend class Application;
-        RendererContext*                m_pRenderContext = nullptr;
-        ApplicationWindow*              m_pWindow = nullptr;
-        GAP311::VulkanShaderLibrary*    m_pShaderLibrary = nullptr;
-
-        vk::CommandBuffer               m_commandBuffer{};  /// The current frame's command buffer to handle incoming draw calls.
-        vk::Framebuffer                 m_frameBuffer{};    /// The current frame's frame buffer.
+        // Performance Values
+        float                       m_renderThreadWorkTime;                     /// The amount of time the render thread was processing commands (ms).
+        float                       m_renderThreadWaitTime;                     /// The amount of time the render thread was waiting for the main thread (ms).
     };
+    
+    template <typename FuncType>
+    void Renderer::Submit(FuncType&& func)
+    {
+        auto renderCommand = [](void* ptr)
+        {
+            // Call the function.
+            auto pFunc = static_cast<FuncType*>(ptr);
+            (*pFunc)();
+
+            // Destroy the object.
+            pFunc->~FuncType();
+        };
+
+        auto storageBuffer = Get()->GetRenderCommandSubmissionQueue().Allocate(renderCommand, sizeof(func));
+        new (storageBuffer) FuncType(std::forward<FuncType>(func));
+    }
+
+    template <typename FuncType>
+    void Renderer::SubmitResourceFree(FuncType&& func)
+    {
+        auto renderCommand = [](void* ptr)
+        {
+            // Call the function.
+            auto pFunc = static_cast<FuncType*>(ptr);
+            (*pFunc)();
+
+            // Destroy the object.
+            pFunc->~FuncType();
+        };
+        
+        if (IsRenderThread())
+        {
+            const uint32 index = RT_GetCurrentFrameIndex();
+            auto storageBuffer = GetRenderResourceReleaseQueue(index).Allocate(renderCommand, sizeof(func));
+            new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
+        }
+        else
+        {
+            const uint32 frameIndex = Get()->GetCurrentFrameIndex();
+            Submit([renderCommand, func, frameIndex]()
+            {
+                auto storageBuffer = GetRenderResourceReleaseQueue(frameIndex).Allocate(renderCommand, sizeof(func));
+                new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
+            });
+        }
+    }
 }

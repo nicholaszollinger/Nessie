@@ -58,7 +58,13 @@ namespace nes
         ///     the end of the main loop.
         //----------------------------------------------------------------------------------------------------
         void                            Internal_Shutdown();
-        
+
+    private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : You should not call this directly. Creates a default Log Target for the platform.
+        //----------------------------------------------------------------------------------------------------
+        static LogTargetPtr             CreateDefaultLogTarget();
+
     private:
         using LoggerMap = std::unordered_map<std::string, std::shared_ptr<Logger>>;
         

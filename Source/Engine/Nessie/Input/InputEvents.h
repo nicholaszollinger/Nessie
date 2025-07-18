@@ -45,37 +45,31 @@ namespace nes
         EMouseButton    m_button    = EMouseButton::Unknown;
         EMouseAction    m_action    = EMouseAction::Unknown;
         Modifiers       m_modifiers = Modifiers{};
-        Vec2            m_position;
+        Vec2            m_position{};
     };
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Event called when the Mouse is moved.
+    /// @brief : Event called when the Mouse is moved.
     //----------------------------------------------------------------------------------------------------
     class MouseMoveEvent final : public Event
     {
         NES_EVENT(MouseMoveEvent)
 
     public:
-        MouseMoveEvent(const float xPos, const float yPos, const float xDelta, const float yDelta);
+        MouseMoveEvent(const float xPos, const float yPos);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current position of the mouse. 
         //----------------------------------------------------------------------------------------------------
         Vec2 GetPosition() const { return m_position; }
-        
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the delta position that the mouse has moved since the last frame.
-        //----------------------------------------------------------------------------------------------------
-        Vec2 GetDelta() const    { return m_delta; }
-
+    
     private:
         Vec2 m_position{};
-        Vec2 m_delta{};
     };
 
 
     //----------------------------------------------------------------------------------------------------
-    ///		@brief : Event called when the Mouse Wheel is scrolled.
+    ///	@brief : Event called when the Mouse Wheel is scrolled.
     //----------------------------------------------------------------------------------------------------
     class MouseScrollEvent final : public Event
     {
