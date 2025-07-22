@@ -1679,6 +1679,7 @@ namespace nes
 
     enum class EQueueType : uint8
     {
+        //Present,
         Graphics,
         Compute,
         Copy,

@@ -1,0 +1,12 @@
+var searchData=
+[
+  ['range_0',['range',['../index.html#scoped_range',1,'Scoped Range'],['../index.html#unique_range',1,'Unique Range']]],
+  ['range_5fhandle_1',['range_handle',['../structnvtx3_1_1v1_1_1range__handle.html',1,'nvtx3::v1::range_handle'],['../structnvtx3_1_1v1_1_1range__handle.html',1,'nvtx3::range_handle'],['../structnvtx3_1_1v1_1_1range__handle.html#a268da1820c8b8c63210123f0eca23b4d',1,'nvtx3::v1::range_handle::range_handle(value_type id) noexcept'],['../structnvtx3_1_1v1_1_1range__handle.html#a5d0f33132aa6782d681656040dd6ce7f',1,'nvtx3::v1::range_handle::range_handle() noexcept=default'],['../structnvtx3_1_1v1_1_1range__handle.html#acaef1aa87e8c7ce936b0e93040b8ad3a',1,'nvtx3::v1::range_handle::range_handle(std::nullptr_t) noexcept']]],
+  ['ranges_2',['Ranges',['../index.html#RANGES',1,'']]],
+  ['red_3',['red',['../structnvtx3_1_1v1_1_1rgb.html#a0ba9bc1b62447a26b2763c2e0f89db58',1,'nvtx3::v1::rgb']]],
+  ['reference_4',['NVTX C++ API Reference',['../index.html',1,'']]],
+  ['registered_20messages_5',['Registered Messages',['../index.html#REGISTERED_MESSAGE',1,'']]],
+  ['registered_5fstring_6',['registered_string',['../nvtx3_8hpp.html#a952cb27f352570421161c01763effe63',1,'nvtx3::v1']]],
+  ['registered_5fstring_5fin_7',['registered_string_in',['../classnvtx3_1_1v1_1_1registered__string__in.html#a7e8f0b775f6363e2187f50648c5a44f5',1,'nvtx3::v1::registered_string_in::registered_string_in(std::string const &amp;msg) noexcept'],['../classnvtx3_1_1v1_1_1registered__string__in.html#ab9d2c81308244bec4198167e2c8d3d4c',1,'nvtx3::v1::registered_string_in::registered_string_in(wchar_t const *msg) noexcept'],['../classnvtx3_1_1v1_1_1registered__string__in.html#a90f6112510f0745a373a7fdb162b85de',1,'nvtx3::v1::registered_string_in::registered_string_in(std::wstring const &amp;msg) noexcept'],['../classnvtx3_1_1v1_1_1registered__string__in.html#a059adcf011e73293c1d76a512d316524',1,'nvtx3::v1::registered_string_in::registered_string_in(char const *msg) noexcept'],['../classnvtx3_1_1v1_1_1registered__string__in.html',1,'nvtx3::v1::registered_string_in&lt; D &gt;'],['../classnvtx3_1_1v1_1_1registered__string__in.html',1,'nvtx3::registered_string_in&lt; D &gt;']]],
+  ['rgb_8',['rgb',['../structnvtx3_1_1v1_1_1rgb.html#a558a299dbc7c98f3d9b7cdd4a5e013e4',1,'nvtx3::v1::rgb::rgb()'],['../structnvtx3_1_1v1_1_1rgb.html',1,'nvtx3::v1::rgb'],['../structnvtx3_1_1v1_1_1rgb.html',1,'nvtx3::rgb']]]
+];

@@ -1,0 +1,13 @@
+# Target labels
+ ShaderMake
+# Source files and their labels
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/_deps/shadermake-build/CMakeFiles/ShaderMake
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/3aea81a95cec5fa44493b2c3bdb7bbe3/ShaderMake.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/d9b0cdbf36b02ab6ce79f9e7c7bdfcf3/ShaderMake-complete.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-build.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-configure.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-download.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-install.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-mkdir.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-patch.rule
+M:/Dev/ThirdPartyLibraries/NRI/NRI/_Build/CMakeFiles/be66f7a82eb54f4eeb40c5a3f2599369/ShaderMake-update.rule

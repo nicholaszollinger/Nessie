@@ -5,7 +5,7 @@
 
 namespace nes
 {
-    class   Device;
+    class   RenderDevice;
     class   Application;
     struct  ApplicationDesc;
     class   ApplicationWindow;
@@ -34,7 +34,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Render Device.
         //----------------------------------------------------------------------------------------------------
-        static Device&          GetRenderDevice();
+        static RenderDevice&          GetRenderDevice();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the device manager, loading the Graphics API and getting device information.
@@ -49,6 +49,6 @@ namespace nes
         void                    Shutdown();
         
     private:
-        std::unique_ptr<Device> m_pDevice;
+        std::unique_ptr<RenderDevice> m_pDevice;
     };
 }

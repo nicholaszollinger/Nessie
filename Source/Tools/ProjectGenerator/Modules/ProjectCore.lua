@@ -30,9 +30,9 @@ function m.Init()
     m.ThirdPartyDir = m.SolutionDir .. "Source\\ThirdParty\\";
     m.SourceFolder = m.SolutionDir .. "Source\\";
     m.ProjectFilesLocation = m.SolutionDir .. "Intermediate\\ProjectFiles\\";
-    m.DefaultOutDir = "$(SolutionDir)Build/$(Configuration)_$(PlatformTarget)/";
+    m.DefaultOutDir = "$(SolutionDir)Build/$(Configuration)_$(PlatformTarget)/$(ProjectName)/";
     m.DefaultLibOutDir = "$(SolutionDir)Intermediate/Libs/$(Configuration)_$(PlatformTarget)/$(ProjectName)/";
-    m.DefaultLibOutDirPath = "%{wks.location}/Intermediate/Libs/%{cfg.buildcfg}_%{cfg.platform}/";
+    m.DefaultLibOutDirPath = "%{wks.location}Intermediate/Libs/%{cfg.buildcfg}_%{cfg.platform}/";
     m.DefaultIntermediateDir = "!$(SolutionDir)Intermediate/Obj/$(Configuration)_$(PlatformTarget)/$(ProjectName)/"
     m.ProjectConfigurations = {"Debug", "Release"};
     m.ProjectSettings = nil;

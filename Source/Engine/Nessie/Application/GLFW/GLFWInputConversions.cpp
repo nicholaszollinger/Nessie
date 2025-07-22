@@ -3,7 +3,6 @@
 #include "GLFWInputConversions.h"
 
 #include "Nessie/Debug/CheckedCast.h"
-#ifdef NES_WINDOW_API_GLFW
 #include <GLFW/glfw3.h>
 #include "Nessie/Input/InputManager.h"
 
@@ -230,5 +229,3 @@ namespace nes::glfw
         return result;
     }
 }
-
-#endif

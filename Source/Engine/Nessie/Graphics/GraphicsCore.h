@@ -1,5 +1,6 @@
 ﻿// Core.h
 #pragma once
+#include <NRI/NRI.h> // Consider making a NriFwd.h file.
 #include "Nessie/Core/Config.h"
 #include "Nessie/Debug/Assert.h"
 
@@ -10,7 +11,35 @@ namespace nes
 {
     NES_DEFINE_LOG_TAG(kRendererLogTag, "Renderer", Info);
 
-    class   Device;
+//============================================================================================================================================================================================
+#pragma region [ Graphics API Types ]
+//============================================================================================================================================================================================
+
+    //----------------------------------------------------------------------------------------------------
+    // These classes exist in name only. They are passed around as pointers, and are cast to the
+    // specific implementation type based on the graphics API used.
+    //----------------------------------------------------------------------------------------------------
+    
+    class GDevice;
+    class GSwapchain;
+    class GFence;
+    class GDeviceQueue;
+    class GCommandBuffer;
+    class GBuffer;
+    class GTexture;
+    class GPipeline;
+    class GQueryPool;
+    class GMemory;
+    class GDescriptor;
+    class GDescriptorSet;
+    class GPipelineLayout;
+    class GCommandPool;
+    
+#pragma endregion
+    
+    
+
+    
     struct  DeviceDesc;
     struct  DeviceCreationDesc;
     struct  PhysicalDeviceDesc;
@@ -22,7 +51,7 @@ namespace nes
     class   DeviceQueue;               /// A logical queue, providing access to hardware queue.
     class   GMemory;              /// A Memory blob allocated on device (GPU) or host (CPU).
     class   GBuffer;              /// A Buffer object: linear array of data.
-    class   Device;               /// A logical device. Interface to the GPU.
+    class   RenderDevice;               /// A logical device. Interface to the GPU.
     class   GTexture;             /// A texture object: multidimensional arrays of data.
     class   Pipeline;             /// A collection of state needed for rendering: shaders and fixed.
     class   GQueryPool;           /// A collection of queries, all the same type.
@@ -46,7 +75,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 
     //----------------------------------------------------------------------------------------------------
-    enum class EGraphicsErrorCodes : int8
+    enum class EGraphicsResult : int8
     {
         /// Values less than Success (0) may result in a crash, but also might be able to be handled.
         DeviceLost          = -2,   /// May be returned by QueueSubmit, WaitIdle, AcquireNextTexture, QueuePresent, WaitForPresent
