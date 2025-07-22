@@ -3,8 +3,6 @@
 #include "Nessie/Application/Application.h"
 #include "Nessie/Graphics/Swapchain.h"
 
-
-
 namespace nes
 {
     static Renderer* g_pRenderer = nullptr;
@@ -104,10 +102,11 @@ namespace nes
         // [TODO]: 
     }
 
-    void Renderer::UpdateSwapchain(const uint32 width, const uint32 height, const bool vsyncEnabled)
+    void Renderer::UpdateSwapchain(const uint32 /*width*/, const uint32 /*height*/, const bool /*vsyncEnabled*/)
     {
-        NES_ASSERT(m_pSwapchain != nullptr);
-        m_pSwapchain->OnResize(width, height, vsyncEnabled);
+        // [TODO]: 
+        //NES_ASSERT(m_pSwapchain != nullptr);
+        //m_pSwapchain->OnResize(width, height, vsyncEnabled);
     }
 
     void Renderer::SwapCommandQueues()

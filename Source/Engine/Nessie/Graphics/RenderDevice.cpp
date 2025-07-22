@@ -1,10 +1,10 @@
-﻿// Device.cpp
+﻿// RenderDevice.cpp
 
-#include "Device.h"
+#include "RenderDevice.h"
 
 namespace nes
 {
-    bool Device::Init(const ApplicationDesc&, ApplicationWindow*, const RendererDesc& rendererDesc)
+    bool RenderDevice::Init(const ApplicationDesc&, ApplicationWindow*, const RendererDesc& rendererDesc)
     {
         m_allocationCallbacks = rendererDesc.m_allocationCallbacks;
         m_allocationCallbacks.EnsureValidCallbacksOrReset();
@@ -12,4 +12,3 @@ namespace nes
         return true;
     }
 }
-

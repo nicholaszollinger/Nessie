@@ -1,7 +1,7 @@
 ﻿// DeviceManager.cpp
 #include "DeviceManager.h"
 #include "Nessie/Application/Platform.h"
-#include "Nessie/Graphics/Device.h"
+#include "Nessie/Graphics/RenderDevice.h"
 #include "Nessie/Graphics/Vulkan/VulkanDevice.h"
 #include "GLFW/glfw3.h"
 
@@ -17,7 +17,7 @@ namespace nes
         NES_ERROR(nes::kGLFWLogTag, "Error: ", error, " - ", description);
     }
 
-    Device& DeviceManager::GetRenderDevice()
+    RenderDevice& DeviceManager::GetRenderDevice()
     {
         return *(Platform::GetDeviceManager().m_pDevice);
     }

@@ -2,7 +2,7 @@
 #pragma once
 #include "VulkanCore.h"
 #include "Nessie/Graphics/RendererDesc.h"
-#include "Nessie/Graphics/Device.h"
+#include "Nessie/Graphics/RenderDevice.h"
 
 namespace nes
 {
@@ -10,7 +10,7 @@ namespace nes
     /// @brief : Under development. Vulkan specific Render Device; contains the instance, physical device and
     ///     logical device.
     //----------------------------------------------------------------------------------------------------
-    class VulkanDevice final : public Device
+    class VulkanDevice final : public RenderDevice
     {
     public:
         // /// Conversion operators for core Vulkan Types.

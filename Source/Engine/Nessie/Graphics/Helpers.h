@@ -82,13 +82,13 @@ public:
     //----------------------------------------------------------------------------------------------------
     /// @brief : Calculate the number of allocations for a resource group. 
     //----------------------------------------------------------------------------------------------------
-    uint32              (*CalculateAllocationNumber) (const Device& device, const ResourceGroupDesc& resourceGroup);
+    uint32              (*CalculateAllocationNumber) (const RenderDevice& device, const ResourceGroupDesc& resourceGroup);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Optimized memory allocation for a group of resources.
     ///     "pOutAllocations" must have entries >= returned by "m_calculateAllocationNumber"
     //----------------------------------------------------------------------------------------------------
-    EGraphicsErrorCodes             (*AllocateAndBindMemory) (Device& device, const ResourceGroupDesc& resourceGroup, GMemory* pOutAllocations);
+    EGraphicsErrorCodes             (*AllocateAndBindMemory) (RenderDevice& device, const ResourceGroupDesc& resourceGroup, GMemory* pOutAllocations);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Populate resources with data (not for streaming!). 
@@ -98,7 +98,7 @@ public:
     //----------------------------------------------------------------------------------------------------
     /// @brief : Get information about video memory. 
     //----------------------------------------------------------------------------------------------------
-    EGraphicsErrorCodes             (*QueryVideoMemoryInfo) (const Device& device, const EMemoryLocation location, VideoMemoryInfo& outVideoMemoryInfo);
+    EGraphicsErrorCodes             (*QueryVideoMemoryInfo) (const RenderDevice& device, const EMemoryLocation location, VideoMemoryInfo& outVideoMemoryInfo);
 };
 
 //----------------------------------------------------------------------------------------------------

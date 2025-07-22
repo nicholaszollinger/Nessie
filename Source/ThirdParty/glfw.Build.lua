@@ -5,7 +5,9 @@ local d = {};
 d.Name = "glfw";
 d.IsOptional = true;
 
-function d.ConfigureProject(projectDir)
+function d.ConfigureProject()
+    local projectDir = d.ProjectDir;
+
     projectCore.SetProjectDefaults();
 
     targetdir(projectCore.DefaultLibOutDir);
@@ -73,14 +75,22 @@ function d.ConfigureProject(projectDir)
     filter "configurations:Release"
         runtime "Release"
         optimize "Speed"
-    
+
+    filter{}
+
+    vpaths
+    {
+        ["Include/*"] = {d.BuildDirectory .. "/glfw/include/GLFW/**.h", d.BuildDirectory .. "/glfw/src/**.h"},
+        ["Source/*"] = { d.BuildDirectory .. "/glfw/src/**.c"},
+    }
+
 end
 
-function d.Include(projectDir)
-    includedirs { projectDir .. "include" }
+function d.Include()
+    includedirs { d.ProjectDir .. "include" }
 end
 
-function d.Link(projectDir)
+function d.Link()
     filter "system:windows"
         links { "glfw3.lib" }
         libdirs { projectCore.DefaultLibOutDirPath .. "glfw/" }

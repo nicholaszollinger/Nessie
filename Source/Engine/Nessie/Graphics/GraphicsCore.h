@@ -10,7 +10,7 @@ namespace nes
 {
     NES_DEFINE_LOG_TAG(kRendererLogTag, "Renderer", Info);
 
-    class   Device;
+    class   RenderDevice;
     struct  DeviceDesc;
     struct  DeviceCreationDesc;
     struct  PhysicalDeviceDesc;
@@ -22,7 +22,7 @@ namespace nes
     class   DeviceQueue;               /// A logical queue, providing access to hardware queue.
     class   GMemory;              /// A Memory blob allocated on device (GPU) or host (CPU).
     class   GBuffer;              /// A Buffer object: linear array of data.
-    class   Device;               /// A logical device. Interface to the GPU.
+    class   RenderDevice;               /// A logical device. Interface to the GPU.
     class   GTexture;             /// A texture object: multidimensional arrays of data.
     class   Pipeline;             /// A collection of state needed for rendering: shaders and fixed.
     class   GQueryPool;           /// A collection of queries, all the same type.

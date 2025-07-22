@@ -40,7 +40,7 @@ namespace nes
 {
     bool VulkanDevice::Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc)
     {
-        if (!Device::Init(appDesc, pWindow, rendererDesc))
+        if (!RenderDevice::Init(appDesc, pWindow, rendererDesc))
             return false;
     
         auto extensions = nes::vulkan::glfw::GetRequiredExtensions();

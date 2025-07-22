@@ -1,7 +1,7 @@
 ﻿// SharedExternal.h
 #pragma once
 #include "Nessie/Math/Generic.h"
-#include "Nessie/Graphics/Device.h"
+#include "Nessie/Graphics/RenderDevice.h"
 #include "Nessie/Graphics/Helpers.h"
 #include "Nessie/Core/String/StringConversions.h"
 

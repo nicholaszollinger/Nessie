@@ -10,18 +10,18 @@ namespace nes
     struct SwapchainDesc;
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Base class for graphics api devices. A Device is the intermediary between the program and
+    /// @brief : Base class for graphics api devices. A RenderDevice is the intermediary between the program and
     ///     the hardware device (GPU).
     //----------------------------------------------------------------------------------------------------
-    class Device
+    class RenderDevice
     {
     public:
-        Device() = default;
-        Device(const Device&) = delete;
-        Device(Device&&) noexcept = delete;
-        Device& operator=(const Device&) = delete;
-        Device& operator=(Device&&) noexcept = delete;
-        virtual ~Device() = default;
+        RenderDevice() = default;
+        RenderDevice(const RenderDevice&) = delete;
+        RenderDevice(RenderDevice&&) noexcept = delete;
+        RenderDevice& operator=(const RenderDevice&) = delete;
+        RenderDevice& operator=(RenderDevice&&) noexcept = delete;
+        virtual ~RenderDevice() = default;
 
         virtual bool                    Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
     

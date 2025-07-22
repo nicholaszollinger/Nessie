@@ -30,7 +30,12 @@ function m.GenerateSolution()
     -- Create the new Solution
     m.PrintInfo("Creating Solution...")
     m.CreateSolution();
-    dependencyInjector.AddProjectsToWorkspace();
+
+    -- Add Registerd projects to the solution:
+    if (dependencyInjector.AddProjectsToWorkspace() == false) then
+        m.PrintSuccessOrFail("Solution Generation", false);
+        return false;
+    end
 
     m.PrintSuccessOrFail("Solution Generation", true);
     return true;
