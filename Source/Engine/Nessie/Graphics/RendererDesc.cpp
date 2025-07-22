@@ -164,28 +164,4 @@ namespace nes
         m_threadPolicy = EThreadPolicy::Multithreaded;
         return *this;
     }
-
-    RendererDesc& RendererDesc::RequireDedicatedComputeQueue()
-    {
-        m_requireDedicatedComputeQueue = true;
-        return *this;
-    }
-
-    RendererDesc& RendererDesc::RequireSeparateComputeQueue()
-    {
-        m_requireSeparateComputeQueue = true;
-        return *this;
-    }
-
-    RendererDesc& RendererDesc::RequireDedicatedCopyQueue()
-    {
-        m_requireDedicatedCopyQueue = true;
-        return *this;
-    }
-
-    RendererDesc& RendererDesc::RequireSeparateCopyQueue()
-    {
-        m_requireSeparateCopyQueue = true;
-        return *this;
-    }
 }

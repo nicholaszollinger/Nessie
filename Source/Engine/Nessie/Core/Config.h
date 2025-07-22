@@ -101,13 +101,13 @@
     #define NES_IF_MULTITHREADED(...) __VA_ARGS__
 #endif
 
-// #if defined(_RENDER_API_VULKAN)
-// #define NES_RENDER_API_VULKAN
-// #define NES_WINDOW_API_GLFW
-//
-// #else
-// #error "No Valid Window & RenderAPI found! 
-// #endif
+#if defined(_RENDER_API_VULKAN)
+#define NES_RENDER_API_VULKAN
+#define NES_WINDOW_API_GLFW
+
+#else
+#error "No Valid Window & RenderAPI found! 
+#endif
 
 /// Enabling Asserts
 #ifndef NES_RELEASE

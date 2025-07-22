@@ -1,6 +1,7 @@
 ﻿// ApplicationWindow.cpp
 #include "Nessie/Core/Config.h"
 
+#ifdef NES_WINDOW_API_GLFW
 #include "GLFW/GLFWInputConversions.h"
 #include "Nessie/Application/Platform.h"
 #include "Nessie/Debug/CheckedCast.h"
@@ -233,4 +234,6 @@ namespace nes
         m_description.m_windowResolution.y = height;
         m_swapChainNeedsRebuild = true;
     }
+
 }
+#endif

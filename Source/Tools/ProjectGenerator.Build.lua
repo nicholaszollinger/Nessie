@@ -6,9 +6,7 @@ local projectCore = require("ProjectCore");
 local p = {};
 p.Name = "ProjectGenerator";
 
-function p.ConfigureProject(dependencyInjector)
-    local projectDir = p.ProjectDir;
-
+function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
     kind "Makefile"
     buildenabled "Off"
@@ -17,11 +15,6 @@ function p.ConfigureProject(dependencyInjector)
     {
         projectDir .. "premake5.lua",
         projectDir .. "Modules/**.lua"
-    }
-
-    vpaths 
-    {
-        ["Source/*"] = { p.BuildDirectory .. "/ProjectGenerator/**.*"}
     }
 
     local premakeDir = projectDir .. "Premake/";

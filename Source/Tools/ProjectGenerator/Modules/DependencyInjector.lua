@@ -55,8 +55,8 @@ function m.Link(targetName)
         -- Set the flag for denoting that this Dependency is actually used.
         target.IsUsed = true;
 
-        target.Include();
-        target.Link();
+        target.Include(target.Directory);
+        target.Link(target.Directory);
 
         -- If the target is a Project, set it as a build dependency for the current project.
         if (target.ConfigureProject ~= nil) then
@@ -88,7 +88,7 @@ function m.Include(targetName)
 
         -- Set the flag for denoting that this Dependency is actually used.
         target.IsUsed = true;
-        target.Include();
+        target.Include(target.Directory);
 
         return true;
     end
@@ -148,7 +148,41 @@ function m.AddProjectsToWorkspace()
         end
 
         m.PrintMessage("Adding Required Project: " .. name);
-        m._GenerateTargetProject(target);
+        group(target.Group)
+            project(target.Name);
+            location(projectCore.ProjectFilesLocation)
+
+            if (target.UUID ~= nil) then
+                uuid(target.UUID);
+            end
+
+            target.ConfigureProject(target.Directory, m);
+
+            -- Reset the Filter.
+            filter {};
+
+            -- Add the Build Script
+            files {target.BuildScript};
+
+            local buildScriptDir = path.getdirectory(target.BuildScript);
+
+            -- [TODO]: I want:
+            --      - The Project's folder that contains the Source files to be in a filter called "Source"
+            --      - The Build Script to be on the outermost project filter.
+            --      - Any ThirdParty files that were added to be in a ThirdParty filter.
+            -- I have tried a bunch of combinations, but the order of how these rules are applied is non-determinent, so it's a bit
+            -- frustrating. The best I was able to get is having all of the included files' in a single source filter.
+            -- Not the best, but is the closest to what I want.
+            vpaths
+            {
+                --["ThirdParty/*"] = { projectCore.SourceFolder .. "**.*" },
+                --["Source/*"] = { target.Directory .. ".**"},
+                --["*"] = { buildScriptDir .. "*." .. BUILD_EXTENSION, projectCore.SourceFolder}
+                --{ ["ThirdParty/*"] = projectCore.SourceFolder .. "**.*"},
+                --{ ["*"] = projectCore.SourceFolder .. "/" .. target.Group .. "/**.*" },
+                --["*"] = { projectCore.SourceFolder .. "**.*"},
+                ["Source/*"] = { buildScriptDir .. "**.*"},
+            }
 
         -- End of Loop
         ::skip::
@@ -168,31 +202,45 @@ function m.AddProjectsToWorkspace()
         end
 
         m.PrintMessage("Adding Optional Project: " .. name);
-        m._GenerateTargetProject(target);
+        group(target.Group)
+            project(target.Name);
+            location(projectCore.ProjectFilesLocation)
+
+            if (target.UUID ~= nil) then
+                uuid(target.UUID);
+            end
+
+            target.ConfigureProject(target.Directory, m);
+
+            -- Reset the Filter.
+            filter {};
+
+            -- Add the Build Script
+            files {target.BuildScript};
+
+            local buildScriptDir = path.getdirectory(target.BuildScript);
+
+            -- [TODO]: I want:
+            --      - The Project's folder that contains the Source files to be in a filter called "Source"
+            --      - The Build Script to be on the outermost project filter.
+            --      - Any ThirdParty files that were added to be in a ThirdParty filter.
+            -- I have tried a bunch of combinations, but the order of how these rules are applied is non-determinent, so it's a bit
+            -- frustrating. The best I was able to get is having all of the included files' in a single source filter.
+            -- Not the best, but is the closest to what I want.
+            vpaths
+            {
+                --["ThirdParty/*"] = { projectCore.SourceFolder .. "**.*" },
+                --["Source/*"] = { target.Directory .. ".**"},
+                --["*"] = { buildScriptDir .. "*." .. BUILD_EXTENSION, projectCore.SourceFolder}
+                --{ ["ThirdParty/*"] = projectCore.SourceFolder .. "**.*"},
+                --{ ["*"] = projectCore.SourceFolder .. "/" .. target.Group .. "/**.*" },
+                --["*"] = { projectCore.SourceFolder .. "**.*"},
+                ["Source/*"] = { buildScriptDir .. "**.*"},
+            }
 
         -- End of Loop
         ::skip::
     end
-end
-
-function m._GenerateTargetProject(target)
-    vpaths {};
-    group(target.Group)
-        project(target.Name);
-        location(projectCore.ProjectFilesLocation)
-
-        if (target.UUID ~= nil) then
-            uuid(target.UUID);
-        end
-
-        target.ConfigureProject(m);
-
-        -- Add the Build Script
-        files { target.BuildScript };
-        vpaths { ["*"] = { target.BuildDirectory .. "/*" .. BUILD_EXTENSION } };
-
-        -- Reset the Filter.
-        filter {};
 end
 
 -----------------------------------------------------------------------------------
@@ -238,17 +286,10 @@ function m._RegisterBuildTargetsFromFolder(folder)
         -- Save the Directory that it was found in.
         local scriptDirectory = path.getdirectory(file);
         target.BuildDirectory = scriptDirectory;
-        if (target.ProjectDir == nil) then
-            target.ProjectDir = target.BuildDirectory .. "\\" .. target.Name .. "\\"
-        end
         target.BuildScript = file;
+        target.Directory = scriptDirectory  .. "/" .. target.Name .. "/";
         target.UUID = nil;
-
-        -- If the group isn't set, use the folder name.
-        if (target.Group == nil) then
-            target.Group = groupName;
-        end
-
+        target.Group = groupName;
         target.IsUsed = false;
 
         -- Dependencies can be set as optional. If this isn't defined, 
@@ -268,50 +309,6 @@ function m._RegisterBuildTargetsFromFolder(folder)
    
         m._targets[target.Name] = target;
     end
-
-    return true;
-end
-
------------------------------------------------------------------------------------
----Add a custom build target, which is assumed to be a table.
----@param target table The build result of the script. Must be a table with a Name.
----@param buildScriptFile string The Lua file responsible for building this target.
------------------------------------------------------------------------------------
-function m._AddCustomTarget(target, buildScriptFile)
-
-    -- Make sure that it is a valid result.
-    if (m._ValidateTarget(buildScriptFile, target) == false) then
-        return false;
-    end
-
-    m.PrintMessage("Registering Custom Target: " .. target.Name);
-    -- Save the Directory that it was found in.
-    local scriptDirectory = path.getdirectory(buildScriptFile);
-    target.BuildDirectory = scriptDirectory;
-    if (target.ProjectDir == nil) then
-            target.ProjectDir = target.BuildDirectory .. "\\" .. target.Name .. "\\"
-    end
-    target.BuildScript = buildScriptFile;
-    target.UUID = nil;
-    target.IsUsed = false;
-
-    -- Dependencies can be set as optional. If this isn't defined, 
-    -- it is assumed to be required.
-    if (target.IsOptional == nil) then
-        target.IsOptional = false;
-    end
-
-    -- If this target defined a ConfigureProject function, try to get an existing UUID.
-    if (os.isdir(projectCore.ProjectFilesLocation) and target.ConfigureProject ~= nil and type(target.ConfigureProject) == "function") then
-        -- Check for an existing project that was created previously, and save the UUID.
-        local projectFilepath = projectCore.ProjectFilesLocation .. target.Name .. ".vcxproj";
-        if (os.isfile(projectFilepath)) then
-            target.UUID = projectCore.GetVSProjectUUID(projectFilepath);
-        end
-    end
-
-    -- Add the Target to table
-    m._targets[target.Name] = target;
 
     return true;
 end

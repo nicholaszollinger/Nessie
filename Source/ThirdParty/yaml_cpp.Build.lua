@@ -3,18 +3,18 @@
 local d = {};
 d.Name = "yaml_cpp";
 
-function d.Include()
-    includedirs { d.ProjectDir .. "include\\" }
+function d.Include(rootDir)
+    includedirs { rootDir .. "include\\" }
 end
 
-function d.Link()
+function d.Link(rootDir)
     filter {"configurations:Debug"}
         links { "yaml-cppd.lib"}
-        libdirs { d.ProjectDir .. "lib\\Debug" }
+        libdirs { rootDir .. "lib\\Debug" }
 
     filter {"configurations:Release"}
         links {"yaml-cpp.lib"}
-        libdirs { d.ProjectDir .. "lib\\Release\\"}
+        libdirs { rootDir .. "lib\\Release\\"}
 
     -- Reset the filter.
     filter{};

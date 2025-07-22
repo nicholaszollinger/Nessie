@@ -6,21 +6,18 @@ local projectCore = require("ProjectCore");
 local p = {};
 p.Name = "PhysicsTests";
 
-function p.ConfigureProject(dependencyInjector)
-    local projectDir = p.ProjectDir;
-
+function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
     kind "ConsoleApp"
     
     dependencyInjector.Link("Nessie");
     dependencyInjector.Link("Assimp");
-    dependencyInjector.Include("NRI");
 
     -- Link RenderAPI libraries if needed.
-    -- local renderAPI = projectCore.ProjectSettings["RenderAPI"];
-    -- if (renderAPI == "Vulkan") then
-    --     dependencyInjector.Link("Vulkan");
-    -- end
+    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
+    if (renderAPI == "Vulkan") then
+        dependencyInjector.Link("Vulkan");
+    end
 
     filter {}
 
@@ -36,11 +33,6 @@ function p.ConfigureProject(dependencyInjector)
         projectDir .. "**.cpp",
         projectDir .. "**.ixx",
         projectDir .. "**.inl",
-    }
-
-    vpaths
-    {
-        ["Source/*"] = { p.BuildDirectory .. "/PhysicsTests/**.*"}
     }
 end
 

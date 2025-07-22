@@ -6,14 +6,14 @@ local d = {};
 d.Name = "Assimp";
 d.IsOptional = true;
 
-function d.Include()
+function d.Include(projectDir)
     includedirs
     {
         projectCore.ThirdPartyDir .. "assimp-5.4.3\\include\\"
     }
 end
 
-function d.Link()
+function d.Link(projectDir)
     
     libdirs { projectCore.ThirdPartyDir .. "assimp-5.4.3\\lib\\" }
     links { "assimp-vc143-mt.lib" }

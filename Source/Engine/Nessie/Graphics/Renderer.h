@@ -1,7 +1,7 @@
 ﻿// Renderer.h
 #pragma once
 #include <functional>
-#include "RenderDevice.h"
+#include "Device.h"
 #include "RenderCommandQueue.h"
 #include "Nessie/Core/Color.h"
 #include "Nessie/Core/Memory/StrongPtr.h"

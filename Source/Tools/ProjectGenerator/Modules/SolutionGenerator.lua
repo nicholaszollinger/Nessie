@@ -4,7 +4,6 @@ local utility = require("Utility");
 local core = require("ProjectCore");
 local cleaner = require("Cleaner");
 local dependencyInjector = require("DependencyInjector");
-local nri = require("NRI");
 
 premake.modules.SolutionGenerator = {};
 local m = premake.modules.SolutionGenerator;
@@ -30,15 +29,9 @@ function m.GenerateSolution()
 
     -- Create the new Solution
     m.PrintInfo("Creating Solution...")
-
-    -- Ensure that we have a valid graphics API for the system.
-    if (nri.ValidateSupport() == false) then
-        m.PrintError("Failed to create Solution! No valid Graphics API!");
-        return false;
-    end
-
     m.CreateSolution();
     dependencyInjector.AddProjectsToWorkspace();
+
     m.PrintSuccessOrFail("Solution Generation", true);
     return true;
 end

@@ -1,8 +1,8 @@
 ﻿// DeviceManager.cpp
 #include "DeviceManager.h"
 #include "Nessie/Application/Platform.h"
-#include "Nessie/Graphics/RenderDevice.h"
-//#include "Nessie/Graphics/Vulkan/VulkanDevice.h"
+#include "Nessie/Graphics/Device.h"
+#include "Nessie/Graphics/Vulkan/VulkanDevice.h"
 #include "GLFW/glfw3.h"
 
 namespace nes
@@ -17,7 +17,7 @@ namespace nes
         NES_ERROR(nes::kGLFWLogTag, "Error: ", error, " - ", description);
     }
 
-    RenderDevice& DeviceManager::GetRenderDevice()
+    Device& DeviceManager::GetRenderDevice()
     {
         return *(Platform::GetDeviceManager().m_pDevice);
     }
@@ -40,13 +40,13 @@ namespace nes
 
     bool DeviceManager::CreateRenderDevice(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc)
     {
-        m_pDevice = std::make_unique<RenderDevice>();
+        m_pDevice = std::make_unique<VulkanDevice>();
         if (!m_pDevice->Init(appDesc, pWindow, rendererDesc))
         {
             NES_ERROR("Failed to Create Render Device!");
             return false;
         }
-        
+
         return true;
     }
 

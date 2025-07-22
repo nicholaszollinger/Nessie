@@ -1,3 +1,0 @@
-﻿// VulkanDeviceQueue.h
-#pragma once
-

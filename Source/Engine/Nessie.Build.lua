@@ -7,7 +7,7 @@ local dependencyInjector = require ("DependencyInjector");
 local p = {};
 p.Name = "Nessie";
 
-function p.ConfigureProject(dependencyInjector)
+function p.ConfigureProject(projectDir, dependencyInjector)
     projectCore.SetProjectDefaults();
 	
 	targetdir(projectCore.DefaultLibOutDir);
@@ -29,7 +29,7 @@ function p.ConfigureProject(dependencyInjector)
     }
 
     -- Platform specific project set up.
-    --p.InitializePlatform(projectDir, dependencyInjector);
+    p.InitializePlatform(projectDir, dependencyInjector);
 
     disablewarnings
     {
@@ -38,40 +38,29 @@ function p.ConfigureProject(dependencyInjector)
 
     files
     {
-        p.ProjectDir .. "**.h",
-        p.ProjectDir .. "**.hpp",
-        p.ProjectDir .. "**.cpp",
-        p.ProjectDir .. "**.ixx",
-        p.ProjectDir .. "**.inl",
-        p.ProjectDir .. "**.natvis",
+        projectDir .. "**.h",
+        projectDir .. "**.hpp",
+        projectDir .. "**.cpp",
+        projectDir .. "**.ixx",
+        projectDir .. "**.inl",
+        projectDir .. "**.natvis",
+
+        -- Add the Shader files:
+        projectCore.SolutionDir .. "Shaders\\**.glsl",
     }
-    vpaths { ["Source/*"] = { p.BuildDirectory .. "/Nessie/**.*"} }
 
-    -- I have to convert the solution dir's path parentheses for the vpaths to work...
-    local absoluteSolutionDir = path.getabsolute(projectCore.SolutionDir);
-
-    -- Add the Shader files:
-    files { projectCore.SolutionDir .. "Shaders\\**.glsl", }
-    vpaths { ["Shaders/*"] = { absoluteSolutionDir .. "/Shaders/**.glsl"} }
-
-    -- Add ThirdParty files and link
-    dependencyInjector.Link("glfw");
-    dependencyInjector.Link("NRI");
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("stb");
     dependencyInjector.AddFilesToProject("fmt");
     dependencyInjector.Link("yaml_cpp");
     dependencyInjector.Include("Assimp");
-    vpaths { ["ThirdParty/*"] = { path.getabsolute(projectCore.ThirdPartyDir) .. "/**.*" } }
-
     
     prebuildcommands { "{MKDIR} %[" .. projectCore.DefaultOutDir .. "]"}
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}
     
     filter {"configurations:Debug"}
-        -- Copy PDB files into output library folder.
+        -- Copy YAML PDB
         postbuildcommands { "{COPYFILE} \"" .. projectCore.ThirdPartyDir .. "yaml_cpp\\lib\\Debug\\yaml-cppd.pdb\" \"" .. projectCore.DefaultLibOutDirPath .. "Nessie\\\""};
-        postbuildcommands { "{COPYFILE} \"" .. projectCore.DefaultLibOutDirPath .. "NRI\\NRI.pdb\" \"" .. projectCore.DefaultLibOutDirPath .. "Nessie\\\""};
     
     filter{}
 end
@@ -84,12 +73,13 @@ end
 -----------------------------------------------------------------------------------------
 function p.InitializePlatform(projectDir, dependencyInjector)
     if (_TARGET_OS == "windows") then
-        -- defines
-        -- {
-        --     "_RENDER_API_VULKAN"
-        -- }
+        defines
+        {
+            "_RENDER_API_VULKAN"
+        }
 
-        
+        dependencyInjector.Link("glfw");
+        dependencyInjector.Include("Vulkan");
         return true;
     end
 
@@ -97,7 +87,7 @@ function p.InitializePlatform(projectDir, dependencyInjector)
     return false;
 end
 
-function p.Link()
+function p.Link(projectDir)
     links { "Nessie" }
     libdirs { projectCore.DefaultLibOutDirPath .. "Nessie/" }
 end
@@ -109,14 +99,12 @@ function p.SetIncludeThirdPartyDirs()
     defines { "YAML_CPP_STATIC_DEFINE" }
 
     dependencyInjector.Include("fmt");
-    dependencyInjector.Include("glfw");
-    --dependencyInjector.Include("NRI");
 
     -- Platform specific options.
-    --p.InitializePlatform(p.BuildDirectory, dependencyInjector);
+    p.InitializePlatform(p.BuildDirectory, dependencyInjector);
 end
 
-function p.Include()
+function p.Include(projectDir)
     includedirs { p.BuildDirectory }
     p.SetIncludeThirdPartyDirs();
 end

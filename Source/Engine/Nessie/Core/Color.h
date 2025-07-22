@@ -56,7 +56,6 @@ namespace nes
         static constexpr LinearColor Yellow()   { return { 1.0f, 1.0f, 0.0f }; }
         static constexpr LinearColor Cyan()     { return { 0.0f, 1.0f, 1.0f }; }
         static constexpr LinearColor Magenta()  { return { 1.0f, 0.0f, 1.0f }; }
-        static constexpr LinearColor Zero()     { return { 0.0f, 0.0f, 0.0f , 0.f }; }
     };
 
     constexpr Color ToColor(const LinearColor& linearColor)

@@ -1,6 +1,5 @@
 ﻿// RendererConfig.h
 #pragma once
-#include "GraphicsCommon.h"
 #include "GraphicsCore.h"
 #include "Nessie/Core/Version.h"
 #include "Nessie/Core/Thread/Thread.h"
@@ -128,35 +127,11 @@ namespace nes
         /// @brief : Make the renderer run in multithreaded mode.
         //----------------------------------------------------------------------------------------------------
         RendererDesc&       EnableMultiThreaded();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Require a queue family that supports compute operations but not graphics or copy.
-        //----------------------------------------------------------------------------------------------------
-        RendererDesc&       RequireDedicatedComputeQueue();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Require a queue family that supports compute operations but not graphics.
-        //----------------------------------------------------------------------------------------------------
-        RendererDesc&       RequireSeparateComputeQueue();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Require a queue family that supports copy operations but not graphics or compute.
-        //----------------------------------------------------------------------------------------------------
-        RendererDesc&       RequireDedicatedCopyQueue();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Require a queue family that supports copy operations but not graphics.
-        //----------------------------------------------------------------------------------------------------
-        RendererDesc&       RequireSeparateCopyQueue();
     
         Version             m_apiVersion = Version(1, 3, 0);
         AllocationCallbacks m_allocationCallbacks{};
         DebugMessenger      m_debugMessenger{};
         EThreadPolicy       m_threadPolicy = EThreadPolicy::Multithreaded;
         bool                m_enableValidationLayer;
-        bool                m_requireDedicatedComputeQueue = false;
-        bool                m_requireDedicatedCopyQueue = false;
-        bool                m_requireSeparateComputeQueue = false;
-        bool                m_requireSeparateCopyQueue = false;
     };
 }

@@ -1,3 +1,3 @@
 ﻿// Shared.cpp
-//#include "SharedExternal.h"
-//#include "SharedExternal.inl"
+#include "SharedExternal.h"
+#include "SharedExternal.inl"
