@@ -1,4 +1,4 @@
-﻿// Core.h
+﻿// GraphicsCore.h
 #pragma once
 #include "Nessie/Core/Config.h"
 #include "Nessie/Debug/Assert.h"
@@ -9,8 +9,7 @@
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kRendererLogTag, "Renderer", Info);
-
-    class   RenderDevice;
+    
     struct  DeviceDesc;
     struct  DeviceCreationDesc;
     struct  PhysicalDeviceDesc;
@@ -39,7 +38,6 @@ namespace nes
 
     enum class EGraphicsAPI : uint8
     {
-        None,
         Vulkan,
     };
 
@@ -58,6 +56,6 @@ namespace nes
         Failure             = 1,
         InvalidArgument     = 2,    
         OutOfMemory         = 3,
-        Unsupported         = 4,    /// Operation or type is unsupported by the gj
+        Unsupported         = 4,    /// Operation or type is unsupported by the Render Device.
     };
 }

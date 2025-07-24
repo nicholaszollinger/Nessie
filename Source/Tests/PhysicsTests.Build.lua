@@ -14,8 +14,6 @@ function p.ConfigureProject(dependencyInjector)
     
     dependencyInjector.Link("Nessie");
     dependencyInjector.Link("Assimp");
-
-    -- TODO: This should be handled by a Module script for Graphics API support.
     dependencyInjector.Link("Vulkan");
 
     filter {}

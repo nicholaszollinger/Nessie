@@ -23,22 +23,22 @@ namespace nes
         RenderDevice& operator=(RenderDevice&&) noexcept = delete;
         virtual ~RenderDevice() = default;
 
-        virtual bool                    Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
+        bool                    Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destroy this device.
         //----------------------------------------------------------------------------------------------------
-        virtual void                    Destroy() = 0;
+        void                    Destroy();
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the description info of this device. 
         //----------------------------------------------------------------------------------------------------
-        virtual const DeviceDesc&       GetDesc() const = 0;
+        //const nri::DeviceDesc&  GetDesc() const;
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the allocation callbacks set for this device.
         //----------------------------------------------------------------------------------------------------
-        const AllocationCallbacks&      GetAllocationCallbacks() const { return m_allocationCallbacks; }
+        //const AllocationCallbacks&      GetAllocationCallbacks() const { return m_allocationCallbacks; }
 
         // //----------------------------------------------------------------------------------------------------
         // /// @brief : Get the features supported for a given format.
@@ -82,7 +82,10 @@ namespace nes
     protected:
 
     private:
-        AllocationCallbacks     m_allocationCallbacks{};
-        DebugMessenger          m_debugMessenger{};
+        //AllocationCallbacks     m_allocationCallbacks{};
+        //DebugMessenger          m_debugMessenger{};
+
+        //nri::Device*        m_pDeviceHandle = nullptr;
+        //nri::CoreInterface  m_coreInterface{};
     };
 }

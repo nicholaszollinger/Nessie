@@ -1,7 +1,6 @@
 ﻿// ApplicationWindow.cpp
 #include "Nessie/Core/Config.h"
 
-#ifdef NES_WINDOW_API_GLFW
 #include "GLFW/GLFWInputConversions.h"
 #include "Nessie/Application/Platform.h"
 #include "Nessie/Debug/CheckedCast.h"
@@ -14,9 +13,8 @@ namespace nes
     {
         m_description = desc;
         
-    #ifdef NES_RENDER_API_VULKAN
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    #endif
+
         // Set whether the Window is resizable or not.
         glfwWindowHint(GLFW_RESIZABLE, desc.m_isResizable);
         
@@ -236,4 +234,3 @@ namespace nes
     }
 
 }
-#endif

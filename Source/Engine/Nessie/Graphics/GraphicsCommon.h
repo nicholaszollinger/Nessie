@@ -1,7 +1,6 @@
 ﻿// Common.h
 #pragma once
 #include "GraphicsCore.h"
-#include "Shared/StdAllocator.h"
 #include "Nessie/Core/Color.h"
 #include "Nessie/Core/Config.h"
 

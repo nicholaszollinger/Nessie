@@ -19,8 +19,6 @@ function d.Include()
     includedirs
     {
         vulkanSupport.VulkanSDKPath .. "\\Include",
-        projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\src\\"
-        -- [TODO] vma
     }
 
     defines
@@ -41,15 +39,12 @@ function d.Link()
     links 
     {
         "vulkan-1.lib",
-        "vk-bootstrap.lib",
         "shaderc_shared.lib"
-        --vma
     }
 
     libdirs
     {
         vulkanSupport.VulkanSDKPath .. "\\Lib\\",
-        --vma
     }
 
     -- Add the BuildScript to the Project (Nessie)
@@ -57,21 +52,6 @@ function d.Link()
 
     filter "system:windows"
         defines { "VK_USE_PLATFORM_WIN32_KHR" }
-
-
-    filter "configurations:Debug"
-        libdirs 
-        {
-            -- vkBootstrap Debug folder
-            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Debug\\"
-        }
-
-    filter "configurations:Release"
-        libdirs 
-        {
-            -- vkBootstrap Release folder
-            projectCore.ThirdPartyDir .. "vk-bootstrap-1.3.302\\lib\\Release\\"
-        }
 end
 
 return d;

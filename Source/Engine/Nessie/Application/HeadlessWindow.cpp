@@ -2,7 +2,6 @@
 #include "HeadlessWindow.h"
 #include "Nessie/Core/Config.h"
 
-#ifdef NES_WINDOW_API_GLFW
 #include "GLFW/GLFWInputConversions.h"
 #include "Nessie/Application/Platform.h"
 #include "Nessie/Debug/CheckedCast.h"
@@ -18,9 +17,7 @@ namespace nes
         m_description.m_isResizable = false;
         m_description.m_cursorMode = ECursorMode::Visible;
 
-#ifdef NES_RENDER_API_VULKAN
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-#endif
 
         // Hide the window.
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -96,5 +93,3 @@ namespace nes
         glfwPollEvents();
     }
 }
-
-#endif

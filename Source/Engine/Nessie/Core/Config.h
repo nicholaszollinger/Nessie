@@ -61,7 +61,6 @@
     #define NES_CACHE_LINE_SIZE 64
 #endif
 
-#define NOMINMAX
 #ifdef NES_USE_SSE
     #include <immintrin.h>
 #endif
@@ -99,14 +98,6 @@
     #define NES_IS_MULTI_THREADED 1
     #define NES_IF_SINGLE_THREADED(...)
     #define NES_IF_MULTITHREADED(...) __VA_ARGS__
-#endif
-
-#if defined(_RENDER_API_VULKAN)
-#define NES_RENDER_API_VULKAN
-#define NES_WINDOW_API_GLFW
-
-#else
-#error "No Valid Window & RenderAPI found! 
 #endif
 
 /// Enabling Asserts

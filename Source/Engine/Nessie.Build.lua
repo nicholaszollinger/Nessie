@@ -9,7 +9,7 @@ p.Name = "Nessie";
 
 function p.ConfigureProject(dependencyInjector)
     projectCore.SetProjectDefaults();
-	
+
 	targetdir(projectCore.DefaultLibOutDir);
     kind "StaticLib"
     language "C++"
@@ -27,9 +27,6 @@ function p.ConfigureProject(dependencyInjector)
         , "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\""
 		, "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\""
     }
-
-    -- Platform specific project set up.
-    p.InitializePlatform(dependencyInjector);
 
     disablewarnings
     {
@@ -58,42 +55,16 @@ function p.ConfigureProject(dependencyInjector)
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("stb");
     dependencyInjector.AddFilesToProject("fmt");
-    dependencyInjector.Link("yaml_cpp");
     dependencyInjector.Include("Assimp");
+    dependencyInjector.Include("Vulkan");
+    dependencyInjector.Link("glfw");
+    dependencyInjector.Link("yaml_cpp");
     vpaths { ["ThirdParty/*"] = { path.getabsolute(projectCore.ThirdPartyDir) .. "/**.*" } }
 
-    
     prebuildcommands { "{MKDIR} %[" .. projectCore.DefaultOutDir .. "]"}
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}
     
-    filter {"configurations:Debug"}
-        -- Copy PDB files into output library folder.
-        postbuildcommands { "{COPYFILE} \"" .. projectCore.ThirdPartyDir .. "yaml_cpp\\lib\\Debug\\yaml-cppd.pdb\" \"" .. projectCore.DefaultLibOutDirPath .. "Nessie\\\""};
-        --postbuildcommands { "{COPYFILE} \"" .. projectCore.DefaultLibOutDirPath .. "NRI\\NRI.pdb\" \"" .. projectCore.DefaultLibOutDirPath .. "Nessie\\\""};
-    
     filter{}
-end
-
------------------------------------------------------------------------------------------
--- Platform specific project set up.
----@param dependencyInjector table Dependency Injector module.
----@return boolean Success If false, then we have no valid Render API set.
------------------------------------------------------------------------------------------
-function p.InitializePlatform(dependencyInjector)
-    if (_TARGET_OS == "windows") then
-        defines
-        {
-            "_RENDER_API_VULKAN"
-        }
-
-        dependencyInjector.Link("glfw");
-        dependencyInjector.Include("Vulkan");
-
-        return true;
-    end
-
-    projectCore.PrintError("Unsupported Platform!");
-    return false;
 end
 
 function p.Link()
@@ -105,14 +76,9 @@ function p.SetIncludeThirdPartyDirs()
     -- Include directories for third party files.
     dependencyInjector.Include("imgui");
     dependencyInjector.Include("yaml_cpp");
-    defines { "YAML_CPP_STATIC_DEFINE" }
-
     dependencyInjector.Include("fmt");
-    --dependencyInjector.Include("glfw");
-    --dependencyInjector.Include("NRI");
-
-    -- Platform specific options.
-    p.InitializePlatform(dependencyInjector);
+    dependencyInjector.Include("glfw");
+    dependencyInjector.Include("Vulkan");
 end
 
 function p.Include()
