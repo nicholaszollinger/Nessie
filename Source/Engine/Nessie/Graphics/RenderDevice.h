@@ -23,12 +23,17 @@ namespace nes
         RenderDevice& operator=(RenderDevice&&) noexcept = delete;
         virtual ~RenderDevice() = default;
 
-        bool                    Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
+        virtual bool                Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc) = 0;
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destroy this device.
         //----------------------------------------------------------------------------------------------------
-        void                    Destroy();
+        virtual void                Destroy() = 0;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Post a message using the set Debug Messenger callback.
+        //----------------------------------------------------------------------------------------------------
+        void                        ReportMessage(const ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag = kGraphicsLogTag) const;
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the description info of this device. 
@@ -38,7 +43,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the allocation callbacks set for this device.
         //----------------------------------------------------------------------------------------------------
-        //const AllocationCallbacks&      GetAllocationCallbacks() const { return m_allocationCallbacks; }
+        const AllocationCallbacks&  GetAllocationCallbacks() const { return m_allocationCallbacks; }
 
         // //----------------------------------------------------------------------------------------------------
         // /// @brief : Get the features supported for a given format.
@@ -82,10 +87,7 @@ namespace nes
     protected:
 
     private:
-        //AllocationCallbacks     m_allocationCallbacks{};
-        //DebugMessenger          m_debugMessenger{};
-
-        //nri::Device*        m_pDeviceHandle = nullptr;
-        //nri::CoreInterface  m_coreInterface{};
+        AllocationCallbacks     m_allocationCallbacks{};
+        DebugMessenger          m_debugMessenger{};
     };
 }

@@ -13,9 +13,13 @@
     #define NES_NARGS(...) _NES_NARGS(0, ## __VA_ARGS__, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0)
 #endif
 
+#define _NES_STRINGIFY(token) #token
+#define NES_STRINGIFY(token) _NES_STRINGIFY(token) 
+
 // Combine token names: (Player, Data) -> PlayerData
 #define _NES_MERGE_TOKENS(_0, _1) _0##_1
 #define NES_MERGE_TOKENS(_0, _1) _NES_MERGE_TOKENS(_0, _1)
+#define NES_MERGE_TOKENS3(_0, _1, _2) _0##_1##_2
 
 #define _NES_SEQ0(code, ...)
 #define _NES_SEQ1(code, ...) _NES_EXPAND(code(0, __VA_ARGS__))

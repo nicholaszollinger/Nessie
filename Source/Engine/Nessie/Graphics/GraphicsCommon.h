@@ -3,6 +3,7 @@
 #include "GraphicsCore.h"
 #include "Nessie/Core/Color.h"
 #include "Nessie/Core/Config.h"
+#include "Nessie/Core/Version.h"
 
 //-------------------------------------------------------------------------------------------------
 // Under development. This file contains the main descriptions for many graphics types. I am
@@ -1669,33 +1670,34 @@ namespace nes
         INTEL,
     };
 
-    enum class EArchitecture : uint8
+    enum class EPhysicalDeviceType : uint8
     {
-        Unknown,    // CPU device, virtual GPU or other.
-        Integrated, // UMA
-        Discrete    // Yay!
+        Unknown,
+        CPU,
+        VirtualGPU,
+        Integrated,
+        DiscreteGPU, 
     };
 
     enum class EQueueType : uint8
     {
         Graphics,
         Compute,
-        Copy,
+        Transfer,
         MaxNum
     };
 
     struct PhysicalDeviceDesc
     {
-        char            m_name[256]{};
-        uint64          m_luid;
-        uint64          m_videoMemorySize;
-        uint64          m_sharedSystemMemorySize;
-        uint32          m_deviceID;
-
-        /// Number of Queues available per type.
-        uint32          m_queueNum[static_cast<uint32>(EQueueType::MaxNum)];
-        EVendor         m_vendor;
-        EArchitecture   m_architecture;
+        char                m_name[256]{};                                          /// Name of the Device.
+        uint32              m_deviceID{};                                           /// Unique identifier for the Device.
+        uint32              m_driverVersion{};
+        uint32              m_apiSupport{};
+        uint64              m_videoMemorySize{};                                    /// Amount of video memory, in 
+        uint64              m_sharedSystemMemorySize{};                             /// Amount 
+        uint32              m_numQueuesByType[static_cast<uint32>(EQueueType::MaxNum)];
+        EVendor             m_vendor = EVendor::Unknown;                            /// Vendor that made the device.
+        EPhysicalDeviceType m_architecture = EPhysicalDeviceType::Unknown;                /// What type of device it is.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1704,271 +1706,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DeviceDesc
     {
-        PhysicalDeviceDesc  m_adapterDesc;  // m_queueNum reflects the available number of queues per "EQueueType".
-        EGraphicsAPI        m_graphicsAPI;
-
-        struct // Viewport
-        {
-            uint32      m_maxNum;
-            uint16      m_boundsMin;
-            uint16      m_boundsMax;
-        } m_viewport;
-    
-        struct // Max Dimensions
-        {
-            uint32      m_typedBufferMaxDim;
-            DimType     m_attachmentMaxDim;
-            DimType     m_attachmentLayerMaxNum;
-            DimType     m_texture1DMaxDim;
-            DimType     m_texture2DMaxDim;
-            DimType     m_texture3DMaxDim;
-            DimType     m_textureLayerMaxNum;
-        } m_dimensions;
-
-        struct // Precision Bits
-        {
-            uint32      m_viewportBits;
-            uint32      m_subPixelBits;
-            uint32      m_subTexelBits;
-            uint32      m_mipMapBits;
-        } m_precision;
-
-        struct // Memory
-        {
-            uint64      m_deviceUploadHeapSize;
-            uint32      m_allocationMaxNum;
-            uint32      m_samplerAllocationMaxNum;
-            uint32      m_constantBufferMaxRange;
-            uint32      m_storageBufferMaxRange;
-            uint32      m_bufferTextureGranularity;
-            uint64      m_bufferMaxSize;
-        } m_memory;
-    
-        struct // Memory Alignment
-        {
-            uint32      m_uploadBufferTextureRow;
-            uint32      m_uploadBufferTextureSlice;
-            uint32      m_shaderBindingTable;
-            uint32      m_bufferShaderResourceOffset;
-            uint32      m_constantBufferOffset;
-            uint32      m_scratchBufferOffset;
-            uint32      m_accelerationStructureOffset;
-            uint32      m_micromapOffset;
-        } m_memoryAlignment;
-    
-        struct // Pipeline Layout
-        {
-            uint32      m_maxNumDescriptorSets;
-            uint32      m_rootConstantMaxSize;
-            uint32      m_maxNumRootDescriptors;
-        } m_pipelineLayout;
-
-        struct // Descriptor Set
-        {
-            uint32      m_samplerMaxNum;
-            uint32      m_constantBufferMaxNum;
-            uint32      m_storageBufferMaxNum;
-            uint32      m_textureMaxNum;
-            uint32      m_storageTextureMaxNum;
-        
-            struct // Update After Set
-            {
-                uint32  m_samplerMaxNum;
-                uint32  m_constantBufferMaxNum;
-                uint32  m_storageBufferMaxNum;
-                uint32  m_textureMaxNum;
-                uint32  m_storageTextureMaxNum;
-            } m_updateAfterSet;
-        
-        } m_descriptorSet;
-
-        struct // Shader Stages 
-        {
-            // Per stage resources
-            uint32      m_descriptorSamplerMaxNum;
-            uint32      m_descriptorConstantBufferMaxNum;
-            uint32      m_descriptorStorageBufferMaxNum;
-            uint32      m_descriptorTextureMaxNum;
-            uint32      m_descriptorStorageTextureMaxNum;
-            uint32      m_resourceMaxNum;
-
-            struct // Update After Set
-            {
-                uint32  m_descriptorSamplerMaxNum;
-                uint32  m_descriptorConstantBufferMaxNum;
-                uint32  m_descriptorStorageBufferMaxNum;
-                uint32  m_descriptorTextureMaxNum;
-                uint32  m_descriptorStorageTextureMaxNum;
-                uint32  m_resourceMaxNum;
-            } m_updateAfterSet;
-
-            struct // Vertex
-            {
-                uint32  m_attributeMaxNum;
-                uint32  m_streamMaxNum;
-                uint32  m_outputComponentMaxNum;
-            } m_vertex;
-        
-            struct // Tessellation evaluation
-            {
-                uint32  m_inputComponentMaxNum;
-                uint32  m_outputComponentMaxNum;
-            } m_tesselationEvaluation;
-        
-            struct // Geometry
-            {
-                uint32  m_invocationMaxNum;
-                uint32  m_inputComponentMaxNum;
-                uint32  m_outputComponentMaxNum;
-                uint32  m_outputVertexMaxNum;
-                uint32  m_totalOutputComponentMaxNum;
-            } m_geometry;
-        
-            struct // Fragment
-            {
-                uint32  m_inputComponentMaxNum;
-                uint32  m_attachmentMaxNum;
-                uint32  m_dualSourceAttachmentMaxNum;
-            } m_fragment;
-        
-            struct // Compute
-            {
-                uint32  m_sharedMemoryMaxSize;
-                uint32  m_workGroupMaxNum[3];
-                uint32  m_workGroupInvocationMaxNum;
-                uint32  m_workGroupMaxDim[3];
-            } m_compute;
-        
-            struct // Ray tracing 
-            {
-                uint32  m_shaderGroupIdentifierSize;
-                uint32  m_tableMaxStride;
-                uint32  m_recursionMaxDepth;
-            } m_rayTracing;
-        
-            struct // Mesh control
-            {
-                uint32  m_sharedMemoryMaxSize;
-                uint32  m_workGroupInvocationMaxNum;
-                uint32  m_payloadMaxSize;
-            } m_meshControl;
-        
-            struct // Mesh evaluation
-            {
-                uint32  m_outputVerticesMaxNum;
-                uint32  m_outputPrimitiveMaxNum;
-                uint32  m_outputComponentMaxNum;
-                uint32  m_sharedMemoryMaxSize;
-                uint32  m_workGroupInvocationMaxNum;
-            } m_meshEvaluation;
-        
-        } m_shaderStages;
-    
-        struct // Other
-        {
-            uint64      m_timestampFrequencyHz;
-            uint32      m_micromapSubdivisionMaxLevel;
-            uint32      m_drawIndirectMaxNum;
-            float       m_samplerLodBiasMax;
-            float       m_samplerAnisotropyMax;
-            int8        m_texelOffsetMin;
-            uint8       m_texelOffsetMax;
-            int8        m_texelGatherOffsetMin;
-            uint8       m_texelGatherOffsetMax;
-            uint8       m_clipDistanceMaxNum;
-            uint8       m_cullDistanceMaxNum;
-            uint8       m_combinedClipAndCullDistanceMaxNum;
-            uint8       m_viewMaxNum;                         // multiview is supported if > 1
-            uint8       m_shadingRateAttachmentTileSize;      // square size
-        } m_other;
-    
-        struct // Tiers (0 - unsupported)
-        {
-            // 1 - 1/2 pixel uncertainty region and does not support post-snap degenerates
-            // 2 - reduces the maximum uncertainty region to 1/256 and requires post-snap degenerates not be culled
-            // 3 - maintains a maximum 1/256 uncertainty region and adds support for inner input coverage, aka "SV_InnerCoverage"
-            uint8       m_conservativeRaster;
-
-            // 1 - a single sample pattern can be specified to repeat for every pixel ("locationNum / sampleNum" ratio must be 1 in "CmdSetSampleLocations").
-            //     1x and 16x sample counts do not support programmable locations
-            // 2 - four separate sample patterns can be specified for each pixel in a 2x2 grid ("locationNum / sampleNum" ratio can be 1 or 4 in "CmdSetSampleLocations")
-            //     All sample counts support programmable positions
-            uint8       m_sampleLocations;
-
-            // 1 - DXR 1.0: full raytracing functionality, except features below
-            // 2 - DXR 1.1: adds - ray query, "CmdDispatchRaysIndirect", "GeometryIndex()" intrinsic, additional ray flags & vertex formats
-            // 3 - DXR 1.2: adds - micromap, shader execution reordering
-            uint8       m_rayTracing;
-
-            // 1 - shading rate can be specified only per draw
-            // 2 - adds: per primitive shading rate, per "shadingRateAttachmentTileSize" shading rate, combiners, "SV_ShadingRate" support
-            uint8       m_shadingRate;
-
-            // 1 - unbound arrays with dynamic indexing
-            // 2 - D3D12 dynamic resources: https://microsoft.github.io/DirectX-Specs/d3d/HLSL_SM_6_6_DynamicResources.html
-            uint8       m_bindless;
-
-            // 0 - ALL descriptors in range must be valid by the time the command list executes
-            // 1 - only "CONSTANT_BUFFER" and "STORAGE" descriptors in range must be valid
-            // 2 - only referenced descriptors must be valid
-            uint8       m_resourceBinding;
-
-            // 1 - a "Memory" can support resources from all 3 categories: buffers, attachments, all other textures
-            uint8       m_memory;
-        } m_tiers;
-
-        // Features
-        struct
-        {
-            // Bigger
-            uint32      m_getMemoryDesc2                                  : 1; // (VK: requires "maintenance4")
-            uint32      m_swapChain                                       : 1; // SwapChain
-            uint32      m_rayTracing                                      : 1; // RayTracing
-            uint32      m_meshShader                                      : 1; // MeshShader
-            uint32      m_lowLatency                                      : 1; // LowLatency
-            uint32      m_micromap                                        : 1; // see "Micromap"
-
-            // Smaller
-            uint32      m_independentFrontAndBackStencilReferenceAndMasks : 1; // see "StencilAttachmentDesc::m_back"
-            uint32      m_textureFilterMinMax                             : 1; // see "EReductionMode"
-            uint32      m_logicOp                                         : 1; // see "ELogicOp"
-            uint32      m_depthBoundsTest                                 : 1; // see "DepthAttachmentDesc::m_boundsTest"
-            uint32      m_drawIndirectCount                               : 1; // see "m_countBuffer" and "m_countBufferOffset"
-            uint32      m_lineSmoothing                                   : 1; // see "RasterizationDesc::m_lineSmoothing"
-            uint32      m_copyQueueTimestamp                              : 1; // see "QueryType::TimeStampCopyQueue"
-            uint32      m_meshShaderPipelineStats                         : 1; // see "PipelineStatisticsDesc"
-            uint32      m_dynamicDepthBias                                : 1; // see "CmdSetDepthBias"
-            uint32      m_additionalShadingRates                          : 1; // see "ShadingRate"
-            uint32      m_viewportOriginBottomLeft                        : 1; // see "Viewport"
-            uint32      m_regionResolve                                   : 1; // see "CmdResolveTexture"
-            uint32      m_flexibleMultiview                               : 1; // see "EMultiview::Flexible"
-            uint32      m_layerBasedMultiview                             : 1; // see "EMultiview::LayeredBased"
-            uint32      m_viewportBasedMultiview                          : 1; // see "EMultiview::ViewportBased"
-            uint32      m_presentFromCompute                              : 1; // see "SwapChainDesc::m_queue"
-            uint32      m_waitableSwapChain                               : 1; // see "SwapChainDesc::m_waitable"
-            uint32      m_pipelineStatistics                              : 1; // see "EQueryType::PipelineStatistics"
-        } m_features;
-
-        // Shader features (I32, F32 and I32 atomics are always supported)
-        struct {
-            uint32      m_nativeI16                                       : 1; // "(u)int16_t"
-            uint32      m_nativeF16                                       : 1; // "float16_t"
-            uint32      m_nativeI64                                       : 1; // "(u)int64_t"
-            uint32      m_nativeF64                                       : 1; // "double"
-            uint32      m_atomicsI16                                      : 1; // "(u)int16_t" atomics (can be partial support of SMEM, texture or buffer atomics)
-            uint32      m_atomicsF16                                      : 1; // "float16_t" atomics (can be partial support of SMEM, texture or buffer atomics)
-            uint32      m_atomicsF32                                      : 1; // "float" atomics (can be partial support of SMEM, texture or buffer atomics)
-            uint32      m_atomicsI64                                      : 1; // "(u)int64_t" atomics (can be partial support of SMEM, texture or buffer atomics)
-            uint32      m_atomicsF64                                      : 1; // "double" atomics (can be partial support of SMEM, texture or buffer atomics)
-            uint32      m_viewportIndex                                   : 1; // always can be used in geometry shaders
-            uint32      m_layerIndex                                      : 1; // always can be used in geometry shaders
-            uint32      m_clock                                           : 1; // shader clock (timer)
-            uint32      m_rasterizedOrderedView                           : 1; // ROV, aka fragment shader interlock
-            uint32      m_barycentric                                     : 1; // barycentric coordinates
-            uint32      m_rayTracingPositionFetch                         : 1; // position fetching directly from AS
-            uint32      m_storageReadWithoutFormat                        : 1; // NES_FORMAT("unknown") is allowed for storage reads
-            uint32      m_storageWriteWithoutFormat                       : 1; // NES_FORMAT("unknown") is allowed for storage writes
-        } m_shaderFeatures;
+        PhysicalDeviceDesc  m_physicalDeviceDesc;
+        EGraphicsAPI        m_graphicsAPI = EGraphicsAPI::Vulkan;
     };
 #pragma endregion
 }

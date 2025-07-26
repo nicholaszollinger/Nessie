@@ -22,12 +22,12 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Default message callback to use for the Renderer. Ignores the user arg.
     //----------------------------------------------------------------------------------------------------
-    inline void DefaultMessageCallback(const ELogLevel level, const char* file, const uint32 line, const char* functionName, const char* message, [[maybe_unused]] void* pUserArg)
+    inline void DefaultMessageCallback(const ELogLevel level, const char* file, const uint32 line, const char* message, const LogTag& tag, [[maybe_unused]] void* pUserArg)
     {
         if (auto logger = LoggerRegistry::Instance().GetDefaultLogger())
         {
-            const internal::LogSource source(file, line, functionName);
-            logger->Log(source, level, message);
+            const internal::LogSource source(file, line, nullptr);
+            logger->Log(source, level, tag, message);
         }
     }
 
@@ -61,9 +61,9 @@ namespace nes
         return *this;
     }
 
-    void DebugMessenger::SendMessage(const ELogLevel level, const char* file, const uint32 line, const char* functionName, const char* message) const
+    void DebugMessenger::SendMessage(const ELogLevel level, const char* file, const uint32 line, const char* message, const LogTag& tag) const
     {
-        m_callback(level, file, line, functionName, message, m_pUserData);
+        m_callback(level, file, line, message, tag, m_pUserData);
     }
 
     AllocationCallbacks::AllocationCallbacks()
@@ -162,6 +162,42 @@ namespace nes
     RendererDesc& RendererDesc::EnableMultiThreaded()
     {
         m_threadPolicy = EThreadPolicy::Multithreaded;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequireDedicatedComputeQueue()
+    {
+        m_requireDedicatedComputeQueue = true;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequireSeparateComputeQueue()
+    {
+        m_requireSeparateComputeQueue = true;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequireDedicatedTransferQueue()
+    {
+        m_requireDedicatedTransferQueue = true;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequireSeparateTransferQueue()
+    {
+        m_requireSeparateTransferQueue = true;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequirePhyscialDeviceType(const EPhysicalDeviceType type)
+    {
+        m_requiredDeviceType = type;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequireDiscreteGPU()
+    {
+        m_requiredDeviceType = EPhysicalDeviceType::DiscreteGPU;
         return *this;
     }
 }

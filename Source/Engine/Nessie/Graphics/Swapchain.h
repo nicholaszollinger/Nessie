@@ -30,34 +30,6 @@
 //     BT2020_G2084_10BIT  // HDR, SMPTE, 10 bit.
 // };
 //
-// enum class ESwapchainBits : uint8
-// {
-//     None            = 0,
-//     Vsync           = NES_BIT(0),   // Cap framerate to the monitor refresh rate.
-//     Waitable        = NES_BIT(1),   // Unlock "WaitForPresent" reducing latency (requires m_features.m_waitableSwapchain").
-//     AllowTearing    = NES_BIT(2),   // Allow screen tearing if possible.
-//     AllowLowLatency = NES_BIT(3),   // Allow "LowLatency" functionality (requires "features.m_lowLatency").
-// };
-// NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ESwapchainBits);
-//
-// //----------------------------------------------------------------------------------------------------
-// /// @brief : Expects NES_PLATFORM_WINDOWS macro. 
-// //----------------------------------------------------------------------------------------------------
-// struct WindowsWindow
-// {
-//     void*           m_hwnd;
-// };
-//
-// //----------------------------------------------------------------------------------------------------
-// // [TODO]: Add other platforms as necessary. 
-// /// @brief : Group of native window handles for different platforms. Only one will be valid, depending
-// ///     on the current platform.
-// //----------------------------------------------------------------------------------------------------
-// struct NativeWindow
-// {
-//     WindowsWindow   m_windows;
-// };
-
 
 // struct ChromaticityCoords
 // {
@@ -107,7 +79,34 @@ namespace nes
 {
     class Swapchain;
     class ApplicationWindow;
-    struct NativeWindow;
+
+    enum class ESwapchainBits : uint8
+    {
+        None            = 0,
+        Vsync           = NES_BIT(0),   // Cap framerate to the monitor refresh rate.
+        Waitable        = NES_BIT(1),   // Unlock "WaitForPresent" reducing latency (requires m_features.m_waitableSwapchain").
+        AllowTearing    = NES_BIT(2),   // Allow screen tearing if possible.
+        AllowLowLatency = NES_BIT(3),   // Allow "LowLatency" functionality (requires "features.m_lowLatency").
+    };
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ESwapchainBits);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Expects NES_PLATFORM_WINDOWS macro. 
+    //----------------------------------------------------------------------------------------------------
+    struct WindowsWindow
+    {
+        void*           m_hwnd;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Add other platforms as necessary. 
+    /// @brief : Group of native window handles for different platforms. Only one will be valid, depending
+    ///     on the current platform.
+    //----------------------------------------------------------------------------------------------------
+    struct NativeWindow
+    {
+        WindowsWindow   m_windows;
+    };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Info for creating a swapchain.

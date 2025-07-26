@@ -1,5 +1,6 @@
 ﻿// RendererConfig.h
 #pragma once
+#include "GraphicsCommon.h"
 #include "GraphicsCore.h"
 #include "Nessie/Core/Version.h"
 #include "Nessie/Core/Thread/Thread.h"
@@ -58,7 +59,7 @@ namespace nes
         void*                   m_pUserData = nullptr;
     };
 
-    using DebugMessageCallback = void (*)(ELogLevel level, const char* file, const uint32 line, const char* functionName, const char* message, void* pUserArg);
+    using DebugMessageCallback = void (*)(ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag, void* pUserArg);
 
     struct DebugMessenger
     {
@@ -80,7 +81,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Call the message callback, attaching the set user data.
         //----------------------------------------------------------------------------------------------------
-        void                    SendMessage(const ELogLevel, const char* file, const uint32 line, const char* functionName, const char* message) const;
+        void                    SendMessage(const ELogLevel, const char* file, const uint32 line, const char* message, const LogTag& tag) const;
     
         DebugMessageCallback    m_callback;
         void*                   m_pUserData = nullptr;
@@ -127,11 +128,47 @@ namespace nes
         /// @brief : Make the renderer run in multithreaded mode.
         //----------------------------------------------------------------------------------------------------
         RendererDesc&       EnableMultiThreaded();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require a queue family that supports compute operations but not graphics or transfer.
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequireDedicatedComputeQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require a queue family that supports compute operations but not graphics.
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequireSeparateComputeQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require a queue family that supports transfer operations but not graphics or compute.
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequireDedicatedTransferQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require a queue family that supports transfer operations but not graphics.
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequireSeparateTransferQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require a specific type of physical device. By default, any is allowed.
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequirePhyscialDeviceType(const EPhysicalDeviceType type);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require that a discrete GPU be used. 
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequireDiscreteGPU();
     
         Version             m_apiVersion = Version(1, 3, 0);
         AllocationCallbacks m_allocationCallbacks{};
         DebugMessenger      m_debugMessenger{};
         EThreadPolicy       m_threadPolicy = EThreadPolicy::Multithreaded;
+        EPhysicalDeviceType m_requiredDeviceType = EPhysicalDeviceType::Unknown; /// Unknown is treated as any device type.
         bool                m_enableValidationLayer;
+        bool                m_useDebugMessenger = true;
+        bool                m_requireDedicatedComputeQueue = false;
+        bool                m_requireDedicatedTransferQueue = false;
+        bool                m_requireSeparateComputeQueue = false;
+        bool                m_requireSeparateTransferQueue = false;
     };
 }

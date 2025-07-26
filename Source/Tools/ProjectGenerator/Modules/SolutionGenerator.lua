@@ -75,6 +75,11 @@ function m.EnableInstructionSets()
     filter "platforms:x64"
         defines
         {
+            "WIN32",
+            "_WINDOWS",
+            "WIN32_LEAN_AND_MEAN",
+            "NOMINMAX",
+
             "NES_USE_SSE",
             "NES_USE_SSE4_1",
             "NES_USE_SSE4_2",

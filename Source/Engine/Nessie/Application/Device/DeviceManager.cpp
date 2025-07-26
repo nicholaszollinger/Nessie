@@ -3,6 +3,7 @@
 
 #include "Nessie/Application/Platform.h"
 #include "Nessie/Graphics/RenderDevice.h"
+
 #include "Nessie/Graphics/Vulkan/VulkanDevice.h"
 #include "GLFW/glfw3.h"
 
@@ -41,7 +42,7 @@ namespace nes
 
     bool DeviceManager::CreateRenderDevice(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc)
     {
-        m_pDevice = std::make_unique<RenderDevice>();
+        m_pDevice = std::make_unique<VulkanDevice>();
         if (!m_pDevice->Init(appDesc, pWindow, rendererDesc))
         {
             NES_ERROR("Failed to Create Render Device!");
