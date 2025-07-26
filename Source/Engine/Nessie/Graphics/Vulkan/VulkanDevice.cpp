@@ -264,6 +264,10 @@ namespace nes
         }
     }
 
+#define GRAPHICS_QUEUE_SCORE ((graphics ? 100 : 0) + (compute ? 10 : 0) + (transfer ? 10 : 0) + (sparse ? 5 : 0) + (videoDecode ? 2 : 0) + (videoEncode ? 2 : 0) + (protect ? 1 : 0) + (opticalFlow ? 1 : 0))
+#define COMPUTE_QUEUE_SCORE  ((!graphics ? 10 : 0) + (compute ? 100 : 0) + (!transfer ? 10 : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0))
+#define TRANSFER_QUEUE_SCORE ((!graphics ? 10 : 0) + (!compute ? 10 : 0) + (transfer ? 100 * familyProps.queueCount : 0) + (sparse ? 5 : 0) + (!videoDecode ? 2 : 0) + (!videoEncode ? 2 : 0) + (protect ? 1 : 0) + (!opticalFlow ? 1 : 0))
+
     EGraphicsResult VulkanDevice::SelectPhysicalDevice(const RendererDesc& rendererDesc)
     {
         // Get the Physical Device Handles on the system.
@@ -298,6 +302,10 @@ namespace nes
             // Device Type check:
             if (requireDeviceType && vulkan::GetPhysicalDeviceTypeFromVulkanType(props.properties.deviceType) != rendererDesc.m_requiredDeviceType)
                 continue;
+
+
+            std::array<uint32 , static_cast<size_t>(EQueueType::MaxNum)> queueFamilyIndices{};
+            queueFamilyIndices.fill(kInvalidQueueIndex);
             
             // Get the queue family info.
             uint32 familyCount = 0;
@@ -310,16 +318,72 @@ namespace nes
             }
             m_vk.GetPhysicalDeviceQueueFamilyProperties2(physicalDevice, &familyCount, familyProps2.data());
 
-            
-            // [TODO]: Select the best of: Graphics, Compute & Transfer. Use NRI as the goal.
-            // - The checks below would be IsDedicated(queueFamilyIndex, familyProps2, Type);
-            // - I need to basically fill out the queue family info in the PhysicalDeviceDesc.
+            std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)> scores{};
+            static constexpr size_t kGraphicsIndex = static_cast<size_t>(EQueueType::Graphics);
+            static constexpr size_t kComputeIndex = static_cast<size_t>(EQueueType::Compute);
+            static constexpr size_t kTransferIndex = static_cast<size_t>(EQueueType::Transfer);
 
-            
-            bool hasDedicatedCompute = GetDedicatedQueueIndex(familyProps2, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT) != kInvalidQueueIndex;
-            bool hasDedicatedTransfer = GetDedicatedQueueIndex(familyProps2, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT) != kInvalidQueueIndex;
-            bool hasSeparateCompute = GetSeparateQueueIndex(familyProps2, VK_QUEUE_COMPUTE_BIT, VK_QUEUE_TRANSFER_BIT) != kInvalidQueueIndex;
-            bool hasSeparateTransfer = GetSeparateQueueIndex(familyProps2, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_COMPUTE_BIT) != kInvalidQueueIndex;
+            // Get the best family indices for each type.
+            for (uint32 j = 0; j < familyCount; ++j)
+            {
+                const VkQueueFamilyProperties& familyProps = familyProps2[j].queueFamilyProperties;
+
+                bool graphics = familyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+                bool compute = familyProps.queueFlags & VK_QUEUE_COMPUTE_BIT;
+                bool transfer = familyProps.queueFlags & VK_QUEUE_TRANSFER_BIT;
+                bool sparse = familyProps.queueFlags & VK_QUEUE_SPARSE_BINDING_BIT;
+                bool videoDecode = familyProps.queueFlags & VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+                bool videoEncode = familyProps.queueFlags & VK_QUEUE_VIDEO_ENCODE_BIT_KHR;
+                bool protect = familyProps.queueFlags & VK_QUEUE_PROTECTED_BIT;
+                bool opticalFlow = familyProps.queueFlags & VK_QUEUE_OPTICAL_FLOW_BIT_NV;
+                bool taken = false;
+
+                // Graphics: Prefer as many features as possible:
+                {
+                    constexpr size_t index = static_cast<size_t>(EQueueType::Graphics);
+                    const uint32 score = GRAPHICS_QUEUE_SCORE;
+
+                    if (!taken && graphics && score > scores[index])
+                    {
+                        queueFamilyIndices[index] = i;
+                        scores[index] = score;
+                        taken = true;
+                    }
+                }
+
+                // Compute: Prefer Dedicated Compute queue.
+                {
+                    constexpr size_t index = static_cast<size_t>(EQueueType::Compute);
+                    const uint32 score = COMPUTE_QUEUE_SCORE;
+
+                    if (!taken && compute && score > scores[index])
+                    {
+                        queueFamilyIndices[index] = i;
+                        scores[index] = score;
+                        taken = true;
+                    }
+                }
+
+                // Transfer: Prefer Dedicated Transfer Queue.
+                {
+                    constexpr size_t index = static_cast<size_t>(EQueueType::Transfer);
+                    const uint32 score = TRANSFER_QUEUE_SCORE;
+
+                    if (!taken && transfer && score > scores[index])
+                    {
+                        queueFamilyIndices[index] = i;
+                        scores[index] = score;
+                        taken = true;
+                    }
+                }
+            }
+
+            // Check that Queue requirements are met:
+            const bool transferComputeDifferent = (queueFamilyIndices[kComputeIndex] != queueFamilyIndices[kTransferIndex]);
+            const bool hasSeparateCompute = (queueFamilyIndices[kComputeIndex] != queueFamilyIndices[kGraphicsIndex]);
+            const bool hasDedicatedCompute = hasSeparateCompute && transferComputeDifferent;
+            const bool hasSeparateTransfer = (queueFamilyIndices[kTransferIndex] != queueFamilyIndices[kGraphicsIndex]);
+            const bool hasDedicatedTransfer = hasSeparateTransfer && transferComputeDifferent;
             
             if (rendererDesc.m_requireDedicatedComputeQueue && !hasDedicatedCompute)
                 continue;
@@ -329,26 +393,37 @@ namespace nes
                 continue;
             if (rendererDesc.m_requireSeparateTransferQueue && !hasSeparateTransfer)
                 continue;
-
-            
-            // [TODO]: Extension Support!!!
-            
             
             // The device is If fully suitable!
             m_vkPhysicalDevice = physicalDevice;
-
+            
             // Fill out the Physical Device Description:
             auto& desc = m_deviceDesc.m_physicalDeviceDesc;
+            memcpy(desc.m_name, props.properties.deviceName, 256);
             desc.m_deviceID = props.properties.deviceID;
             desc.m_vendor = vulkan::GetVendorFromID(props.properties.vendorID);
             desc.m_architecture = vulkan::GetPhysicalDeviceTypeFromVulkanType(props.properties.deviceType);
             desc.m_driverVersion = props.properties.driverVersion;
             desc.m_apiSupport = props.properties.apiVersion;
-            memcpy(desc.m_name, props.properties.deviceName, 256);
-            // [TODO]: Memory limits
+            desc.m_queueFamilyIndices[kGraphicsIndex] = queueFamilyIndices[kGraphicsIndex];
+            desc.m_queueFamilyIndices[kComputeIndex] = queueFamilyIndices[kComputeIndex];
+            desc.m_queueFamilyIndices[kTransferIndex] = queueFamilyIndices[kTransferIndex];
+            
+            if (queueFamilyIndices[kGraphicsIndex] != kInvalidQueueIndex)
+                desc.m_numQueuesByType[kGraphicsIndex] = familyProps2[queueFamilyIndices[kGraphicsIndex]].queueFamilyProperties.queueCount;
+
+            if (queueFamilyIndices[kComputeIndex] != kInvalidQueueIndex)
+                desc.m_numQueuesByType[kComputeIndex] = familyProps2[queueFamilyIndices[kComputeIndex]].queueFamilyProperties.queueCount;
+            
+            if (queueFamilyIndices[kTransferIndex] != kInvalidQueueIndex)
+                desc.m_numQueuesByType[kTransferIndex] = familyProps2[queueFamilyIndices[kTransferIndex]].queueFamilyProperties.queueCount;
+            
+            // Memory Properties for the selected Physical Device:
+            VkPhysicalDeviceMemoryProperties2 memProps {.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
+            m_vk.GetPhysicalDeviceMemoryProperties2(m_vkPhysicalDevice, &memProps);
+            m_memoryProperties = memProps.memoryProperties;
             
             ReportMessage(ELogLevel::Info, __FILE__, __LINE__, std::format("Selected Device: {}", desc.m_name).c_str());
-            
             break;
         }
 
@@ -360,43 +435,6 @@ namespace nes
         }
         
         return EGraphicsResult::Success;
-    }
-
-    uint32 VulkanDevice::GetDedicatedQueueIndex(const std::vector<VkQueueFamilyProperties2>& families, VkQueueFlags desiredFlags, VkQueueFlags undesiredFlags)
-    {
-        for (uint32 i = 0; i < static_cast<uint32>(families.size()); ++i)
-        {
-            const auto& queueFlags = families[i].queueFamilyProperties.queueFlags;
-            
-            if ((queueFlags & desiredFlags) == desiredFlags
-                && (queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0
-                && (queueFlags & undesiredFlags) == 0)
-            {
-                return i;
-            }
-        }
-        
-        return kInvalidQueueIndex;
-    }
-
-    uint32 VulkanDevice::GetSeparateQueueIndex(const std::vector<VkQueueFamilyProperties2>& families, VkQueueFlags desiredFlags, VkQueueFlags undesiredFlags)
-    {
-        uint32 index = kInvalidQueueIndex;
-        for (uint32 i = 0; i < static_cast<uint32>(families.size()); ++i)
-        {
-            const auto& queueFlags = families[i].queueFamilyProperties.queueFlags;
-            
-            if ((queueFlags & desiredFlags) == desiredFlags && (queueFlags & VK_QUEUE_GRAPHICS_BIT) == 0)
-            {
-                // If it is perfect, return it!
-                if ((queueFlags & undesiredFlags) == 0)
-                    return i;
-
-                // Otherwise, this is the best so far.
-                index = i;    
-            }
-        }
-        return index;
     }
 
 #undef GET_INSTANCE_FUNC

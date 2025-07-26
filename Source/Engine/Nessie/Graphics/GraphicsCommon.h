@@ -1693,11 +1693,12 @@ namespace nes
         uint32              m_deviceID{};                                           /// Unique identifier for the Device.
         uint32              m_driverVersion{};
         uint32              m_apiSupport{};
-        uint64              m_videoMemorySize{};                                    /// Amount of video memory, in 
-        uint64              m_sharedSystemMemorySize{};                             /// Amount 
+        uint64              m_videoMemorySize{};
+        uint64              m_sharedSystemMemorySize{};
         uint32              m_numQueuesByType[static_cast<uint32>(EQueueType::MaxNum)];
+        uint32              m_queueFamilyIndices[static_cast<uint32>(EQueueType::MaxNum)]; 
         EVendor             m_vendor = EVendor::Unknown;                            /// Vendor that made the device.
-        EPhysicalDeviceType m_architecture = EPhysicalDeviceType::Unknown;                /// What type of device it is.
+        EPhysicalDeviceType m_architecture = EPhysicalDeviceType::Unknown;          /// What type of device it is.
     };
 
     //----------------------------------------------------------------------------------------------------

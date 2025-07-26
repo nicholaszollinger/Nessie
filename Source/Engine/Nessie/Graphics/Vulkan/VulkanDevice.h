@@ -56,19 +56,6 @@ namespace nes
         /// @brief : Select a physical device to use for rendering. Returns EGraphicsResult::Failure on failure.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult         SelectPhysicalDevice(const RendererDesc& rendererDesc);
-        
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Finds a queue that only supports the desired flag (not graphics).
-        ///     Returns kInvalidQueueIndex if none is found.
-        //----------------------------------------------------------------------------------------------------
-        static uint32           GetDedicatedQueueIndex(const std::vector<VkQueueFamilyProperties2>& families, VkQueueFlags desiredFlags, VkQueueFlags undesiredFlags);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Finds a queue which is separate from the Graphics queue and has the desired flags and not
-        ///     the undesired flags, but it will select it if no better options are available for support.
-        ///     Returns kInvalidQueueIndex if none is found.
-        //----------------------------------------------------------------------------------------------------
-        static uint32           GetSeparateQueueIndex(const std::vector<VkQueueFamilyProperties2>& families, VkQueueFlags desiredFlags, VkQueueFlags undesiredFlags);
 
     private:
         static constexpr uint32 kInvalidQueueIndex = std::numeric_limits<uint16>::max();
@@ -80,6 +67,7 @@ namespace nes
         VkAllocationCallbacks*  m_vkAllocationCallbacksPtr = nullptr;
         vulkan::DispatchTable   m_vk{};
         VkDebugUtilsMessengerEXT m_debugMessenger{};
+        VkPhysicalDeviceMemoryProperties m_memoryProperties{};
         //vk::Device              m_vkDevice{};
         // vk::PhysicalDeviceMemoryProperties m_memoryProps;
         // uint32                 m_numActiveFamilyIndices;
