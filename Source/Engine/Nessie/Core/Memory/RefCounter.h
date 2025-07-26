@@ -7,10 +7,6 @@ namespace nes::internal
 {
     class RefCounterBase
     {
-        /// A Large value that is added to the ref count, so that it remains in memory when the number of
-        /// external references becomes zero.
-        static constexpr uint32 kEmbedded = 0x0ebedded;
-        
     public:
         virtual ~RefCounterBase();
 
@@ -55,6 +51,10 @@ namespace nes::internal
         virtual void        ReleaseObject() const = 0;
 
     private:
+        /// A Large value that is added to the ref count, so that it remains in memory when the number of
+        /// external references becomes zero.
+        static constexpr uint32 kEmbedded = 0x0ebedded;
+        
         /// The current ref count to the underlying object. When this reaches zero, the object will be destroyed.
         mutable std::atomic<uint32> m_refCount = 0;
     };

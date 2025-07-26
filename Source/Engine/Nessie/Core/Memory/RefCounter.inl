@@ -48,5 +48,6 @@ namespace nes
         const Derived* pConstThis = reinterpret_cast<const Derived*>(this);
         Derived* pThis = const_cast<Derived*>(pConstThis);
         ReleaseObjectImpl(pThis);
+        // Note: The 'this' pointer is now dangling!
     }
 }
