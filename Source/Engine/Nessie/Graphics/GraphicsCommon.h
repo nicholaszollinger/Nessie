@@ -1702,12 +1702,12 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Information about the hardware device. Including feature support coverage.
-    //      https://vulkan.gpuinfo.org/
+    /// @brief : Information about the hardware device.
     //----------------------------------------------------------------------------------------------------
     struct DeviceDesc
     {
-        PhysicalDeviceDesc  m_physicalDeviceDesc;
+        PhysicalDeviceDesc  m_physicalDeviceDesc{};
+        Version             m_apiVersion{};
         EGraphicsAPI        m_graphicsAPI = EGraphicsAPI::Vulkan;
     };
 #pragma endregion

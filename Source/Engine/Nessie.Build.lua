@@ -55,8 +55,8 @@ function p.ConfigureProject(dependencyInjector)
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("stb");
     dependencyInjector.AddFilesToProject("fmt");
+    dependencyInjector.AddFilesToProject("Vulkan");
     dependencyInjector.Include("Assimp");
-    dependencyInjector.Include("Vulkan");
     dependencyInjector.Link("glfw");
     dependencyInjector.Link("yaml_cpp");
     vpaths { ["ThirdParty/*"] = { path.getabsolute(projectCore.ThirdPartyDir) .. "/**.*" } }

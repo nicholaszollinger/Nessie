@@ -11,8 +11,6 @@ NES_MSVC_SUPPRESS_WARNING(28251 4996)
 #include <vulkan/vulkan.hpp>
 NES_SUPPRESS_WARNINGS_END
 
-#include <vulkan/vk_enum_string_helper.h>
-
 #define NES_VULKAN_NAMESPACE_NAME nes::vulkan
 #define NES_VULKAN_NAMESPACE_BEGIN namespace NES_VULKAN_NAMESPACE_NAME {
 #define NES_VULKAN_NAMESPACE_END }
@@ -41,7 +39,7 @@ inline void VulkanCheckResult(const char* expression, const VkResult result)
             std::this_thread::sleep_for(3s);
             // [TODO]: Dump GPU info.
         }
-        NES_VULKAN_FATAL("{} failed! Vulkan Error: '{}'" , expression, string_VkResult(result));
+        NES_VULKAN_FATAL("{} failed! Vulkan Error: '{}'" , expression, vk::to_string(static_cast<vk::Result>(result)));
     }
 }
 
@@ -93,7 +91,7 @@ do                                                                              
     if (vkResult < 0) \
     { \
         EGraphicsResult _result = nes::vulkan::ConvertVkResultToGraphics(vkResult); \
-        (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, std::format("{}() failed! Vulkan Error: {}", (funcNameCStr), string_VkResult(vkResult)).c_str(), nes::vulkan::kLogTag); \
+        (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, std::format("{}() failed! Vulkan Error: {}", (funcNameCStr), vk::to_string(static_cast<vk::Result>(vkResult))).c_str(), nes::vulkan::kLogTag); \
         return _result; \
     }
 
@@ -106,6 +104,6 @@ do                                                                              
 #define NES_RETURN_VOID_ON_BAD_VKRESULT(renderDevice, vkResult, funcNameCStr) \
 if (vkResult < 0) \
 { \
-    (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, std::format("{}() failed! Vulkan Error: {}", (funcNameCStr), string_VkResult(vkResult)).c_str(), nes::vulkan::kLogTag); \
+    (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, std::format("{}() failed! Vulkan Error: {}", (funcNameCStr), vk::to_string(static_cast<vk::Result>(vkResult))).c_str(), nes::vulkan::kLogTag); \
     return; \
 }

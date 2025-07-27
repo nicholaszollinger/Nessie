@@ -18,7 +18,8 @@ d.IsOptional = true;
 function d.Include()
     includedirs
     {
-        vulkanSupport.VulkanSDKPath .. "\\Include",
+        d.BuildDirectory .. "\\Vulkan-Headers\\include",
+        d.BuildDirectory .. "\\VMA\\include",
     }
 
     defines
@@ -28,6 +29,16 @@ function d.Include()
 
     filter "system:windows"
         defines { "VK_USE_PLATFORM_WIN32_KHR" }
+
+    filter{}
+end
+
+function d.AddFilesToProject()
+    files
+    {
+        d.BuildDirectory .. "\\VMA\\include\\vk_mem_alloc.h",
+        d.BuildScript,
+    };
 end
 
 function d.Link()
@@ -46,9 +57,6 @@ function d.Link()
     {
         vulkanSupport.VulkanSDKPath .. "\\Lib\\",
     }
-
-    -- Add the BuildScript to the Project (Nessie)
-    files { d.BuildScript };
 
     filter "system:windows"
         defines { "VK_USE_PLATFORM_WIN32_KHR" }
