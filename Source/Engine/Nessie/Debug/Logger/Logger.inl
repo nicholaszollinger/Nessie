@@ -84,8 +84,8 @@ namespace nes
     template <typename ... Args>
     void Logger::Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, TFormatString<Args...> pFormat, Args&&... args)
     {
-        // If the tag's level is less than the message's exit. 
-        if (tag.m_level < level)
+        // If the message's level is lower than the message's level, then exit. 
+        if (level < tag.m_level)
             return;
 
         // Check if this level is enabled.
@@ -108,8 +108,8 @@ namespace nes
 
     inline void Logger::Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, std::string_view msg)
     {
-        // If the tag's level is less than the message's exit. 
-        if (tag.m_level < level)
+        // If the message's level is lower than the message's level, then exit. 
+        if (level < tag.m_level)
             return;
 
         // Check if the level is enabled.

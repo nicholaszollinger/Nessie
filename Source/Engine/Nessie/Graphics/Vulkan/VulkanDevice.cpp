@@ -11,6 +11,7 @@
 #ifdef NES_PLATFORM_WINDOWS
 #define GLFW_EXPOSE_NATIVE_WIN32
 #endif
+#include "VulkanQueue.h"
 #include "GLFW/glfw3native.h"
 
 namespace nes
@@ -132,15 +133,37 @@ namespace nes
             return false;
         }
 
+        // Create the Logical Device:
+        if (CreateLogicalDevice(rendererDesc) != EGraphicsResult::Success)
+        {
+            return false;
+        }
+
         return true;
     }
 
     void VulkanDevice::Destroy()
     {
+        // Destroy the Device Queue objects:
+        for (auto& queueFamily : m_queueFamilies)
+        {
+            for (auto*& pQueue : queueFamily)
+            {
+                Free<VulkanQueue>(GetAllocationCallbacks(), pQueue);
+            }
+            queueFamily.clear();
+        }
+        
         // Destroy the Debug Messenger
         if (m_debugMessenger)
         {
             m_vk.DestroyDebugUtilsMessengerEXT(m_vkInstance, m_debugMessenger, m_vkAllocationCallbacksPtr);
+        }
+
+        // Destroy the logical device:
+        if (m_vkDevice)
+        {
+            m_vk.DestroyDevice(m_vkDevice, m_vkAllocationCallbacksPtr);
         }
         
         // Destroy the instance:
@@ -151,6 +174,44 @@ namespace nes
         
         // Unload the vulkan library.
         VulkanLoader::UnloadLibrary();
+    }
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Helper to get the correct name of a core vulkan device function.
+    //----------------------------------------------------------------------------------------------------
+#define GET_DEVICE_OPTIONAL_CORE_FUNC(name) \
+    /* Core */ \
+    m_vk.name = reinterpret_cast<PFN_vk##name>(m_vk.GetDeviceProcAddr(m_vkDevice, NES_STRINGIFY(NES_MERGE_TOKENS(vk, name)))); \
+    /* KHR */ \
+    if (!m_vk.name) \
+        m_vk.name = reinterpret_cast<PFN_vk##name>(m_vk.GetDeviceProcAddr(m_vkDevice, NES_STRINGIFY(NES_MERGE_TOKENS3(vk, name, KHR)))); \
+    /* EXT (some extensions were promoted to core from EXT bypassing KHR status) */ \
+    if (!m_vk.name) \
+        m_vk.name = reinterpret_cast<PFN_vk##name>(m_vk.GetDeviceProcAddr(m_vkDevice, NES_STRINGIFY(NES_MERGE_TOKENS3(vk, name, EXT))));
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Attempt to get a core function pointer from the m_vkDevice; Possible name conversions:
+    ///     "vk + [name]" or "vk + [name] + KHR" or "vk + [name] + EXT".
+    ///	@param name : Name of the member variable in DispatchTable for the instance function.
+    //----------------------------------------------------------------------------------------------------
+#define GET_DEVICE_CORE_FUNC(name) \
+    GET_DEVICE_OPTIONAL_CORE_FUNC(name); \
+    if (!m_vk.name) \
+    { \
+        this->ReportMessage(ELogLevel::Error, __FILE__, __LINE__, std::format("Failed to get device function: `{}`", NES_STRINGIFY(NES_MERGE_TOKENS(vk, name))).c_str(), vulkan::kLogTag); \
+        return EGraphicsResult::Unsupported; \
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Attempt to get a function pointer from the m_vkDevice; name conversion: "vk + name".
+    ///	@param name : Name of the member variable in DispatchTable for the instance function.
+    //----------------------------------------------------------------------------------------------------
+#define GET_DEVICE_FUNC(name) \
+    m_vk.name = reinterpret_cast<PFN_vk##name>(m_vk.GetDeviceProcAddr(m_vkDevice, NES_STRINGIFY(NES_MERGE_TOKENS(vk, name)))); \
+    if (!m_vk.name) \
+    { \
+        this->ReportMessage(ELogLevel::Error, __FILE__, __LINE__, std::format("Failed to get device function: `{}`", NES_STRINGIFY(NES_MERGE_TOKENS(vk, name))).c_str(), vulkan::kLogTag); \
+        return EGraphicsResult::Unsupported; \
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -324,9 +385,9 @@ namespace nes
             static constexpr size_t kTransferIndex = static_cast<size_t>(EQueueType::Transfer);
 
             // Get the best family indices for each type.
-            for (uint32 j = 0; j < familyCount; ++j)
+            for (uint32 familyIndex = 0; familyIndex < familyCount; ++familyIndex)
             {
-                const VkQueueFamilyProperties& familyProps = familyProps2[j].queueFamilyProperties;
+                const VkQueueFamilyProperties& familyProps = familyProps2[familyIndex].queueFamilyProperties;
 
                 bool graphics = familyProps.queueFlags & VK_QUEUE_GRAPHICS_BIT;
                 bool compute = familyProps.queueFlags & VK_QUEUE_COMPUTE_BIT;
@@ -345,7 +406,7 @@ namespace nes
 
                     if (!taken && graphics && score > scores[index])
                     {
-                        queueFamilyIndices[index] = i;
+                        queueFamilyIndices[index] = familyIndex;
                         scores[index] = score;
                         taken = true;
                     }
@@ -358,7 +419,7 @@ namespace nes
 
                     if (!taken && compute && score > scores[index])
                     {
-                        queueFamilyIndices[index] = i;
+                        queueFamilyIndices[index] = familyIndex;
                         scores[index] = score;
                         taken = true;
                     }
@@ -371,7 +432,7 @@ namespace nes
 
                     if (!taken && transfer && score > scores[index])
                     {
-                        queueFamilyIndices[index] = i;
+                        queueFamilyIndices[index] = familyIndex;
                         scores[index] = score;
                         taken = true;
                     }
@@ -385,14 +446,45 @@ namespace nes
             const bool hasSeparateTransfer = (queueFamilyIndices[kTransferIndex] != queueFamilyIndices[kGraphicsIndex]);
             const bool hasDedicatedTransfer = hasSeparateTransfer && transferComputeDifferent;
             
-            if (rendererDesc.m_requireDedicatedComputeQueue && !hasDedicatedCompute)
+            const bool requiresGraphicsQueue = rendererDesc.m_requiredQueueCountsByFamily[kGraphicsIndex] > 0;
+            const bool requiresComputeQueue = rendererDesc.m_requiredQueueCountsByFamily[kComputeIndex] > 0;
+            const bool requiresTransferQueue = rendererDesc.m_requiredQueueCountsByFamily[kTransferIndex] > 0;
+
+            // Check that enough Graphics Queues are available.
+            if (requiresGraphicsQueue && rendererDesc.m_requiredQueueCountsByFamily[kGraphicsIndex] > familyProps2[queueFamilyIndices[kGraphicsIndex]].queueFamilyProperties.queueCount)
                 continue;
-            if (rendererDesc.m_requireDedicatedTransferQueue && !hasDedicatedTransfer)
-                continue;
-            if (rendererDesc.m_requireSeparateComputeQueue && !hasSeparateCompute)
-                continue;
-            if (rendererDesc.m_requireSeparateTransferQueue && !hasSeparateTransfer)
-                continue;
+
+            // Check Compute Queue requirements.
+            if (requiresComputeQueue)
+            {
+                // Check enough Queues are available.
+                if (rendererDesc.m_requiredQueueCountsByFamily[kComputeIndex] > familyProps2[queueFamilyIndices[kComputeIndex]].queueFamilyProperties.queueCount)
+                    continue;
+
+                // Check dedicated queue.
+                if (rendererDesc.m_requireDedicatedComputeQueue && !hasDedicatedCompute)
+                    continue;
+
+                // Check separate queue.
+                if (rendererDesc.m_requireSeparateComputeQueue && !hasSeparateCompute)
+                    continue;
+            }
+
+            // Check Compute Queue requirements.
+            if (requiresTransferQueue)
+            {
+                // Check enough Queues are available.
+                if (rendererDesc.m_requiredQueueCountsByFamily[kTransferIndex] > familyProps2[queueFamilyIndices[kTransferIndex]].queueFamilyProperties.queueCount)
+                    continue;
+
+                // Check dedicated queue.
+                if (rendererDesc.m_requireDedicatedTransferQueue && !hasDedicatedTransfer)
+                    continue;
+
+                // Check separate queue.
+                if (rendererDesc.m_requireSeparateTransferQueue && !hasSeparateTransfer)
+                    continue;
+            }
             
             // The device is If fully suitable!
             m_vkPhysicalDevice = physicalDevice;
@@ -437,11 +529,9 @@ namespace nes
         return EGraphicsResult::Success;
     }
 
-#undef GET_INSTANCE_FUNC
-
 #define VULKAN_APPEND_EXT_TO_TAIL(extStruct)\
 *pTail = &(extStruct); \
-pTail = &((extStruct).pNext)
+pTail = &(extStruct.pNext)
 
     EGraphicsResult VulkanDevice::CreateInstance(const ApplicationDesc& appDesc, const RendererDesc& rendererDesc)
     {
@@ -581,5 +671,613 @@ pTail = &((extStruct).pNext)
         return EGraphicsResult::Success;
     }
 
+    EGraphicsResult VulkanDevice::CreateLogicalDevice(const RendererDesc& rendererDesc)
+    {
+        // Set our API version.
+        m_deviceDesc.m_apiVersion = rendererDesc.m_apiVersion;
+        
+        std::vector<const char*> deviceExtensions{};
+        ProcessDeviceExtensions(deviceExtensions, false); // TODO: Check Ray Tracing Support.
+
+        // [TODO]: Add rendererDesc device Extensions to the array.
+
+        // Device features
+        VkPhysicalDeviceFeatures2 features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+        void** pTail = &features.pNext;
+
+        VkPhysicalDeviceVulkan11Features features11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+        VULKAN_APPEND_EXT_TO_TAIL(features11);
+
+        VkPhysicalDeviceVulkan12Features features12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+        VULKAN_APPEND_EXT_TO_TAIL(features12);
+
+        VkPhysicalDeviceVulkan13Features features13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+        if (m_deviceDesc.m_apiVersion >= VK_API_VERSION_1_3)
+            VULKAN_APPEND_EXT_TO_TAIL(features13);
+        
+        // Mandatory
+        VkPhysicalDeviceSynchronization2Features synchronization2features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES};
+        if (IsExtensionSupported(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(synchronization2features);
+        
+        VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES};
+        if (IsExtensionSupported(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(dynamicRenderingFeatures);
+        
+        VkPhysicalDeviceExtendedDynamicStateFeaturesEXT extendedDynamicStateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(extendedDynamicStateFeatures);
+        
+        // Optional (for Vulkan < 1.2)
+        VkPhysicalDeviceMaintenance4Features maintenance4Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance4Features);
+        
+        VkPhysicalDeviceImageRobustnessFeatures imageRobustnessFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ROBUSTNESS_FEATURES};
+        if (IsExtensionSupported(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(imageRobustnessFeatures);
+
+        // Optional (KHR)
+        VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(presentIdFeatures);
+        
+        VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(presentWaitFeatures);
+        
+        VkPhysicalDeviceMaintenance5FeaturesKHR maintenance5Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance5Features);
+        
+        VkPhysicalDeviceMaintenance6FeaturesKHR maintenance6Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance6Features);
+        
+        VkPhysicalDeviceMaintenance7FeaturesKHR maintenance7Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_7_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance7Features);
+        
+        VkPhysicalDeviceMaintenance8FeaturesKHR maintenance8Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_8_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance8Features);
+        
+        VkPhysicalDeviceMaintenance9FeaturesKHR maintenance9Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_9_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_9_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance9Features);
+        
+        VkPhysicalDeviceFragmentShadingRateFeaturesKHR shadingRateFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(shadingRateFeatures);
+        
+        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(rayTracingPipelineFeatures);
+        
+        VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(accelerationStructureFeatures);
+        
+        VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(rayQueryFeatures);
+        
+        VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR rayTracingPositionFetchFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(rayTracingPositionFetchFeatures);
+        
+        VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR rayTracingMaintenanceFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(rayTracingMaintenanceFeatures);
+        
+        VkPhysicalDeviceLineRasterizationFeaturesKHR lineRasterizationFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(lineRasterizationFeatures);
+        
+        VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR fragmentShaderBarycentricFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(fragmentShaderBarycentricFeatures);
+        
+        VkPhysicalDeviceShaderClockFeaturesKHR shaderClockFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR};
+        if (IsExtensionSupported(VK_KHR_SHADER_CLOCK_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(shaderClockFeatures);
+        
+        // Optional (EXT)
+        VkPhysicalDeviceOpacityMicromapFeaturesEXT micromapFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(micromapFeatures);
+        
+        VkPhysicalDeviceMeshShaderFeaturesEXT meshShaderFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(meshShaderFeatures);
+        
+        VkPhysicalDeviceShaderAtomicFloatFeaturesEXT shaderAtomicFloatFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(shaderAtomicFloatFeatures);
+        
+        VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT shaderAtomicFloat2Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(shaderAtomicFloat2Features);
+        
+        VkPhysicalDeviceMemoryPriorityFeaturesEXT memoryPriorityFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PRIORITY_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(memoryPriorityFeatures);
+        
+        VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT slicedViewFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_SLICED_VIEW_OF_3D_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(slicedViewFeatures);
+        
+        VkPhysicalDeviceCustomBorderColorFeaturesEXT borderColorFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(borderColorFeatures);
+        
+        VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(robustness2Features);
+        
+        VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(pipelineRobustnessFeatures);
+        
+        VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT fragmentShaderInterlockFeatures = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_INTERLOCK_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(fragmentShaderInterlockFeatures);
+        
+        VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(swapchainMaintenance1Features);
+        
+        VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT presentModeFifoLatestReadyFeaturesEXT = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT};
+        if (IsExtensionSupported(VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME, deviceExtensions))
+            VULKAN_APPEND_EXT_TO_TAIL(presentModeFifoLatestReadyFeaturesEXT);
+        
+        // Fill out the physical device features.
+        m_vk.GetPhysicalDeviceFeatures2(m_vkPhysicalDevice, &features);
+        
+        // [TODO]: IsSupported Struct... Move to Device Desc?
+
+         // Check hard Requirements
+         {
+             const bool hasDynamicRendering = features13.dynamicRendering != 0 || (dynamicRenderingFeatures.dynamicRendering != 0 && extendedDynamicStateFeatures.extendedDynamicState != 0);
+             const bool hasSynchronization2 = features13.synchronization2 != 0 || synchronization2features.synchronization2 != 0;
+        
+             if (!hasDynamicRendering || !hasSynchronization2)
+             {
+                 NES_GRAPHICS_REPORT_ERROR(*this, "'Dynamic Rendering' and 'Synchronization 2' are not supported by this device!");
+                 return EGraphicsResult::Unsupported;
+             }
+         }
+
+        // Create the Device:
+        // Disable Undesired Features.
+        // - In NRI, it has to deal with robustness; when I know what that does, I will update this.
+        // - Default was to disable these two:
+        robustness2Features.robustBufferAccess2 = 0;
+        robustness2Features.robustImageAccess2 = 0;
+
+        std::array<VkDeviceQueueCreateInfo, static_cast<size_t>(EQueueType::MaxNum)> queueCreateInfos{};
+
+        VkDeviceCreateInfo deviceCreateInfo = {.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO};
+        deviceCreateInfo.pNext = &features;
+        deviceCreateInfo.queueCreateInfoCount = 0;
+        deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+        deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
+        deviceCreateInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+
+        // Default Zero queue priorities. I can make this an option in the future.
+        std::array<float, 256> zeroPriorities = {};
+
+        const auto& queueFamilyIndices = m_deviceDesc.m_physicalDeviceDesc.m_queueFamilyIndices;
+        const auto& queueFamilyQueueCounts = m_deviceDesc.m_physicalDeviceDesc.m_numQueuesByType;
+        
+        for (uint32 i = 0; i < static_cast<size_t>(EQueueType::MaxNum); ++i)
+        {
+            const uint32 queueFamilyIndex = queueFamilyIndices[i];
+            const uint32 queueFamilyQueueCount = queueFamilyQueueCounts[i];
+
+            if (queueFamilyQueueCount && queueFamilyIndex != kInvalidQueueIndex)
+            {
+                // Get the next queue create info and increment the count.
+                VkDeviceQueueCreateInfo& queueCreateInfo = queueCreateInfos[deviceCreateInfo.queueCreateInfoCount++];
+
+                queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+                queueCreateInfo.queueCount = queueFamilyQueueCount;
+                queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
+                queueCreateInfo.pQueuePriorities = zeroPriorities.data();
+            }
+        }
+        
+        VkDevice device = nullptr;
+        VkResult vkResult = m_vk.CreateDevice(m_vkPhysicalDevice, &deviceCreateInfo, m_vkAllocationCallbacksPtr, &device);
+        NES_RETURN_ON_BAD_VKRESULT(*this, vkResult, "vkCreateDevice")
+        m_vkDevice = device;
+
+        // Resolve the Dispatch Table
+        {
+            const EGraphicsResult result = ResolveDeviceDispatchTable(deviceExtensions);
+            if (result != EGraphicsResult::Success)
+                return result;
+        }
+        
+        // Create the Device Queues:
+        // [TODO]: This should be the requested number of queue families.
+        for (uint32 i = 0; i < static_cast<uint32>(EQueueType::MaxNum); ++i)
+        {
+            const uint32 queueFamilyTypeIndex = i;
+            const EQueueType queueFamilyType = static_cast<EQueueType>(i);
+            const uint32 queueFamilyQueueCount = rendererDesc.m_requiredQueueCountsByFamily[queueFamilyTypeIndex];
+            
+            auto& queueFamily = m_queueFamilies[queueFamilyTypeIndex]; 
+            const uint32 queueFamilyIndex = queueFamilyIndices[queueFamilyTypeIndex];
+
+            if (queueFamilyIndex != kInvalidQueueIndex)
+            {
+                for (uint32 j = 0; j < queueFamilyQueueCount; ++j)
+                {
+                    VkDeviceQueueInfo2 queueInfo = { VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2 };
+                    queueInfo.queueFamilyIndex = queueFamilyIndex;
+                    queueInfo.queueIndex = j;
+
+                    VkQueue handle = nullptr;
+                    m_vk.GetDeviceQueue2(m_vkDevice, &queueInfo, &handle);
+                    
+                    VulkanQueue* pQueue;
+                    const EGraphicsResult result = CreateImplementation<VulkanQueue>(pQueue, queueFamilyType, queueFamilyIndex, handle);
+                    if (result == EGraphicsResult::Success)
+                        queueFamily.push_back(pQueue);
+                }
+
+                // Update the number of queues available for this type to match the requested amount.
+                m_deviceDesc.m_physicalDeviceDesc.m_numQueuesByType[queueFamilyTypeIndex] = queueFamilyQueueCount;
+            }
+            else
+            {
+                // No Queues are available of this type.
+                m_deviceDesc.m_physicalDeviceDesc.m_numQueuesByType[queueFamilyTypeIndex] = 0;
+            }
+        }
+
+        // [TODO]:
+        // Fill out the device description:
+
+        // [TODO]:
+        // Fill out the core interface.
+        
+        return EGraphicsResult::Success;
+    }
+
+    void VulkanDevice::ProcessDeviceExtensions(std::vector<const char*>& desiredExtensions, const bool rayTracingEnabled) const
+    {
+        // Get the supported extensions:
+        uint32 extensionCount = 0;
+        m_vk.EnumerateDeviceExtensionProperties(m_vkPhysicalDevice, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> extensions(extensionCount);
+        m_vk.EnumerateDeviceExtensionProperties(m_vkPhysicalDevice, nullptr, &extensionCount, extensions.data());
+
+        const bool lessThanVersion1_3 = m_deviceDesc.m_apiVersion < VK_VERSION_1_3;
+        
+        // Mandatory
+        if (lessThanVersion1_3) {
+            desiredExtensions.push_back(VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME);
+            desiredExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+            desiredExtensions.push_back(VK_KHR_COPY_COMMANDS_2_EXTENSION_NAME);
+            desiredExtensions.push_back(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME);
+        }
+        
+        // Optional for Vulkan < 1.3
+        if (lessThanVersion1_3 && IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_MAINTENANCE_4_EXTENSION_NAME);
+
+        if (lessThanVersion1_3 && IsExtensionSupported(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_IMAGE_ROBUSTNESS_EXTENSION_NAME);
+        // Optional (KHR)
+        if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_PRESENT_ID_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_PRESENT_ID_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_PRESENT_WAIT_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_7_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_MAINTENANCE_7_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_8_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_MAINTENANCE_8_EXTENSION_NAME);
+        
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_9_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_MAINTENANCE_9_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+
+        if (rayTracingEnabled && IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME);
+
+        if (rayTracingEnabled && IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+
+        if (rayTracingEnabled && IsExtensionSupported(VK_KHR_RAY_QUERY_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+
+        if (rayTracingEnabled && IsExtensionSupported(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME);
+
+        if (rayTracingEnabled && IsExtensionSupported(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_KHR_SHADER_CLOCK_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_SHADER_CLOCK_EXTENSION_NAME);
+
+        // Optional (EXT)
+        if (IsExtensionSupported(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME);
+
+        if (rayTracingEnabled && IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_MESH_SHADER_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_MEMORY_BUDGET_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_IMAGE_SLICED_VIEW_OF_3D_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_EXT_FRAGMENT_SHADER_INTERLOCK_EXTENSION_NAME);
+
+        // Optional
+        if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_NVX_BINARY_IMPORT_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_NVX_BINARY_IMPORT_EXTENSION_NAME);
+
+        if (IsExtensionSupported(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME);
+
+        // Dependencies
+        if (IsExtensionSupported(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME, extensions))
+            desiredExtensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    }
+
+    EGraphicsResult VulkanDevice::ResolveDeviceDispatchTable(const std::vector<const char*> desiredDeviceExtensions)
+    {
+        GET_DEVICE_CORE_FUNC(CreateBuffer)
+        GET_DEVICE_CORE_FUNC(CreateImage)
+        GET_DEVICE_CORE_FUNC(CreateBufferView)
+        GET_DEVICE_CORE_FUNC(CreateImageView)
+        GET_DEVICE_CORE_FUNC(CreateSampler)
+        GET_DEVICE_CORE_FUNC(CreateQueryPool)
+        GET_DEVICE_CORE_FUNC(CreateCommandPool)
+        GET_DEVICE_CORE_FUNC(CreateSemaphore)
+        GET_DEVICE_CORE_FUNC(CreateDescriptorPool)
+        GET_DEVICE_CORE_FUNC(CreatePipelineLayout)
+        GET_DEVICE_CORE_FUNC(CreateDescriptorSetLayout)
+        GET_DEVICE_CORE_FUNC(CreateShaderModule)
+        GET_DEVICE_CORE_FUNC(CreateGraphicsPipelines)
+        GET_DEVICE_CORE_FUNC(CreateComputePipelines)
+        GET_DEVICE_CORE_FUNC(AllocateMemory)
+
+        GET_DEVICE_CORE_FUNC(DestroyBuffer)
+        GET_DEVICE_CORE_FUNC(DestroyImage)
+        GET_DEVICE_CORE_FUNC(DestroyBufferView)
+        GET_DEVICE_CORE_FUNC(DestroyImageView)
+        GET_DEVICE_CORE_FUNC(DestroySampler)
+        GET_DEVICE_CORE_FUNC(DestroyFramebuffer)
+        GET_DEVICE_CORE_FUNC(DestroyQueryPool)
+        GET_DEVICE_CORE_FUNC(DestroyCommandPool)
+        GET_DEVICE_CORE_FUNC(DestroySemaphore)
+        GET_DEVICE_CORE_FUNC(DestroyDescriptorPool)
+        GET_DEVICE_CORE_FUNC(DestroyPipelineLayout)
+        GET_DEVICE_CORE_FUNC(DestroyDescriptorSetLayout)
+        GET_DEVICE_CORE_FUNC(DestroyShaderModule)
+        GET_DEVICE_CORE_FUNC(DestroyPipeline)
+        GET_DEVICE_CORE_FUNC(FreeMemory)
+        GET_DEVICE_CORE_FUNC(FreeCommandBuffers)
+
+        GET_DEVICE_CORE_FUNC(MapMemory)
+        GET_DEVICE_CORE_FUNC(FlushMappedMemoryRanges)
+        GET_DEVICE_CORE_FUNC(QueueWaitIdle)
+        GET_DEVICE_CORE_FUNC(QueueSubmit2)
+        GET_DEVICE_CORE_FUNC(GetSemaphoreCounterValue)
+        GET_DEVICE_CORE_FUNC(WaitSemaphores)
+        GET_DEVICE_CORE_FUNC(ResetCommandPool)
+        GET_DEVICE_CORE_FUNC(ResetDescriptorPool)
+        GET_DEVICE_CORE_FUNC(AllocateCommandBuffers)
+        GET_DEVICE_CORE_FUNC(AllocateDescriptorSets)
+        GET_DEVICE_CORE_FUNC(UpdateDescriptorSets)
+        GET_DEVICE_CORE_FUNC(BindBufferMemory2)
+        GET_DEVICE_CORE_FUNC(BindImageMemory2)
+        GET_DEVICE_CORE_FUNC(GetBufferMemoryRequirements2)
+        GET_DEVICE_CORE_FUNC(GetImageMemoryRequirements2)
+        GET_DEVICE_CORE_FUNC(ResetQueryPool)
+        GET_DEVICE_CORE_FUNC(GetBufferDeviceAddress)
+
+        GET_DEVICE_CORE_FUNC(BeginCommandBuffer)
+        GET_DEVICE_CORE_FUNC(CmdSetViewportWithCount)
+        GET_DEVICE_CORE_FUNC(CmdSetScissorWithCount)
+        GET_DEVICE_CORE_FUNC(CmdSetDepthBounds)
+        GET_DEVICE_CORE_FUNC(CmdSetStencilReference)
+        GET_DEVICE_CORE_FUNC(CmdSetBlendConstants)
+        GET_DEVICE_CORE_FUNC(CmdSetDepthBias)
+        GET_DEVICE_CORE_FUNC(CmdClearAttachments)
+        GET_DEVICE_CORE_FUNC(CmdClearColorImage)
+        GET_DEVICE_CORE_FUNC(CmdBindVertexBuffers2)
+        GET_DEVICE_CORE_FUNC(CmdBindIndexBuffer)
+        GET_DEVICE_CORE_FUNC(CmdBindPipeline)
+        GET_DEVICE_CORE_FUNC(CmdBindDescriptorSets)
+        GET_DEVICE_CORE_FUNC(CmdPushConstants)
+        GET_DEVICE_CORE_FUNC(CmdDispatch)
+        GET_DEVICE_CORE_FUNC(CmdDispatchIndirect)
+        GET_DEVICE_CORE_FUNC(CmdDraw)
+        GET_DEVICE_CORE_FUNC(CmdDrawIndexed)
+        GET_DEVICE_CORE_FUNC(CmdDrawIndirect)
+        GET_DEVICE_CORE_FUNC(CmdDrawIndirectCount)
+        GET_DEVICE_CORE_FUNC(CmdDrawIndexedIndirect)
+        GET_DEVICE_CORE_FUNC(CmdDrawIndexedIndirectCount)
+        GET_DEVICE_CORE_FUNC(CmdCopyBuffer2)
+        GET_DEVICE_CORE_FUNC(CmdCopyImage2)
+        GET_DEVICE_CORE_FUNC(CmdResolveImage2)
+        GET_DEVICE_CORE_FUNC(CmdCopyBufferToImage2)
+        GET_DEVICE_CORE_FUNC(CmdCopyImageToBuffer2)
+        GET_DEVICE_CORE_FUNC(CmdPipelineBarrier2)
+        GET_DEVICE_CORE_FUNC(CmdBeginQuery)
+        GET_DEVICE_CORE_FUNC(CmdEndQuery)
+        GET_DEVICE_CORE_FUNC(CmdWriteTimestamp2)
+        GET_DEVICE_CORE_FUNC(CmdCopyQueryPoolResults)
+        GET_DEVICE_CORE_FUNC(CmdResetQueryPool)
+        GET_DEVICE_CORE_FUNC(CmdFillBuffer)
+        GET_DEVICE_CORE_FUNC(CmdBeginRendering)
+        GET_DEVICE_CORE_FUNC(CmdEndRendering)
+        GET_DEVICE_CORE_FUNC(EndCommandBuffer)
+
+        if (m_deviceDesc.m_apiVersion >= VK_API_VERSION_1_3 || IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_CORE_FUNC(GetDeviceBufferMemoryRequirements)
+            GET_DEVICE_CORE_FUNC(GetDeviceImageMemoryRequirements)
+        }
+
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CmdBindIndexBuffer2KHR)
+        }
+
+        if (IsExtensionSupported(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CmdPushDescriptorSetKHR)
+        }
+
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CmdSetFragmentShadingRateKHR)
+        }
+
+        if (IsExtensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(AcquireNextImage2KHR)
+            GET_DEVICE_FUNC(QueuePresentKHR)
+            GET_DEVICE_FUNC(CreateSwapchainKHR)
+            GET_DEVICE_FUNC(DestroySwapchainKHR)
+            GET_DEVICE_FUNC(GetSwapchainImagesKHR)
+        }
+
+        if (IsExtensionSupported(VK_KHR_PRESENT_WAIT_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(WaitForPresentKHR)
+        }
+
+        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CreateAccelerationStructureKHR)
+            GET_DEVICE_FUNC(DestroyAccelerationStructureKHR)
+            GET_DEVICE_FUNC(GetAccelerationStructureDeviceAddressKHR)
+            GET_DEVICE_FUNC(GetAccelerationStructureBuildSizesKHR)
+            GET_DEVICE_FUNC(CmdBuildAccelerationStructuresKHR)
+            GET_DEVICE_FUNC(CmdCopyAccelerationStructureKHR)
+            GET_DEVICE_FUNC(CmdWriteAccelerationStructuresPropertiesKHR)
+        }
+
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CreateRayTracingPipelinesKHR)
+            GET_DEVICE_FUNC(GetRayTracingShaderGroupHandlesKHR)
+            GET_DEVICE_FUNC(CmdTraceRaysKHR)
+            GET_DEVICE_FUNC(CmdTraceRaysIndirect2KHR)
+        }
+
+        if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CreateMicromapEXT)
+            GET_DEVICE_FUNC(DestroyMicromapEXT)
+            GET_DEVICE_FUNC(GetMicromapBuildSizesEXT)
+            GET_DEVICE_FUNC(CmdBuildMicromapsEXT)
+            GET_DEVICE_FUNC(CmdCopyMicromapEXT)
+            GET_DEVICE_FUNC(CmdWriteMicromapsPropertiesEXT)
+        }
+
+        if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CmdSetSampleLocationsEXT)
+        }
+
+        if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(CmdDrawMeshTasksEXT)
+            GET_DEVICE_FUNC(CmdDrawMeshTasksIndirectEXT)
+            GET_DEVICE_FUNC(CmdDrawMeshTasksIndirectCountEXT)
+        }
+
+        if (IsExtensionSupported(VK_NV_LOW_LATENCY_2_EXTENSION_NAME, desiredDeviceExtensions))
+        {
+            GET_DEVICE_FUNC(GetLatencyTimingsNV)
+            GET_DEVICE_FUNC(LatencySleepNV)
+            GET_DEVICE_FUNC(SetLatencyMarkerNV)
+            GET_DEVICE_FUNC(SetLatencySleepModeNV)
+        }
+        
+        return EGraphicsResult::Success;
+    }
+
+#undef GET_INSTANCE_FUNC
+#undef GET_DEVICE_FUNC
+#undef GET_DEVICE_CORE_FUNC
+#undef GET_DEVICE_OPTIONAL_CORE_FUNC
 #undef VULKAN_APPEND_EXT_TO_TAIL
+#undef GRAPHICS_QUEUE_SCORE
+#undef COMPUTE_QUEUE_SCORE
+#undef TRANSFER_QUEUE_SCORE
+    
 }

@@ -9,6 +9,7 @@ NES_SUPPRESS_WARNINGS_BEGIN
 // 4996:  Disable strncpy warning in vulkan_structs.hpp
 NES_MSVC_SUPPRESS_WARNING(28251 4996)
 #include <vulkan/vulkan.hpp>
+#undef CreateSemaphore
 NES_SUPPRESS_WARNINGS_END
 
 #define NES_VULKAN_NAMESPACE_NAME nes::vulkan

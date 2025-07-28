@@ -8,6 +8,7 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
+    // [TODO]: Move this class and the static functions to Core/Memory.
     /// @brief : Set of functors (Allocate, Free, and Reallocate) that can be passed into the Renderer to use.
     //----------------------------------------------------------------------------------------------------
     struct AllocationCallbacks
@@ -59,6 +60,34 @@ namespace nes
         void*                   m_pUserData = nullptr;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Allocate a type using custom allocation callbacks.
+    //----------------------------------------------------------------------------------------------------
+    template <typename Type, typename ...CtorParams>
+    Type* Allocate(const AllocationCallbacks& callbacks, CtorParams&&...params)
+    {
+        Type* pObject = static_cast<Type*>(callbacks.Allocate(sizeof(Type), alignof(Type)));
+        if (pObject)
+        {
+            new (pObject) Type(std::forward<CtorParams>(params)...);
+        }
+        return pObject;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Destroy a type using custom allocation callbacks. The pointer will be set to nullptr.
+    //----------------------------------------------------------------------------------------------------
+    template <typename Type>
+    void Free(const AllocationCallbacks& callbacks, Type*& pObject)
+    {
+        if (pObject)
+        {
+            pObject->~Type();           // Destruct
+            callbacks.Free(pObject);    // Free
+            pObject = nullptr;          // Set pointer to null.
+        }
+    }
+
     using DebugMessageCallback = void (*)(ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag, void* pUserArg);
 
     struct DebugMessenger
@@ -86,7 +115,7 @@ namespace nes
         DebugMessageCallback    m_callback;
         void*                   m_pUserData = nullptr;
     };
-
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Used to request rendering features for the application.
     //----------------------------------------------------------------------------------------------------
@@ -158,10 +187,19 @@ namespace nes
         /// @brief : Require that a discrete GPU be used. 
         //----------------------------------------------------------------------------------------------------
         RendererDesc&       RequireDiscreteGPU();
-    
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Require that a certain number of queues are available by type. By default, only a single
+        ///     graphics queue is requested. Both Compute and Transfer queue counts are set to 0.
+        //----------------------------------------------------------------------------------------------------
+        RendererDesc&       RequireQueueType(const EQueueType type, const uint32 count = 1);
+
+        using QueueFamilyNumArray = std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)>;
+        
         Version             m_apiVersion = Version(1, 3, 0);
         AllocationCallbacks m_allocationCallbacks{};
         DebugMessenger      m_debugMessenger{};
+        QueueFamilyNumArray m_requiredQueueCountsByFamily;
         EThreadPolicy       m_threadPolicy = EThreadPolicy::Multithreaded;
         EPhysicalDeviceType m_requiredDeviceType = EPhysicalDeviceType::Unknown; /// Unknown is treated as any device type.
         bool                m_enableValidationLayer;

@@ -22,7 +22,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Default message callback to use for the Renderer. Ignores the user arg.
     //----------------------------------------------------------------------------------------------------
-    inline void DefaultMessageCallback(const ELogLevel level, const char* file, const uint32 line, const char* message, const LogTag& tag, [[maybe_unused]] void* pUserArg)
+    [[maybe_unused]]
+    static void DefaultMessageCallback(const ELogLevel level, const char* file, const uint32 line, const char* message, const LogTag& tag, [[maybe_unused]] void* pUserArg)
     {
         if (auto logger = LoggerRegistry::Instance().GetDefaultLogger())
         {
@@ -41,10 +42,10 @@ namespace nes
     }
 
     DebugMessenger::DebugMessenger()
-        : m_callback(DefaultMessageCallback)
+        : m_callback(nullptr)
         , m_pUserData(nullptr)
     {
-        //
+        NES_IF_DEBUG(m_callback = DefaultMessageCallback);
     }
 
     DebugMessenger& DebugMessenger::SetCallback(const DebugMessageCallback& callback)
@@ -110,6 +111,11 @@ namespace nes
         : m_allocationCallbacks(AllocationCallbacks())
         , m_debugMessenger(DebugMessenger())
     {
+        // Require a single graphics queue by default.
+        m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Graphics)] = 1;
+        m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Compute)] = 0;
+        m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Transfer)] = 0;
+        
 #ifdef NES_RELEASE
         m_enableValidationLayer = false;
 #else
@@ -198,6 +204,14 @@ namespace nes
     RendererDesc& RendererDesc::RequireDiscreteGPU()
     {
         m_requiredDeviceType = EPhysicalDeviceType::DiscreteGPU;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::RequireQueueType(const EQueueType type, const uint32 count)
+    {
+        const size_t index = static_cast<size_t>(type);
+        NES_ASSERT(index < static_cast<size_t>(EQueueType::MaxNum));
+        m_requiredQueueCountsByFamily[index] = count;
         return *this;
     }
 }

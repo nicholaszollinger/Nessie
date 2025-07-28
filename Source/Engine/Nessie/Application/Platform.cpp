@@ -229,17 +229,19 @@ namespace nes
             m_pInputManager->Shutdown();
             m_pInputManager.reset();
         }
-    
-        if (m_pDeviceManager != nullptr)
-        {
-            m_pDeviceManager->Shutdown();
-            m_pDeviceManager.reset();
-        }
 
+        // Close the Window.
         if (m_pWindow != nullptr)
         {
             m_pWindow->Internal_Shutdown();
             m_pWindow.reset();
+        }
+
+        // Close the Device Manager.
+        if (m_pDeviceManager != nullptr)
+        {
+            m_pDeviceManager->Shutdown();
+            m_pDeviceManager.reset();
         }
     }
 
