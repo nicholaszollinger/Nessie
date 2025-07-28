@@ -1,6 +1,6 @@
-[submodule "Source/ThirdParty/Vulkan-Headers"]
-	path = Source/ThirdParty/Vulkan-Headers
-	url = https://github.com/KhronosGroup/Vulkan-Headers.git
 [submodule "Source/ThirdParty/VMA"]
 	path = Source/ThirdParty/VMA
 	url = https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+[submodule "Source/ThirdParty/Volk"]
+	path = Source/ThirdParty/Volk
+	url = https://github.com/zeux/volk.git

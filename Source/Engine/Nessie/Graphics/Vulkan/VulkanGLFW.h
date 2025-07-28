@@ -6,7 +6,7 @@
 
 namespace nes::vulkan::glfw
 {
-    inline vk::SurfaceKHR CreateSurface(vk::Instance instance, GLFWwindow* pWindow)
+    inline VkSurfaceKHR CreateSurface(VkInstance instance, GLFWwindow* pWindow)
     {
         NES_ASSERT(pWindow);
         NES_ASSERT(instance != nullptr);
@@ -14,7 +14,7 @@ namespace nes::vulkan::glfw
         VkSurfaceKHR surface;
         const VkResult result = glfwCreateWindowSurface(instance, pWindow, nullptr, &surface);
         if (result != VK_SUCCESS)
-            NES_FATAL(nes::vulkan::kLogTag, "Failed to create GLFW Surface!");
+            NES_FATAL(nes::kVulkanLogTag, "Failed to create GLFW Surface!");
         
         return surface;
     }

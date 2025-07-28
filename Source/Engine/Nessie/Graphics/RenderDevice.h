@@ -3,15 +3,17 @@
 #include "GraphicsCommon.h"
 #include "RendererDesc.h"
 #include "Nessie/Application/ApplicationDesc.h"
+#include "Nessie/Core/Thread/Mutex.h"
+#include "Vulkan/VulkanCore.h"
+
+static_assert(VK_HEADER_VERSION >= 304,
+              "RenderDevice.h requires at least Vulkan SDK 1.4.304. "
+              "Please install a newer Vulkan SDK. A compatible link is available in the README.");
 
 namespace nes
 {
-    class Swapchain;
-    struct SwapchainDesc;
-
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Base class for graphics api devices. A RenderDevice is the intermediary between the program and
-    ///     the hardware device (GPU).
+    /// @brief : A RenderDevice is the intermediary between the program and the hardware device (GPU).
     //----------------------------------------------------------------------------------------------------
     class RenderDevice
     {
@@ -21,73 +23,141 @@ namespace nes
         RenderDevice(RenderDevice&&) noexcept = delete;
         RenderDevice& operator=(const RenderDevice&) = delete;
         RenderDevice& operator=(RenderDevice&&) noexcept = delete;
-        virtual ~RenderDevice() = default;
+        ~RenderDevice();
 
-        virtual bool                Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc) = 0;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initialize the Device. 
+        //----------------------------------------------------------------------------------------------------
+        bool                        Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destroy this device.
         //----------------------------------------------------------------------------------------------------
-        virtual void                Destroy() = 0;
+        void                        Destroy();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Post a message using the set Debug Messenger callback.
+        /// @brief : Create a new graphics class with the given CreateArgs. The resulting pointer will be
+        ///     stored in pOutEntity.
+        ///	@tparam GraphicsType : Graphics class. Ex: DeviceQueue.
+        ///	@tparam InitArgs : Parameter types to send to the Init() function on the Graphics class.
+        ///	@param pOutObject : Pointer that will be set to the address of the created Graphics class.
+        ///	@param args : Parameters to send to the Init() function on the Graphics class.
+        ///	@returns : Result of the Graphics class's Init() function. If not EGraphicsResult::Success, the
+        ///     object will be destroyed.
         //----------------------------------------------------------------------------------------------------
-        void                        ReportMessage(const ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag = kGraphicsLogTag) const;
-    
+        template <typename GraphicsType, typename...InitArgs> requires requires(RenderDevice& device, GraphicsType type, InitArgs&&... args)
+        {
+            GraphicsType(device);                                                             // Requires a constructor that takes in a VulkanDevice&
+            { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;  // Requires an Init function that takes in the give CreateArgs, and returns an EGraphicsResult.
+        }
+        EGraphicsResult             Create(GraphicsType*& pOutObject, InitArgs&&...args);
+
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the description info of this device. 
+        /// @brief : Get a Queue of a particular type.
         //----------------------------------------------------------------------------------------------------
-        //const nri::DeviceDesc&  GetDesc() const;
-    
+        EGraphicsResult             GetQueue(const EQueueType type, const uint32 queueIndex, DeviceQueue*& outQueue);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the allocation callbacks set for this device.
         //----------------------------------------------------------------------------------------------------
         const AllocationCallbacks&  GetAllocationCallbacks() const { return m_allocationCallbacks; }
 
-        // //----------------------------------------------------------------------------------------------------
-        // /// @brief : Get the features supported for a given format.
-        // //----------------------------------------------------------------------------------------------------
-        // virtual EFormatSupportBits          GetFormatSupport(EFormat format) const = 0;
-        //
-        // //----------------------------------------------------------------------------------------------------
-        // /// @brief : Helper function to get the supported depth format for this device.
-        // //----------------------------------------------------------------------------------------------------
-        // EFormat                             GetSupportedDepthFormat(const uint32 minBits, const bool enableStencil);
-        //
-        // virtual EGraphicsErrorCodes         CreateSwapchain(const SwapchainDesc& swapchainDesc, Swapchain*& pOutSwapchain) = 0;
-        //
-        // virtual EGraphicsErrorCodes         GetQueue(EQueueType queueType, uint32 queueIndex, DeviceQueue*& pOutQueue) = 0;
-        // virtual EGraphicsErrorCodes         CreateFence(uint64 initialValue, GFence*& pOutFence) = 0;
-        // virtual EGraphicsErrorCodes         CreateDescriptorPool(const DescriptorPoolDesc& desc, DescriptorPool*& pOutDescriptorPool) = 0;
-        //
-        // virtual EGraphicsErrorCodes         CreateBuffer(const GBufferDesc& desc, GBuffer*& pOutBuffer) = 0;
-        // virtual EGraphicsErrorCodes         CreateTexture(const GTextureDesc& desc, GTexture*& pOutTexture) = 0;
-        // virtual EGraphicsErrorCodes         CreatePipelineLayout(const PipelineLayoutDesc& desc, PipelineLayout*& pOutPipelineLayout) = 0;
-        // virtual EGraphicsErrorCodes         CreateGraphicsPipeline(const GraphicsPipelineDesc& desc, Pipeline*& pOutPipeline) = 0;
-        // virtual EGraphicsErrorCodes         CreateComputePipeline(const ComputePipelineDesc& desc, Pipeline*& pOutPipeline) = 0;
-        //
-        // virtual void                        DestroyCommandAllocator(GCommandAllocator& commandAllocator) = 0;
-        // virtual void                        DestroyCommandBuffer(GCommandBuffer& commandBuffer) = 0;
-        // virtual void                        DestroyDescriptorPool(DescriptorPool& descriptorPool) = 0;
-        // virtual void                        DestroyBuffer(GBuffer& buffer) = 0;
-        // virtual void                        DestroyTexture(GTexture& texture) = 0;
-        // virtual void                        DestroyDescriptor(Descriptor& descriptor) = 0;
-        // virtual void                        DestroyPipelineLayout(PipelineLayout& pipelineLayout) = 0;
-        // virtual void                        DestroyPipeline(Pipeline& pipeline) = 0;
-        // virtual void                        DestroyQueryPool(GQueryPool& queryPool) = 0;
-        // virtual void                        DestroyFence(GFence& fence) = 0;
-        //
-        // virtual EGraphicsErrorCodes         AllocateMemory(const AllocateGMemoryDesc& desc, GMemory*& pOutMemory) = 0;
-        // virtual EGraphicsErrorCodes         BindBufferMemory(const GBufferMemoryBindingDesc* pBindingDescs, const uint32 numMemoryBindings) = 0;
-        // virtual EGraphicsErrorCodes         BindTextureMemory(const GTextureMemoryBindingDesc* pBindingDescs, const uint32 numMemoryBindings) = 0;
-        // virtual void                        FreeMemory(GMemory& memory) = 0;
-        // virtual EGraphicsErrorCodes         WaitUntilIdle() = 0;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the supported Device Extensions for the physical device.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             GetSupportedDeviceExtensions(std::vector<VkExtensionProperties>& outExtensions) const;
 
-    protected:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get info about this device. 
+        //----------------------------------------------------------------------------------------------------
+        const DeviceDesc&           GetDesc() const { return m_deviceDesc; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Use NES_VK_CHECK() rather than calling this directly.
+        ///     If the result is a failure, this will report the message, assert, and exit. Treats errors as
+        ///     fatal errors. 
+        //----------------------------------------------------------------------------------------------------
+        void                        CheckResult(const VkResult result, const char* resultStr, const char* file, int line) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Use NES_VK_FAIL_REPORT() rather than calling this directly.
+        ///     If the result is a failure, this will report the message, and return the result.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             ReportOnError(const VkResult result, const char* resultStr, const char* file, int line) const;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Post a message using the set Debug Messenger callback.
+        //----------------------------------------------------------------------------------------------------
+        void                        ReportMessage(const ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag = kGraphicsLogTag) const;
+        
+    
+    private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create the Vulkan Instance. Returns EGraphicsResult::Unsupported on failure.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             CreateInstance(const ApplicationDesc& appDesc, const RendererDesc& rendererDesc);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Select a physical device to use for rendering. Returns EGraphicsResult::Failure on failure.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             SelectPhysicalDevice(const RendererDesc& rendererDesc);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create the Logical Device. Returns EGraphicsResult::Failure on failure.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             CreateLogicalDevice(const RendererDesc& rendererDesc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Filters out unavailable extensions from the desired extensions based on the supported extensions.
+        ///     If any unavailable extension was required, this will return false.
+        //----------------------------------------------------------------------------------------------------
+        bool                        FilterAvailableExtensions(const std::vector<VkExtensionProperties>& supportedExtensions, const std::vector<ExtensionDesc>& desiredExtensions, std::vector<ExtensionDesc>& outFilteredExtensions) const;
 
     private:
-        AllocationCallbacks     m_allocationCallbacks{};
-        DebugMessenger          m_debugMessenger{};
+        static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();
+        
+        using QueueArray            = std::vector<DeviceQueue*>;
+        using QueueFamilyArray      = std::array<QueueArray, static_cast<size_t>(EQueueType::MaxNum)>;
+        using ActiveQueueIndicesArray = std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)>; 
+
+        AllocationCallbacks         m_allocationCallbacks{};
+        DebugMessenger              m_debugMessenger{};
+        QueueFamilyArray            m_queueFamilies{};      /// Contains an array of Queues for each EQueueType. 
+        DeviceDesc                  m_deviceDesc{};
+        VkInstance                  m_vkInstance{};
+        VkPhysicalDevice            m_vkPhysicalDevice{};
+        VkDevice                    m_vkDevice{};
+        VkAllocationCallbacks       m_vkAllocationCallbacks{};
+        VkAllocationCallbacks*      m_vkAllocationCallbacksPtr = nullptr;
+        VkDebugUtilsMessengerEXT    m_vkDebugMessenger{};
+        VkPhysicalDeviceMemoryProperties m_memoryProperties{};
+        ActiveQueueIndicesArray     m_activeQueueIndices{};
+        Mutex                       m_activeQueueIndicesMutex{};
+        uint32                      m_numActiveFamilyIndices = 0;
     };
+
+    template <typename GraphicsType, typename ... CreateArgs> requires requires (RenderDevice& device, GraphicsType type, CreateArgs&&...args)
+    {
+        GraphicsType(device);
+        { type.Init(std::forward<CreateArgs>(args)...) } -> std::same_as<EGraphicsResult>;
+    }
+    EGraphicsResult RenderDevice::Create(GraphicsType*& pOutObject, CreateArgs&&... args)
+    {
+        // First allocate the object, using passing the RenderDevice into the constructor.
+        GraphicsType* pImpl = Allocate<GraphicsType>(GetAllocationCallbacks(), *this);
+
+        // Then call the create function on the object itself.
+        EGraphicsResult result = pImpl->Init(std::forward<CreateArgs>(args)...);
+        if (result != EGraphicsResult::Success)
+        {
+            Free<GraphicsType>(GetAllocationCallbacks(), pImpl);
+            pOutObject = nullptr;
+        }
+        else
+        {
+            pOutObject = pImpl;
+        }
+    
+        return result;
+    }
 }

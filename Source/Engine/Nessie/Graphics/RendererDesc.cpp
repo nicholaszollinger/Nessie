@@ -118,8 +118,10 @@ namespace nes
         
 #ifdef NES_RELEASE
         m_enableValidationLayer = false;
+        m_enableVerbose = false;
 #else
         m_enableValidationLayer = true;
+        m_enableVerbose = true;
 #endif
     }
 
@@ -194,24 +196,18 @@ namespace nes
         m_requireSeparateTransferQueue = true;
         return *this;
     }
-
-    RendererDesc& RendererDesc::RequirePhyscialDeviceType(const EPhysicalDeviceType type)
-    {
-        m_requiredDeviceType = type;
-        return *this;
-    }
-
-    RendererDesc& RendererDesc::RequireDiscreteGPU()
-    {
-        m_requiredDeviceType = EPhysicalDeviceType::DiscreteGPU;
-        return *this;
-    }
-
+    
     RendererDesc& RendererDesc::RequireQueueType(const EQueueType type, const uint32 count)
     {
         const size_t index = static_cast<size_t>(type);
         NES_ASSERT(index < static_cast<size_t>(EQueueType::MaxNum));
         m_requiredQueueCountsByFamily[index] = count;
+        return *this;
+    }
+
+    RendererDesc& RendererDesc::ForceGPUAtIndex(const int index)
+    {
+        m_forceGPU = index;
         return *this;
     }
 }

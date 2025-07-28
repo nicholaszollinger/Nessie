@@ -11,7 +11,6 @@ namespace nes
     NES_DEFINE_LOG_TAG(kGraphicsLogTag, "Graphics", Info);
     
     struct  DeviceDesc;
-    struct  DeviceCreationDesc;
     struct  PhysicalDeviceDesc;
 
     class   Swapchain;
@@ -58,28 +57,4 @@ namespace nes
         OutOfMemory         = 3,
         Unsupported         = 4,    /// Operation or type is unsupported by the Render Device.
     };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Report an error message using RenderDevice::ReportMessage() function.  
-    ///	@param renderDevice : Reference to the render device to report the message.
-    ///	@param message : Message to send.
-    //----------------------------------------------------------------------------------------------------
-    #define NES_GRAPHICS_REPORT_ERROR(renderDevice, message) \
-        (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, message, nes::kGraphicsLogTag);
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Returns the EGraphicsResult 'returnResult' if the expression evaluates to false. It will
-    ///     also report the error message using the render device.
-    ///	@param renderDevice : Reference to the render device to report the message.
-    ///	@param expression : Boolean expression to be evaluated.
-    ///	@param returnResult : EGraphicsResult value to return.
-    ///	@param message : Message to report.
-    //----------------------------------------------------------------------------------------------------
-    #define NES_GRAPHICS_RETURN_ON_BAD_RESULT(renderDevice, expression, returnResult, message) \
-    if (!expression) \
-    { \
-        (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, message, nes::kGraphicsLogTag); \
-        return returnResult; \
-    }
-    
 }

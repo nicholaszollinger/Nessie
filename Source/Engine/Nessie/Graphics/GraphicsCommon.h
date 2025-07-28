@@ -11,6 +11,7 @@
 // changing these as I go.
 //-------------------------------------------------------------------------------------------------
 
+
 namespace nes
 {
     static constexpr uint32 kMaxRenderTargets = 8;
@@ -1687,6 +1688,21 @@ namespace nes
         MaxNum
     };
 
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Add a link to the available extensions.
+    /// @brief : Contains information about an Extension and its corresponding feature.
+    //----------------------------------------------------------------------------------------------------
+    struct ExtensionDesc
+    {
+        const char* m_extensionName = nullptr;      /// Name of the extension. Ex: VK_KHR_SWAPCHAIN_EXTENSION_NAME.
+        void*       m_pFeature = nullptr;           /// [optional] Pointer to the feature structure for the extension.
+        bool        m_isRequired = true;            /// [optional] If the extension is required.
+        uint32      m_version = 0;                  /// [optional] Spec version of the extension, this version or higher.
+        bool        m_requireExactVersion = false;  /// [optional] If true, the spec version must match exactly.
+    };
+
+    constexpr size_t GetQueueTypeIndex(const EQueueType type) { return static_cast<size_t>(type); }
+
     struct PhysicalDeviceDesc
     {
         char                m_name[256]{};                                          /// Name of the Device.
@@ -1706,9 +1722,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DeviceDesc
     {
-        PhysicalDeviceDesc  m_physicalDeviceDesc{};
-        Version             m_apiVersion{};
-        EGraphicsAPI        m_graphicsAPI = EGraphicsAPI::Vulkan;
+        PhysicalDeviceDesc          m_physicalDeviceDesc{};
+        Version                     m_apiVersion{};
+        EGraphicsAPI                m_graphicsAPI = EGraphicsAPI::Vulkan;
+        std::vector<ExtensionDesc>  m_deviceExtensions{};
     };
 #pragma endregion
 }
