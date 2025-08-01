@@ -14,7 +14,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     static void ErrorCallback([[maybe_unused]] int error, [[maybe_unused]] const char* description)
     {
-        NES_ERROR(nes::kGLFWLogTag, "Error: ", error, " - ", description);
+        NES_ERROR(nes::kGLFWLogTag, "Error: {} - {}", error, description);
     }
 
     RenderDevice& DeviceManager::GetRenderDevice()
@@ -38,10 +38,10 @@ namespace nes
         return true;
     }
 
-    bool DeviceManager::CreateRenderDevice(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc)
+    bool DeviceManager::CreateRenderDevice(const ApplicationDesc& appDesc, const RendererDesc& rendererDesc)
     {
         m_pDevice = std::make_unique<RenderDevice>();
-        if (!m_pDevice->Init(appDesc, pWindow, rendererDesc))
+        if (!m_pDevice->Init(appDesc, rendererDesc))
         {
             NES_ERROR("Failed to Create Render Device!");
             return false;

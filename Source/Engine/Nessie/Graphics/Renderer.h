@@ -20,7 +20,6 @@ namespace nes
     
     //----------------------------------------------------------------------------------------------------
     // The Renderer is responsible for:
-    // - Managing the RenderThread (if multithreaded).
     // - Managing default graphics resources.
     // - Managing the Swapchain.
     // - Static API to issue draw commands.
@@ -31,69 +30,42 @@ namespace nes
     class Renderer
     {
     public:
-        // [TODO]: Render Pass
-        //static void                BeginRenderPass(StrongPtr<RenderCommandBuffer> pCommandBuffer, StrongPtr<RenderPass> pRenderPass, bool explicitClear = false);
-        //static void                EndRenderPass(StrongPtr<RenderCommandBuffer> pCommandBuffer);
-
-        // [TODO]: Draw Calls 
-        //static void                RenderGeometry(StrongPtr<RenderCommandBuffer> pCommandBuffer, StrongPtr<Pipeline> pPipeline, StrongPtr<Material> pMaterial, StrongPtr<VertexBuffer> pVertexBuffer, StrongPtr<IndexBuffer> pIndexBuffer, const Mat44& transform, uint32 indexCount = 0);
-
-        // [TODO]: Get Default Resources
-
-        // [TODO]: Shaders
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Enqueue a command to run on the GPU. 
-        //----------------------------------------------------------------------------------------------------
-        template <typename FuncType>
-        static void                 Submit(FuncType&& func);
-
         //----------------------------------------------------------------------------------------------------
         /// @brief : Enqueue a command to free a render resource.
         //----------------------------------------------------------------------------------------------------
         template <typename FuncType>
         static void                 SubmitResourceFree(FuncType&& func);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Returns true if the current executing thread is the Render Thread.
-        //----------------------------------------------------------------------------------------------------
-        static bool                 IsRenderThread();
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the RenderCommandQueue of a specific frame used to release render resources. 
         //----------------------------------------------------------------------------------------------------
         static RenderCommandQueue&  GetRenderResourceReleaseQueue(const uint32 index);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Advanced use, call only on the Render Thread.
-        ///     Get the current frame index that we are rendering to.
-        //----------------------------------------------------------------------------------------------------
-        static uint32               RT_GetCurrentFrameIndex();
     
     public:
-        Renderer();
-        ~Renderer();
+        /* Constructor */           Renderer(RenderDevice& device);
+        /* Destructor */            ~Renderer();
 
         /// No Copy or Move.
-        Renderer(const Renderer&) = delete;
-        Renderer& operator=(const Renderer&) = delete;
-        Renderer(Renderer&&) noexcept = delete;
-        Renderer& operator=(Renderer&&) noexcept = delete;
+        /* Copy Constructor */      Renderer(const Renderer&) = delete;
+        /* Copy Assignment */       Renderer& operator=(const Renderer&) = delete;
+        /* Move Constructor */      Renderer(Renderer&&) noexcept = delete;
+        /* Move Assignment */       Renderer& operator=(Renderer&&) noexcept = delete;
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the Renderer.
+        /// @brief : Initialize the Renderer. If the window is nullptr, then no presenting will be allowed,
+        ///     and the swapchain will not be created.
         //----------------------------------------------------------------------------------------------------
-        bool                        Init(const RendererDesc& config);
+        bool                        Init(ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Shutdown the renderer, cleaning up all resources. 
         //----------------------------------------------------------------------------------------------------
         void                        Shutdown();
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Begin a new render frame. Must be called before any render commands.
         //----------------------------------------------------------------------------------------------------
-        void                        BeginFrame();
+        [[nodiscard]] bool          BeginFrame();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : End the current render frame. Must be called after all render commands have been submitted.
@@ -101,9 +73,20 @@ namespace nes
         void                        EndFrame();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Handle the target window being resized, or changing it's vsync setting. 
+        /// @brief : Begin a new render frame with no presentation. 
         //----------------------------------------------------------------------------------------------------
-        void                        UpdateSwapchain(const uint32 width, const uint32 height, const bool vsyncEnabled);
+        void                        BeginHeadlessFrame();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : End a render frame with no presentation.
+        //----------------------------------------------------------------------------------------------------
+        void                        EndHeadlessFrame();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Whenever the window is resized or if the vsync status changes, the Swapchain needs to be
+        ///     rebuilt. Calling this will ensure that the swapchain is rebuilt on the next call to BeginFrame.
+        //----------------------------------------------------------------------------------------------------
+        void                        RequestSwapchainRebuild();
 
         //---------------------------------------------------------------------------------------------------
         /// @brief : Get the current frame index.
@@ -111,24 +94,9 @@ namespace nes
         uint32                      GetCurrentFrameIndex() const            { return m_currentFrameIndex; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Render a single frame. This will block until complete. 
+        /// @brief : Blocks until the render thread has finished, and the GPU has finished processing.  
         //----------------------------------------------------------------------------------------------------
-        void                        RenderSingleFrame();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Signals the Render thread to begin working on the previous frame.
-        //----------------------------------------------------------------------------------------------------
-        void                        SignalRenderThread();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Swap the command queues.
-        //----------------------------------------------------------------------------------------------------
-        void                        SwapCommandQueues();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Blocks until the render thread has finished.  
-        //----------------------------------------------------------------------------------------------------
-        void                        WaitUntilRenderComplete();
+        void                        WaitForFrameCompletion();
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns how long the Render thread was waiting to render the next frame.
@@ -143,70 +111,85 @@ namespace nes
         float                       GetRenderThreadWorkTime() const { return m_renderThreadWaitTime; }
     
     protected:
-        enum class ERenderThreadInstruction : uint8
-        {
-            Init,
-            RenderPreviousFrame,
-            Terminate,
-        };
-        
-        using RenderThread = WorkerThread<ERenderThreadInstruction>;
-        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the singleton instance of the renderer. 
         //----------------------------------------------------------------------------------------------------
         static Renderer*            Get();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the RenderCommandQueue to submit commands to. 
+        /// @brief : Execute functions in m_resourceFreeQueues[m_currentFrameIndex];   
         //----------------------------------------------------------------------------------------------------
-        RenderCommandQueue&         GetRenderCommandSubmissionQueue() const;
+        void                        ProcessResourceFreeQueue();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the RenderCommandQueue to execute commands from. 
+        /// @brief : Resets the frame's command pool and preps the frame's command buffer for recording. 
         //----------------------------------------------------------------------------------------------------
-        RenderCommandQueue&         GetRenderCommandExecuteQueue() const;
+        void                        BeginCommandRecording();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Process incoming instructions for the render thread.
+        /// @brief : Calculates the signal value for when this frame completes.
+        ///     Signal value = current frame number + numFramesInFlight
+        ///     Example with 3 frames in flight:
+        ///         - Frame 0 signals value 3 (allowing Frame 3 to start when complete).
+        ///         - Frame 1 signals value 4 (allowing Frame 4 to start when complete).
         //----------------------------------------------------------------------------------------------------
-        bool                        RT_ProcessInstruction(const ERenderThreadInstruction instruction);
+        void                        PrepareFrameToSignal(const uint32 numFramesInFlight);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : RenderThread function. Execute render commands stored on the previous frame. 
+        /// @brief : Creates a command pool (long life) and command buffer for each frame in flight.
         //----------------------------------------------------------------------------------------------------
-        bool                        RT_RenderPreviousFrame();
+        void                        CreateFrameSubmissionResources(const uint32 numFramesInFlight);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Clear the waitSemaphores, signalSemaphores, and command buffers from the previous frame.  
+        //----------------------------------------------------------------------------------------------------
+        void                        ClearPreviousFrameSubmissionData();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submit the current frame's command buffer to the Submission Queue. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SubmitFrameCommands();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Increments the circular m_currentFrameIndex to the next frame.
+        //----------------------------------------------------------------------------------------------------
+        void                        AdvanceToNextFrame(const uint32 numFramesInFlight);
     
     protected:
-        RenderThread                m_renderThread;                             /// Worker thread that executes render commands.
-        RendererDesc                m_desc;                                     /// Settings passed from the Application to initialize the Renderer.
-        RenderCommandQueue*         m_resourceFreeQueues;                       /// Command queues specific for freeing resources.
-        RenderCommandQueue*         m_commandQueues[2]{};                       /// Two buffers, one to write commands to, one to execute commands from. 
-        std::atomic<uint32>         m_commandQueueWriteIndex{0};          /// Index of the command queue that we are submitting commands to.
-        Swapchain*                  m_pSwapchain = nullptr;                     /// Object that manages the target framebuffer to render to.
-        uint32                      m_currentFrameIndex = 0;                    /// 
-
-        // Performance Values
-        float                       m_renderThreadWorkTime;                     /// The amount of time the render thread was processing commands (ms).
-        float                       m_renderThreadWaitTime;                     /// The amount of time the render thread was waiting for the main thread (ms).
-    };
-    
-    template <typename FuncType>
-    void Renderer::Submit(FuncType&& func)
-    {
-        auto renderCommand = [](void* ptr)
+        static constexpr uint32                 kHeadlessFramesInFlight = 5;
+        
+        //----------------------------------------------------------------------------------------------------
+        // [TODO]: In the future, I might have multiple command pools/buffers for each required device queue?
+        //         I am thinking about a dedicated compute queue or dedicated transfer queue.
+        /// @brief : Contains a dedicated command pool and buffer for rendering commands.
+        //----------------------------------------------------------------------------------------------------
+        struct FrameData
         {
-            // Call the function.
-            auto pFunc = static_cast<FuncType*>(ptr);
-            (*pFunc)();
-
-            // Destroy the object.
-            pFunc->~FuncType();
+            CommandPool*                        m_pCommandPool{};                           /// The Command Pool used for recording commands for this frame.
+            CommandBuffer*                      m_pCommandBuffer{};                         /// The Command Buffer that contains this frame's rendering commands.
+            uint64                              m_frameNumber{};                            /// Timeline value for synchronization (increases each frame).
         };
+        
+        RenderDevice&                           m_device;                                   /// Device to create graphics resources.
+        ApplicationWindow*                      m_pWindow;                                  /// Window that we are rendering to.
+        std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       /// Command queues specific for freeing resources.
 
-        auto storageBuffer = Get()->GetRenderCommandSubmissionQueue().Allocate(renderCommand, sizeof(func));
-        new (storageBuffer) FuncType(std::forward<FuncType>(func));
-    }
+        DeviceQueue*                            m_pRenderSubmissionQueue = nullptr;
+        CommandPool*                            m_pPresentCommandPool = nullptr;            /// Command pool owned by the main thread. 
+        Swapchain*                              m_pSwapchain = nullptr;                     /// Object that manages the target framebuffer to render to.
+        std::vector<FrameData>                  m_frames{};                                 /// Collection of per-frame resources to support multiple frames in flight.
+        VkSemaphore                             m_frameTimelineSemaphore{};                 /// Timeline semaphore used to synchronize CPU submission and GPU completion.
+        uint32                                  m_currentFrameIndex = 0;                    /// The current frame index in the frame data array (cycles through like a ring).
+
+        // TODO: These should be wrapped, not the Vulkan Types.
+        std::vector<VkSemaphoreSubmitInfo>      m_waitSemaphores;                           /// Possible extra wait semaphores.
+        std::vector<VkSemaphoreSubmitInfo>      m_signalSemaphores;                         /// Possible extra frame signal semaphores.
+        std::vector<VkCommandBufferSubmitInfo>  m_commandBuffers;                           /// Possible extra frame command buffers.
+        
+        // Performance Values
+        float                                   m_renderThreadWorkTime;                     /// The amount of time the render thread was processing commands (ms).
+        float                                   m_renderThreadWaitTime;                     /// The amount of time the render thread was waiting for the main thread (ms).
+    };
 
     template <typename FuncType>
     void Renderer::SubmitResourceFree(FuncType&& func)
@@ -221,13 +204,13 @@ namespace nes
             pFunc->~FuncType();
         };
         
-        if (IsRenderThread())
-        {
-            const uint32 index = RT_GetCurrentFrameIndex();
-            auto storageBuffer = GetRenderResourceReleaseQueue(index).Allocate(renderCommand, sizeof(func));
-            new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
-        }
-        else
+        // if (IsRenderThread())
+        // {
+        //     const uint32 index = RT_GetCurrentFrameIndex();
+        //     auto storageBuffer = GetRenderResourceReleaseQueue(index).Allocate(renderCommand, sizeof(func));
+        //     new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
+        // }
+        //else
         {
             const uint32 frameIndex = Get()->GetCurrentFrameIndex();
             Submit([renderCommand, func, frameIndex]()

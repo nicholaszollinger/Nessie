@@ -9,10 +9,10 @@ std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outApp
     outWindowDesc.SetResolution(1600, 900)
         .SetLabel("Physics Tests")
         .SetWindowMode(EWindowMode::Windowed)
-        .EnableResize(false)
+        .EnableResize(true)
         .EnableVsync(false);
     
-    outRendererDesc.EnableMultiThreaded();
+    outRendererDesc.EnableValidationLayer();
     
     return std::make_unique<TestApplication>(outAppDesc);
 }

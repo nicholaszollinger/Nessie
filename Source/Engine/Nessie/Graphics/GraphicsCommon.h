@@ -14,16 +14,6 @@
 
 namespace nes
 {
-    static constexpr uint32 kMaxRenderTargets = 8;
-    static constexpr uint32 kMaxViewports = 16;
-    static constexpr uint32 kMaxVertexAttributes = 16;
-    static constexpr uint32 kMaxBindingLayouts = 8;
-    static constexpr uint32 kMaxBindlessRegisterSpaces = 16;
-    static constexpr uint32 kMaxVolatileConstantBuffersPerLayout = 6;
-    static constexpr uint32 kMaxVolatileConstantBuffers = 32;
-    static constexpr uint32 kMaxPushConstantSize = 128; // D3D12: root signature is 256 bytes max., Vulkan: 128 bytes of push constants guaranteed
-    static constexpr uint32 kConstantBufferOffsetSizeAlignment = 256;
-
 //============================================================================================================================================================================================
 #pragma region [ Common ]
 //============================================================================================================================================================================================
@@ -98,15 +88,6 @@ namespace nes
     struct SampleLocation
     {
         int8 x, y = 0;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : "2 Dimensions": width & height
-    //----------------------------------------------------------------------------------------------------
-    struct Dim2
-    {
-        DimType         m_width;
-        DimType         m_height;
     };
 
 #pragma endregion
@@ -441,20 +422,20 @@ namespace nes
 
     struct GBufferBarrierDesc
     {
-        GBuffer*            m_pBuffer;
+        //GBuffer*            m_pBuffer;
         AccessStage         m_before;
         AccessStage         m_after;
     };
 
     struct GTextureBarrierDesc
     {
-        GTexture*           m_pTexture;
+        //GTexture*           m_pTexture;
         AccessLayoutStage   m_before;
         AccessLayoutStage   m_after;
-        DimType             m_baseMip;
-        DimType             m_NumMips;
-        DimType             m_baseLayer;
-        DimType             m_numLayers;
+        //DimType             m_baseMip;
+        //DimType             m_NumMips;
+        //DimType             m_baseLayer;
+        //DimType             m_numLayers;
         EPlaneBits          m_planes;
 
         // Queue ownership transfer is potentially needed only for "EXCLUSIVE" textures
@@ -543,12 +524,12 @@ namespace nes
         ETextureType        m_type = ETextureType::Texture2D;
         ETextureUsageBits   m_usage = ETextureUsageBits::ShaderResource;
         EFormat             m_format = EFormat::Unknown;
-        DimType             m_width = 1;
-        DimType             m_height = 1;
-        DimType             m_depth = 1;
-        DimType             m_numMipLevels = 1;
-        DimType             m_numLayers = 1;
-        SampleType          m_sampleCount = 1;
+        //DimType             m_width = 1;
+        //DimType             m_height = 1;
+        //DimType             m_depth = 1;
+        //DimType             m_numMipLevels = 1;
+        //DimType             m_numLayers = 1;
+        //SampleType          m_sampleCount = 1;
         ESharingMode        m_sharingMode = ESharingMode::Exclusive;
         ClearValue          m_clearValue{};  // D3D12: not needed on desktop, since any HW can track many clear values.
     };
@@ -607,28 +588,28 @@ namespace nes
     {
         uint64      m_size;
         uint32      m_alignment;
-        GMemoryType m_type;
+        //GMemoryType m_type;
         bool        m_mustBeDedicated; // Must be put into a dedicated memory object, containing only 1 object with offset = 0
     };
 
     struct AllocateGMemoryDesc
     {
         uint64      m_size;
-        GMemoryType m_type;
+        //GMemoryType m_type;
         float       m_priority; // [-1; 1]: low < 0, normal = 0, high > 0
     };
 
     struct GBufferMemoryBindingDesc
     {
-        GBuffer*    m_pBuffer;
-        GMemory*    m_pMemory;
+        //GBuffer*    m_pBuffer;
+        //GMemory*    m_pMemory;
         uint64      m_offset;
     };
 
     struct GTextureMemoryBindingDesc
     {
-        GTexture*   m_pTexture;
-        GMemory*    m_pMemory;
+        //GTexture*   m_pTexture;
+        //GMemory*    m_pMemory;
         uint64      m_offset;
     };
 
@@ -742,40 +723,40 @@ namespace nes
 
     struct GTexture1DViewDesc
     {
-        const GTexture*     m_pTexture;
+        //const GTexture*     m_pTexture;
         ETexture1DViewType  m_viewType;
         EFormat             m_format;
-        DimType             m_mipOffset;
-        DimType             m_mipNum;
-        DimType             m_layerOffset;
-        DimType             m_layerNum;
+        //DimType             m_mipOffset;
+        //DimType             m_mipNum;
+        //DimType             m_layerOffset;
+        //DimType             m_layerNum;
     };
 
     struct GTexture2DViewDesc
     {
-        const GTexture*     m_pTexture;
+        //const GTexture*     m_pTexture;
         ETexture2DViewType  m_viewType;
         EFormat             m_format;
-        DimType             m_mipOffset;
-        DimType             m_mipNum;
-        DimType             m_layerOffset;
-        DimType             m_layerNum;
+        //DimType             m_mipOffset;
+        //DimType             m_mipNum;
+        //DimType             m_layerOffset;
+        //DimType             m_layerNum;
     };
 
     struct GTexture3DViewDesc
     {
-        const GTexture*     m_pTexture;
+        //const GTexture*     m_pTexture;
         ETexture3DViewType  m_viewType;
         EFormat             m_format;
-        DimType             m_mipOffset;
-        DimType             m_mipNum;
-        DimType             m_layerOffset;
-        DimType             m_layerNum;
+        //DimType             m_mipOffset;
+        //DimType             m_mipNum;
+        //DimType             m_layerOffset;
+        //DimType             m_layerNum;
     };
 
     struct GBufferViewDesc
     {
-        const GBuffer*      m_pBuffer;
+        //const GBuffer*      m_pBuffer;
         EBufferViewType     m_viewType;
         EFormat             m_format;
         uint64              m_offset;
@@ -1010,14 +991,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DescriptorRangeUpdateDesc
     {
-        const Descriptor* const*   m_pDescriptors;
+        //const Descriptor* const*   m_pDescriptors;
         uint32                      m_descriptorNum;
         uint32                      m_baseDescriptor;
     };
 
     struct DescriptorSetCopyDesc
     {
-        const DescriptorSet*        m_pSrcDescriptorSet;
+        //const DescriptorSet*        m_pSrcDescriptorSet;
         uint32                      m_srcBaseRange;
         uint32                      m_dstBaseRange;
         uint32                      m_rangeNum;
@@ -1118,7 +1099,7 @@ namespace nes
 
     struct VertexBufferDesc
     {
-        const GBuffer*          m_pBuffer;
+        //const GBuffer*          m_pBuffer;
         uint64                  m_offset;
         uint32                  m_stride;
     };
@@ -1217,7 +1198,7 @@ namespace nes
     struct MultisampleDesc
     {
         uint32          m_sampleMask;
-        SampleType      m_sampleNum;
+        //SampleType      m_sampleNum;
         bool            m_alphaToCoverage;
         bool            m_sampleLocations;              // Requires "tiers.m_sampleLocations != 0", expects "CmdSetSampleLocations"
     };
@@ -1426,12 +1407,12 @@ namespace nes
 
     struct AttachmentDesc
     {
-        const Descriptor* const*    m_pColors;
+        //const Descriptor* const*    m_pColors;
         uint32                      m_colorNum;
     
         // Optional
-        const Descriptor*           m_pDepthStencil;
-        const Descriptor*           m_pShadingRate;         /// Requires "tiers.m_shadingRate >= 2".
+        //const Descriptor*           m_pDepthStencil;
+        //const Descriptor*           m_pShadingRate;         /// Requires "tiers.m_shadingRate >= 2".
         uint32                      m_viewMask;             /// If non-0, requires "m_viewMaxNum > 1".
     };
 
@@ -1459,7 +1440,7 @@ namespace nes
 
     struct GraphicsPipelineDesc
     {
-        const PipelineLayout*  m_pPipelineLayout;
+        //const PipelineLayout*  m_pPipelineLayout;
         const VertexInputDesc*  m_pVertexInput;     // Optional.
         InputAssemblyDesc       m_inputAssembly;
         RasterizationDesc       m_rasterizer;
@@ -1472,7 +1453,7 @@ namespace nes
 
     struct ComputePipelineDesc
     {
-        const PipelineLayout*  m_pPipelineLayout;
+        //const PipelineLayout*  m_pPipelineLayout;
         ShaderDesc              m_shader;
         ERobustness             m_robustness;       // Optional.
     };
@@ -1596,14 +1577,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct TextureRegionDesc
     {
-        DimType     x;
-        DimType     y;
-        DimType     z;
-        DimType     m_width;
-        DimType     m_height;
-        DimType     m_depth;
-        DimType     m_mipOffset;
-        DimType     m_layerOffset;
+        //DimType     x;
+        //DimType     y;
+        //DimType     z;
+        //DimType     m_width;
+        //DimType     m_height;
+        //DimType     m_depth;
+        //DimType     m_mipOffset;
+        //DimType     m_layerOffset;
         EPlaneBits  m_planes;
     };
 
@@ -1616,7 +1597,7 @@ namespace nes
 
     struct FenceSubmitDesc
     {
-        GFence*     m_pFence;
+        //GFence*     m_pFence;
         uint64      m_value;
         EPipelineStageBits  m_stages;
     };
@@ -1625,7 +1606,7 @@ namespace nes
     {
         const FenceSubmitDesc*  m_pWaitFences;
         uint32                  m_waitFenceNum;
-        const GCommandBuffer*   m_pCommandBuffers;
+        //const GCommandBuffer*   m_pCommandBuffers;
         uint32                  m_commandBufferNum;
         const FenceSubmitDesc*  m_pSignalFences;
         uint32                  m_signalFenceNum;
@@ -1650,7 +1631,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ClearStorageDesc
     {
-        const Descriptor*      m_pStorage; // A "Storage" descriptor.
+        //const Descriptor*      m_pStorage; // A "Storage" descriptor.
         Color                   m_value;
         uint32                  m_setIndex;
         uint32                  m_rangeIndex;
@@ -1724,7 +1705,6 @@ namespace nes
     {
         PhysicalDeviceDesc          m_physicalDeviceDesc{};
         Version                     m_apiVersion{};
-        EGraphicsAPI                m_graphicsAPI = EGraphicsAPI::Vulkan;
         std::vector<ExtensionDesc>  m_deviceExtensions{};
     };
 #pragma endregion

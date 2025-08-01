@@ -161,18 +161,6 @@ namespace nes
         return *this;
     }
 
-    RendererDesc& RendererDesc::EnableSingleThreaded()
-    {
-        m_threadPolicy = EThreadPolicy::SingleThreaded;
-        return *this;
-    }
-
-    RendererDesc& RendererDesc::EnableMultiThreaded()
-    {
-        m_threadPolicy = EThreadPolicy::Multithreaded;
-        return *this;
-    }
-
     RendererDesc& RendererDesc::RequireDedicatedComputeQueue()
     {
         m_requireDedicatedComputeQueue = true;

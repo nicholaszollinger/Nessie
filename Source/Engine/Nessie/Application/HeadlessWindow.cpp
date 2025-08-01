@@ -8,27 +8,37 @@
 #include "GLFW/glfw3.h"
 #include "Nessie/Math/Vec2.h"
 
+// Native Window conversion: 
+#ifdef NES_PLATFORM_WINDOWS
+    #define GLFW_EXPOSE_NATIVE_WIN32
+#endif
+#include "GLFW/glfw3native.h"
+
 namespace nes
 {
     bool HeadlessWindow::Internal_Init(Platform& platform, const WindowDesc& desc)
     {
-        m_description = desc;
-        m_description.m_windowResolution = { 0, 0 };
-        m_description.m_isResizable = false;
-        m_description.m_cursorMode = ECursorMode::Visible;
+        m_desc = desc;
+        m_desc.m_windowResolution = { 0, 0 };
+        m_desc.m_isResizable = false;
+        m_desc.m_cursorMode = ECursorMode::Visible;
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
         // Hide the window.
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
-
+        
         // macOS: The first time a window is created, the menu bar is created.
         // This is not desirable when writing a command line only application.
         // Menu bar creation can be disabled with the GLFW_COCOA_MENUBAR init hint.
-        glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
+        //glfwWindowHint(GLFW_COCOA_MENUBAR, GLFW_FALSE);
 
         GLFWwindow* pWindow = glfwCreateWindow(640, 480, "", nullptr, nullptr);
-        m_pNativeWindowHandle = pWindow;
+        m_nativeWindow.m_glfw = pWindow;
+        
+        #if NES_PLATFORM_WINDOWS
+        m_nativeWindow.m_windows.m_hwnd = glfwGetWin32Window(pWindow);
+        #endif
 
         glfwSetWindowUserPointer(pWindow, &platform);
 

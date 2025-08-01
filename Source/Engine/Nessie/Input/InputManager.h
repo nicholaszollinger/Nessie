@@ -76,14 +76,12 @@ namespace nes
         void                OnInputEvent(Event& event);
 
     private:
-        friend class Application;
-
         using KeyStates         = std::array<EKeyAction, static_cast<size_t>(EKeyCode::MaxNum)>;
         using MouseButtonStates = std::array<EMouseAction, static_cast<size_t>(EMouseButton::MaxNum)>;
         
-        KeyStates           m_keyStates;
-        MouseButtonStates   m_mouseButtonStates;
         ApplicationWindow*  m_pWindow = nullptr;
+        KeyStates           m_keyStates{};
+        MouseButtonStates   m_mouseButtonStates{};
         ECursorMode         m_cursorMode = ECursorMode::Visible;
         Vec2                m_cursorPosition{};
         Vec2                m_cursorDelta{};

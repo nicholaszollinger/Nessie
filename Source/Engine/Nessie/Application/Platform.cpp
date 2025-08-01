@@ -110,26 +110,27 @@ namespace nes
 
         // Save the min frame time for the main loop.
         m_minTimeStepMs = appDesc.m_minTimeStepMs;
-
-        // Create the Window.
-        if (appDesc.m_isHeadless)
-            m_pWindow = std::make_unique<HeadlessWindow>();
-        else
-            m_pWindow = std::make_unique<ApplicationWindow>();
-    
-        if (!m_pWindow->Internal_Init(*this, windowDesc))
-        {
-            NES_ERROR("Failed to initialize application window!");
-            return false;
-        }
-
+        
         // Create the Render Device.
-        if (!m_pDeviceManager->CreateRenderDevice(appDesc, m_pWindow.get(), rendererDesc))
+        if (!m_pDeviceManager->CreateRenderDevice(appDesc, rendererDesc))
         {
             NES_ERROR("Failed to create render device!");
             return false;
         }
 
+        // Create the Window
+        if (appDesc.m_isHeadless)
+            m_pWindow = std::make_unique<HeadlessWindow>();
+        else
+            m_pWindow = std::make_unique<ApplicationWindow>();
+        
+        // Initialize the window.
+        if (!m_pWindow->Internal_Init(*this, windowDesc))
+        {
+            NES_ERROR("Failed to initialize application window!");
+            return false;
+        }
+        
         // Initialize the Input Manager
         m_pInputManager = std::make_unique<InputManager>();
         if (!m_pInputManager->Init(m_pWindow.get()))
@@ -139,8 +140,9 @@ namespace nes
         }
 
         // Initialize the Renderer.
-        m_pRenderer = std::make_unique<Renderer>();
-        if (!m_pRenderer->Init(rendererDesc))
+        m_pRenderer = std::make_unique<Renderer>(m_pDeviceManager->GetRenderDevice());
+        ApplicationWindow* pRenderWindow = appDesc.m_isHeadless? nullptr : m_pWindow.get(); 
+        if (!m_pRenderer->Init(pRenderWindow, rendererDesc))
         {
             NES_ERROR("Failed to initialize the renderer!");
             return false;
@@ -153,53 +155,61 @@ namespace nes
             return false;
         }
 
-        // Render a single frame.
-        m_pRenderer->RenderSingleFrame();
-    
+        // [TODO]: Render a single frame?
+        
         return true;
     }
 
     void Platform::RunMainLoop()
     {
+        // Headless loop: iterates through m_headlessFrameCount number of frames, then exits.
+        if (m_pApp->GetDesc().m_isHeadless)
+        {
+            RunHeadlessLoop();
+            return;
+        }
+
+        // Main loop, with a window.
         m_timer.Start();
     
         while (!m_pWindow->ShouldClose() && !m_pApp->ShouldQuit())
         {
-            // Sync with render thread.
+            // Wait for the Render frame to finish.
             SyncFrame();
-
-            // Threads are synced:
+            
             // Process window events.
             m_pWindow->Internal_ProcessEvents();
 
-            // Begin rendering the previous frame; kicks off the render thread.
-            // Threads are no longer synced.
-            m_pRenderer->SwapCommandQueues();
-            m_pRenderer->SignalRenderThread();
+            // Skip loop if minimized.
+            if (m_pWindow->IsMinimized())
+            {
+                // Keep time steps reasonable.
+                UpdateFrameTime();
+                continue;
+            }
 
-            if (!m_pWindow->IsMinimized())
+            // Main thread Update:
             {
                 NES_SCOPED_TIMER_MEMBER(m_performanceInfo.m_mainThreadWorkTime, Timer::Milliseconds);
 
                 // Update input state.
                 m_pInputManager->Update(m_timeStep);
             
-                // Begin recording render commands.
-                m_pRenderer->BeginFrame();
+                // Begin a Render Frame:
+                // If false, then there was an error, or the swapchain needs to be rebuilt (out of date).
+                // Skip this render frame.
+                if (m_pRenderer->BeginFrame())
+                {
+                    // Run the Application frame.
+                    m_pApp->Internal_AppRunFrame(m_timeStep);
 
-                // Run the Application frame.
-                m_pApp->Internal_AppRunFrame(m_timeStep);
-
-                // Stop recording render commands.
-                m_pRenderer->EndFrame();
+                    // Stop recording render commands.
+                    m_pRenderer->EndFrame();
+                }
             }
-        
-            // Update time information:
-            const double deltaTimeMs = m_timer.Tick<Timer::Milliseconds>();
-            m_timeStep = math::Min(static_cast<float>(deltaTimeMs), m_minTimeStepMs) / 1000.f;
-            m_performanceInfo.m_timeSinceStartup += deltaTimeMs / 1000.f;
-            m_performanceInfo.m_lastFrameTime = deltaTimeMs;
-            m_performanceInfo.m_fps = 1.f / static_cast<float>(deltaTimeMs) / 1000.f;
+
+            // Update time step values.
+            UpdateFrameTime();
         }
     }
 
@@ -207,7 +217,7 @@ namespace nes
     {
         // Sync with the Renderer.
         if (m_pRenderer)
-            m_pRenderer->WaitUntilRenderComplete();
+            m_pRenderer->WaitForFrameCompletion();
 
         // Shutdown the app.
         if (m_pApp != nullptr)
@@ -247,6 +257,9 @@ namespace nes
 
     void Platform::OnInputEvent(Event& event) const
     {
+        // The Window calls this function, so the input manager should be valid.
+        NES_ASSERT(m_pInputManager != nullptr);
+        
         // Update the input manager.
         m_pInputManager->OnInputEvent(event);
 
@@ -258,13 +271,13 @@ namespace nes
             m_pApp->PushEvent(event);
     }
 
-    void Platform::OnWindowResize(const uint32 width, const uint32 height, const bool vsyncEnabled) const
+    void Platform::OnWindowResize(const uint32 width, const uint32 height) const
     {
         // Rebuild the swap chain if necessary.
         if (!m_pApp->GetDesc().m_isHeadless)
         {
             // Update the Renderer:
-            m_pRenderer->UpdateSwapchain(width, height, vsyncEnabled);
+            m_pRenderer->RequestSwapchainRebuild();
 
             // Push the resize event to the Application:
             WindowResizeEvent event(width, height);
@@ -277,13 +290,48 @@ namespace nes
         // Sync with the Render thread.
         {
             NES_SCOPED_TIMER_MEMBER(m_performanceInfo.m_mainThreadWaitTime, Timer::Milliseconds);
-            m_pRenderer->WaitUntilRenderComplete();
+            m_pRenderer->WaitForFrameCompletion();
         }
-
+        
         // Update render thread timings while synced.
         m_performanceInfo.m_renderThreadWaitTime = m_pRenderer->GetRenderThreadWaitTime();
         m_performanceInfo.m_renderThreadWorkTime = m_pRenderer->GetRenderThreadWorkTime();
 
         // [TODO]: Sync with Asset Thread.
+    }
+
+    void Platform::RunHeadlessLoop()
+    {
+        const auto& appDesc = m_pApp->GetDesc();
+        const uint32 numFrames = appDesc.m_headlessFrameCount;
+
+        m_timer.Start();
+        
+        for (uint32 frameID = 0; frameID < numFrames && !m_pApp->ShouldQuit(); ++frameID)
+        {
+            // Wait for the Render frame to finish.
+            SyncFrame();
+            
+            // Begin Render frame:
+            m_pRenderer->BeginHeadlessFrame();
+            
+            // App Frame:
+            m_pApp->Internal_AppRunFrame(m_timeStep);
+
+            // End Render Frame:
+            m_pRenderer->EndHeadlessFrame();
+
+            // Update time step values.
+            UpdateFrameTime();
+        }
+    }
+
+    void Platform::UpdateFrameTime()
+    {
+        const double deltaTimeMs = m_timer.Tick<Timer::Milliseconds>();
+        m_timeStep = math::Min(static_cast<float>(deltaTimeMs), m_minTimeStepMs) / 1000.f;
+        m_performanceInfo.m_timeSinceStartup += deltaTimeMs / 1000.f;
+        m_performanceInfo.m_lastFrameTime = deltaTimeMs;
+        m_performanceInfo.m_fps = 1.f / static_cast<float>(deltaTimeMs) / 1000.f;
     }
 }

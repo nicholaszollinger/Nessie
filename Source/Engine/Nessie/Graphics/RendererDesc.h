@@ -149,16 +149,6 @@ namespace nes
         RendererDesc&               SetDebugMessengerUserData(void* pUserData);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Make the renderer run in single-threaded mode.
-        //----------------------------------------------------------------------------------------------------
-        RendererDesc&               EnableSingleThreaded();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Make the renderer run in multithreaded mode.
-        //----------------------------------------------------------------------------------------------------
-        RendererDesc&               EnableMultiThreaded();
-
-        //----------------------------------------------------------------------------------------------------
         /// @brief : Require a queue family that supports compute operations but not graphics or transfer.
         //----------------------------------------------------------------------------------------------------
         RendererDesc&               RequireDedicatedComputeQueue();
@@ -197,7 +187,6 @@ namespace nes
         AllocationCallbacks         m_allocationCallbacks{};
         DebugMessenger              m_debugMessenger{};
         QueueFamilyNumArray         m_requiredQueueCountsByFamily;
-        EThreadPolicy               m_threadPolicy = EThreadPolicy::Multithreaded;
         int                         m_forceGPU = -1;                /// If != -1, then the GPU at the given index will be used.
         bool                        m_enableAllFeatures = true;     /// If true, enable all capable 'features' from the GPU.
         bool                        m_useDebugMessenger = true;

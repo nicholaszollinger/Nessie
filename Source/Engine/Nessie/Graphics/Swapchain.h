@@ -1,183 +1,179 @@
 ﻿// Swapchain.h
 #pragma once
-#include "GraphicsCore.h"
-#include "Nessie/Core/Memory/StrongPtr.h"
+#include "GraphicsResource.h"
 
 //-------------------------------------------------------------------------------------------------
 // Under development. I am in the process of abstracting the Vulkan API.
 //-------------------------------------------------------------------------------------------------
-
-// /// Special "initialValue" for "CreateFence" needed to create swap chain related semaphores
-// static constexpr uint64 kSwapchainSemaphore = static_cast<uint64>(-1);
-//
-// //----------------------------------------------------------------------------------------------------
-// /// @brief : Swapchain-specific format types.
-// // Color space:
-// //  - BT.709 - LDR https://en.wikipedia.org/wiki/Rec._709
-// //  - BT.2020 - HDR https://en.wikipedia.org/wiki/Rec._2020
-// // Transfer function:
-// //  - G10 - linear (gamma 1.0)
-// //  - G22 - sRGB (gamma ~2.2)
-// //  - G2084 - SMPTE ST.2084 (Perceptual Quantization)
-// // Bits per channel:
-// //  - 8, 10, 16 (float) 
-// //----------------------------------------------------------------------------------------------------
-// enum class ESwapchainFormat : uint8
-// {
-//     BT709_G10_16BIT,    // LDR, Linear, 16 bit.
-//     BT709_G22_8BIT,     // LDR, sRGB, 8 bit.
-//     BT709_G22_10BIT,    // LDR, sRGB, 10 bit.
-//     BT2020_G2084_10BIT  // HDR, SMPTE, 10 bit.
-// };
-//
-
-// struct ChromaticityCoords
-// {
-//     float x; // [0, 1]
-//     float y; // [0, 1]
-// };
-//
-// struct DisplayDesc
-// {
-//     ChromaticityCoords  m_redPrimary;
-//     ChromaticityCoords  m_greenPrimary;
-//     ChromaticityCoords  m_bluePrimary;
-//     ChromaticityCoords  m_whitePoint;
-//     float               m_minLuminance;
-//     float               m_maxLuminance;
-//     float               m_maxFullFrameLuminance;
-//     bool                m_isHDR;
-// };
-
-// struct SwapchainInterface
-// {
-//     EGraphicsErrorCodes             (*CreateSwapchain)(Device& device, const SwapchainDesc& swapchainDesc, Swapchain*& pOutSwapchain);
-//     void                (*DestroySwapchain)(Swapchain& swapchain);
-//     Texture* const*     (*GetSwapChainTextures)(const Swapchain& swapchain, uint32& outNumTextures);
-//
-//     //----------------------------------------------------------------------------------------------------
-//     /// @brief : Get the display description info for the current display.
-//     /// Returns EResult::Failure if the swapchain's window is outside all the monitors.
-//     //----------------------------------------------------------------------------------------------------
-//     EGraphicsErrorCodes             (*GetDisplayDesc)(Swapchain& swapchain, DisplayDesc& outDisplayDesc);
-//
-//     //----------------------------------------------------------------------------------------------------
-//     /// @brief : Get the next texture to render into.
-//     /// Vulkan: may return "OutOfDate"; fences must be created with "kSwapchainSemaphore" initial value. 
-//     //----------------------------------------------------------------------------------------------------
-//     EGraphicsErrorCodes             (*AcquireNextTexture)(Swapchain& swapchain, Fence& acquireSemaphore, uint32& outTextureIndex);
-//
-//     //----------------------------------------------------------------------------------------------------
-//     /// @brief : Wait for the swapchain to finish presenting to the output texture.
-//     /// Call once right before input sampling (must be called starting from the 1st frame)
-//     //----------------------------------------------------------------------------------------------------
-//     EGraphicsErrorCodes             (*WaitForPresent)(Swapchain& swapchain);
-//     EGraphicsErrorCodes             (*QueuePresent) (Swapchain& swapchain, Fence& releaseSemaphore);
-// };
-
 namespace nes
 {
     class Swapchain;
     class ApplicationWindow;
-
-    enum class ESwapchainBits : uint8
-    {
-        None            = 0,
-        Vsync           = NES_BIT(0),   // Cap framerate to the monitor refresh rate.
-        Waitable        = NES_BIT(1),   // Unlock "WaitForPresent" reducing latency (requires m_features.m_waitableSwapchain").
-        AllowTearing    = NES_BIT(2),   // Allow screen tearing if possible.
-        AllowLowLatency = NES_BIT(3),   // Allow "LowLatency" functionality (requires "features.m_lowLatency").
-    };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ESwapchainBits);
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Expects NES_PLATFORM_WINDOWS macro. 
-    //----------------------------------------------------------------------------------------------------
-    struct WindowsWindow
-    {
-        void*           m_hwnd;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    // [TODO]: Add other platforms as necessary. 
-    /// @brief : Group of native window handles for different platforms. Only one will be valid, depending
-    ///     on the current platform.
-    //----------------------------------------------------------------------------------------------------
-    struct NativeWindow
-    {
-        WindowsWindow   m_windows;
-    };
-
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Info for creating a swapchain.
-    ///  Swapchain textures will be created as "color attachment" resources.
-    ///  - m_numFramesInFlight = 0 - auto-selection between 1 (for waitable) or 2 (otherwise)
-    ///  - m_numFramesInFlight = 2 - recommended if the GPU frame time is less than the desired frame time, but the sum of 2 frames is greater
     //----------------------------------------------------------------------------------------------------
     struct SwapchainDesc
     {
-        ApplicationWindow*  m_pWindow = nullptr;
-        const DeviceQueue*  m_pQueue;               /// Graphics or Compute (requires "features.m_presentFromCompute").
-        DimType             m_width;
-        DimType             m_height;
-        uint8               m_numTextures;          /// Desired value. The real value must be queried using "GetSwapchainTextures"
-        uint8               m_numFramesInFlight = 0; 
+        ApplicationWindow*  m_pWindow = nullptr;        /// Window that we are presenting to.
+        DeviceQueue*        m_pDeviceQueue = nullptr;   /// Device queue that will be used to submit present commands.
+        CommandPool*        m_pCommandPool = nullptr;   /// The Command Pool used to perform the initial image layout transition to present.
     };
-
-    struct SwapchainTexture
-    {
-        // [TODO]: These should all be 
-        GFence*     m_pAcquireSemaphore;
-        GFence*     m_pReleaseSemaphore;
-        GTexture*   m_pTexture;
-        Descriptor* m_pColorAttachment;
-        //EFormat     m_attachmentFormat;
-    };
-
-    class Swapchain
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : The swapchain is responsible for presenting rendered images to the screen.
+    ///     It consists of multiple images (frames) that are cycled through for rendering and display.
+    ///     The swapchain is created with a surface and optional vSync setting, with the window size
+    ///     determined during its setup.
+    ///
+    ///     "Frames in flight" refers to the number of images being processed concurrently
+    ///     (e.g., double buffering = 2, triple buffering = 3).
+    ///
+    ///     vSync enabled (FIFO mode) uses double buffering, while disabling vSync (MAILBOX mode) uses triple buffering.
+    ///
+    ///     The "current frame" is the frame currently being processed.
+    ///     The "next image index" points to the swapchain image that will be rendered next, which might differ from the current frame's index.
+    ///     If the window is resized or certain conditions are met, the swapchain needs to be recreated (`m_needsRebuild` flag).
+    //----------------------------------------------------------------------------------------------------
+    class Swapchain final : public GraphicsResource 
     {
     public:
-        Swapchain() = default;
-        virtual ~Swapchain() = default;
-
-        // No copy or move.
-        Swapchain(const Swapchain&) = delete;
-        Swapchain(Swapchain&&) noexcept = delete;
-        Swapchain& operator=(const Swapchain&) = delete;
-        Swapchain& operator=(Swapchain&&) noexcept = delete;
+        explicit                    Swapchain(RenderDevice& device) : GraphicsResource(device) {}
+        virtual                     ~Swapchain() override;
+        /* Copy Ctor */             Swapchain(const Swapchain&) = delete;
+        /* Move Ctor */             Swapchain(Swapchain&&) noexcept = delete;
+        /* Copy Assignment */       Swapchain& operator=(const Swapchain&) = delete;
+        /* Move Assignment */       Swapchain& operator=(Swapchain&&) noexcept = delete;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Create the swapchain resources. Returning false is considered a fatal error. 
+        /// @brief : Initialize the swapchain.
         //----------------------------------------------------------------------------------------------------
-        virtual bool    Create(uint32 width, uint32 height) = 0;
+        EGraphicsResult             Init(const SwapchainDesc& swapchainDesc);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Destroy the swapchain resources. 
+        /// @brief : Must be called any time the Window is resized, or if the vsync setting changes.
         //----------------------------------------------------------------------------------------------------
-        virtual void    Destroy() = 0;
+        EGraphicsResult             OnResize(const UVec2 desiredWindowSize, const bool enableVsync = true);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Handle resize events from the window.
-        ///	@param width : Window width.
-        ///	@param height : Window height.
-        ///	@param vsyncEnabled : Whether the window has Vsync enabled or not.
+        /// @brief : Must be called any time the Window is resized, or if the vsync setting changes.
         //----------------------------------------------------------------------------------------------------
-        virtual void    OnResize(uint32 width, uint32 height, const bool vsyncEnabled) = 0;
+        EGraphicsResult             OnResize(const uint32 width, const uint32 height, const bool enableVsync = true) { return OnResize(UVec2(width, height), enableVsync); }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Resize using the current set width and height. 
+        /// @brief : Prepares the command buffer for recording rendering commands.
+        ///     This function handles the synchronization with the previous frame and acquires the next image
+        ///     from the swapchain.
         //----------------------------------------------------------------------------------------------------
-        virtual void    Resize() = 0;
-    
-        virtual bool    BeginFrame() = 0;
-        virtual void    Present() = 0;
+        EGraphicsResult             AcquireNextImage();
 
-        uint32          GetCurrentBackBufferIndex();
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Presents the rendered image to the screen. Advances to the next frame in the cycle.
+        //----------------------------------------------------------------------------------------------------
+        void                        PresentFrame();
 
-    protected:
-        //inline uint8    GetNumQueuedFrames() const              { return IsVsyncEnabled()? 2 : 3; }
-        //inline uint8    GetOptimalNumSwapchainTextures() const  { return GetNumQueuedFrames() + 1; }
-        //bool            IsVsyncEnabled() const;
-    
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Sets the debug name for both the swapchain and the surface. 
+        //----------------------------------------------------------------------------------------------------
+        virtual void                SetDebugName(const char* name) override;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Forces the rebuild of the swapchain. 
+        //----------------------------------------------------------------------------------------------------
+        void                        RequestRebuild()                    { m_needsRebuild = true; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if the Swapchain needs to be rebuilt. 
+        //----------------------------------------------------------------------------------------------------
+        bool                        NeedsRebuild() const                { return m_needsRebuild; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current image that we are rendering to. 
+        //----------------------------------------------------------------------------------------------------
+        VkImage                     GetImage() const                    { return m_images[m_frameImageIndex].m_image; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the image view for the current image that we are rendering to.
+        //----------------------------------------------------------------------------------------------------
+        VkImageView                 GetImageView() const                { return m_images[m_frameImageIndex].m_view; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the image format used for the swapchain images.
+        //----------------------------------------------------------------------------------------------------
+        VkFormat                    GetImageFormat() const              { return m_imageFormat; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the max number of frames that can be processed concurrently. 
+        //----------------------------------------------------------------------------------------------------
+        uint32                      GetMaxFramesInFlight() const        { return m_maxFramesInFlight; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current semaphore that will be signaled when the next image is ready for rendering.
+        //----------------------------------------------------------------------------------------------------
+        VkSemaphore                 GetImageAvailableSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_imageAvailable; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current semaphore that will be signaled when rendering to the image has finished.
+        //----------------------------------------------------------------------------------------------------
+        VkSemaphore                 GetRenderFinishedSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_renderFinished; }
+
+    private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Represents an image within the swapchain that can be rendered to. 
+        //----------------------------------------------------------------------------------------------------
+        struct SwapchainImage
+        {
+            VkImage                 m_image{};                  /// Image to render to.
+            VkImageView             m_view{};                   /// Image view to access the image.
+        };
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Resources associated with each frame being processed. 
+        //----------------------------------------------------------------------------------------------------
+        struct FrameResources
+        {
+            VkSemaphore             m_imageAvailable{};         /// Signals when the image is ready for rendering.
+            VkSemaphore             m_renderFinished{};         /// Signals when rendering is finished.
+        };
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Select the format that is most common and supported by the physical device.
+        //----------------------------------------------------------------------------------------------------
+        VkSurfaceFormat2KHR         SelectSwapSurfaceFormat(const std::vector<VkSurfaceFormat2KHR>& availableFormats) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Choose the present mode based on vSyncEnabled.
+        ///     - The FIFO mode is the most common, and is used when vSync is enabled.
+        ///     - The `m_preferredVsyncOffMode` is used when vSync is disabled and the mode is supported.
+        ///     Otherwise:
+        ///     - The IMMEDIATE mode is used when vSync is disabled, and is the best mode for low latency.
+        ///     - The MAILBOX mode is used when vSync is disabled, and is the best mode for triple buffering.
+        //----------------------------------------------------------------------------------------------------
+        VkPresentModeKHR            SelectSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, const bool vSyncEnabled = true) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Build the swapchain and all of its resources, aside from the surface.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             BuildSwapchain(const UVec2 desiredWindowSize, const bool enableVsync = true);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Destroys the swapchain and all images/frame resources. 
+        //----------------------------------------------------------------------------------------------------
+        void                        DestroySwapchain();
+
+    private:
+        DeviceQueue*                m_pQueue = nullptr;         /// The queue used to submit command buffers to the GPU
+        VkSwapchainKHR              m_swapchain{};              /// The swapchain object.
+        VkFormat                    m_imageFormat{};            /// The image format for the swapchain images.
+        VkSurfaceKHR                m_surface{};                /// The surface to present images to. Owned by the swapchain.
+        CommandPool*                m_pCommandPool{};           /// The command pool for the swapchain.
+        std::vector<SwapchainImage> m_images{};                 /// The swapchain images and their views.
+        std::vector<FrameResources> m_frameResources{};         /// Synchronization primitives for each frame.
+        uint32                      m_frameResourceIndex = 0;   /// Index of the current frame.
+        uint32                      m_frameImageIndex = 0;      /// Index of the swapchain image we are rendering to.
+        bool                        m_needsRebuild = false;     /// Flag indicating that the swapchain needs to be rebuilt.
+
+        VkPresentModeKHR            m_preferredVsyncOffMode = VK_PRESENT_MODE_MAX_ENUM_KHR;  /// Used if available. 
+        uint32                      m_maxFramesInFlight = 3;    /// Best for most cases.
     };
 }

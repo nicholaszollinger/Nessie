@@ -34,6 +34,7 @@ namespace nes
         Version                 m_appVersion{};             /// Application Version.
         float                   m_minTimeStepMs = 0.0333f;  /// Minimum time step for an application update, in milliseconds.
         bool                    m_isHeadless = false;       /// If true, the Application will not show a window or receive input.
+        uint32                  m_headlessFrameCount = 1;   /// Number of frames to execute in headless mode. Default is a single frame.
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the name of the application. Default is none.
@@ -53,7 +54,7 @@ namespace nes
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : If set to true, the renderer will not be able to present to the screen, but you can still use
-        /// compute capabilities of the GPU. The Application will not receive input either!
+        /// the GPU for rendering work. The Application will not receive input either!
         //----------------------------------------------------------------------------------------------------
         ApplicationDesc&        SetIsHeadless(const bool isHeadless = true)         { m_isHeadless = isHeadless; return *this; }
     };

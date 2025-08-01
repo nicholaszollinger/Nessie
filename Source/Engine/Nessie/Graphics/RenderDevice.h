@@ -1,10 +1,11 @@
 ﻿// DeviceBase.h
 #pragma once
-#include "GraphicsCommon.h"
+#include "GraphicsResource.h"
 #include "RendererDesc.h"
 #include "Nessie/Application/ApplicationDesc.h"
 #include "Nessie/Core/Thread/Mutex.h"
-#include "Vulkan/VulkanCore.h"
+#include "Vulkan/VulkanConversions.h"
+#include "volk.h"
 
 static_assert(VK_HEADER_VERSION >= 304,
               "RenderDevice.h requires at least Vulkan SDK 1.4.304. "
@@ -25,10 +26,15 @@ namespace nes
         RenderDevice& operator=(RenderDevice&&) noexcept = delete;
         ~RenderDevice();
 
+        /// Operators for converting to Vulkan Types.
+        operator                    VkInstance() const { return m_vkInstance; }
+        operator                    VkPhysicalDevice() const { return m_vkPhysicalDevice; }
+        operator                    VkDevice() const { return m_vkDevice; }
+
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Device. 
         //----------------------------------------------------------------------------------------------------
-        bool                        Init(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
+        bool                        Init(const ApplicationDesc& appDesc, const RendererDesc& rendererDesc);
     
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destroy this device.
@@ -36,21 +42,32 @@ namespace nes
         void                        Destroy();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a new graphics class with the given CreateArgs. The resulting pointer will be
-        ///     stored in pOutEntity.
-        ///	@tparam GraphicsType : Graphics class. Ex: DeviceQueue.
+        /// @brief : Wait until all Device Queues are finished.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             WaitUntilIdle();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create a new graphics class with the given InitArgs. The resulting pointer will be
+        ///     stored in pOutObject.
+        ///	@tparam Type : Graphics class. Ex: DeviceQueue.
         ///	@tparam InitArgs : Parameter types to send to the Init() function on the Graphics class.
         ///	@param pOutObject : Pointer that will be set to the address of the created Graphics class.
         ///	@param args : Parameters to send to the Init() function on the Graphics class.
         ///	@returns : Result of the Graphics class's Init() function. If not EGraphicsResult::Success, the
         ///     object will be destroyed.
         //----------------------------------------------------------------------------------------------------
-        template <typename GraphicsType, typename...InitArgs> requires requires(RenderDevice& device, GraphicsType type, InitArgs&&... args)
+        template <GraphicsResourceType Type, typename...InitArgs> requires requires(Type type, InitArgs&&... args)
         {
-            GraphicsType(device);                                                             // Requires a constructor that takes in a VulkanDevice&
-            { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;  // Requires an Init function that takes in the give CreateArgs, and returns an EGraphicsResult.
+            // Requires an Init function that takes in the give InitArgs, and returns an EGraphicsResult.
+            { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;
         }
-        EGraphicsResult             Create(GraphicsType*& pOutObject, InitArgs&&...args);
+        EGraphicsResult             CreateResource(Type*& pOutObject, InitArgs&&...args);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Free a graphics resource type.
+        //----------------------------------------------------------------------------------------------------
+        template <GraphicsResourceType Type>
+        void                        FreeResource(Type*& pObject);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a Queue of a particular type.
@@ -60,24 +77,41 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the allocation callbacks set for this device.
         //----------------------------------------------------------------------------------------------------
-        const AllocationCallbacks&  GetAllocationCallbacks() const { return m_allocationCallbacks; }
+        const AllocationCallbacks&  GetAllocationCallbacks() const          { return m_allocationCallbacks; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the pointer for the vulkan allocation callbacks object, to be used with vulkan calls.   
+        //----------------------------------------------------------------------------------------------------
+        VkAllocationCallbacks*      GetVulkanAllocationCallbacks() const    { return m_vkAllocationCallbacksPtr; }
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the supported Device Extensions for the physical device.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             GetSupportedDeviceExtensions(std::vector<VkExtensionProperties>& outExtensions) const;
+        EGraphicsResult             GetSupportedDeviceExtensions(std::vector<VkExtensionProperties>& outSupportedExtensions) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get info about this device. 
         //----------------------------------------------------------------------------------------------------
-        const DeviceDesc&           GetDesc() const { return m_deviceDesc; }
-
+        const DeviceDesc&           GetDesc() const                         { return m_deviceDesc; }
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_VK_CHECK() rather than calling this directly.
         ///     If the result is a failure, this will report the message, assert, and exit. Treats errors as
         ///     fatal errors. 
         //----------------------------------------------------------------------------------------------------
-        void                        CheckResult(const VkResult result, const char* resultStr, const char* file, int line) const;
+        bool                        CheckResult(const VkResult result, const char* resultStr, const char* file, int line) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Use NES_GRAPHICS_ASSERT() rather than calling this directly.
+        ///     If the result is false, this will report the error and assert.
+        //----------------------------------------------------------------------------------------------------
+        bool                        CheckResult(const bool result, const char* resultStr, const char* file, int line) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Use NES_GRAPHICS_MUST_PASS() rather than calling this directly.
+        ///     If the result is false, this will report the error and assert.
+        //----------------------------------------------------------------------------------------------------
+        bool                        CheckResult(const EGraphicsResult result, const char* resultStr, const char* file, int line) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_VK_FAIL_REPORT() rather than calling this directly.
@@ -89,7 +123,12 @@ namespace nes
         /// @brief : Post a message using the set Debug Messenger callback.
         //----------------------------------------------------------------------------------------------------
         void                        ReportMessage(const ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag = kGraphicsLogTag) const;
-        
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set a debug name for a Vulkan object. 
+        //----------------------------------------------------------------------------------------------------
+        template <VulkanObjectType Type>
+        void                        SetDebugNameToTrivialObject(Type object, const std::string& name);
     
     private:
         //----------------------------------------------------------------------------------------------------
@@ -112,6 +151,11 @@ namespace nes
         ///     If any unavailable extension was required, this will return false.
         //----------------------------------------------------------------------------------------------------
         bool                        FilterAvailableExtensions(const std::vector<VkExtensionProperties>& supportedExtensions, const std::vector<ExtensionDesc>& desiredExtensions, std::vector<ExtensionDesc>& outFilteredExtensions) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Adds a default of device extensions if they are available to the outDesiredExtensions array.
+        //----------------------------------------------------------------------------------------------------
+        void                        EnableDefaultDeviceExtensions(const std::unordered_map<std::string, uint32_t>& availableExtensionsMap, std::vector<ExtensionDesc>& outDesiredExtensions) const;
 
     private:
         static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();
@@ -136,21 +180,20 @@ namespace nes
         uint32                      m_numActiveFamilyIndices = 0;
     };
 
-    template <typename GraphicsType, typename ... CreateArgs> requires requires (RenderDevice& device, GraphicsType type, CreateArgs&&...args)
+    template <GraphicsResourceType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)
     {
-        GraphicsType(device);
-        { type.Init(std::forward<CreateArgs>(args)...) } -> std::same_as<EGraphicsResult>;
+        { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;
     }
-    EGraphicsResult RenderDevice::Create(GraphicsType*& pOutObject, CreateArgs&&... args)
+    EGraphicsResult RenderDevice::CreateResource(Type*& pOutObject, InitArgs&&... args)
     {
         // First allocate the object, using passing the RenderDevice into the constructor.
-        GraphicsType* pImpl = Allocate<GraphicsType>(GetAllocationCallbacks(), *this);
+        Type* pImpl = Allocate<Type>(GetAllocationCallbacks(), *this);
 
         // Then call the create function on the object itself.
-        EGraphicsResult result = pImpl->Init(std::forward<CreateArgs>(args)...);
+        EGraphicsResult result = pImpl->Init(std::forward<InitArgs>(args)...);
         if (result != EGraphicsResult::Success)
         {
-            Free<GraphicsType>(GetAllocationCallbacks(), pImpl);
+            Free<Type>(GetAllocationCallbacks(), pImpl);
             pOutObject = nullptr;
         }
         else
@@ -159,5 +202,35 @@ namespace nes
         }
     
         return result;
+    }
+
+    template <GraphicsResourceType Type>
+    void RenderDevice::FreeResource(Type*& pObject)
+    {
+        if (pObject != nullptr)
+        {
+            Free<Type>(GetAllocationCallbacks(), pObject);
+            pObject = nullptr;
+        }
+    }
+
+    template <VulkanObjectType Type>
+    void RenderDevice::SetDebugNameToTrivialObject(Type object, const std::string& name)
+    {
+        if (vkSetDebugUtilsObjectNameEXT != nullptr && m_vkDevice != nullptr)
+        {
+            constexpr VkObjectType kType = GetVulkanObjectType<Type>();
+            
+            VkDebugUtilsObjectNameInfoEXT nameInfo
+            {
+                .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
+                .pNext = nullptr,
+                .objectType = kType,
+                .objectHandle = reinterpret_cast<uint64>(object),
+                .pObjectName = name.c_str(),
+            };
+
+            vkSetDebugUtilsObjectNameEXT(m_vkDevice, &nameInfo);
+        }
     }
 }

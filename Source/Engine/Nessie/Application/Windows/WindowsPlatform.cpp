@@ -30,8 +30,17 @@ namespace nes
     LogTargetPtr LoggerRegistry::CreateDefaultLogTarget()
     {
 #ifdef NES_FORCE_SINGLE_THREADED
+        if (IsDebuggerPresent())
+        {
+            return std::make_shared<MSVCTargetST>();
+        }
         return std::make_shared<WinConsoleStdCoutTargetST>();
+        
 #else
+        if (IsDebuggerPresent())
+        {
+            return std::make_shared<MSVCTargetMT>();
+        }
         return std::make_shared<WinConsoleStdCoutTargetMT>();
 #endif
     }

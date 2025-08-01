@@ -32,8 +32,8 @@ namespace nes
         Platform& operator=(Platform&&) noexcept = delete;
 
     public:
-        static Application&                 GetApplication();
         static ApplicationWindow&           GetWindow();
+        static Application&                 GetApplication();
         static DeviceManager&               GetDeviceManager();
         static const AppPerformanceInfo&    GetAppPerformanceInfo();
         static std::thread::id              GetMainThreadID();
@@ -61,15 +61,26 @@ namespace nes
         void                                OnInputEvent(Event& event) const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Handle any changes to the Window's size or vsync setting.
+        /// @brief : Handle any changes to the Window's framebuffer. This will include changes to the vsync setting.
         //----------------------------------------------------------------------------------------------------
-        void                                OnWindowResize(const uint32 width, const uint32 height, const bool vsyncEnabled) const;
+        void                                OnWindowResize(const uint32 width, const uint32 height) const;
 
     private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Synchronize the Main and Render threads. 
         //----------------------------------------------------------------------------------------------------
         void                                SyncFrame();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Main loop for headless applications. It will run a number of iterations equal to
+        ///     m_headlessFrameCount in the ApplicationDesc.
+        //----------------------------------------------------------------------------------------------------
+        void                                RunHeadlessLoop();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Update time values after finishing a frame.
+        //----------------------------------------------------------------------------------------------------
+        void                                UpdateFrameTime();
 
     private:
         std::unique_ptr<DeviceManager>      m_pDeviceManager;

@@ -4,14 +4,21 @@
 #include "GLFW/GLFWInputConversions.h"
 #include "Nessie/Application/Platform.h"
 #include "Nessie/Debug/CheckedCast.h"
+
 #include "GLFW/glfw3.h"
 #include "Nessie/Math/Vec2.h"
+
+// Native Window conversion: 
+#ifdef NES_PLATFORM_WINDOWS
+    #define GLFW_EXPOSE_NATIVE_WIN32
+#endif
+#include "GLFW/glfw3native.h"
 
 namespace nes
 {
     bool ApplicationWindow::Internal_Init(Platform& platform, const WindowDesc& desc)
     {
-        m_description = desc;
+        m_desc = desc;
         
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -19,15 +26,15 @@ namespace nes
         glfwWindowHint(GLFW_RESIZABLE, desc.m_isResizable);
         
         GLFWwindow* pWindow = nullptr;
-        switch (m_description.m_windowMode)
+        switch (m_desc.m_windowMode)
         {
             case EWindowMode::Fullscreen:
             {
                 auto* pMonitor = glfwGetPrimaryMonitor();
                 const auto* pMode = glfwGetVideoMode(pMonitor);
-                m_description.m_windowResolution.x = pMode->width;
-                m_description.m_windowResolution.y = pMode->height;
-                pWindow = glfwCreateWindow(pMode->width, pMode->height, m_description.m_label.c_str(), pMonitor, nullptr);
+                m_desc.m_windowResolution.x = pMode->width;
+                m_desc.m_windowResolution.y = pMode->height;
+                pWindow = glfwCreateWindow(pMode->width, pMode->height, m_desc.m_label.c_str(), pMonitor, nullptr);
                 break;
             }
 
@@ -36,23 +43,23 @@ namespace nes
                 auto* pMonitor = glfwGetPrimaryMonitor();
                 const auto* pMode = glfwGetVideoMode(pMonitor);
 
-                m_description.m_windowResolution.x = pMode->width;
-                m_description.m_windowResolution.y = pMode->height;
+                m_desc.m_windowResolution.x = pMode->width;
+                m_desc.m_windowResolution.y = pMode->height;
 
                 glfwWindowHint(GLFW_RED_BITS, pMode->redBits);
 			    glfwWindowHint(GLFW_GREEN_BITS, pMode->greenBits);
 			    glfwWindowHint(GLFW_BLUE_BITS, pMode->blueBits);
 			    glfwWindowHint(GLFW_REFRESH_RATE, pMode->refreshRate);
 
-                pWindow = glfwCreateWindow(pMode->width, pMode->height, m_description.m_label.c_str(), pMonitor, nullptr);
+                pWindow = glfwCreateWindow(pMode->width, pMode->height, m_desc.m_label.c_str(), pMonitor, nullptr);
                 break;
             }
 
             case EWindowMode::Windowed:
             {
-                const int width = static_cast<int>(m_description.m_windowResolution.x);
-                const int height = static_cast<int>(m_description.m_windowResolution.y);
-                pWindow = glfwCreateWindow(width, height, m_description.m_label.c_str(), nullptr, nullptr);
+                const int width = static_cast<int>(m_desc.m_windowResolution.x);
+                const int height = static_cast<int>(m_desc.m_windowResolution.y);
+                pWindow = glfwCreateWindow(width, height, m_desc.m_label.c_str(), nullptr, nullptr);
                 break;
             }
         }
@@ -63,15 +70,26 @@ namespace nes
         }
 
         glfwSetWindowUserPointer(pWindow, &platform);
-        m_pNativeWindowHandle = pWindow;
+
+        // Set the Native Window handles:
+        m_nativeWindow.m_glfw = pWindow;
+#if NES_PLATFORM_WINDOWS
+        m_nativeWindow.m_windows.m_hwnd = glfwGetWin32Window(pWindow);
+#endif
 
         // Set the GLFW Callbacks:
         // Window Resize Callback.
         glfwSetWindowSizeCallback(pWindow, []([[maybe_unused]] GLFWwindow* pWindow, const int width, const int height)
         {
-            ApplicationWindow& window = Platform::GetWindow();
-            window.m_description.m_windowResolution.x = width;
-            window.m_description.m_windowResolution.y = height;
+            auto& window = Platform::GetWindow();
+            window.m_desc.m_windowResolution.x = width;
+            window.m_desc.m_windowResolution.y = height;
+
+            // Set minimized state:
+            if (width == 0 && height == 0)
+                window.m_desc.m_isMinimized = true;
+            else
+                window.m_desc.m_isMinimized = false;
         });
 
         // Window Close Callback.
@@ -138,12 +156,13 @@ namespace nes
         // This function is called when all threads are synced.
         glfwPollEvents();
         
-        // Check if the swapchain needs to be rebuilt: this 
+        // Check if the swapchain needs to be rebuilt. This is set any time
+        // the window is resized or if the vsync setting is changed. 
         if (m_swapChainNeedsRebuild)
         {
-            auto* pGlfwWindow = checked_cast<GLFWwindow*>(m_pNativeWindowHandle);
+            auto* pGlfwWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
             auto* pPlatform = checked_cast<Platform*>(glfwGetWindowUserPointer(pGlfwWindow));
-            pPlatform->OnWindowResize(m_description.m_windowResolution.x, m_description.m_windowResolution.y, m_description.m_vsyncEnabled);
+            pPlatform->OnWindowResize(m_desc.m_windowResolution.x, m_desc.m_windowResolution.y);
 
             // Clear the flag.
             m_swapChainNeedsRebuild = false;
@@ -153,40 +172,40 @@ namespace nes
     void ApplicationWindow::Internal_Shutdown()
     {
         // Destroy the window.
-        if (m_pNativeWindowHandle != nullptr)
+        if (m_nativeWindow.m_glfw != nullptr)
         {
-            glfwDestroyWindow(checked_cast<GLFWwindow*>(m_pNativeWindowHandle));
-            m_pNativeWindowHandle = nullptr;
+            glfwDestroyWindow(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw));
+            m_nativeWindow = {};
         }
     }
 
     void ApplicationWindow::Close()
     {
-        glfwSetWindowShouldClose(checked_cast<GLFWwindow*>(m_pNativeWindowHandle),true);
+        glfwSetWindowShouldClose(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw),true);
     }
 
     bool ApplicationWindow::ShouldClose() const
     {
-        return glfwWindowShouldClose(checked_cast<GLFWwindow*>(m_pNativeWindowHandle));
+        return glfwWindowShouldClose(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw));
     }
 
     void ApplicationWindow::SetIsMinimized(const bool minimized)
     {
-        m_description.m_isMinimized = minimized;
+        m_desc.m_isMinimized = minimized;
     }
 
     Vec2 ApplicationWindow::GetCursorPosition() const
     {
         double posX, posY;
-        glfwGetCursorPos(checked_cast<GLFWwindow*>(m_pNativeWindowHandle), &posX, &posY);
+        glfwGetCursorPos(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw), &posX, &posY);
         return Vec2(static_cast<float>(posX), static_cast<float>(posY));
     }
 
     void ApplicationWindow::SetVsync(const bool enabled)
     {
-        if (enabled != m_description.m_vsyncEnabled)
+        if (enabled != m_desc.m_vsyncEnabled)
         {
-            m_description.m_vsyncEnabled = enabled;
+            m_desc.m_vsyncEnabled = enabled;
             m_swapChainNeedsRebuild = true;
         }
     }
@@ -195,10 +214,10 @@ namespace nes
     {
         // [TODO]: This should probably be handled by the input manager.
         
-        if (m_description.m_cursorMode == mode)
+        if (m_desc.m_cursorMode == mode)
             return;
         
-        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_pNativeWindowHandle);
+        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
         
         glfwSetInputMode(pWindow, GLFW_CURSOR, glfw::ConvertToGLFWCursorMode(mode));
 
@@ -211,13 +230,13 @@ namespace nes
             }
 
             // If changing from disabled, change the raw mouse motion back. 
-            else if (m_description.m_cursorMode == ECursorMode::Disabled)
+            else if (m_desc.m_cursorMode == ECursorMode::Disabled)
             {
                 glfwSetInputMode(pWindow, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
             }
         }
         
-        m_description.m_cursorMode = mode;
+        m_desc.m_cursorMode = mode;
     }
 
 
@@ -228,8 +247,8 @@ namespace nes
 
     void ApplicationWindow::Resize(const uint32_t width, const uint32_t height)
     {
-        m_description.m_windowResolution.x = width;
-        m_description.m_windowResolution.y = height;
+        m_desc.m_windowResolution.x = width;
+        m_desc.m_windowResolution.y = height;
         m_swapChainNeedsRebuild = true;
     }
 

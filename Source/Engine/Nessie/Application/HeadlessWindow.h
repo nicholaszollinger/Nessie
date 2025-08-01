@@ -5,13 +5,13 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : A window that is invisible, and does not receive any input. This window is used when the
-    ///     Application Desc is set to headless.
+    /// @brief : A headless window is not visible and does not receive input. You can think of it as a
+    ///     null window. It is used as a stand in if the application does not need window support.
     //----------------------------------------------------------------------------------------------------
     class HeadlessWindow final : public ApplicationWindow
     {
     public:
-        virtual bool Internal_Init(Platform& platform, const WindowDesc& desc) override;
+        virtual bool Internal_Init(Platform& platform, const WindowDesc& windowDesc) override;
         virtual void Internal_ProcessEvents() override;
     
         virtual void SetCursorMode(const ECursorMode) override {}

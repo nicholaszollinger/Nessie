@@ -2,6 +2,7 @@
 #pragma once
 #include "Nessie/Core/Config.h"
 #include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/Math.h"
 
 #define NES_BEGIN_GRAPHICS_NAMESPACE namespace nes::graphics {
 #define NES_END_GRAPHICS_NAMESPACE }
@@ -9,52 +10,112 @@
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kGraphicsLogTag, "Graphics", Info);
-    
+
+    class   RenderDevice;
     struct  DeviceDesc;
     struct  PhysicalDeviceDesc;
+    class   DeviceQueue;
+    class   SemaphoreState;
+    class   CommandPool;
+    class   CommandBuffer;
 
     class   Swapchain;
     struct  SwapchainDesc;
-
-    class   GFence;               /// Synchronization primitive that can be used to insert a dependency between queue operations or a queue operation and the host.
-    class   DeviceQueue;               /// A logical queue, providing access to hardware queue.
-    class   GMemory;              /// A Memory blob allocated on device (GPU) or host (CPU).
-    class   GBuffer;              /// A Buffer object: linear array of data.
-    class   RenderDevice;               /// A logical device. Interface to the GPU.
-    class   GTexture;             /// A texture object: multidimensional arrays of data.
-    class   Pipeline;             /// A collection of state needed for rendering: shaders and fixed.
-    class   GQueryPool;           /// A collection of queries, all the same type.
-    class   Descriptor;           /// A handle/pointer to a resource.
-    class   GCommandBuffer;       /// Used to record commands which can be submitted to a device queue for execution (aka command list).
-    class   DescriptorSet;        /// A continuous set of descriptors (set of resource handles).
-    class   DescriptorPool;       /// Maintains a pool of descriptors, and where descriptor sets are allocated from (aka descriptor heap).
-    class   PipelineLayout;       /// Determines the interface between shaders stages and shader resources.
-    class   GCommandAllocator;    /// An object that command buffer memory is allocated from.
-
-    using SampleType    = uint8;
-    using DimType       = uint16; /// "Dimension Type".
-    using GMemoryType   = uint32;
-
-    enum class EGraphicsAPI : uint8
-    {
-        Vulkan,
-    };
-
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 
     //----------------------------------------------------------------------------------------------------
     enum class EGraphicsResult : int8
     {
         /// Values less than Success (0) may result in a crash, but also might be able to be handled.
-        DeviceLost          = -2,   /// May be returned by QueueSubmit, WaitIdle, AcquireNextTexture, QueuePresent, WaitForPresent
-        SwapchainOutOfDate  = -1,
+        InitializationFailed    = -3,
+        DeviceLost              = -2,   /// May be returned by QueueSubmit, WaitIdle, AcquireNextTexture, QueuePresent, WaitForPresent
+        SwapchainOutOfDate      = -1,
     
-        Success             = 0,    /// All good.
+        Success                 = 0,    /// All good.
     
         /// The following most likely results in a crash, or at least a validation error will occur.
-        Failure             = 1,
-        InvalidArgument     = 2,    
-        OutOfMemory         = 3,
-        Unsupported         = 4,    /// Operation or type is unsupported by the Render Device.
+        Failure                 = 1,
+        InvalidArgument         = 2,    
+        OutOfMemory             = 3,
+        Unsupported             = 4,    /// Operation or type is unsupported by the Render Device.
     };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Report an error message using the RenderDevice's debug messenger callback.
+    ///	@param renderDevice : Reference to the render device to report the message. 
+    ///	@param pFormat : Format for the message.
+    /// @param ... : Format arguments.
+    //----------------------------------------------------------------------------------------------------
+    #define NES_GRAPHICS_ERROR(renderDevice, pFormat, ...) \
+        (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, fmt::format(pFormat, __VA_ARGS__).c_str())
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Report a warning message using the RenderDevice's debug messenger callback.
+    ///	@param renderDevice : Reference to the render device to report the message. 
+    ///	@param pFormat : Format for the message.
+    /// @param ... : Format arguments.
+    //----------------------------------------------------------------------------------------------------
+    #define NES_GRAPHICS_WARN(renderDevice, pFormat, ...) \
+        (renderDevice).ReportMessage(nes::ELogLevel::Warn, __FILE__, __LINE__, fmt::format(pFormat, __VA_ARGS__).c_str())
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Report an info message using the RenderDevice's debug messenger callback.
+    ///	@param renderDevice : Reference to the render device to report the message. 
+    ///	@param pFormat : Format for the message.
+    /// @param ... : Format arguments.
+    //----------------------------------------------------------------------------------------------------
+    #define NES_GRAPHICS_INFO(renderDevice, pFormat, ...) \
+        (renderDevice).ReportMessage(nes::ELogLevel::Info, __FILE__, __LINE__, fmt::format(pFormat, __VA_ARGS__).c_str())
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : If the expression fails, this will exit the program. 
+    //----------------------------------------------------------------------------------------------------
+    #define NES_GRAPHICS_MUST_PASS(renderDevice, expression) \
+        do                                                                                  \
+        {                                                                                   \
+            if (!(renderDevice).CheckResult(expression, #expression, __FILE__, __LINE__))   \
+            {                                                                               \
+                NES_BREAKPOINT;                                                             \
+            }                                                                               \
+        } while (false)
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : If the expression evaluates to false, report the error message and return the returnVal
+    ///	@param renderDevice : Reference to the render device to report the message.
+    /// @param expression : Boolean expression to evaluate.
+    /// @param returnVal : Result to return on the expression evaluating to false.
+    ///	@param pFormat : Format for the message.
+    /// @param ... : Format arguments.
+    //----------------------------------------------------------------------------------------------------
+    #define NES_GRAPHICS_RETURN_FAIL(renderDevice, expression, returnVal, pFormat, ...) \
+        do                                                                                  \
+        {                                                                                   \
+            if (!(expression))                                                              \
+            {                                                                               \
+                (renderDevice).ReportMessage(nes::ELogLevel::Error, __FILE__, __LINE__, fmt::format(pFormat, __VA_ARGS__).c_str()); \
+                return returnVal;                                                           \
+            }                                                                               \
+        } while (false)
+
+#if NES_DEBUG
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Assert that an expression is true. This uses the RenderDevice's debug messenger callback.
+    ///	@param renderDevice : Reference to the render device to report the message. 
+    ///	@param expression : Boolean expression to test. 
+    //----------------------------------------------------------------------------------------------------
+    #define NES_GRAPHICS_ASSERT(renderDevice, expression)                                   \
+        do                                                                                  \
+        {                                                                                   \
+            (renderDevice).CheckResult(expression, #expression, __FILE__, __LINE__);        \
+            if (!(expression))                                                              \
+            {                                                                               \
+                NES_BREAKPOINT;                                                             \
+            }                                                                               \
+        } while (false)
+
+#else
+    #define NES_GRAPHICS_ASSERT(renderDevice, expression)
+#endif
+    
 }

@@ -5,6 +5,39 @@
 
 namespace nes
 {
+    template <typename Type>
+    concept VulkanObjectType = requires
+    {
+        std::same_as<Type, VkBuffer>
+        || std::same_as<Type, VkBufferView>
+        || std::same_as<Type, VkCommandBuffer>
+        || std::same_as<Type, VkCommandPool>
+        || std::same_as<Type, VkDescriptorPool>
+        || std::same_as<Type, VkDescriptorSet>
+        || std::same_as<Type, VkDescriptorSetLayout>
+        || std::same_as<Type, VkDevice>
+        || std::same_as<Type, VkDeviceMemory>
+        || std::same_as<Type, VkFence>
+        || std::same_as<Type, VkFramebuffer>
+        || std::same_as<Type, VkImage>
+        || std::same_as<Type, VkImageView>
+        || std::same_as<Type, VkInstance>
+        || std::same_as<Type, VkPipeline>
+        || std::same_as<Type, VkPipelineCache>
+        || std::same_as<Type, VkPipelineLayout>
+        || std::same_as<Type, VkQueryPool>
+        || std::same_as<Type, VkRenderPass>
+        || std::same_as<Type, VkSampler>
+        || std::same_as<Type, VkSemaphore>
+        || std::same_as<Type, VkShaderModule>
+        || std::same_as<Type, VkSurfaceKHR>
+        || std::same_as<Type, VkSwapchainKHR>
+        || std::same_as<Type, VkPhysicalDevice>
+        || std::same_as<Type, VkQueue>
+        || std::same_as<Type, VkShaderEXT>
+        || std::same_as<Type, VkAccelerationStructureKHR>;
+    };
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Convert to EVendor from a raw vendor id value.
     //----------------------------------------------------------------------------------------------------
@@ -47,6 +80,9 @@ namespace nes
     
         switch (vkResult)
         {
+            case VK_ERROR_INITIALIZATION_FAILED:
+                return EGraphicsResult::InitializationFailed;
+            
             case VK_ERROR_DEVICE_LOST:
                 return EGraphicsResult::DeviceLost;
 
@@ -320,6 +356,75 @@ namespace nes
             return EQueryType::MicromapCompactedSize;
 
         return EQueryType::MaxNum;
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Get the VkObjectType value from a Vulkan Type.
+    //----------------------------------------------------------------------------------------------------
+    template <VulkanObjectType Type>
+    constexpr VkObjectType GetVulkanObjectType()
+    {
+        if constexpr(std::is_same_v<Type, VkBuffer>)
+            return VK_OBJECT_TYPE_BUFFER;
+        else if constexpr(std::is_same_v<Type, VkBufferView>)
+            return VK_OBJECT_TYPE_BUFFER_VIEW;
+        else if constexpr(std::is_same_v<Type, VkCommandBuffer>)
+            return VK_OBJECT_TYPE_COMMAND_BUFFER;
+        else if constexpr(std::is_same_v<Type, VkCommandPool>)
+            return VK_OBJECT_TYPE_COMMAND_POOL;
+        else if constexpr(std::is_same_v<Type, VkDescriptorPool>)
+            return VK_OBJECT_TYPE_DESCRIPTOR_POOL;
+        else if constexpr(std::is_same_v<Type, VkDescriptorSet>)
+            return VK_OBJECT_TYPE_DESCRIPTOR_SET;
+        else if constexpr(std::is_same_v<Type, VkDescriptorSetLayout>)
+            return VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT;
+        else if constexpr(std::is_same_v<Type, VkDevice>)
+            return VK_OBJECT_TYPE_DEVICE;
+        else if constexpr(std::is_same_v<Type, VkDeviceMemory>)
+            return VK_OBJECT_TYPE_DEVICE_MEMORY;
+        else if constexpr(std::is_same_v<Type, VkFence>)
+            return VK_OBJECT_TYPE_FENCE;
+        else if constexpr(std::is_same_v<Type, VkFramebuffer>)
+            return VK_OBJECT_TYPE_FRAMEBUFFER;
+        else if constexpr(std::is_same_v<Type, VkImage>)
+            return VK_OBJECT_TYPE_IMAGE;
+        else if constexpr(std::is_same_v<Type, VkImageView>)
+            return VK_OBJECT_TYPE_IMAGE_VIEW;
+        else if constexpr(std::is_same_v<Type, VkInstance>)
+            return VK_OBJECT_TYPE_INSTANCE;
+        else if constexpr(std::is_same_v<Type, VkPipeline>)
+            return VK_OBJECT_TYPE_PIPELINE;
+        else if constexpr(std::is_same_v<Type, VkPipelineCache>)
+            return VK_OBJECT_TYPE_PIPELINE_CACHE;
+        else if constexpr(std::is_same_v<Type, VkPipelineLayout>)
+            return VK_OBJECT_TYPE_PIPELINE_LAYOUT;
+        else if constexpr(std::is_same_v<Type, VkQueryPool>)
+            return VK_OBJECT_TYPE_QUERY_POOL;
+        else if constexpr(std::is_same_v<Type, VkRenderPass>)
+            return VK_OBJECT_TYPE_RENDER_PASS;
+        else if constexpr(std::is_same_v<Type, VkSampler>)
+            return VK_OBJECT_TYPE_SAMPLER;
+        else if constexpr(std::is_same_v<Type, VkSemaphore>)
+            return VK_OBJECT_TYPE_SEMAPHORE;
+        else if constexpr(std::is_same_v<Type, VkShaderModule>)
+            return VK_OBJECT_TYPE_SHADER_MODULE;
+        else if constexpr(std::is_same_v<Type, VkSurfaceKHR>)
+            return VK_OBJECT_TYPE_SURFACE_KHR;
+        else if constexpr(std::is_same_v<Type, VkSwapchainKHR>)
+            return VK_OBJECT_TYPE_SWAPCHAIN_KHR;
+        else if constexpr(std::is_same_v<Type, VkPhysicalDevice>)
+            return VK_OBJECT_TYPE_PHYSICAL_DEVICE;
+        else if constexpr(std::is_same_v<Type, VkQueue>)
+            return VK_OBJECT_TYPE_QUEUE;
+        else if constexpr(std::is_same_v<Type, VkShaderEXT>)
+            return VK_OBJECT_TYPE_SHADER_EXT;
+        else if constexpr(std::is_same_v<Type, VkAccelerationStructureKHR>)
+            return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
+        else
+        {
+            static_assert(!std::is_same_v<Type, Type>, "Unsupported Vulkan object type");
+            return VK_OBJECT_TYPE_UNKNOWN;
+        }
     }
 
     // [TODO]: 

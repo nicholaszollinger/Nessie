@@ -25,6 +25,25 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Expects NES_PLATFORM_WINDOWS macro. 
+    //----------------------------------------------------------------------------------------------------
+    struct WindowsWindow
+    {
+        void*           m_hwnd = nullptr;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Add other platforms as necessary. 
+    /// @brief : Group of native window handles for different platforms. Only one will be valid, depending
+    ///     on the current platform.
+    //----------------------------------------------------------------------------------------------------
+    struct NativeWindow
+    {
+        void*           m_glfw = nullptr; /// GLFW Window* 
+        WindowsWindow   m_windows{};
+    };
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Various properties about the window. Used in Window creation as well.
     //----------------------------------------------------------------------------------------------------
     struct WindowDesc
@@ -76,12 +95,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current resolution of the window. The size will be in pixel dimensions. 
         //----------------------------------------------------------------------------------------------------
-        UVec2                   GetResolution() const           { return m_description.m_windowResolution; }
+        UVec2                   GetResolution() const           { return m_desc.m_windowResolution; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get whether the Window is in Fullscreen, Windowed, etc. 
         //----------------------------------------------------------------------------------------------------
-        EWindowMode             GetWindowMode() const           { return m_description.m_windowMode; }
+        EWindowMode             GetWindowMode() const           { return m_desc.m_windowMode; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current relative position of the cursor in the window. The window origin is
@@ -93,7 +112,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Window can be resized. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsResizable() const             { return m_description.m_isResizable; }
+        bool                    IsResizable() const             { return m_desc.m_isResizable; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the Window should sync its framerate with the monitor. Only if supported. 
@@ -103,7 +122,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Vsync is enabled on the Window. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsVsyncEnabled() const          { return m_description.m_vsyncEnabled; }
+        bool                    IsVsyncEnabled() const          { return m_desc.m_vsyncEnabled; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the window is minimized or not. 
@@ -113,7 +132,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Window is minimized. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsMinimized() const             { return m_description.m_isMinimized; }
+        bool                    IsMinimized() const             { return m_desc.m_isMinimized; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set how the cursor interacts with the window. 
@@ -123,7 +142,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current cursor mode.
         //----------------------------------------------------------------------------------------------------
-        ECursorMode             GetCursorMode() const           { return m_description.m_cursorMode; }
+        ECursorMode             GetCursorMode() const           { return m_desc.m_cursorMode; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check whether the Window needs to close. 
@@ -138,12 +157,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current properties of the application window. 
         //----------------------------------------------------------------------------------------------------
-        const WindowDesc&       GetDesc() const                 { return m_description; }
+        const WindowDesc&       GetDesc() const                 { return m_desc; }
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Advanced use. Get the platform-specific raw window pointer. Only use if you know what you are doing.   
+        /// @brief : Advanced use. Get the native window handle for the platform.
         //----------------------------------------------------------------------------------------------------
-        [[nodiscard]] void*     GetNativeWindowHandle() const   { return m_pNativeWindowHandle; }
+        const NativeWindow&     GetNativeWindow() const         { return m_nativeWindow; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Window. Returns false on failure.
@@ -163,8 +182,8 @@ namespace nes
         void                    Internal_Shutdown();
     
     protected:
-        WindowDesc              m_description;                      /// Current window properties.
-        void*                   m_pNativeWindowHandle = nullptr;    /// Raw pointer to the window native window implementation.
+        WindowDesc              m_desc;                      /// Current window properties.
+        NativeWindow            m_nativeWindow{};                   /// Platform specific window handles, and the GLFW Window*.
         bool                    m_swapChainNeedsRebuild = false;    /// Flag to determine if the Renderer needs to update the swap chain.
     };
 }

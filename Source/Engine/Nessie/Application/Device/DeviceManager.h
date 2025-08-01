@@ -34,7 +34,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Render Device.
         //----------------------------------------------------------------------------------------------------
-        static RenderDevice&          GetRenderDevice();
+        static RenderDevice&    GetRenderDevice();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the device manager, loading the Graphics API and getting device information.
@@ -44,8 +44,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the RenderDevice.
         //----------------------------------------------------------------------------------------------------
-        bool                    CreateRenderDevice(const ApplicationDesc& appDesc, ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
-        
+        bool                    CreateRenderDevice(const ApplicationDesc& appDesc, const RendererDesc& rendererDesc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Destroys the RenderDevice. 
+        //----------------------------------------------------------------------------------------------------
         void                    Shutdown();
         
     private:
