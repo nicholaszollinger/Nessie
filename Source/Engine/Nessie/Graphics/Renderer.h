@@ -172,6 +172,7 @@ namespace nes
         
         RenderDevice&                           m_device;                                   /// Device to create graphics resources.
         ApplicationWindow*                      m_pWindow;                                  /// Window that we are rendering to.
+        std::unique_ptr<ShaderLibrary>          m_pShaderLibrary{}; 
         std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       /// Command queues specific for freeing resources.
 
         DeviceQueue*                            m_pRenderSubmissionQueue = nullptr;

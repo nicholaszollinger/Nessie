@@ -14,6 +14,11 @@
 
 namespace nes
 {
+    namespace graphics
+    {
+        /// Special value that marks that the remaining amount of some span (number of mips, number of image layers, etc.) should be used. 
+        static constexpr uint32 kUseRemaining = ~0UL;
+    }
 //============================================================================================================================================================================================
 #pragma region [ Common ]
 //============================================================================================================================================================================================
@@ -381,7 +386,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class ELayout : uint8
     {
-        // Compatible "EAccessBits".
         // Special
         Undefined,
         General,                // ~All access, but not optimal.
@@ -400,13 +404,34 @@ namespace nes
         ResolveDestination,     // ResolveDestination
         MaxNum,
     };
+    
+    //----------------------------------------------------------------------------------------------------
+    // BARRIERS:
+    // Barriers consist of two phases:
+    // - before (source scope, 1st synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
+    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
+    //   - "Layout" for textures
+    // - after (destination scope, 2nd synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
+    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
+    //   - "Layout" for textures
+    //----------------------------------------------------------------------------------------------------
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines an access level that the resource should be in, as well as what
+    ///     stage in the pipeline that it should have that access.
+    //----------------------------------------------------------------------------------------------------
     struct AccessStage
     {
         EAccessBits         m_access;
         EPipelineStageBits  m_stages;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines an access level and image layout that the resource should be in, as well as what
+    ///     stage in the pipeline that it should have these values.
+    //----------------------------------------------------------------------------------------------------
     struct AccessLayoutStage
     {
         EAccessBits         m_access;
@@ -414,47 +439,81 @@ namespace nes
         EPipelineStageBits  m_stages;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Barrier information for a resource.
+    // Barriers consist of two phases:
+    // - before (source scope, 1st synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
+    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
+    // - after (destination scope, 2nd synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
+    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
+    //----------------------------------------------------------------------------------------------------
     struct GlobalBarrierDesc
     {
         AccessStage         m_before;
         AccessStage         m_after;
     };
 
-    struct GBufferBarrierDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Barrier description for a buffer.
+    // Barriers consist of two phases:
+    // - before (source scope, 1st synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
+    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
+    // - after (destination scope, 2nd synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
+    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
+    //----------------------------------------------------------------------------------------------------
+    struct BufferBarrierDesc
     {
         //GBuffer*            m_pBuffer;
         AccessStage         m_before;
         AccessStage         m_after;
     };
 
-    struct GTextureBarrierDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Barrier description for a texture.
+    // Barriers consist of two phases:
+    // - before (source scope, 1st synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
+    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
+    //   - "Layout" is the image layout preceding the barrier.
+    // - after (destination scope, 2nd synchronization scope):
+    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
+    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
+    //   - "Layout" is the layout after the barrier completes.
+    //----------------------------------------------------------------------------------------------------
+    struct TextureBarrierDesc
     {
         //GTexture*           m_pTexture;
-        AccessLayoutStage   m_before;
-        AccessLayoutStage   m_after;
-        //DimType             m_baseMip;
-        //DimType             m_NumMips;
-        //DimType             m_baseLayer;
-        //DimType             m_numLayers;
-        EPlaneBits          m_planes;
+        AccessLayoutStage   m_before;                                   // The layout the texture should be in.
+        AccessLayoutStage   m_after;                                    // The layout the texture should transition to.
+
+        // Subresource Range: what portions of the image should be affected? 
+        uint32              m_baseMipLevel  = 0;                        // Starting mip level.
+        uint32              m_numMipLevels  = graphics::kUseRemaining;  // Number of mip levels from the baseMip.
+        uint32              m_baseLayer     = 0;                        // Starting layer value.
+        uint32              m_numLayers     = graphics::kUseRemaining;  // Number of layers from the baseLayer.
+        EPlaneBits          m_planes        = EPlaneBits::Color;        // Which planes of the image data should be affected.
 
         // Queue ownership transfer is potentially needed only for "EXCLUSIVE" textures
         // https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#synchronization-queue-transfers
-        DeviceQueue*             m_pSrcQueue;
-        DeviceQueue*             m_pDstQueue;
+        DeviceQueue*        m_pSrcQueue = nullptr;                      // The owning queue at the start.
+        DeviceQueue*        m_pDstQueue = nullptr;                      // The queue that should take ownership.
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Description of a group of global, buffer and texture barriers. 
+    /// @brief : Grouping of global, buffer and texture barriers. 
     //----------------------------------------------------------------------------------------------------
-    struct GBarrierGroupDesc
+    struct BarrierGroupDesc
     {
-        const GlobalBarrierDesc*    m_pGlobals;
-        uint32                      m_numGlobals;
-        const GBufferBarrierDesc*    m_pBuffers;
-        uint32                      m_numBuffers;
-        const GTextureBarrierDesc*   m_pTextures;
-        uint32                      m_numTextures;
+        const GlobalBarrierDesc*    m_pGlobals = nullptr;
+        uint32                      m_numGlobals = 0;
+        const BufferBarrierDesc*    m_pBuffers = nullptr;
+        uint32                      m_numBuffers = 0;
+        const TextureBarrierDesc*   m_pTextures = nullptr;
+        uint32                      m_numTextures = 0;
     };
 
 #pragma endregion
@@ -490,7 +549,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class ETextureUsageBits : uint8
     {
-        // Min Compatible Access:               Usage:
+                                                        // Min Compatible Access:               Usage:
         None                            = 0,
         ShaderResource                  = NES_BIT(0),   // ShaderResource                       Read-only shader resource (SRV)
         ShaderResourceStorage           = NES_BIT(1),   // ShaderResourceStorage                Read/write shader resource (UAV)
@@ -500,15 +559,18 @@ namespace nes
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ETextureUsageBits);
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Bit flags for how a buffer will be used. 
+    //----------------------------------------------------------------------------------------------------
     enum class EBufferUsageBits : uint16
     {
-        // Min Compatible Access:               Usage:
+                                                        // Min Compatible Access:               Usage:
         None                            = 0,
         ShaderResource                  = NES_BIT(0),   // ShaderResource                       Read-only shader resource (SRV)
         ShaderResourceStorage           = NES_BIT(1),   // ShaderResourceStorage                Read/write shader resource (UAV)
         VertexBuffer                    = NES_BIT(2),   // VertexBuffer                         Vertex Buffer
         IndexBuffer                     = NES_BIT(3),   // IndexBuffer                          Index Buffer
-        ConstantBuffer                  = NES_BIT(4),   // ConstantBuffer                       Constant buffer (D3D11: can't be combined with other usages)
+        ConstantBuffer                  = NES_BIT(4),   // ConstantBuffer                       Constant buffer.
         ArgumentBuffer                  = NES_BIT(5),   // ArgumentBuffer                       Argument buffer in "Indirect" commands
         ScratchBuffer                   = NES_BIT(6),   // ScratchBuffer                        Scratch buffer in "CmdBuild*" commands
         ShaderBindingTable              = NES_BIT(7),   // ShaderBindingTable                   Shader binding table (SBT) in "CmdDispatchRays*" commands
@@ -519,30 +581,29 @@ namespace nes
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EBufferUsageBits);
 
-    struct GTextureDesc
+    struct TextureDesc
     {
         ETextureType        m_type = ETextureType::Texture2D;
         ETextureUsageBits   m_usage = ETextureUsageBits::ShaderResource;
         EFormat             m_format = EFormat::Unknown;
-        //DimType             m_width = 1;
-        //DimType             m_height = 1;
-        //DimType             m_depth = 1;
-        //DimType             m_numMipLevels = 1;
-        //DimType             m_numLayers = 1;
-        //SampleType          m_sampleCount = 1;
+        uint32              m_width = 1;
+        uint32              m_height = 1;
+        uint32              m_depth = 1;
+        uint32              m_numMipLevels = 1;
+        uint32              m_numLayers = 1;
+        uint32              m_numSamples = 1;
         ESharingMode        m_sharingMode = ESharingMode::Exclusive;
-        ClearValue          m_clearValue{};  // D3D12: not needed on desktop, since any HW can track many clear values.
+        ClearValue          m_clearValue{};
     };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Used to create a buffer resource.
-    /// Available "m_structuredStride" Values:
+    //  Available "m_structuredStride" Values:
     //      0   = allows "typed" views.
     //      4   = allows "types", "byte address" (raw) and "structured" views.
     //      >4  = allows "structured" and potentially "typed" views.
-    //  VK: Buffers are always created with "VK_SHARING_MODE_CONCURRENT" to match D3D12 spec.
     //----------------------------------------------------------------------------------------------------
-    struct GBufferDesc
+    struct BufferDesc
     {
         uint64              m_size = 0;
         uint32              m_structuredStride = 0;
@@ -584,7 +645,7 @@ namespace nes
         return location > EMemoryLocation::DeviceUpload;
     }
 
-    struct GHeapDesc
+    struct DeviceMemoryDesc
     {
         uint64      m_size;
         uint32      m_alignment;
@@ -592,21 +653,21 @@ namespace nes
         bool        m_mustBeDedicated; // Must be put into a dedicated memory object, containing only 1 object with offset = 0
     };
 
-    struct AllocateGMemoryDesc
+    struct AllocateDeviceMemoryDesc
     {
         uint64      m_size;
         //GMemoryType m_type;
         float       m_priority; // [-1; 1]: low < 0, normal = 0, high > 0
     };
 
-    struct GBufferMemoryBindingDesc
+    struct BufferMemoryBindingDesc
     {
         //GBuffer*    m_pBuffer;
         //GMemory*    m_pMemory;
         uint64      m_offset;
     };
 
-    struct GTextureMemoryBindingDesc
+    struct TextureMemoryBindingDesc
     {
         //GTexture*   m_pTexture;
         //GMemory*    m_pMemory;
@@ -1063,21 +1124,9 @@ namespace nes
         EPrimitiveRestart       m_primitiveRestart;
     };
 
-    struct VertexAttributeD3D
-    {
-        const char*             m_semanticName;
-        uint32                  m_semanticIndex;
-    };
-
-    struct VertexAttributeVk
-    {
-        uint32                  m_location;
-    };
-
     struct VertexAttributeDesc
     {
-        VertexAttributeD3D      m_d3d;
-        VertexAttributeVk       m_vk;
+        uint32                  m_location;
         uint32                  m_offset;
         EFormat                 m_format;
         uint16                  m_streamIndex;
@@ -1099,7 +1148,7 @@ namespace nes
 
     struct VertexBufferDesc
     {
-        //const GBuffer*          m_pBuffer;
+        //const DeviceBuffer*     m_pBuffer;
         uint64                  m_offset;
         uint32                  m_stride;
     };
@@ -1198,9 +1247,9 @@ namespace nes
     struct MultisampleDesc
     {
         uint32          m_sampleMask;
-        //SampleType      m_sampleNum;
-        bool            m_alphaToCoverage;
-        bool            m_sampleLocations;              // Requires "tiers.m_sampleLocations != 0", expects "CmdSetSampleLocations"
+        uint32          m_numSamples = 0;
+        bool            m_alphaToCoverage = false;
+        bool            m_sampleLocations = false;              // Requires "tiers.m_sampleLocations != 0", expects "CmdSetSampleLocations"
     };
 
     struct ShadingRateDesc
@@ -1424,18 +1473,21 @@ namespace nes
 
     enum class ERobustness : uint8
     {
-        Default,    // Don't care, follow device settings (VK level when used on a device).
+        Default,    // Don't care, follow device settings.
         Off,        // No overhead, no robust access (out-of-bounds access is not allowed).
-        VK,         // Minimal overhead, partial robust access.
-        D3D12,      // Moderate overhead, D3D12-level robust access (requires "VK_EXT_robustness2", soft fallback to VK mode).
     };
 
     struct ShaderDesc
     {
-        EPipelineStageBits      m_stage;
-        const void*             m_pByteCode;
-        uint64                  m_size;
+        EPipelineStageBits      m_stage = EPipelineStageBits::GraphicsShaders;
+        const void*             m_pByteCode = nullptr;
+        uint64                  m_size = 0;
         const char*             m_entryPointName = "main";
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check that this points to a loaded shader. 
+        //----------------------------------------------------------------------------------------------------
+        bool                    IsValid() const { return m_pByteCode != nullptr && m_size > 0; }
     };
 
     struct GraphicsPipelineDesc
@@ -1507,8 +1559,6 @@ namespace nes
         // If "features.m_meshShaderPipelineStats"
         uint64      m_meshControlShaderInvocationNum;
         uint64      m_meshEvaluationShaderInvocationNum;
-    
-        // D3D12: if "features.m_meshShaderPipelineStats"
         uint64      m_meshEvaluationShaderPrimitiveNum;
     };
 
@@ -1520,50 +1570,26 @@ namespace nes
 
     struct DrawDesc
     {
-        uint32  m_vertexNum;
-        uint32  m_instanceNum;
-        uint32  m_baseVertex;                   // Vertex buffer offset = CmdSetVertexBuffers.m_offset + m_baseVertex * VertexStreamDesc::m_stride
-        uint32  m_baseInstance;
+        uint32  m_vertexNum = 0;
+        uint32  m_instanceNum = 0;
+        uint32  m_baseVertex = 0;                   // Vertex buffer offset = CmdSetVertexBuffers.m_offset + m_baseVertex * VertexStreamDesc::m_stride
+        uint32  m_baseInstance = 0;
     };
 
     struct DrawIndexedDesc
     {
-        uint32  m_indexNum;
-        uint32  m_instanceNum;
-        uint32  m_baseIndex;                    // Index buffer offset = CmdSetIndexBuffer.m_offset + m_baseIndex * sizeof(CmdSetIndexBuffer.m_indexType)
-        int32   m_baseVertex;                   // index += baseVertex;
-        uint32  m_baseInstance;
+        uint32  m_indexNum = 0;
+        uint32  m_instanceNum = 0;
+        uint32  m_baseIndex = 0;                    // Index buffer offset = CmdSetIndexBuffer.m_offset + m_baseIndex * sizeof(CmdSetIndexBuffer.m_indexType)
+        int32   m_baseVertex = 0;                   // index += baseVertex;
+        uint32  m_baseInstance = 0;
     };
 
     struct DispatchDesc
     {
-        uint32  x;
-        uint32  y;
-        uint32  z;
-    };
-
-    // D3D12: modified draw command signatures, if the bound pipeline layout has "PipelineLayoutBits::ENABLE_D3D12_DRAW_PARAMETERS_EMULATION"
-    //  - the following structs must be used instead
-
-    struct DrawBaseDesc
-    {
-        uint32  m_shaderEmulatedBaseVertex;     // Root constant.
-        uint32  m_shaderEmulatedBaseInstance;   // Root constant.
-        uint32  m_vertexNum;
-        uint32  m_instanceNum;
-        uint32  m_baseVertex;                   // Vertex buffer offset = CmdSetVertexBuffers.m_offset + m_baseVertex * VertexStreamDesc::m_stride
-        uint32  m_baseInstance;
-    };
-
-    struct DrawIndexedBaseDesc
-    {
-        uint32  m_shaderEmulatedBaseVertex;     // Root constant.
-        uint32  m_shaderEmulatedBaseInstance;   // Root constant.
-        uint32  m_indexNum;
-        uint32  m_instanceNum;
-        uint32  m_baseIndex;                    // Index buffer offset = CmdSetIndexBuffer.m_offset + m_baseIndex * sizeof(CmdSetIndexBuffer.m_indexType)
-        int32   m_baseVertex;                   // index += baseVertex;
-        uint32  m_baseInstance;
+        uint32  x = 0;
+        uint32  y = 0;
+        uint32  z = 0;
     };
 
 #pragma endregion
@@ -1682,6 +1708,9 @@ namespace nes
         bool        m_requireExactVersion = false;  /// [optional] If true, the spec version must match exactly.
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Helper function to return the EQueueType as an index value. (Casts to size_t).
+    //----------------------------------------------------------------------------------------------------
     constexpr size_t GetQueueTypeIndex(const EQueueType type) { return static_cast<size_t>(type); }
 
     struct PhysicalDeviceDesc

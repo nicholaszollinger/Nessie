@@ -46,7 +46,7 @@ namespace nes
         ///     the correct layout to be used. Returns EGraphicsResult::Failure if the barrierDesc was not
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult TransitionImageLayout(VkImage image, ImageMemoryBarrierDesc& barrierDesc) const;
-
+    
     private:
         VkCommandBuffer m_handle{};
         CommandPool*    m_pCommandPool = nullptr;

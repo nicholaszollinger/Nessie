@@ -18,9 +18,11 @@ namespace nes
     class   SemaphoreState;
     class   CommandPool;
     class   CommandBuffer;
-
     class   Swapchain;
     struct  SwapchainDesc;
+    class   ShaderLibrary;
+    class   Shader;
+    struct  ShaderDesc;
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 

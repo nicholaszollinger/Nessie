@@ -1,6 +1,7 @@
 ﻿// Renderer.cpp
 #include "Renderer.h"
 
+#include "ShaderLibrary.h"
 #include "Nessie/Application/Application.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Graphics/CommandBuffer.h"
@@ -76,6 +77,18 @@ namespace nes
             CreateFrameSubmissionResources(kHeadlessFramesInFlight);
         }
 
+        // Create the Shader Library
+        // [TODO]: Make the settings available for the RendererDesc.
+        m_pShaderLibrary = std::make_unique<ShaderLibrary>(m_device);
+        ShaderLibraryDesc shaderLibraryDesc{};
+        shaderLibraryDesc.m_searchDirs.emplace_back(NES_SHADER_DIR);
+        shaderLibraryDesc.m_compileOutDir = NES_SHADER_DIR;
+        if (!m_pShaderLibrary->Init(shaderLibraryDesc))
+        {
+            NES_GRAPHICS_ERROR(m_device, "Failed to initialize shader library!");
+            return false;
+        }
+        
         // [TODO]: Create default resources.
 
         return true;
@@ -86,6 +99,12 @@ namespace nes
         m_device.WaitUntilIdle();
         
         // [TODO]: Free default resources:
+
+        if (m_pShaderLibrary)
+        {
+            m_pShaderLibrary->Shutdown();
+            m_pShaderLibrary.reset();
+        }
 
         // Free any remaining resources:
         for (auto& releaseQueue : m_resourceFreeQueues)
