@@ -41,11 +41,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult End();
 
+        // [TODO]: Refactor with better desc and nes::Texture
         //----------------------------------------------------------------------------------------------------
         /// @brief : Transition an image from one layout to another. In the pipeline, the image must be in
-        ///     the correct layout to be used. Returns EGraphicsResult::Failure if the barrierDesc was not
+        ///     the correct layout to be used.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult TransitionImageLayout(VkImage image, ImageMemoryBarrierDesc& barrierDesc) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : [TODO]: This is for dynamic rendering. We need: AttachmentsDesc, Descriptor, ...
+        //----------------------------------------------------------------------------------------------------
+        //EGraphicsResult BeginRendering();
     
     private:
         VkCommandBuffer m_handle{};

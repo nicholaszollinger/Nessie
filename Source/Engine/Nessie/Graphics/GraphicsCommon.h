@@ -11,6 +11,9 @@
 // changing these as I go.
 //-------------------------------------------------------------------------------------------------
 
+// Forward Declare VMA types.
+struct VmaAllocator_T;
+struct VmaAllocation_T;
 
 namespace nes
 {
@@ -84,10 +87,17 @@ namespace nes
         uint8           m_stencil;
     };
 
+    union ClearColor
+    {
+        Vec4            m_float32;
+        UVec4           m_uint32;
+        IVec4           m_int32;
+    };
+
     union ClearValue
     {
         DepthStencil    m_depthStencil;
-        Color           m_color;
+        LinearColor     m_color;
     };
 
     struct SampleLocation
@@ -243,6 +253,7 @@ namespace nes
         Depth   = NES_BIT(1),   // indicates "depth" plane (same as "ALL" for depth-only formats)
         Stencil = NES_BIT(2),   // indicates "stencil" plane in depth-stencil formats
     };
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPlaneBits)
 
     enum class EFormatType : uint8
     {
@@ -275,6 +286,34 @@ namespace nes
         StorageLoadWithoutFormat    = NES_BIT(13),
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EFormatSupportBits);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Information about a format type. 
+    //----------------------------------------------------------------------------------------------------
+    struct FormatProps
+    {
+        const char* m_name;                 // Name of the format.
+        EFormat     m_format;               // The format value.
+        uint8       m_redBits;              // R (or depth) bits
+        uint8       m_greenBits;            // G (or stencil) bits (0 if channels are < 2)
+        uint8       m_blueBits;             // B bits (0 if channels < 3)
+        uint8       m_alphaBits;            // A (or shared exponent) bits (0 if channels are < 4)
+        uint32      m_stride        : 6;    // Block size in bytes
+        uint32      m_blockWidth    : 4;    // 1 for plain formats, >1 for compressed
+        uint32_t    m_blockHeight   : 4;    // 1 for plain formats, >1 for compressed
+        uint32      m_isBgr         : 1;    // Reversed channels (RGBA => BGRA)
+        uint32      m_isCompressed  : 1;    // Block-compressed format
+        uint32      m_isDepth       : 1;    // Has depth component.
+        uint32      m_isExpShared   : 1;    // Shared exponent in alpha channel
+        uint32      m_isFloat       : 1;    // Floating point
+        uint32      m_isPacked      : 1;    // 16- or 32- bit packed
+        uint32      m_isInteger     : 1;    // integer
+        uint32      m_isNorm        : 1;    // [0; 1] normalized
+        uint32      m_isSigned      : 1;    // signed.
+        uint32      m_isSrgb        : 1;    // sRGB
+        uint32      m_isStencil     : 1;    // has stencil component
+        uint32      m_unused        : 7;
+    };
 
 #pragma endregion
 
@@ -491,16 +530,16 @@ namespace nes
         AccessLayoutStage   m_after;                                    // The layout the texture should transition to.
 
         // Subresource Range: what portions of the image should be affected? 
-        uint32              m_baseMipLevel  = 0;                        // Starting mip level.
-        uint32              m_numMipLevels  = graphics::kUseRemaining;  // Number of mip levels from the baseMip.
+        uint32              m_baseMip       = 0;                        // Starting mip level.
+        uint32              m_mipCount      = graphics::kUseRemaining;  // Number of mip levels from the baseMip.
         uint32              m_baseLayer     = 0;                        // Starting layer value.
-        uint32              m_numLayers     = graphics::kUseRemaining;  // Number of layers from the baseLayer.
+        uint32              m_layerCount    = graphics::kUseRemaining;  // Number of layers from the baseLayer.
         EPlaneBits          m_planes        = EPlaneBits::Color;        // Which planes of the image data should be affected.
 
         // Queue ownership transfer is potentially needed only for "EXCLUSIVE" textures
         // https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#synchronization-queue-transfers
-        DeviceQueue*        m_pSrcQueue = nullptr;                      // The owning queue at the start.
-        DeviceQueue*        m_pDstQueue = nullptr;                      // The queue that should take ownership.
+        DeviceQueue*        m_pSrcQueue     = nullptr;                      // The owning queue at the start.
+        DeviceQueue*        m_pDstQueue     = nullptr;                      // The queue that should take ownership.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -509,11 +548,11 @@ namespace nes
     struct BarrierGroupDesc
     {
         const GlobalBarrierDesc*    m_pGlobals = nullptr;
-        uint32                      m_numGlobals = 0;
+        uint32                      m_globalsCount = 0;
         const BufferBarrierDesc*    m_pBuffers = nullptr;
-        uint32                      m_numBuffers = 0;
+        uint32                      m_bufferCount = 0;
         const TextureBarrierDesc*   m_pTextures = nullptr;
-        uint32                      m_numTextures = 0;
+        uint32                      m_textureCount = 0;
     };
 
 #pragma endregion
@@ -589,11 +628,24 @@ namespace nes
         uint32              m_width = 1;
         uint32              m_height = 1;
         uint32              m_depth = 1;
-        uint32              m_numMipLevels = 1;
-        uint32              m_numLayers = 1;
-        uint32              m_numSamples = 1;
+        uint32              m_mipCount = 1;
+        uint32              m_layerCount = 1;
+        uint32              m_sampleCount = 1;
         ESharingMode        m_sharingMode = ESharingMode::Exclusive;
         ClearValue          m_clearValue{};
+
+        //----------------------------------------------------------------------------------------------------
+        // [TODO]: Move implementation to another file.
+        /// @brief : Ensures that ranges are valid. 
+        //----------------------------------------------------------------------------------------------------
+        void                Validate()
+        {
+            m_height = math::Max(m_height, 1U);
+            m_depth = math::Max(m_depth, 1U);
+            m_mipCount = math::Max(m_mipCount, 1U);
+            m_layerCount = math::Max(m_layerCount, 1U);
+            m_sampleCount = math::Max(m_sampleCount, 1U);
+        }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -618,7 +670,6 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Where the memory will be allocated.
-    //  https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_heap_type
     //----------------------------------------------------------------------------------------------------
     enum class EMemoryLocation : uint8
     {
@@ -629,49 +680,63 @@ namespace nes
         MaxNum
     };
 
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Returns true if the Host (CPU) can read the Memory at a given location.
-    //----------------------------------------------------------------------------------------------------
-    constexpr bool IsHostVisibleMemory(const EMemoryLocation location)
-    {
-        return location > EMemoryLocation::Device;
-    }
+    using DeviceMemoryTypeIndex = uint16;
+    using DeviceMemoryType = uint32; 
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Returns true if the Host (CPU) owns the memory at a given location. 
+    /// @brief : Information about a Memory Type on the Device.
     //----------------------------------------------------------------------------------------------------
-    constexpr bool IsHostMemory(const EMemoryLocation location)
+    struct DeviceMemoryTypeInfo
     {
-        return location > EMemoryLocation::DeviceUpload;
-    }
+        DeviceMemoryTypeIndex   m_index = 0;
+        EMemoryLocation         m_location = EMemoryLocation::Device;
+        bool                    m_mustBeDedicated = false; // Memory must be put into a dedicated memory object, containing only 1 object with offset = 0.
+    };
+    static_assert(sizeof(DeviceMemoryType) == sizeof(DeviceMemoryTypeInfo));
 
     struct DeviceMemoryDesc
     {
-        uint64      m_size;
-        uint32      m_alignment;
-        //GMemoryType m_type;
-        bool        m_mustBeDedicated; // Must be put into a dedicated memory object, containing only 1 object with offset = 0
+        uint64              m_size;
+        uint32              m_alignment;
+        DeviceMemoryType    m_type;
+        bool                m_mustBeDedicated; // Must be put into a dedicated memory object, containing only 1 object with offset = 0
     };
 
     struct AllocateDeviceMemoryDesc
     {
-        uint64      m_size;
-        //GMemoryType m_type;
-        float       m_priority; // [-1; 1]: low < 0, normal = 0, high > 0
+        uint64              m_size = 0;
+        DeviceMemoryType    m_type = 0;
+        float               m_priority = 0.f; // [-1; 1]: low < 0, normal = 0, high > 0
+    };
+
+    struct AllocateBufferDesc
+    {
+        BufferDesc          m_desc;
+        EMemoryLocation     m_location;
+        float               m_priority;
+        bool                m_isDedicated;
+    };
+
+    struct AllocateTextureDesc
+    {
+        TextureDesc         m_desc;
+        EMemoryLocation     m_memoryLocation;
+        float               m_priority = 0.f;
+        bool                m_isDedicated = false;
     };
 
     struct BufferMemoryBindingDesc
     {
-        //GBuffer*    m_pBuffer;
-        //GMemory*    m_pMemory;
-        uint64      m_offset;
+        DeviceBuffer*       m_pBuffer = nullptr;
+        DeviceMemory*       m_pMemory = nullptr;
+        uint64              m_offset = 0;
     };
 
     struct TextureMemoryBindingDesc
     {
-        //GTexture*   m_pTexture;
-        //GMemory*    m_pMemory;
-        uint64      m_offset;
+        Texture*            m_pTexture = nullptr;
+        DeviceMemory*       m_pMemory = nullptr;
+        uint64              m_offset = 0;
     };
 
 #pragma endregion
@@ -738,6 +803,7 @@ namespace nes
     {
         Nearest,
         Linear,
+        MaxNum
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -748,6 +814,7 @@ namespace nes
         Average,    // A weighted average of values in the footprint
         Min,        // A component-wise minimum of values in the footprint with non-zero weights
         Max,        // A component-wise maximum of values in the footprint with non-zero weights
+        MaxNum
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -761,6 +828,7 @@ namespace nes
         ClampToEdge,
         ClampToBorder,
         MirroredClampToEdge,
+        MaxNum
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -780,51 +848,64 @@ namespace nes
         LessEqual,      // R <= D
         Greater,        // R > D
         GreaterEqual,   // R >= D
+        MaxNum
     };
 
-    struct GTexture1DViewDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes access to a 1D Texture resource. Used to create a Descriptor.
+    //----------------------------------------------------------------------------------------------------
+    struct Texture1DViewDesc
     {
-        //const GTexture*     m_pTexture;
+        const Texture*      m_pTexture;
         ETexture1DViewType  m_viewType;
         EFormat             m_format;
-        //DimType             m_mipOffset;
-        //DimType             m_mipNum;
-        //DimType             m_layerOffset;
-        //DimType             m_layerNum;
+        uint32              m_mipOffset;
+        uint32              m_mipCount = graphics::kUseRemaining;
+        uint32              m_layerOffset;
+        uint32              m_layerCount = graphics::kUseRemaining;
     };
 
-    struct GTexture2DViewDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes access to a 2D Texture resource. Used to create a Descriptor.
+    //----------------------------------------------------------------------------------------------------
+    struct Texture2DViewDesc
     {
-        //const GTexture*     m_pTexture;
+        const Texture*      m_pTexture;
         ETexture2DViewType  m_viewType;
         EFormat             m_format;
-        //DimType             m_mipOffset;
-        //DimType             m_mipNum;
-        //DimType             m_layerOffset;
-        //DimType             m_layerNum;
+        uint32              m_mipOffset;
+        uint32              m_mipCount = graphics::kUseRemaining;
+        uint32              m_layerOffset;
+        uint32              m_layerCount = graphics::kUseRemaining;
     };
 
-    struct GTexture3DViewDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes access to a 3D Texture resource. Used to create a Descriptor.
+    //----------------------------------------------------------------------------------------------------
+    struct Texture3DViewDesc
     {
-        //const GTexture*     m_pTexture;
+        const Texture*      m_pTexture;
         ETexture3DViewType  m_viewType;
         EFormat             m_format;
-        //DimType             m_mipOffset;
-        //DimType             m_mipNum;
-        //DimType             m_layerOffset;
-        //DimType             m_layerNum;
+        uint32              m_mipOffset;
+        uint32              m_mipCount = graphics::kUseRemaining;
+        uint32              m_sliceOffset;
+        uint32              m_sliceCount = graphics::kUseRemaining;
     };
 
-    struct GBufferViewDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes access to a DeviceBuffer resource. Used to create a Descriptor.
+    //----------------------------------------------------------------------------------------------------
+    struct BufferViewDesc
     {
-        //const GBuffer*      m_pBuffer;
+        const DeviceBuffer* m_pBuffer;
         EBufferViewType     m_viewType;
         EFormat             m_format;
-        uint64              m_offset;
-        uint64              m_size;
+        uint64              m_offset = 0;
+        uint64              m_size = graphics::kUseRemaining;
 
         // Optional
-        uint32              m_structuredStride; // This will equal the structure stride from "GBufferDesc" if not provided.
+        uint32              m_structuredStride; // This will equal the structure stride from "BufferDesc" if not provided.
     };
 
     struct AddressModes
@@ -837,14 +918,14 @@ namespace nes
     struct Filters
     {
         EFilterType m_min;
-        EFilterType m_max;
+        EFilterType m_mag;
         EFilterType m_mip;
-        EReductionMode m_ext; // Requires features.m_textureFilterMinMax.
+        EReductionMode m_reduction; // Requires features.m_textureFilterMinMax.
     };
 
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkSamplerCreateInfo.html
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_sampler_desc
+    /// @brief : Describes a sampler resource. Used to create a Descriptor.
     //----------------------------------------------------------------------------------------------------
     struct SamplerDesc
     {
@@ -855,7 +936,7 @@ namespace nes
         float               m_mipMax;
         AddressModes        m_addressModes;
         ECompareOp          m_compareOp;
-        Color               m_borderColor;
+        ClearColor          m_borderColor;
         bool                m_isInteger;
     };
 
@@ -944,16 +1025,40 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class EDescriptorType : uint8
     {
-        Sampler,
-        ConstantBuffer,
-        Texture,
-        StorageTexture,
-        Buffer,
-        StorageBuffer,
-        StructuredBuffer,
-        StorageStructuredBuffer,
+        None,
+        Sampler,            
+        ConstantBuffer,     // VK: Uniform Buffer
+        Texture,            // VK: Sampled Image
+        StorageTexture,     // VK: Storage Image
+        Buffer,             // VK: Uniform Texel Buffer
+        StorageBuffer,      // VK: Storage Texel Buffer
         AccelerationStructure,
     };
+
+    constexpr bool DescriptorIsBufferType(const EDescriptorType type)
+    {
+        switch (type)
+        {
+            case EDescriptorType::Buffer:
+            case EDescriptorType::ConstantBuffer:
+            case EDescriptorType::StorageBuffer:
+                return true;
+
+            default: return false;
+        }
+    }
+
+    constexpr bool DescriptorIsTextureType(const EDescriptorType type)
+    {
+        switch (type)
+        {
+            case EDescriptorType::Texture:
+            case EDescriptorType::StorageTexture:
+                return true;
+
+            default: return false;
+        }
+    }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Descriptor Range consists of "Descriptor" entities. 
@@ -961,12 +1066,11 @@ namespace nes
     struct DescriptorRangeDesc
     {
         uint32                      m_baseRegisterIndex;
-        uint32                      m_descriptorNum;        /// Treated as max size if "VARIABLE_SIZED_ARRAY" flag is set
+        uint32                      m_descriptorNum;        /// Treated as max size if "VariableSizedArray" flag is set
         EDescriptorType             m_descriptorType;
         EPipelineStageBits          m_shaderStages;
         EDescriptorRangeBits        m_flags;
     };
-
 
     struct DynamicConstantBufferDesc
     {
@@ -991,7 +1095,7 @@ namespace nes
     /// @brief : "PipelineLayout" consists of "DescriptorSet" descriptions and root parameters.
     ///     This is also known as a "push constants block".
     //----------------------------------------------------------------------------------------------------
-    struct RootConstantDesc
+    struct PushConstantDesc
     {
         uint32                      m_registerIndex;
         uint32                      m_size;
@@ -1002,7 +1106,7 @@ namespace nes
     /// @brief : "PipelineLayout" consists of "DescriptorSet" descriptions and root parameters.
     ///     This is also known as a "push descriptor".
     //----------------------------------------------------------------------------------------------------
-    struct RootDescriptorDesc
+    struct PushDescriptorDesc
     {
         uint32                      m_registerIndex;
         EDescriptorType             m_descriptorType; // Can be ConstantBuffer, StructuredBuffer or StorageStructuredBuffer.
@@ -1011,15 +1115,13 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineLayoutCreateInfo.html
-    // https://microsoft.github.io/DirectX-Specs/d3d/ResourceBinding.html#root-signature
-    // https://microsoft.github.io/DirectX-Specs/d3d/ResourceBinding.html#root-signature-version-11
     //----------------------------------------------------------------------------------------------------
     struct PipelineLayoutDesc
     {
         uint32                      m_rootRegisterSpace;
-        const RootConstantDesc*     m_pRootConstants;
+        const PushConstantDesc*     m_pRootConstants;
         uint32                      m_rootConstantNum;
-        const RootDescriptorDesc*   m_pRootDescriptors;
+        const PushDescriptorDesc*   m_pRootDescriptors;
         uint32                      m_rootDescriptorNum;
         const DescriptorSetDesc*    m_pDescriptorSets;
         uint32                      m_descriptorSetNum;
@@ -1148,7 +1250,7 @@ namespace nes
 
     struct VertexBufferDesc
     {
-        //const DeviceBuffer*     m_pBuffer;
+        const DeviceBuffer*     m_pBuffer;
         uint64                  m_offset;
         uint32                  m_stride;
     };
@@ -1247,7 +1349,7 @@ namespace nes
     struct MultisampleDesc
     {
         uint32          m_sampleMask;
-        uint32          m_numSamples = 0;
+        uint32          m_sampleCount = 0;
         bool            m_alphaToCoverage = false;
         bool            m_sampleLocations = false;              // Requires "tiers.m_sampleLocations != 0", expects "CmdSetSampleLocations"
     };
@@ -1355,7 +1457,8 @@ namespace nes
         Src1Color,              // S1.r, S1.g, S1.b                  S1.a
         OneMinusSrc1Color,      // 1 - S1.r, 1 - S1.g, 1 - S1.b      1 - S1.a
         Src1Alpha,              // S1.a                              S1.a
-        OneMinusSrc1Alpha       // 1 - S1.a                          1 - S1.a
+        OneMinusSrc1Alpha,      // 1 - S1.a                          1 - S1.a
+        MaxNum
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1456,13 +1559,13 @@ namespace nes
 
     struct AttachmentDesc
     {
-        //const Descriptor* const*    m_pColors;
-        uint32                      m_colorNum;
+        const Descriptor* const*    m_pColors = nullptr;
+        uint32                      m_colorCount = 0;
     
         // Optional
-        //const Descriptor*           m_pDepthStencil;
-        //const Descriptor*           m_pShadingRate;         /// Requires "tiers.m_shadingRate >= 2".
-        uint32                      m_viewMask;             /// If non-0, requires "m_viewMaxNum > 1".
+        const Descriptor*           m_pDepthStencil = nullptr;
+        const Descriptor*           m_pShadingRate = nullptr;
+        uint32                      m_viewMask = 0;
     };
 
 #pragma endregion
@@ -1492,7 +1595,7 @@ namespace nes
 
     struct GraphicsPipelineDesc
     {
-        //const PipelineLayout*  m_pPipelineLayout;
+        const PipelineLayout*   m_pPipelineLayout;
         const VertexInputDesc*  m_pVertexInput;     // Optional.
         InputAssemblyDesc       m_inputAssembly;
         RasterizationDesc       m_rasterizer;
@@ -1505,7 +1608,7 @@ namespace nes
 
     struct ComputePipelineDesc
     {
-        //const PipelineLayout*  m_pPipelineLayout;
+        const PipelineLayout*   m_pPipelineLayout;
         ShaderDesc              m_shader;
         ERobustness             m_robustness;       // Optional.
     };
@@ -1599,18 +1702,18 @@ namespace nes
 //============================================================================================================================================================================================
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Decribes a region of a texture for copy commands. 
+    /// @brief : Describes a region of a texture for copy commands. 
     //----------------------------------------------------------------------------------------------------
     struct TextureRegionDesc
     {
-        //DimType     x;
-        //DimType     y;
-        //DimType     z;
-        //DimType     m_width;
-        //DimType     m_height;
-        //DimType     m_depth;
-        //DimType     m_mipOffset;
-        //DimType     m_layerOffset;
+        uint32      x;
+        uint32      y;
+        uint32      z;
+        uint32      m_width;
+        uint32      m_height;
+        uint32      m_depth;
+        uint32      m_mipOffset;
+        uint32      m_layerOffset;
         EPlaneBits  m_planes;
     };
 
@@ -1623,8 +1726,9 @@ namespace nes
 
     struct FenceSubmitDesc
     {
-        //GFence*     m_pFence;
-        uint64      m_value;
+        // [TODO]: 
+        //GFence*           m_pFence;
+        uint64              m_value;
         EPipelineStageBits  m_stages;
     };
 
@@ -1632,7 +1736,7 @@ namespace nes
     {
         const FenceSubmitDesc*  m_pWaitFences;
         uint32                  m_waitFenceNum;
-        //const GCommandBuffer*   m_pCommandBuffers;
+        const CommandBuffer*    m_pCommandBuffers;
         uint32                  m_commandBufferNum;
         const FenceSubmitDesc*  m_pSignalFences;
         uint32                  m_signalFenceNum;
@@ -1657,7 +1761,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ClearStorageDesc
     {
-        //const Descriptor*      m_pStorage; // A "Storage" descriptor.
+        const Descriptor*       m_pStorage; // A "Storage" descriptor.
         Color                   m_value;
         uint32                  m_setIndex;
         uint32                  m_rangeIndex;
@@ -1721,7 +1825,7 @@ namespace nes
         uint32              m_apiSupport{};
         uint64              m_videoMemorySize{};
         uint64              m_sharedSystemMemorySize{};
-        uint32              m_numQueuesByType[static_cast<uint32>(EQueueType::MaxNum)];
+        uint32              m_queueCountByType[static_cast<uint32>(EQueueType::MaxNum)];
         uint32              m_queueFamilyIndices[static_cast<uint32>(EQueueType::MaxNum)]; 
         EVendor             m_vendor = EVendor::Unknown;                            /// Vendor that made the device.
         EPhysicalDeviceType m_architecture = EPhysicalDeviceType::Unknown;          /// What type of device it is.
@@ -1735,6 +1839,98 @@ namespace nes
         PhysicalDeviceDesc          m_physicalDeviceDesc{};
         Version                     m_apiVersion{};
         std::vector<ExtensionDesc>  m_deviceExtensions{};
+
+        // Capabilities
+
+        // Tiered Feature Support: (0 = unsupported)
+        struct
+        {
+            // 1 - 1/2 pixel uncertainty region and does not support post-snap degenerates
+            // 2 - reduces the maximum uncertainty region to 1/256 and requires post-snap degenerates not be culled
+            // 3 - maintains a maximum 1/256 uncertainty region and adds support for inner input coverage, aka "SV_InnerCoverage"
+            uint8                   m_conservativeRaster = 0;
+
+            // 1 - A single sample pattern can be specified to repeat for every pixel.
+            //     1x and 16x sample counts do not support programmable locations.
+            // 2 - Four separate sample patterns can be specified for each pixel in a 2x2 grid.
+            //     All sample counts support programmable positions.
+            uint8                   m_sampleLocations = 0;
+
+            // 1 - DXR 1.0: full raytracing functionality, except features below.
+            // 2 - DXR 1.1: adds - ray query, "CmdDispatchRaysIndirect", "GeometryIndex()" intrinsic, additional ray flags and vertex formats.
+            // 3 - DXR 1.2: adds - micromap, shader execution reordering.
+            uint8                   m_rayTracing = 0;
+
+            // 1 - shading rate can be specified only per draw
+            // 2 - adds: per primitive shading rate, per "shadingRateAttachmentTileSize" shading rate, combiners, "SV_ShadingRate" support
+            uint8                   m_shadingRate = 0;
+
+            // 1 - unbound arrays with dynamic indexing
+            // (2 was a D3D12 setting)...
+            uint8                   m_bindless = 0;
+
+            // 0 - ALL descriptors in range must be valid by the time the command list executes
+            // 1 - Only "ConstantBuffer" and "Storage" descriptors in range must be valid.
+            // 2 - Only referenced descriptors must be valid.
+            uint8                   m_resourceBinding = 0;
+
+            // 1 - A "DeviceMemory" object can support resources from all 3 categories: buffers, attachments, all other textures.
+            uint8                   m_memory;
+        } m_tieredFeatures;
+
+        // Features (Boolean).
+        struct
+        {
+            uint32                  m_getMemoryDesc2                                    : 1 = 0;
+            //uint32                  m_enhancedBarriers                                  : 1 = 0;
+            uint32                  m_swapChain                                         : 1 = 0;
+            uint32                  m_rayTracing                                        : 1 = 0;
+            uint32                  m_meshShader                                        : 1 = 0;
+            uint32                  m_lowLatency                                        : 1 = 0;
+            uint32                  m_micromap                                          : 1 = 0;
+            
+            uint32                  m_independentFrontAndBackStencilReferenceAndMasks   : 1 = 0;
+            uint32                  m_textureFilterMinMax                               : 1 = 0;
+            uint32                  m_logicOp                                           : 1 = 0;
+            uint32                  m_depthBoundsTest                                   : 1 = 0;
+            uint32                  m_drawIndirectCount                                 : 1 = 0;
+            uint32                  m_lineSmoothing                                     : 1 = 0;
+            uint32                  m_copyQueueTimestamp                                : 1 = 0;
+            uint32                  m_meshShaderPipelineStats                           : 1 = 0;
+            uint32                  m_dynamicDepthBias                                  : 1 = 0;
+            uint32                  m_additionalShadingRates                            : 1 = 0;
+            uint32                  m_viewportOriginBottomLeft                          : 1 = 0;
+            uint32                  m_regionResolve                                     : 1 = 0;
+            uint32                  m_flexibleMultiview                                 : 1 = 0;
+            uint32                  m_layerBasedMultiview                               : 1 = 0;
+            uint32                  m_viewportBasedMultiview                            : 1 = 0;
+            uint32                  m_presentFromCompute                                : 1 = 0;
+            uint32                  m_waitableSwapChain                                 : 1 = 0;
+            uint32                  m_pipelineStatistics                                : 1 = 0;
+            
+            uint32                  m_descriptorIndexing                                : 1 = 0;
+            uint32                  m_deviceAddress                                     : 1 = 0;
+            uint32                  m_swapchainMutableFormat                            : 1 = 0;
+            uint32                  m_presentId                                         : 1 = 0;
+            uint32                  m_memoryPriority                                    : 1 = 0;
+            uint32                  m_memoryBudget                                      : 1 = 0;
+            uint32                  m_maintenance4                                      : 1 = 0;
+            uint32                  m_maintenance5                                      : 1 = 0;
+            uint32                  m_maintenance6                                      : 1 = 0;
+            uint32                  m_imageSlicedView                                   : 1 = 0;
+            uint32                  m_customBorderColor                                 : 1 = 0;
+            uint32                  m_robustness                                        : 1 = 0;
+            uint32                  m_robustness2                                       : 1 = 0;
+            uint32                  m_pipelineRobustness                                : 1 = 0;
+            uint32                  m_swapchainMaintenance1                             : 1 = 0;
+            uint32                  m_fifoLatestReady                                   : 1 = 0;
+        } m_features;
+        
+        
+        // [TODO]: Shader Features
+        
     };
 #pragma endregion
 }
+
+#include "GraphicsHelpers.h"

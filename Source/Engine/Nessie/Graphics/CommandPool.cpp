@@ -11,7 +11,7 @@ namespace nes
     {
         if (m_handle)
         {
-            vkDestroyCommandPool(m_device, m_handle, m_device.GetVulkanAllocationCallbacks());
+            vkDestroyCommandPool(m_device, m_handle, m_device.GetVkAllocationCallbacks());
         }
     }
 
@@ -25,7 +25,7 @@ namespace nes
             .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
             .queueFamilyIndex = queue.GetFamilyIndex(),
         };
-        NES_VK_FAIL_RETURN(m_device, vkCreateCommandPool(m_device, &poolInfo, m_device.GetVulkanAllocationCallbacks(), &m_handle));
+        NES_VK_FAIL_RETURN(m_device, vkCreateCommandPool(m_device, &poolInfo, m_device.GetVkAllocationCallbacks(), &m_handle));
 
         m_queueType = queue.GetQueueType();   
 

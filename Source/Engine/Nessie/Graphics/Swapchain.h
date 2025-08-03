@@ -123,6 +123,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct SwapchainImage
         {
+            // [TODO]: Change to Texture* and Descriptor* (Image View)
             VkImage                 m_image{};                  /// Image to render to.
             VkImageView             m_view{};                   /// Image view to access the image.
         };

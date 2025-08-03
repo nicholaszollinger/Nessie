@@ -9,7 +9,7 @@ namespace nes
     {
         if (m_handle != nullptr)
         {
-            vkDestroyShaderModule(m_device, m_handle, m_device.GetVulkanAllocationCallbacks());
+            vkDestroyShaderModule(m_device, m_handle, m_device.GetVkAllocationCallbacks());
         }
     }
 
@@ -26,7 +26,7 @@ namespace nes
             .codeSize = desc.m_size,
             .pCode = static_cast<const uint32*>(desc.m_pByteCode),
         };
-        NES_VK_FAIL_RETURN(m_device, vkCreateShaderModule(m_device, &createInfo, m_device.GetVulkanAllocationCallbacks(), &m_handle));
+        NES_VK_FAIL_RETURN(m_device, vkCreateShaderModule(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_handle));
         
         m_desc = desc;
         return EGraphicsResult::Success;

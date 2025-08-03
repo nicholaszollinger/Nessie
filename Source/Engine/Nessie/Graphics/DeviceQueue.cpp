@@ -32,7 +32,7 @@ namespace nes
             .pNext = nullptr,
         };
         std::array<VkFence, 1> fences{};
-        NES_VK_FAIL_RETURN(m_device, vkCreateFence(m_device, &kFenceInfo, m_device.GetVulkanAllocationCallbacks(), fences.data()));
+        NES_VK_FAIL_RETURN(m_device, vkCreateFence(m_device, &kFenceInfo, m_device.GetVkAllocationCallbacks(), fences.data()));
 
         // Create the submission info:
         const VkCommandBufferSubmitInfo cmdBufferSubmitInfo
@@ -52,7 +52,7 @@ namespace nes
         NES_VK_FAIL_RETURN(m_device, vkWaitForFences(m_device, static_cast<uint32>(fences.size()), fences.data(), VK_TRUE, UINT64_MAX));
 
         // Cleanup
-        vkDestroyFence(m_device, fences[0], m_device.GetVulkanAllocationCallbacks());
+        vkDestroyFence(m_device, fences[0], m_device.GetVkAllocationCallbacks());
         return EGraphicsResult::Success;
     }
 

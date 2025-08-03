@@ -23,6 +23,13 @@ namespace nes
     class   ShaderLibrary;
     class   Shader;
     struct  ShaderDesc;
+    class   Texture;
+    struct  TextureDesc;
+    class   DeviceMemory;
+    class   DeviceBuffer;
+    struct  BufferDesc;
+    class   Descriptor;
+    class   PipelineLayout;
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 

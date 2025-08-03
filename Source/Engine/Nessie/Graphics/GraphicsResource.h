@@ -8,7 +8,7 @@ namespace nes
     class RenderDevice;
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Add Ref Counting?
+    // [TODO]: Add Ref Counting? Get rid of this all together in favor of a concept?
     /// @brief : Base class for all graphics resources that will be created with a RenderDevice. 
     //----------------------------------------------------------------------------------------------------
     class GraphicsResource

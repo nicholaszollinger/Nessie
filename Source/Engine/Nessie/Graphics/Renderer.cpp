@@ -119,7 +119,7 @@ namespace nes
             m_device.FreeResource(frame.m_pCommandBuffer);
             m_device.FreeResource(frame.m_pCommandPool);
         }
-        vkDestroySemaphore(m_device, m_frameTimelineSemaphore, m_device.GetVulkanAllocationCallbacks());
+        vkDestroySemaphore(m_device, m_frameTimelineSemaphore, m_device.GetVkAllocationCallbacks());
 
         // Destroy the swapchain:
         if (m_pSwapchain != nullptr)
@@ -277,7 +277,7 @@ namespace nes
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
             .pNext = &timelineCreateInfo,
         };
-        NES_VK_MUST_PASS(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVulkanAllocationCallbacks(), &m_frameTimelineSemaphore));
+        NES_VK_MUST_PASS(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_frameTimelineSemaphore));
         m_device.SetDebugNameToTrivialObject(m_frameTimelineSemaphore, "Frame Timeline Semaphore");
         
         // Create a command pool and command buffer for each frame.

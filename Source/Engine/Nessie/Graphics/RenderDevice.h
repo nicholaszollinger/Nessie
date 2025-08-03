@@ -19,12 +19,12 @@ namespace nes
     class RenderDevice
     {
     public:
-        RenderDevice() = default;
-        RenderDevice(const RenderDevice&) = delete;
-        RenderDevice(RenderDevice&&) noexcept = delete;
-        RenderDevice& operator=(const RenderDevice&) = delete;
-        RenderDevice& operator=(RenderDevice&&) noexcept = delete;
-        ~RenderDevice();
+        /* Constructor */           RenderDevice() = default;
+        /* No Copy Constructor */   RenderDevice(const RenderDevice&) = delete;
+        /* No Move Constructor */   RenderDevice(RenderDevice&&) noexcept = delete;
+        /* No Copy Assignment */    RenderDevice& operator=(const RenderDevice&) = delete;
+        /* No Move Assignment  */   RenderDevice& operator=(RenderDevice&&) noexcept = delete;
+        /* Destructor */            ~RenderDevice();
 
         /// Operators for converting to Vulkan Types.
         operator                    VkInstance() const { return m_vkInstance; }
@@ -82,7 +82,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the pointer for the vulkan allocation callbacks object, to be used with vulkan calls.   
         //----------------------------------------------------------------------------------------------------
-        VkAllocationCallbacks*      GetVulkanAllocationCallbacks() const    { return m_vkAllocationCallbacksPtr; }
+        VkAllocationCallbacks*      GetVkAllocationCallbacks() const    { return m_vkAllocationCallbacksPtr; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the supported Device Extensions for the physical device.
@@ -92,7 +92,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get info about this device. 
         //----------------------------------------------------------------------------------------------------
-        const DeviceDesc&           GetDesc() const                         { return m_deviceDesc; }
+        const DeviceDesc&           GetDesc() const                         { return m_desc; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Fill out a vulkan buffer CreateInfo object, based on the given buffer description.
+        //----------------------------------------------------------------------------------------------------
+        void                        FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& outInfo) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Fill out a vulkan image CreateInfo object, based on the given texture description.
+        //----------------------------------------------------------------------------------------------------
+        void                        FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo& outInfo) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_VK_CHECK() rather than calling this directly.
@@ -167,7 +177,7 @@ namespace nes
         AllocationCallbacks         m_allocationCallbacks{};
         DebugMessenger              m_debugMessenger{};
         QueueFamilyArray            m_queueFamilies{};      /// Contains an array of Queues for each EQueueType. 
-        DeviceDesc                  m_deviceDesc{};
+        DeviceDesc                  m_desc{};
         VkInstance                  m_vkInstance{};
         VkPhysicalDevice            m_vkPhysicalDevice{};
         VkDevice                    m_vkDevice{};
@@ -219,7 +229,7 @@ namespace nes
     {
         if (vkSetDebugUtilsObjectNameEXT != nullptr && m_vkDevice != nullptr)
         {
-            constexpr VkObjectType kType = GetVulkanObjectType<Type>();
+            constexpr VkObjectType kType = GetVkObjectType<Type>();
             
             VkDebugUtilsObjectNameInfoEXT nameInfo
             {

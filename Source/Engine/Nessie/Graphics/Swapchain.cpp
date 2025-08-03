@@ -16,7 +16,7 @@ namespace nes
         // Destroy the surface
         if (m_surface)
         {
-            vkDestroySurfaceKHR(m_device, m_surface, m_device.GetVulkanAllocationCallbacks());
+            vkDestroySurfaceKHR(m_device, m_surface, m_device.GetVkAllocationCallbacks());
             m_surface = nullptr;
         }
     }
@@ -41,7 +41,7 @@ namespace nes
             VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
             win32SurfaceInfo.hwnd = static_cast<HWND>(nativeWindow.m_windows.m_hwnd);
             
-            NES_VK_FAIL_RETURN(m_device, vkCreateWin32SurfaceKHR(m_device, &win32SurfaceInfo, m_device.GetVulkanAllocationCallbacks(), &m_surface));   
+            NES_VK_FAIL_RETURN(m_device, vkCreateWin32SurfaceKHR(m_device, &win32SurfaceInfo, m_device.GetVkAllocationCallbacks(), &m_surface));   
         }
     #else
     #error "Unsupported Swapchain platform!"
@@ -214,7 +214,7 @@ namespace nes
             .presentMode = presentMode,
             .clipped = VK_TRUE,
         };
-        NES_VK_FAIL_RETURN(m_device, vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, m_device.GetVulkanAllocationCallbacks(), &m_swapchain));
+        NES_VK_FAIL_RETURN(m_device, vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, m_device.GetVkAllocationCallbacks(), &m_swapchain));
         SetDebugName("Swapchain");
 
         // Retrieve swapchain images:
@@ -246,7 +246,7 @@ namespace nes
             m_images[i].m_image = swapImages[i];
             m_device.SetDebugNameToTrivialObject(m_images[i].m_image, fmt::format("Swapchain Image ({})", i));
             imageViewCreateInfo.image = m_images[i].m_image;
-            NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &imageViewCreateInfo, m_device.GetVulkanAllocationCallbacks(), &m_images[i].m_view));
+            NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &imageViewCreateInfo, m_device.GetVkAllocationCallbacks(), &m_images[i].m_view));
             m_device.SetDebugNameToTrivialObject(m_images[i].m_view, fmt::format("Swapchain Image View ({})", i));
         }
 
@@ -255,9 +255,9 @@ namespace nes
         for (uint32 i = 0; i < m_maxFramesInFlight; ++i)
         {
             constexpr VkSemaphoreCreateInfo semaphoreCreateInfo {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-            NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVulkanAllocationCallbacks(), &m_frameResources[i].m_imageAvailable));
+            NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_frameResources[i].m_imageAvailable));
             m_device.SetDebugNameToTrivialObject(m_frameResources[i].m_imageAvailable, fmt::format("Swapchain Image Available ({})", i));
-            NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVulkanAllocationCallbacks(), &m_frameResources[i].m_renderFinished));
+            NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_frameResources[i].m_renderFinished));
             m_device.SetDebugNameToTrivialObject(m_frameResources[i].m_renderFinished, fmt::format("Swapchain Render Finished ({})", i));
         }
 
@@ -287,17 +287,17 @@ namespace nes
 
     void Swapchain::DestroySwapchain()
     {
-        vkDestroySwapchainKHR(m_device, m_swapchain, m_device.GetVulkanAllocationCallbacks());
+        vkDestroySwapchainKHR(m_device, m_swapchain, m_device.GetVkAllocationCallbacks());
         for (auto& frame : m_frameResources)
         {
-            vkDestroySemaphore(m_device, frame.m_imageAvailable, m_device.GetVulkanAllocationCallbacks());
-            vkDestroySemaphore(m_device, frame.m_renderFinished, m_device.GetVulkanAllocationCallbacks());
+            vkDestroySemaphore(m_device, frame.m_imageAvailable, m_device.GetVkAllocationCallbacks());
+            vkDestroySemaphore(m_device, frame.m_renderFinished, m_device.GetVkAllocationCallbacks());
         }
         m_frameResources.clear();
 
         for (auto& image : m_images)
         {
-            vkDestroyImageView(m_device, image.m_view, m_device.GetVulkanAllocationCallbacks());
+            vkDestroyImageView(m_device, image.m_view, m_device.GetVkAllocationCallbacks());
         }
         m_images.clear();
     }
