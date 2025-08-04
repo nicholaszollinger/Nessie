@@ -9,8 +9,6 @@ NES_SUPPRESS_WARNINGS_BEGIN
 // 4996:  Disable strncpy warning in vulkan_structs.hpp
 NES_MSVC_SUPPRESS_WARNING(28251 4996)
 #include <vulkan/vulkan_core.h>
-// Forward declare VmaAllocation so we don't need to pull in vk_mem_alloc.h
-VK_DEFINE_HANDLE(VmaAllocation);
 
 NES_SUPPRESS_WARNINGS_END
 

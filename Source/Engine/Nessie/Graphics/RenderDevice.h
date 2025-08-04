@@ -2,10 +2,10 @@
 #pragma once
 #include "GraphicsResource.h"
 #include "RendererDesc.h"
+#include "ResourceAllocator.h"
 #include "Nessie/Application/ApplicationDesc.h"
 #include "Nessie/Core/Thread/Mutex.h"
 #include "Vulkan/VulkanConversions.h"
-#include "volk.h"
 
 static_assert(VK_HEADER_VERSION >= 304,
               "RenderDevice.h requires at least Vulkan SDK 1.4.304. "
@@ -188,6 +188,7 @@ namespace nes
         ActiveQueueIndicesArray     m_activeQueueIndices{};
         Mutex                       m_activeQueueIndicesMutex{};
         uint32                      m_numActiveFamilyIndices = 0;
+        ResourceAllocator*          m_pAllocator;
     };
 
     template <GraphicsResourceType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)

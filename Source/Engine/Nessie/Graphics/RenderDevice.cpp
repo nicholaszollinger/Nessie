@@ -1,7 +1,6 @@
 ﻿// RenderDevice.cpp
 #include "RenderDevice.h"
 #include "vulkan/vk_enum_string_helper.h"
-#include "volk.h"
 #include "Vulkan/VulkanConversions.h"
 #include "DeviceQueue.h"
 #undef SendMessage
@@ -140,6 +139,13 @@ namespace nes
         {
             return false;
         }
+
+        // Create the Resource Allocator.
+        m_pAllocator = Allocate<ResourceAllocator>(GetAllocationCallbacks(), *this);
+        if (m_pAllocator->Init() != EGraphicsResult::Success)
+        {
+            return false;
+        }
         
         return true;
     }
@@ -155,6 +161,13 @@ namespace nes
                 Free<DeviceQueue>(allocationCallbacks, pQueue);
             }
             queueFamily.clear();
+        }
+
+        // Destroy the Resource Allocator.
+        if (m_pAllocator)
+        {
+            m_pAllocator->Destroy();
+            Free<ResourceAllocator>(allocationCallbacks, m_pAllocator);
         }
         
         // Destroy the Device.

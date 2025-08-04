@@ -7,6 +7,25 @@
 #define NES_BEGIN_GRAPHICS_NAMESPACE namespace nes::graphics {
 #define NES_END_GRAPHICS_NAMESPACE }
 
+//----------------------------------------------------------------------------------------------------
+/// @brief : Same as VK_DEFINE_HANDLE.
+///     Ex: "NES_GRAPHICS_DEFINE_HANDLE(Object);" defines the following: 
+///        struct Object_T;
+///        using Object = Object_T*;
+///	@param handle : Name of the object handle you want to define.
+//----------------------------------------------------------------------------------------------------
+#define NES_GRAPHICS_DEFINE_HANDLE(handle) \
+    struct handle##_T;                     \
+    using handle = handle##_T*;
+
+//----------------------------------------------------------------------------------------------------
+// Forward declare VMA types.
+//----------------------------------------------------------------------------------------------------
+    
+NES_GRAPHICS_DEFINE_HANDLE(VmaAllocator);
+NES_GRAPHICS_DEFINE_HANDLE(VmaAllocation);
+NES_GRAPHICS_DEFINE_HANDLE(VmaPool);
+
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kGraphicsLogTag, "Graphics", Info);
@@ -30,6 +49,9 @@ namespace nes
     struct  BufferDesc;
     class   Descriptor;
     class   PipelineLayout;
+
+    
+    
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 

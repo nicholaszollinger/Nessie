@@ -1,6 +1,5 @@
 ﻿// DeviceQueue.cpp
 #include "DeviceQueue.h"
-#include "volk.h"
 #include "RenderDevice.h"
 
 namespace nes
