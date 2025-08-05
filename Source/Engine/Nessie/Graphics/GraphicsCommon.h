@@ -669,14 +669,14 @@ namespace nes
 //============================================================================================================================================================================================
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Where the memory will be allocated.
+    /// @brief : Where the memory will be located.
     //----------------------------------------------------------------------------------------------------
     enum class EMemoryLocation : uint8
     {
-        Device,
-        DeviceUpload,
-        HostUpload,
-        HostReadback,
+        Device,             // GPU-only memory.
+        DeviceUpload,       // 
+        HostUpload,         // 
+        HostReadback,       //
         MaxNum
     };
 
@@ -700,13 +700,6 @@ namespace nes
         uint32              m_alignment;
         DeviceMemoryType    m_type;
         bool                m_mustBeDedicated; // Must be put into a dedicated memory object, containing only 1 object with offset = 0
-    };
-
-    struct AllocateDeviceMemoryDesc
-    {
-        uint64              m_size = 0;
-        DeviceMemoryType    m_type = 0;
-        float               m_priority = 0.f; // [-1; 1]: low < 0, normal = 0, high > 0
     };
 
     struct AllocateBufferDesc
@@ -1925,6 +1918,31 @@ namespace nes
             uint32                  m_swapchainMaintenance1                             : 1 = 0;
             uint32                  m_fifoLatestReady                                   : 1 = 0;
         } m_features;
+
+        // Memory Properties
+        struct
+        {
+            uint64                  m_deviceUploadHeapSize          = 0; // ReBAR
+            uint32                  m_allocationMaxNum              = 0;
+            uint32                  m_samplerAllocationMaxNum       = 0;
+            uint32                  m_constantBufferMaxRange        = 0;
+            uint32                  m_storageBufferMaxRange         = 0;
+            uint32                  m_bufferTextureGranularity      = 0;
+            uint64                  m_bufferMaxSize                 = 0;
+        } m_memory;
+
+        // Memory Alignment Properties
+        struct
+        {
+            uint32                  m_uploadBufferTextureRow        = 0;
+            uint32                  m_uploadBufferTextureSlice      = 0;
+            uint32                  m_shaderBindingTable            = 0;
+            uint32                  m_bufferShaderResourceOffset    = 0;
+            uint32                  m_constantBufferOffset          = 0;
+            uint32                  m_scratchBufferOffset           = 0;
+            uint32                  m_accelerationStructureOffset   = 0;
+            uint32                  m_micromapOffset                = 0;
+        } m_memoryAlignment;
         
         
         // [TODO]: Shader Features

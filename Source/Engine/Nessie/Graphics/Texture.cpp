@@ -1,6 +1,5 @@
 ﻿// Texture.cpp
 #include "Texture.h"
-
 #include "RenderDevice.h"
 
 namespace nes
@@ -9,28 +8,18 @@ namespace nes
     {
         if (m_ownsNativeObjects)
         {
-            // [TODO]: VMA allocation:
-            // if (m_pVmaAllocation)
-            //     DestroyVma();
-            // else
-                vkDestroyImage(m_device, m_handle, m_device.GetVkAllocationCallbacks());
+            if (m_allocation)
+            {
+                auto& allocator = m_device.GetResourceAllocator();
+                allocator.FreeTexture(*this);
+            }
         }
     }
-
-    EGraphicsResult Texture::Init(const TextureDesc& textureDesc)
-    {
-        m_desc = textureDesc;
-        m_desc.Validate();
-
-        VkImageCreateInfo info{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-        m_device.FillCreateInfo(m_desc, info);
-        NES_VK_FAIL_RETURN(m_device, vkCreateImage(m_device, &info, m_device.GetVkAllocationCallbacks(), &m_handle));
-        
-        return EGraphicsResult::Success;
-    }
-
+    
     EGraphicsResult Texture::Init(const VkImage image, const TextureDesc& textureDesc)
     {
+        NES_ASSERT(m_handle == nullptr);
+        
         if (image == nullptr)
             return EGraphicsResult::InvalidArgument;
 
@@ -41,6 +30,14 @@ namespace nes
         m_handle = image;
         
         return EGraphicsResult::Success;
+    }
+
+    EGraphicsResult Texture::Init(const AllocateTextureDesc& textureDesc)
+    {
+        NES_ASSERT(m_handle == nullptr);
+        
+        auto& allocator = m_device.GetResourceAllocator();
+        return allocator.AllocateTexture(textureDesc, *this);
     }
 
     void Texture::SetDebugName(const char* name)

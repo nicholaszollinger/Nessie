@@ -44,8 +44,10 @@ namespace nes
     struct  ShaderDesc;
     class   Texture;
     struct  TextureDesc;
+    struct  AllocateTextureDesc;
     class   DeviceMemory;
     class   DeviceBuffer;
+    struct  AllocateBufferDesc;
     struct  BufferDesc;
     class   Descriptor;
     class   PipelineLayout;

@@ -73,6 +73,11 @@ namespace nes
         /// @brief : Get a Queue of a particular type.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult             GetQueue(const EQueueType type, const uint32 queueIndex, DeviceQueue*& outQueue);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the allocator responsible for creating DeviceBuffers, Textures and other graphics resources.
+        //----------------------------------------------------------------------------------------------------
+        ResourceAllocator&          GetResourceAllocator() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the allocation callbacks set for this device.
@@ -82,7 +87,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the pointer for the vulkan allocation callbacks object, to be used with vulkan calls.   
         //----------------------------------------------------------------------------------------------------
-        VkAllocationCallbacks*      GetVkAllocationCallbacks() const    { return m_vkAllocationCallbacksPtr; }
+        VkAllocationCallbacks*      GetVkAllocationCallbacks() const        { return m_vkAllocationCallbacksPtr; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the supported Device Extensions for the physical device.
@@ -93,6 +98,14 @@ namespace nes
         /// @brief : Get info about this device. 
         //----------------------------------------------------------------------------------------------------
         const DeviceDesc&           GetDesc() const                         { return m_desc; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Test if the memory type at the given index is coherent memory. It does not need 
+        ///     Flush/InvalidateMappedMemoryRanges() commands to manage the availability and visibility on
+        ///     the host.
+        /// @see : https://docs.vulkan.org/spec/latest/chapters/memory.html "VkMemoryType::propertyFlags"
+        //----------------------------------------------------------------------------------------------------
+        bool                        IsHostCoherentMemory(DeviceMemoryTypeIndex memoryTypeIndex) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Fill out a vulkan buffer CreateInfo object, based on the given buffer description.
@@ -166,6 +179,11 @@ namespace nes
         /// @brief : Adds a default of device extensions if they are available to the outDesiredExtensions array.
         //----------------------------------------------------------------------------------------------------
         void                        EnableDefaultDeviceExtensions(const std::unordered_map<std::string, uint32_t>& availableExtensionsMap, std::vector<ExtensionDesc>& outDesiredExtensions) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Fill out the device description info. 
+        //----------------------------------------------------------------------------------------------------
+        void                        FillOutDeviceDesc();
 
     private:
         static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();

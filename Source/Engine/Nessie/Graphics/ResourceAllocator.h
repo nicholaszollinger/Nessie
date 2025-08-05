@@ -29,9 +29,35 @@ namespace nes
         /// @brief : Destroys the VMA allocator object.
         //----------------------------------------------------------------------------------------------------
         void                    Destroy();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Allocate a buffer resource.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult         AllocateBuffer(const AllocateBufferDesc& bufferDesc, DeviceBuffer& outBuffer);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Free a buffer resource.
+        //----------------------------------------------------------------------------------------------------
+        void                    FreeBuffer(DeviceBuffer& buffer);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Allocate a texture resource.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult         AllocateTexture(const AllocateTextureDesc& textureDesc, Texture& outTexture);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Free a texture resource.
+        //----------------------------------------------------------------------------------------------------
+        void                    FreeTexture(Texture& texture);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the render device that owns this allocator.
+        //----------------------------------------------------------------------------------------------------
+        RenderDevice&           GetDevice() const       { return m_device; }
         
     private:
         RenderDevice&           m_device;
         VmaAllocator            m_vmaAllocator = nullptr;
+        bool                    m_deviceAddressSupported = false;
     };
 }

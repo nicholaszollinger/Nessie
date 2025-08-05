@@ -1,5 +1,8 @@
 ﻿// RenderDevice.cpp
 #include "RenderDevice.h"
+
+#include <numeric>
+
 #include "vulkan/vk_enum_string_helper.h"
 #include "Vulkan/VulkanConversions.h"
 #include "DeviceQueue.h"
@@ -239,6 +242,12 @@ namespace nes
         }
         
         return EGraphicsResult::Failure;
+    }
+
+    ResourceAllocator& RenderDevice::GetResourceAllocator() const
+    {
+        NES_ASSERT(m_pAllocator != nullptr);
+        return *m_pAllocator;
     }
 
     bool RenderDevice::CheckResult(const VkResult result, const char* resultStr, const char* file, int line) const
@@ -870,6 +879,7 @@ namespace nes
         
         vkGetPhysicalDeviceFeatures2(m_vkPhysicalDevice, &features);
 
+        // Features
         m_desc.m_features.m_descriptorIndexing = features12.descriptorIndexing;
         m_desc.m_features.m_deviceAddress = features12.bufferDeviceAddress;
         m_desc.m_features.m_swapchainMutableFormat = IsExtensionSupported(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME, m_desc.m_deviceExtensions);
@@ -899,6 +909,14 @@ namespace nes
         {
             enabledExtensions.push_back(extension.m_extensionName);
         }
+
+        // Disable Robustness features:
+        // Default
+        robustness2Features.robustBufferAccess2 = 0;
+        robustness2Features.robustImageAccess2 = 0;
+        // [TODO]: Robustness = OFF.
+        features.features.robustBufferAccess = 0;
+        features13.robustImageAccess = 0;
 
         // Device Create info:
         std::array<VkDeviceQueueCreateInfo, static_cast<size_t>(EQueueType::MaxNum)> queueCreateInfos{};
@@ -984,6 +1002,7 @@ namespace nes
                 m_desc.m_physicalDeviceDesc.m_queueCountByType[queueFamilyTypeIndex] = 0;
             }
         }
+        
 
         return EGraphicsResult::Success;
     }
@@ -1177,6 +1196,157 @@ namespace nes
         // Dependencies
         if (availableExtensionsMap.contains(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME))
             outDesiredExtensions.emplace_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
+    }
+
+    void RenderDevice::FillOutDeviceDesc()
+    {
+        // Device properties
+        VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+        void** pTail = &props.pNext;
+
+        VkPhysicalDeviceVulkan11Properties props11 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
+        VULKAN_APPEND_EXT_TO_TAIL(props11);
+
+        VkPhysicalDeviceVulkan12Properties props12 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+        VULKAN_APPEND_EXT_TO_TAIL(props12);
+        
+        const uint32 minorVersion = m_desc.m_apiVersion.Minor();
+        
+        VkPhysicalDeviceVulkan13Properties props13 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
+        if (minorVersion >= 3)
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(props13);
+        }
+
+        VkPhysicalDeviceVulkan14Properties props14 = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_PROPERTIES};
+        if (minorVersion >= 4)
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(props14);
+        }
+
+        VkPhysicalDeviceMaintenance4PropertiesKHR maintenance4Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_4_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance4Props);
+        }
+
+        VkPhysicalDeviceMaintenance5PropertiesKHR maintenance5Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance5Props);
+        }
+
+        VkPhysicalDeviceMaintenance6PropertiesKHR maintenance6Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance6Props);
+        }
+
+        VkPhysicalDeviceMaintenance7PropertiesKHR maintenance7Props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_7_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_MAINTENANCE_7_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(maintenance7Props);
+        }
+
+        VkPhysicalDeviceLineRasterizationPropertiesKHR lineRasterizationProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_LINE_RASTERIZATION_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(lineRasterizationProps);
+        }
+
+        VkPhysicalDeviceFragmentShadingRatePropertiesKHR shadingRateProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADING_RATE_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_FRAGMENT_SHADING_RATE_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(shadingRateProps);
+        }
+
+        VkPhysicalDevicePushDescriptorPropertiesKHR pushDescriptorProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(pushDescriptorProps);
+        }
+
+        VkPhysicalDeviceRayTracingPipelinePropertiesKHR rayTracingProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(rayTracingProps);
+        }
+
+        VkPhysicalDeviceAccelerationStructurePropertiesKHR accelerationStructureProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+        if (IsExtensionSupported(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(accelerationStructureProps);
+        }
+
+        VkPhysicalDeviceConservativeRasterizationPropertiesEXT conservativeRasterProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(conservativeRasterProps);
+            m_desc.m_tieredFeatures.m_conservativeRaster = 1;
+        }
+
+        VkPhysicalDeviceSampleLocationsPropertiesEXT sampleLocationsProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(sampleLocationsProps);
+            m_desc.m_tieredFeatures.m_sampleLocations = 1;
+        }
+
+        VkPhysicalDeviceMeshShaderPropertiesEXT meshShaderProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MESH_SHADER_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_MESH_SHADER_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(meshShaderProps);
+        }
+
+        VkPhysicalDeviceOpacityMicromapPropertiesEXT micromapProps = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT};
+        if (IsExtensionSupported(VK_EXT_OPACITY_MICROMAP_EXTENSION_NAME, m_desc.m_deviceExtensions))
+        {
+            VULKAN_APPEND_EXT_TO_TAIL(micromapProps);
+        }
+
+        vkGetPhysicalDeviceProperties2(m_vkPhysicalDevice, &props);
+
+        // Fill Desc:
+        const VkPhysicalDeviceLimits& limits = props.properties.limits;
+        
+        // Memory:
+        constexpr VkMemoryPropertyFlags kNeededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+        {
+            const VkMemoryType memoryType = m_memoryProperties.memoryTypes[i];
+            if ((memoryType.propertyFlags & kNeededFlags) == kNeededFlags)
+                m_desc.m_memory.m_deviceUploadHeapSize += m_memoryProperties.memoryHeaps[memoryType.heapIndex].size;
+        }
+
+        m_desc.m_memory.m_allocationMaxNum = limits.maxMemoryAllocationCount;
+        m_desc.m_memory.m_samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
+        m_desc.m_memory.m_constantBufferMaxRange = limits.maxUniformBufferRange;
+        m_desc.m_memory.m_storageBufferMaxRange = limits.maxStorageBufferRange;
+        m_desc.m_memory.m_bufferTextureGranularity = static_cast<uint32_t>(limits.bufferImageGranularity);
+        m_desc.m_memory.m_bufferMaxSize = minorVersion >= 3 ? props13.maxBufferSize : maintenance4Props.maxBufferSize;
+
+        // Memory Alignment:
+        // VUID-VkCopyBufferToImageInfo2-dstImage-07975: If "dstImage" does not have either a depth/stencil format or a multi-planar format,
+        //      "bufferOffset" must be a multiple of the texel block size
+        // VUID-VkCopyBufferToImageInfo2-dstImage-07978: If "dstImage" has a depth/stencil format,
+        //      "bufferOffset" must be a multiple of 4
+        // Least Common Multiple stride across all formats: 1, 2, 4, 8, 16 // TODO: rarely used "12" fucks up the beauty of power-of-2 numbers, such formats must be avoided!
+        constexpr uint32_t kLeastCommonMultipleStrideAcrossAllFormats = 16;
+        m_desc.m_memoryAlignment.m_uploadBufferTextureRow = static_cast<uint32_t>(limits.optimalBufferCopyRowPitchAlignment);
+        m_desc.m_memoryAlignment.m_uploadBufferTextureSlice = std::lcm(static_cast<uint32_t>(limits.optimalBufferCopyOffsetAlignment), kLeastCommonMultipleStrideAcrossAllFormats);
+        m_desc.m_memoryAlignment.m_shaderBindingTable = rayTracingProps.shaderGroupBaseAlignment;
+        m_desc.m_memoryAlignment.m_bufferShaderResourceOffset = std::lcm(static_cast<uint32_t>(limits.minTexelBufferOffsetAlignment), static_cast<uint32_t>(limits.minStorageBufferOffsetAlignment));
+        m_desc.m_memoryAlignment.m_constantBufferOffset = static_cast<uint32_t>(limits.minUniformBufferOffsetAlignment);
+        m_desc.m_memoryAlignment.m_scratchBufferOffset = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
+        m_desc.m_memoryAlignment.m_accelerationStructureOffset = 256; // see the spec
+        m_desc.m_memoryAlignment.m_micromapOffset = 256;              // see the spec
+        
+    }
+
+    bool RenderDevice::IsHostCoherentMemory(DeviceMemoryTypeIndex memoryTypeIndex) const
+    {
+        NES_ASSERT(memoryTypeIndex < m_memoryProperties.memoryTypeCount);
+        return (m_memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT) != 0;
     }
 
     void RenderDevice::FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& outInfo) const

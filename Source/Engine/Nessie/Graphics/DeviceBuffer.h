@@ -5,82 +5,62 @@
 
 namespace nes
 {
-    class DeviceMemory;
-
     //----------------------------------------------------------------------------------------------------
-    // UNDER DEVELOPMENT. NOT IMPLEMENTED YET.
+    /// @brief : A device buffer is a region of memory used to store data.
+    /// It can be used to store vertex data, index data, uniform data, and other types of data.
     //----------------------------------------------------------------------------------------------------
-    
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : A Device buffer represents an array of data on the GPU.
-    //----------------------------------------------------------------------------------------------------
-    class DeviceBuffer final : public GraphicsResource
+    class DeviceBuffer
     {
+        friend class ResourceAllocator;
+        
     public:
-        explicit            DeviceBuffer(RenderDevice& device) : GraphicsResource(device) {}
-        virtual             ~DeviceBuffer() override;
+        explicit            DeviceBuffer(RenderDevice& device) : m_device(device) {}
+        /* Destructor */    ~DeviceBuffer();
 
         /// Operator to cast to Vulkan Type.
-        inline              operator VkBuffer() const { return m_handle; }
+        inline              operator VkBuffer() const       { return m_handle; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Creates a new buffer resource based on the given description. When this is destroyed,
-        ///     so will the buffer resource.
+        /// @brief : Uses the RenderDevice's Resource Allocator to create the buffer.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const BufferDesc& desc);
-
-        // [TODO]: VMA
-        //EGraphicsResult     Init(const AllocateBufferDesc& desc);
+        EGraphicsResult     Init(const AllocateBufferDesc& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the Debug name for this DeviceBuffer. 
         //----------------------------------------------------------------------------------------------------
-        virtual void        SetDebugName(const char* name) override;
+        void                SetDebugName(const char* name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the buffer's properties.
         //----------------------------------------------------------------------------------------------------
-        const BufferDesc&   GetDesc() const             { return m_desc; }
+        const BufferDesc&   GetDesc() const                 { return m_desc; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Vulkan buffer handle.
         //----------------------------------------------------------------------------------------------------
-        VkBuffer            GetHandle() const           { return m_handle; }
+        VkBuffer            GetHandle() const               { return m_handle; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the address of the buffer in the shader.
+        //----------------------------------------------------------------------------------------------------
+        VkDeviceAddress     GetAddress() const              { return m_deviceAddress; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the size of the buffer, in bytes.
+        //----------------------------------------------------------------------------------------------------
+        uint64              GetSize() const                 { return m_desc.m_size; }
         
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Destroy the buffer resource allocated with VMA.
-        //----------------------------------------------------------------------------------------------------
-        //void                DestroyVma();
-
-        void                FinishMemoryBinding(DeviceMemory& memory, const uint64 memoryOffset);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get properties about the buffer's memory.
-        //----------------------------------------------------------------------------------------------------
-        void                GetMemoryDesc(EMemoryLocation memoryLocation, DeviceMemoryDesc& memoryDesc) const;
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Return the address of the the CPU memory at a given offset. 
-        ///	@param offset : Byte offset from the start of the buffer. Default is 0.
-        ///	@param size : Size of the mapped buffer section. Default is to use the remaining size from the offset.
-        //----------------------------------------------------------------------------------------------------
-        void*               Map(const uint64 offset = 0, const uint64 size = graphics::kUseRemaining);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Flush the current mapped memory range memory.
-        //----------------------------------------------------------------------------------------------------
-        void                Unmap();
+        // [TODO]:
+        // - Map/Unmap()
+        // - Flush/Invalidate()
 
     private:
-        VkBuffer            m_handle = nullptr;
-        VkDeviceAddress     m_deviceAddress = 0;
-        uint8*              m_pMappedMemory = nullptr;
-        VkDeviceMemory      m_nonCoherentDeviceMemory = nullptr;
-        uint64              m_mappedMemoryOffset = 0;
-        uint64              m_mappedMemoryRangeSize = 0;
-        uint64              m_mappedMemoryRangeOffset = 0;
-        BufferDesc          m_desc{};
-        // VMA Allocation*
+        RenderDevice&       m_device;                   
+        BufferDesc          m_desc{};                   // Buffer properties.
+        VkBuffer            m_handle = nullptr;         // Vulkan handle.
+        VkDeviceAddress     m_deviceAddress = 0;        // Address of the buffer in the shader.
+        uint8*              m_pMappedMemory = nullptr;  
+        VmaAllocation       m_allocation = nullptr;     // Memory associated with the buffer.
         bool                m_ownsNativeObjects = true;
     };
 }
