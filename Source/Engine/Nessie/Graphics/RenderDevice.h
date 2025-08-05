@@ -2,7 +2,6 @@
 #pragma once
 #include "GraphicsResource.h"
 #include "RendererDesc.h"
-#include "ResourceAllocator.h"
 #include "Nessie/Application/ApplicationDesc.h"
 #include "Nessie/Core/Thread/Mutex.h"
 #include "Vulkan/VulkanConversions.h"
@@ -27,9 +26,10 @@ namespace nes
         /* Destructor */            ~RenderDevice();
 
         /// Operators for converting to Vulkan Types.
-        operator                    VkInstance() const { return m_vkInstance; }
-        operator                    VkPhysicalDevice() const { return m_vkPhysicalDevice; }
-        operator                    VkDevice() const { return m_vkDevice; }
+        operator                    VkInstance() const          { return m_vkInstance; }
+        operator                    VkPhysicalDevice() const    { return m_vkPhysicalDevice; }
+        operator                    VkDevice() const            { return m_vkDevice; }
+        operator                    VmaAllocator() const        { return m_vmaAllocator; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Device. 
@@ -45,6 +45,11 @@ namespace nes
         /// @brief : Wait until all Device Queues are finished.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult             WaitUntilIdle();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get info about this device. 
+        //----------------------------------------------------------------------------------------------------
+        const DeviceDesc&           GetDesc() const                         { return m_desc; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create a new graphics class with the given InitArgs. The resulting pointer will be
@@ -73,11 +78,6 @@ namespace nes
         /// @brief : Get a Queue of a particular type.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult             GetQueue(const EQueueType type, const uint32 queueIndex, DeviceQueue*& outQueue);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the allocator responsible for creating DeviceBuffers, Textures and other graphics resources.
-        //----------------------------------------------------------------------------------------------------
-        ResourceAllocator&          GetResourceAllocator() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the allocation callbacks set for this device.
@@ -85,7 +85,7 @@ namespace nes
         const AllocationCallbacks&  GetAllocationCallbacks() const          { return m_allocationCallbacks; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the pointer for the vulkan allocation callbacks object, to be used with vulkan calls.   
+        /// @brief : Get the pointer for the vulkan allocation callbacks object, to be used with vulkan API calls.   
         //----------------------------------------------------------------------------------------------------
         VkAllocationCallbacks*      GetVkAllocationCallbacks() const        { return m_vkAllocationCallbacksPtr; }
         
@@ -93,11 +93,6 @@ namespace nes
         /// @brief : Get the supported Device Extensions for the physical device.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult             GetSupportedDeviceExtensions(std::vector<VkExtensionProperties>& outSupportedExtensions) const;
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get info about this device. 
-        //----------------------------------------------------------------------------------------------------
-        const DeviceDesc&           GetDesc() const                         { return m_desc; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Test if the memory type at the given index is coherent memory. It does not need 
@@ -170,6 +165,11 @@ namespace nes
         EGraphicsResult             CreateLogicalDevice(const RendererDesc& rendererDesc);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Create the VMA allocator.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             CreateAllocator(const RendererDesc& rendererDesc);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Filters out unavailable extensions from the desired extensions based on the supported extensions.
         ///     If any unavailable extension was required, this will return false.
         //----------------------------------------------------------------------------------------------------
@@ -206,7 +206,7 @@ namespace nes
         ActiveQueueIndicesArray     m_activeQueueIndices{};
         Mutex                       m_activeQueueIndicesMutex{};
         uint32                      m_numActiveFamilyIndices = 0;
-        ResourceAllocator*          m_pAllocator;
+        VmaAllocator                m_vmaAllocator;
     };
 
     template <GraphicsResourceType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)

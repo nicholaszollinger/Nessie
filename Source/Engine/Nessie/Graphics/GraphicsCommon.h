@@ -669,14 +669,34 @@ namespace nes
 //============================================================================================================================================================================================
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Where the memory will be located.
+    /// @brief : Where the memory will be allocated. See the individual values for details.
     //----------------------------------------------------------------------------------------------------
     enum class EMemoryLocation : uint8
     {
-        Device,             // GPU-only memory.
-        DeviceUpload,       // 
-        HostUpload,         // 
-        HostReadback,       //
+        // Video Memory. Fast access from the GPU.
+        // - No direct access for the CPU; mapping is not possible.
+        // - Good for any resources that you frequently write and read on GPU, e.g. textures used as color attachments
+        //   (aka "render targets"), depth-stencil attachments, images/buffers used as storage image/buffer
+        //   (aka "Unordered Access View (UAV)"). 
+        Device,
+        
+        // Special pool of Video Memory. Exposed on AMD only. 256MiB. Soft fall back to HostUpload.
+        // - CPU accessible, mapping possible. The memory is uncached, do not read.
+        // - The memory is directly accessed by both the CPU and GPU - you don't need to do an explicit transfer.
+        // - Good for resources updated frequently by the CPU (dynamic) and read by the GPU.
+        DeviceUpload,
+
+        // System Memory. Accessible to the CPU - mapping possible. Uncached.
+        // - Good for CPU-side (staging) copy of your resources - used as a source of transfer.
+        // - Data written by the CPU, read once by the GPU (constant/uniform buffers)).
+        HostUpload,
+        
+        // System Memory. CPU reads and writes cached.
+        // - Good for resources written by the GPU, read by the CPU - results of computations.
+        // - The memory is directly accessed by both the CPU and GPU - you don't need to do an explicit transfer.
+        // - Use for any resources read or randomly accessed on the CPU.
+        HostReadback,
+        
         MaxNum
     };
 
@@ -721,14 +741,14 @@ namespace nes
     struct BufferMemoryBindingDesc
     {
         DeviceBuffer*       m_pBuffer = nullptr;
-        DeviceMemory*       m_pMemory = nullptr;
+        VmaAllocation       m_pMemory = nullptr;
         uint64              m_offset = 0;
     };
 
     struct TextureMemoryBindingDesc
     {
         Texture*            m_pTexture = nullptr;
-        DeviceMemory*       m_pMemory = nullptr;
+        VmaAllocation       m_pMemory = nullptr;
         uint64              m_offset = 0;
     };
 

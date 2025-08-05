@@ -3,6 +3,7 @@
 
 #include <numeric>
 
+#include "Vulkan/VmaUsage.h"
 #include "vulkan/vk_enum_string_helper.h"
 #include "Vulkan/VulkanConversions.h"
 #include "DeviceQueue.h"
@@ -143,9 +144,8 @@ namespace nes
             return false;
         }
 
-        // Create the Resource Allocator.
-        m_pAllocator = Allocate<ResourceAllocator>(GetAllocationCallbacks(), *this);
-        if (m_pAllocator->Init() != EGraphicsResult::Success)
+        // Create the VMA Allocator.
+        if (CreateAllocator(rendererDesc) != EGraphicsResult::Success)
         {
             return false;
         }
@@ -166,11 +166,11 @@ namespace nes
             queueFamily.clear();
         }
 
-        // Destroy the Resource Allocator.
-        if (m_pAllocator)
+        // Destroy the VMA Allocator.
+        if (m_vmaAllocator)
         {
-            m_pAllocator->Destroy();
-            Free<ResourceAllocator>(allocationCallbacks, m_pAllocator);
+            vmaDestroyAllocator(m_vmaAllocator);
+            m_vmaAllocator = nullptr;
         }
         
         // Destroy the Device.
@@ -242,12 +242,6 @@ namespace nes
         }
         
         return EGraphicsResult::Failure;
-    }
-
-    ResourceAllocator& RenderDevice::GetResourceAllocator() const
-    {
-        NES_ASSERT(m_pAllocator != nullptr);
-        return *m_pAllocator;
     }
 
     bool RenderDevice::CheckResult(const VkResult result, const char* resultStr, const char* file, int line) const
@@ -1003,6 +997,46 @@ namespace nes
             }
         }
         
+
+        return EGraphicsResult::Success;
+    }
+
+    EGraphicsResult RenderDevice::CreateAllocator(const RendererDesc& /*rendererDesc*/)
+    {
+        VmaAllocatorCreateInfo allocatorInfo = {};
+        allocatorInfo.instance = m_vkInstance;
+        allocatorInfo.physicalDevice = m_vkPhysicalDevice;
+        allocatorInfo.device = m_vkDevice;
+        allocatorInfo.vulkanApiVersion = m_desc.m_apiVersion;
+        allocatorInfo.pAllocationCallbacks = m_vkAllocationCallbacksPtr;
+
+        VmaAllocatorCreateFlags flags = {};
+        if (m_desc.m_features.m_deviceAddress)
+            flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
+        if (m_desc.m_features.m_memoryBudget)
+            flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+        if (m_desc.m_features.m_memoryPriority)
+            flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT;
+        if (m_desc.m_features.m_maintenance4)
+            flags |= VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT;
+        if (m_desc.m_features.m_maintenance5)
+            flags |= VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT;
+
+        // Import functions from Volk.
+        VmaVulkanFunctions vulkanFunctions;
+        NES_VK_FAIL_RETURN(*this, vmaImportVulkanFunctionsFromVolk(&allocatorInfo, &vulkanFunctions));
+        allocatorInfo.pVulkanFunctions = &vulkanFunctions;
+
+        // [Consider]:
+        //allocatorInfo.pDeviceMemoryCallbacks? Do I need this?
+        // -> "Informative callbacks for vkAllocateMemory, vkFreeMemory. Optional." 
+        //allocatorInfo.pHeapSizeLimit
+        // -> "Either null or a pointer to an array of limits on the maximum number of bytes that can be allocated out of a particular Vulkan memory heap."
+        //allocatorInfo.preferredLargeHeapBlockSize?
+        // -> "Preferred size of a single VkDeviceMemory block to be allocated from large heaps > 1 GiB. Optional."
+
+        allocatorInfo.flags = flags;
+        NES_VK_FAIL_RETURN(*this, vmaCreateAllocator(&allocatorInfo, &m_vmaAllocator));
 
         return EGraphicsResult::Success;
     }

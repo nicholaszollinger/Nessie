@@ -11,8 +11,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class DeviceBuffer
     {
-        friend class ResourceAllocator;
-        
     public:
         explicit            DeviceBuffer(RenderDevice& device) : m_device(device) {}
         /* Destructor */    ~DeviceBuffer();
@@ -21,7 +19,7 @@ namespace nes
         inline              operator VkBuffer() const       { return m_handle; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Uses the RenderDevice's Resource Allocator to create the buffer.
+        /// @brief : Allocates a new buffer resource, and maps the memory if it is host visible.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult     Init(const AllocateBufferDesc& desc);
 
@@ -49,6 +47,26 @@ namespace nes
         /// @brief : Get the size of the buffer, in bytes.
         //----------------------------------------------------------------------------------------------------
         uint64              GetSize() const                 { return m_desc.m_size; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Copy a block of data to the allocated buffer memory. Only valid for mappable memory.
+        ///     This performs the Map(), memcpy(), UnMap() and Flush() functions all in one operation.
+        /// @param data : Address of the data.
+        /// @param offset : Offset in the buffer to begin copying into. By default, this is 0.
+        /// @param size : Size of the data, in bytes. By default, it is a special value to denote the remaining size
+        ///     from the offset.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult     CopyToBuffer(const void* data, const size_t offset = 0, const size_t size = graphics::kUseRemaining);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Copy data from the buffer into pOutData.
+        ///     This performs the Invalidate(), Map(), memcpy(), UnMap() functions automatically.
+        ///	@param pOutData : Pointer that we are going to copy the data into.
+        ///	@param srcOffset : Byte offset from the buffer to read from. By default, this is 0.
+        ///	@param size : Number of bytes to copy. By default, it is a special value to denote the remaining size
+        ///     from the source offset.
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult     CopyFromBuffer(void* pOutData, const size_t srcOffset = 0, const size_t size = graphics::kUseRemaining);
         
         // [TODO]:
         // - Map/Unmap()

@@ -51,9 +51,6 @@ namespace nes
     struct  BufferDesc;
     class   Descriptor;
     class   PipelineLayout;
-
-    
-    
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 

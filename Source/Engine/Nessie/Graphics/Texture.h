@@ -10,8 +10,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class Texture
     {
-        friend class ResourceAllocator;
-        
     public:
         explicit            Texture(RenderDevice& device) : m_device(device) {}
         /* Destructor */    ~Texture();
@@ -26,7 +24,7 @@ namespace nes
         EGraphicsResult     Init(const VkImage image, const TextureDesc& textureDesc);
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Uses the RenderDevice's Resource Allocator to create the new texture.
+        /// @brief : Allocates a new texture resource.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult     Init(const AllocateTextureDesc& textureDesc);
 
