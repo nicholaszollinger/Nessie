@@ -8,6 +8,7 @@
 #include "Nessie/Input/InputManager.h"
 #include "Nessie/Graphics/Renderer.h"
 #include "Nessie/Application/ApplicationDesc.h"
+#include "Nessie/Asset/AssetManager.h"
 #include "Nessie/Core/ScopeExit.h"
 #include "Nessie/Core/Time/ScopedTimer.h"
 
@@ -48,26 +49,30 @@ namespace nes
 
     Application& Platform::GetApplication()
     {
-        NES_ASSERT(g_pInstance != nullptr);
-        NES_ASSERT(g_pInstance->m_pApp != nullptr);
-    
-        return *g_pInstance->m_pApp;
+        const auto& instance = GetInstance();
+        NES_ASSERT(instance.m_pApp != nullptr);
+        return *instance.m_pApp;
     }
 
     ApplicationWindow& Platform::GetWindow()
     {
-        NES_ASSERT(g_pInstance != nullptr);
-        NES_ASSERT(g_pInstance->m_pWindow != nullptr);
-    
-        return *g_pInstance->m_pWindow;
+        const auto& instance = GetInstance();
+        NES_ASSERT(instance.m_pWindow != nullptr);
+        return *instance.m_pWindow;
     }
 
     DeviceManager& Platform::GetDeviceManager()
     {
-        NES_ASSERT(g_pInstance != nullptr);
-        NES_ASSERT(g_pInstance->m_pDeviceManager != nullptr);
+        const auto& instance = GetInstance();
+        NES_ASSERT(instance.m_pDeviceManager != nullptr);
+        return *instance.m_pDeviceManager;
+    }
 
-        return *g_pInstance->m_pDeviceManager;
+    AssetManager& Platform::GetAssetManager()
+    {
+        const auto& instance = GetInstance();
+        NES_ASSERT(instance.m_pAssetManager != nullptr);
+        return *instance.m_pAssetManager;
     }
 
     const AppPerformanceInfo& Platform::GetAppPerformanceInfo()
@@ -93,6 +98,14 @@ namespace nes
         if (!m_pDeviceManager->Init())
         {
             NES_ERROR("Failed to initialize the device-manager!");
+            return false;
+        }
+
+        // Create the Asset Manager
+        m_pAssetManager = std::make_unique<AssetManager>();
+        if (!m_pAssetManager->Init())
+        {
+            NES_ERROR("Failed to initialize the AssetManager!");
             return false;
         }
 
@@ -218,14 +231,14 @@ namespace nes
         // Sync with the Renderer.
         if (m_pRenderer)
             m_pRenderer->WaitForFrameCompletion();
-
+        
         // Shutdown the app.
         if (m_pApp != nullptr)
         {
             m_pApp->Internal_AppShutdown();
             m_pApp.reset();
         }
-
+        
         // Shutdown the renderer.
         if (m_pRenderer != nullptr)
         {
@@ -247,12 +260,23 @@ namespace nes
             m_pWindow.reset();
         }
 
-        // Close the Device Manager.
+        // Shutdown the AssetManager
+        // - Must be done before the Render Device is destroyed to ensure that
+        //   any graphics remaining graphics resources can be destroyed properly.
+        if (m_pAssetManager != nullptr)
+        {
+            m_pAssetManager->Shutdown();
+            m_pAssetManager.reset();
+        }
+        
+        // Shutdown the Device Manager.
         if (m_pDeviceManager != nullptr)
         {
             m_pDeviceManager->Shutdown();
             m_pDeviceManager.reset();
         }
+        
+        NES_LOG("Platform Shutdown Success.");
     }
 
     void Platform::OnInputEvent(Event& event) const
@@ -297,7 +321,11 @@ namespace nes
         m_performanceInfo.m_renderThreadWaitTime = m_pRenderer->GetRenderThreadWaitTime();
         m_performanceInfo.m_renderThreadWorkTime = m_pRenderer->GetRenderThreadWorkTime();
 
-        // [TODO]: Sync with Asset Thread.
+        // Sync with the asset thread.
+        if (m_pAssetManager != nullptr)
+        {
+            m_pAssetManager->SyncFrame();
+        }
     }
 
     void Platform::RunHeadlessLoop()
@@ -333,5 +361,11 @@ namespace nes
         m_performanceInfo.m_timeSinceStartup += deltaTimeMs / 1000.f;
         m_performanceInfo.m_lastFrameTime = deltaTimeMs;
         m_performanceInfo.m_fps = 1.f / static_cast<float>(deltaTimeMs) / 1000.f;
+    }
+
+    Platform& Platform::GetInstance()
+    {
+        NES_ASSERT(g_pInstance != nullptr);
+        return *g_pInstance;
     }
 }

@@ -83,21 +83,21 @@ namespace nes
 
     struct DepthStencil
     {
-        float           m_depth;
-        uint8           m_stencil;
+        float           m_depth = 0.f;
+        uint8           m_stencil = 0;
     };
 
     union ClearColor
     {
-        Vec4            m_float32;
+        Vec4            m_float32{};
         UVec4           m_uint32;
         IVec4           m_int32;
     };
 
     union ClearValue
     {
+        ClearColor      m_color;
         DepthStencil    m_depthStencil;
-        LinearColor     m_color;
     };
 
     struct SampleLocation
@@ -869,7 +869,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct Texture1DViewDesc
     {
-        const Texture*      m_pTexture;
+        const DeviceImage*  m_pTexture;
         ETexture1DViewType  m_viewType;
         EFormat             m_format;
         uint32              m_mipOffset;
@@ -883,7 +883,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct Texture2DViewDesc
     {
-        const Texture*      m_pTexture;
+        const DeviceImage*  m_pTexture;
         ETexture2DViewType  m_viewType;
         EFormat             m_format;
         uint32              m_mipOffset;
@@ -897,7 +897,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct Texture3DViewDesc
     {
-        const Texture*      m_pTexture;
+        const DeviceImage*  m_pTexture;
         ETexture3DViewType  m_viewType;
         EFormat             m_format;
         uint32              m_mipOffset;

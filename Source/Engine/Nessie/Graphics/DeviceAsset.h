@@ -8,14 +8,13 @@ namespace nes
     class RenderDevice;
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Add Ref Counting? Get rid of this all together in favor of a concept?
-    /// @brief : Base class for all graphics resources that will be created with a RenderDevice. 
+    /// @brief : Base class for all graphics assets that will be created with a RenderDevice. 
     //----------------------------------------------------------------------------------------------------
-    class GraphicsResource
+    class DeviceAsset
     {
     public:
-        explicit        GraphicsResource(RenderDevice& device) : m_device(device) {}
-        virtual         ~GraphicsResource() = default;
+        explicit        DeviceAsset(RenderDevice& device) : m_device(device) {}
+        virtual         ~DeviceAsset() = default;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Render Device that created this resource. 
@@ -36,7 +35,7 @@ namespace nes
     ///     a public GetDevice() function that returns the RenderDevice&.
     //----------------------------------------------------------------------------------------------------
     template <typename Type>
-    concept GraphicsResourceType = requires(RenderDevice& device, Type type)
+    concept DeviceAssetType = requires(RenderDevice& device, Type type)
     {
         Type(device);
         { type.GetDevice() } -> std::same_as<RenderDevice&>;

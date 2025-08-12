@@ -101,12 +101,12 @@ namespace nes
         LogMessage(message, isEnabled, false);        
     }
 
-    inline void Logger::Log(const internal::LogSource& source, ELogLevel level, std::string_view msg)
+    inline void Logger::Log(const internal::LogSource& source, const ELogLevel level, const std::string_view msg)
     {
         Log(source, level, LogTag("", level), msg);
     }
 
-    inline void Logger::Log(const internal::LogSource& source, ELogLevel level, const LogTag& tag, std::string_view msg)
+    inline void Logger::Log(const internal::LogSource& source, const ELogLevel level, const LogTag& tag, const std::string_view msg)
     {
         // If the message's level is lower than the message's level, then exit. 
         if (level < tag.m_level)

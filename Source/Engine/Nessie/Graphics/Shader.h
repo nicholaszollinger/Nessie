@@ -1,14 +1,14 @@
 ﻿// Shader.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 
 namespace nes
 {
-    class Shader final : public GraphicsResource
+    class Shader final : public DeviceAsset
     {
     public:
-        explicit            Shader(RenderDevice& device) : GraphicsResource(device) {}
+        explicit            Shader(RenderDevice& device) : DeviceAsset(device) {}
         virtual             ~Shader() override;
 
         /// Operator to cast to the Vulkan Type.

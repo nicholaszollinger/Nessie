@@ -1,5 +1,5 @@
 {
     "ProjectName": "NessieTest",
-    "StartupProject": "PhysicsTests",
+    "StartupProject": "SimpleTriangle",
     "RenderAPI": "Vulkan"
 }

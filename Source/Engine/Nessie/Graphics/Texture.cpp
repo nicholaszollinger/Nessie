@@ -1,67 +1,94 @@
 ﻿// Texture.cpp
 #include "Texture.h"
+
+#include <stb_image.h>
 #include "RenderDevice.h"
-#include "Vulkan/VmaUsage.h"
+#include "Nessie/Application/Application.h"
+#include "Nessie/Application/Device/DeviceManager.h"
 
 namespace nes
 {
     Texture::~Texture()
     {
-        if (m_ownsNativeObjects)
+        NES_ASSERT(Platform::IsMainThread());
+        
+        if (m_pImage)
         {
-            if (m_allocation)
-            {
-                vmaDestroyImage(m_device, m_handle, m_allocation);
-                m_handle = nullptr;
-                m_allocation = nullptr;
-            }
+            // [TODO]: Queue the Device Asset to be freed on the Renderer:
+            auto& device = DeviceManager::GetRenderDevice();
+            device.FreeResource(m_pImage);
         }
-    }
-    
-    EGraphicsResult Texture::Init(const VkImage image, const TextureDesc& textureDesc)
-    {
-        NES_ASSERT(m_handle == nullptr);
         
-        if (image == nullptr)
-            return EGraphicsResult::InvalidArgument;
-
-        // We do not own the image.
-        m_ownsNativeObjects = false;
-        m_desc = textureDesc;
-        m_desc.Validate();
-        m_handle = image;
-        
-        return EGraphicsResult::Success;
+        m_imageData.Free();
     }
 
-    EGraphicsResult Texture::Init(const AllocateTextureDesc& textureDesc)
+    void Texture::SetDeviceDebugName(const char* name)
     {
-        NES_ASSERT(m_handle == nullptr);
-        
-        // Fill out the ImageCreateInfo object. 
-        VkImageCreateInfo imageInfo = { VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-        m_device.FillCreateInfo(textureDesc.m_desc, imageInfo);
-
-        // Allocation Info:
-        VmaAllocationCreateInfo allocCreateInfo = {};
-        allocCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
-        allocCreateInfo.priority = textureDesc.m_priority * 0.5f + 0.5f;
-        allocCreateInfo.usage = IsHostMemory(textureDesc.m_memoryLocation) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
-
-        // Dedicated flag:
-        if (textureDesc.m_isDedicated)
-            allocCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
-
-        NES_VK_FAIL_RETURN(m_device, vmaCreateImage(m_device, &imageInfo, &allocCreateInfo, &m_handle, &m_allocation, nullptr));
-
-        m_desc = textureDesc.m_desc;
-        m_desc.Validate();
-
-        return EGraphicsResult::Success;
+        if (m_pImage)
+            m_pImage->SetDebugName(name);
     }
 
-    void Texture::SetDebugName(const char* name)
+    const TextureDesc& Texture::GetDesc() const
     {
-        m_device.SetDebugNameToTrivialObject(m_handle, name);
+        NES_ASSERT(m_pImage);
+        return m_pImage->GetDesc();
+    }
+
+    UInt3 Texture::GetExtent() const
+    {
+        NES_ASSERT(m_pImage);
+        const auto extent = m_pImage->GetExtent();
+        return UInt3(extent.width, extent.height, extent.depth);
+    }
+
+    ELoadResult Texture::LoadFromFile(const std::filesystem::path& path)
+    {
+        // Load the image data:
+        int width, height, channels;
+        void* pData = stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha);
+        if (pData == nullptr)
+        {
+            NES_ERROR("Failed to load texture! Failed to load from file!\n\tPath: {} \n\tError: {}", path.string(), stbi_failure_reason());
+            return ELoadResult::Failure;
+        }
+        m_imageData = Buffer(pData, width * height * STBI_rgb_alpha);
+
+        // Texture Description
+        TextureDesc textureDesc{};
+        textureDesc.m_width = math::Max(static_cast<uint32>(width), 1U);
+        textureDesc.m_height = math::Max(static_cast<uint32>(height), 1U);
+        textureDesc.m_depth = 1;
+        textureDesc.m_format = EFormat::RGBA8_UNORM;
+        textureDesc.m_layerCount = 1;
+        textureDesc.m_mipCount = 1;    // [TODO]: Mip Levels
+        textureDesc.m_sampleCount = 1;
+        textureDesc.m_type = ETextureType::Texture2D;
+        textureDesc.m_usage = ETextureUsageBits::ShaderResource;
+        textureDesc.m_clearValue = ClearValue{};
+
+        // Allocation description. 
+        const AllocateTextureDesc allocDesc
+        {
+            .m_desc = textureDesc,
+            .m_memoryLocation = EMemoryLocation::Device,
+            .m_isDedicated = true,
+        };
+
+        // Create the Device Texture:
+        auto& device = DeviceManager::GetRenderDevice();
+        const EGraphicsResult result = device.CreateResource(m_pImage, allocDesc);
+        if (result != EGraphicsResult::Success)
+        {
+            NES_ERROR("Failed to load texture! Failed to create Device Asset! \n\tPath: {} \n\tError: {}", path.string(), GraphicsResultToString(result));
+            
+            // Free the image data:
+            m_imageData.Free();
+            
+            return ELoadResult::Failure;
+        }
+
+        // [TODO]: Upload image data:
+        
+        return ELoadResult::Success;
     }
 }

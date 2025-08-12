@@ -3,6 +3,7 @@
 #include "Nessie/Core/Config.h"
 #include "Nessie/Debug/Assert.h"
 #include "Nessie/Math/Math.h"
+#include <array>
 
 #define NES_BEGIN_GRAPHICS_NAMESPACE namespace nes::graphics {
 #define NES_END_GRAPHICS_NAMESPACE }
@@ -42,6 +43,7 @@ namespace nes
     class   ShaderLibrary;
     class   Shader;
     struct  ShaderDesc;
+    class   DeviceImage;
     class   Texture;
     struct  TextureDesc;
     struct  AllocateTextureDesc;
@@ -70,6 +72,27 @@ namespace nes
         OutOfMemory             = 3,
         Unsupported             = 4,    /// Operation or type is unsupported by the Render Device.
     };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Convert a Graphics Result to a string.
+    //----------------------------------------------------------------------------------------------------
+    constexpr const char* GraphicsResultToString(const EGraphicsResult result)
+    {
+        constexpr std::array<const char*, 8> kStringValues = 
+        {
+            "Initialization Failed",
+            "Device Lost",
+            "Swapchain Out-Of-Date",
+            "Success",
+            "Failure",
+            "Invalid Argument",
+            "Out Of Memory",
+            "Unsupported",
+        };
+        
+        const size_t index = static_cast<int8>(result) + (static_cast<int8>(EGraphicsResult::Success) - static_cast<int8>(EGraphicsResult::InitializationFailed));
+        return kStringValues[index];
+    }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Report an error message using the RenderDevice's debug messenger callback.

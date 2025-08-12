@@ -1,7 +1,7 @@
 ﻿// CommandBuffer.h
 #pragma once
 #include "Barriers.h"
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 
 namespace nes
 {
@@ -10,10 +10,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Command Buffer is used to record commands that are then submitted to a DeviceQueue.
     //----------------------------------------------------------------------------------------------------
-    class CommandBuffer final : public GraphicsResource
+    class CommandBuffer final : public DeviceAsset
     {
     public:
-        explicit        CommandBuffer(RenderDevice& device) : GraphicsResource(device) {}
+        explicit        CommandBuffer(RenderDevice& device) : DeviceAsset(device) {}
         virtual         ~CommandBuffer() override;
         
         /// Operator to cast to the Vulkan Type.

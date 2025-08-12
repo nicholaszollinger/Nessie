@@ -1,7 +1,7 @@
 ﻿// Descriptor.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 
 namespace nes
 {
@@ -9,32 +9,32 @@ namespace nes
 
     struct DescriptorBufferDesc
     {
-        VkBuffer        m_handle;
-        uint64          m_offset;
-        uint64          m_size;
-        EBufferViewType m_viewType;
+        VkBuffer            m_handle;
+        uint64              m_offset;
+        uint64              m_size;
+        EBufferViewType     m_viewType;
     };
         
     struct DescriptorTextureDesc
     {
-        const Texture*  m_pTexture = nullptr;
-        VkImageLayout   m_imageLayout;
-        VkImageAspectFlags m_aspectFlags;
-        uint32          m_layerOffset = 0;
-        uint32          m_layerCount;
-        uint32          m_sliceOffset = 0;
-        uint32          m_sliceCount;
-        uint32          m_mipOffset = 0;
-        uint32          m_mipCount;
+        const DeviceImage*  m_pImage = nullptr;
+        VkImageLayout       m_imageLayout;
+        VkImageAspectFlags  m_aspectFlags;
+        uint32              m_layerOffset = 0;
+        uint32              m_layerCount;
+        uint32              m_sliceOffset = 0;
+        uint32              m_sliceCount;
+        uint32              m_mipOffset = 0;
+        uint32              m_mipCount;
     };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Descriptor represents access to a resource (texture, buffer, sampler, etc.).
     //----------------------------------------------------------------------------------------------------
-    class Descriptor final : public GraphicsResource
+    class Descriptor final : public DeviceAsset
     {
     public:
-        explicit            Descriptor(RenderDevice& device) : GraphicsResource(device) {}
+        explicit            Descriptor(RenderDevice& device) : DeviceAsset(device) {}
         virtual             ~Descriptor() override;
 
         //----------------------------------------------------------------------------------------------------

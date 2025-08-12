@@ -10,6 +10,7 @@
 
 namespace nes
 {
+    class AssetManager;
     class InputManager;
     class Renderer;
     class DeviceManager;
@@ -35,6 +36,7 @@ namespace nes
         static ApplicationWindow&           GetWindow();
         static Application&                 GetApplication();
         static DeviceManager&               GetDeviceManager();
+        static AssetManager&                GetAssetManager();
         static const AppPerformanceInfo&    GetAppPerformanceInfo();
         static std::thread::id              GetMainThreadID();
         static bool                         IsMainThread();
@@ -82,12 +84,18 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                                UpdateFrameTime();
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Platform instance. Asserts that it is valid.
+        //----------------------------------------------------------------------------------------------------
+        static Platform&                    GetInstance();
+
     private:
         std::unique_ptr<DeviceManager>      m_pDeviceManager;
         std::unique_ptr<ApplicationWindow>  m_pWindow;
         std::unique_ptr<Application>        m_pApp;
         std::unique_ptr<InputManager>       m_pInputManager;
         std::unique_ptr<Renderer>           m_pRenderer;
+        std::unique_ptr<AssetManager>       m_pAssetManager;
         Timer                               m_timer{};
         AppPerformanceInfo                  m_performanceInfo{};
         float                               m_timeStep;

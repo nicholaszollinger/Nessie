@@ -1,6 +1,6 @@
 ﻿// Swapchain.h
 #pragma once
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 
 //-------------------------------------------------------------------------------------------------
 // Under development. I am in the process of abstracting the Vulkan API.
@@ -35,10 +35,10 @@ namespace nes
     ///     The "next image index" points to the swapchain image that will be rendered next, which might differ from the current frame's index.
     ///     If the window is resized or certain conditions are met, the swapchain needs to be recreated (`m_needsRebuild` flag).
     //----------------------------------------------------------------------------------------------------
-    class Swapchain final : public GraphicsResource 
+    class Swapchain final : public DeviceAsset 
     {
     public:
-        explicit                    Swapchain(RenderDevice& device) : GraphicsResource(device) {}
+        explicit                    Swapchain(RenderDevice& device) : DeviceAsset(device) {}
         virtual                     ~Swapchain() override;
         /* Copy Ctor */             Swapchain(const Swapchain&) = delete;
         /* Move Ctor */             Swapchain(Swapchain&&) noexcept = delete;

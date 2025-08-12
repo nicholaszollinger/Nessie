@@ -20,7 +20,7 @@ namespace nes
     ///     A "JobBarrier" is used to track the completion of a set of jobs. Jobs can be created by other jobs
     ///     and be added to the barrier while it is being waited on.
     ///
-    ///     The JobSystem is an abstract class, you will have to implement a version that best suits you situation.
+    ///     The JobSystem is an abstract class, you will have to implement a version that best suits your situation.
     ///     
     ///     Example Usage:
     ///     <code>     
@@ -131,7 +131,7 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             /// @brief : Add a job to this Barrier. 
             /// @note : Jobs can keep being added to the barrier while waiting for the Barrier to finish - Jobs can
-            ///     create other Jobs and all will be waited on.
+            ///     create other Jobs - and all will be waited on.
             //----------------------------------------------------------------------------------------------------
             virtual void        AddJob(const JobHandle& handle) = 0;
 
@@ -242,7 +242,7 @@ namespace nes
         inline virtual int          GetMaxConcurrency() = 0;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Creates a new Job. The Job will be started immediately (when beginning execution the with a JobBarrier)
+        /// @brief : Creates a new Job. The Job will be started immediately (when beginning execution with a JobBarrier)
         ///     if the number of dependencies == 0. Otherwise, it will start when RemoveDependency() causes the
         ///     Job's dependency counter to reach 0.
         ///	@param pName : Name of the Job.

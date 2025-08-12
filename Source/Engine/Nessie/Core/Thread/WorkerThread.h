@@ -195,6 +195,9 @@ namespace nes
     template <EnumType InstructionType>
     void WorkerThread<InstructionType>::WaitUntilDone()
     {
+        if (m_isTerminated)
+            return;
+        
         m_idleEvent.WaitForIdle();
     }
     
@@ -234,6 +237,9 @@ namespace nes
                 lock.lock();
             }
         }
+
+        // Release any waiting threads when terminated.
+        m_idleEvent.SignalIdle();
     }
 
     template <EnumType InstructionType>

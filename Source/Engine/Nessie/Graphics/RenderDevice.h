@@ -1,6 +1,6 @@
 ﻿// DeviceBase.h
 #pragma once
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 #include "RendererDesc.h"
 #include "Nessie/Application/ApplicationDesc.h"
 #include "Nessie/Core/Thread/Mutex.h"
@@ -61,7 +61,7 @@ namespace nes
         ///	@returns : Result of the Graphics class's Init() function. If not EGraphicsResult::Success, the
         ///     object will be destroyed.
         //----------------------------------------------------------------------------------------------------
-        template <GraphicsResourceType Type, typename...InitArgs> requires requires(Type type, InitArgs&&... args)
+        template <DeviceAssetType Type, typename...InitArgs> requires requires(Type type, InitArgs&&... args)
         {
             // Requires an Init function that takes in the give InitArgs, and returns an EGraphicsResult.
             { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;
@@ -71,7 +71,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Free a graphics resource type.
         //----------------------------------------------------------------------------------------------------
-        template <GraphicsResourceType Type>
+        template <DeviceAssetType Type>
         void                        FreeResource(Type*& pObject);
 
         //----------------------------------------------------------------------------------------------------
@@ -209,7 +209,7 @@ namespace nes
         VmaAllocator                m_vmaAllocator;
     };
 
-    template <GraphicsResourceType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)
+    template <DeviceAssetType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)
     {
         { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;
     }
@@ -233,7 +233,7 @@ namespace nes
         return result;
     }
 
-    template <GraphicsResourceType Type>
+    template <DeviceAssetType Type>
     void RenderDevice::FreeResource(Type*& pObject)
     {
         if (pObject != nullptr)

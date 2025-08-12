@@ -1,59 +1,56 @@
 ﻿// Texture.h
 #pragma once
+#include "DeviceImage.h"
 #include "GraphicsCommon.h"
-#include "GraphicsResource.h"
+#include "Nessie/Asset/AssetBase.h"
+#include "Nessie/Core/Memory/Buffer.h"
 
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : An image object; represents a multidimensional array of data (1D, 2D or 3D).
+    /// @brief : Represents a 2D image asset.
     //----------------------------------------------------------------------------------------------------
-    class Texture
+    class Texture final : public AssetBase
     {
+        NES_DEFINE_TYPE_INFO(Texture)
+        
     public:
-        explicit            Texture(RenderDevice& device) : m_device(device) {}
-        /* Destructor */    ~Texture();
-
-        /// Operator to cast to Vulkan type.
-        inline              operator VkImage() const { return m_handle; }
-        
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a texture using an existing image. When this texture object is destroyed, the
-        ///     image resource will not be destroyed. This is to be used for cases like the Swapchain.  
-        //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const VkImage image, const TextureDesc& textureDesc);
-        
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Allocates a new texture resource.
-        //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const AllocateTextureDesc& textureDesc);
+        virtual             ~Texture() override;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set a debug name for this texture. 
+        /// @brief : Set a debug name for the device image. 
         //----------------------------------------------------------------------------------------------------
-        void                SetDebugName(const char* name);
+        void                SetDeviceDebugName(const char* name);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the texture's properties.
         //----------------------------------------------------------------------------------------------------
-        const TextureDesc&  GetDesc() const { return m_desc; }
+        const TextureDesc&  GetDesc() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the extent of the image.
         //----------------------------------------------------------------------------------------------------
-        VkExtent3D          GetExtent() const { return { m_desc.m_width, m_desc.m_height, m_desc.m_depth }; }
+        UInt3               GetExtent() const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the Vulkan resource handle.
+        /// @brief : Get the device image asset for this texture. 
         //----------------------------------------------------------------------------------------------------
-        VkImage             GetHandle() const { return m_handle; }
+        DeviceImage*        GetDeviceImage() { return m_pImage; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the device image asset for this texture (const version). 
+        //----------------------------------------------------------------------------------------------------
+        const DeviceImage*  GetDeviceImage() const { return m_pImage; }
 
     private:
-        RenderDevice&       m_device;
-        VkImage             m_handle = nullptr;
-        TextureDesc         m_desc{};
-        VmaAllocation       m_allocation = nullptr;     // Device Memory associated with the Texture.
-        bool                m_ownsNativeObjects = true; // If true, then on destruction the image will be freed.
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Load the Texture from a file.
+        //----------------------------------------------------------------------------------------------------
+        virtual ELoadResult LoadFromFile(const std::filesystem::path& path) override;
+
+    private:
+        DeviceImage*        m_pImage = nullptr;         // Device Image Asset.
+        Buffer              m_imageData{};              // Raw image data.
     };
 }
 

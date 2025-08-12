@@ -73,7 +73,7 @@ namespace nes
     EGraphicsResult Descriptor::Init(const Texture1DViewDesc& textureViewDesc)
     {
         NES_ASSERT(textureViewDesc.m_pTexture);
-        const Texture& texture = *textureViewDesc.m_pTexture;
+        const DeviceImage& texture = *textureViewDesc.m_pTexture;
         const TextureDesc& textureDesc = texture.GetDesc();
         const uint32 remainingMips = textureDesc.m_mipCount - textureViewDesc.m_mipOffset;
         const uint32 remainingLayers = textureDesc.m_layerCount - textureViewDesc.m_layerOffset;
@@ -100,7 +100,7 @@ namespace nes
         NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_imageView));
 
         m_type = GetDescriptorType(textureViewDesc.m_viewType);
-        m_textureDesc.m_pTexture = textureViewDesc.m_pTexture;
+        m_textureDesc.m_pImage = textureViewDesc.m_pTexture;
         m_textureDesc.m_imageLayout = GetVkImageViewLayout(textureViewDesc.m_viewType);
         m_textureDesc.m_aspectFlags = GetVkImageAspectFlags(textureViewDesc.m_format);
         m_textureDesc.m_layerOffset = textureViewDesc.m_layerOffset;
@@ -116,7 +116,7 @@ namespace nes
     EGraphicsResult Descriptor::Init(const Texture2DViewDesc& textureViewDesc)
     {
         NES_ASSERT(textureViewDesc.m_pTexture);
-        const Texture& texture = *textureViewDesc.m_pTexture;
+        const DeviceImage& texture = *textureViewDesc.m_pTexture;
         const TextureDesc& textureDesc = texture.GetDesc();
         const uint32 remainingMips = textureDesc.m_mipCount - textureViewDesc.m_mipOffset;
         const uint32 remainingLayers = textureDesc.m_layerCount - textureViewDesc.m_layerOffset;
@@ -143,7 +143,7 @@ namespace nes
         NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_imageView));
 
         m_type = GetDescriptorType(textureViewDesc.m_viewType);
-        m_textureDesc.m_pTexture = textureViewDesc.m_pTexture;
+        m_textureDesc.m_pImage = textureViewDesc.m_pTexture;
         m_textureDesc.m_imageLayout = GetVkImageViewLayout(textureViewDesc.m_viewType);
         m_textureDesc.m_aspectFlags = GetVkImageAspectFlags(textureViewDesc.m_format);
         m_textureDesc.m_layerOffset = textureViewDesc.m_layerOffset;
@@ -158,7 +158,7 @@ namespace nes
     EGraphicsResult Descriptor::Init(const Texture3DViewDesc& textureViewDesc)
     {
         NES_ASSERT(textureViewDesc.m_pTexture);
-        const Texture& texture = *textureViewDesc.m_pTexture;
+        const DeviceImage& texture = *textureViewDesc.m_pTexture;
         const TextureDesc& textureDesc = texture.GetDesc();
         const uint32 remainingMips = textureDesc.m_mipCount - textureViewDesc.m_mipOffset;
         const uint32 remainingLayers = textureDesc.m_layerCount - textureViewDesc.m_sliceOffset;
@@ -189,7 +189,7 @@ namespace nes
         NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_imageView));
 
         m_type = GetDescriptorType(textureViewDesc.m_viewType);
-        m_textureDesc.m_pTexture = textureViewDesc.m_pTexture;
+        m_textureDesc.m_pImage = textureViewDesc.m_pTexture;
         m_textureDesc.m_imageLayout = GetVkImageViewLayout(textureViewDesc.m_viewType);
         m_textureDesc.m_aspectFlags = GetVkImageAspectFlags(textureViewDesc.m_format);
         m_textureDesc.m_layerOffset = 0;

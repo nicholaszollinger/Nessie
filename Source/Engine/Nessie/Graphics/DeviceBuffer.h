@@ -1,6 +1,6 @@
 ﻿// DeviceBuffer.h
 #pragma once
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 #include "GraphicsCommon.h"
 
 namespace nes

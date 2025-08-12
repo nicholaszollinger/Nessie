@@ -13,10 +13,10 @@ namespace nes
     ///     - The Queue's family index is used to identify the type of queue (graphics, compute, transfer, ...).
     ///     - The Queue's index is used to identify the specific queue in the family - multiple queues can be in the same family.
     //----------------------------------------------------------------------------------------------------
-    class DeviceQueue final : public GraphicsResource
+    class DeviceQueue final : public DeviceAsset
     {
     public:
-        DeviceQueue(RenderDevice& device) : GraphicsResource(device) {}
+        DeviceQueue(RenderDevice& device) : DeviceAsset(device) {}
 
         /// Operator to cast to the Vulkan type.
         operator        VkQueue() const         { return m_handle; }

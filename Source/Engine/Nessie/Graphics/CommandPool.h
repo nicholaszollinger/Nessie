@@ -1,7 +1,7 @@
 ﻿// CommandPool.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 #include "Nessie/Core/Thread/Mutex.h"
 
 namespace nes
@@ -13,10 +13,10 @@ namespace nes
     ///     A Command Pool is created with a specific queue family index. All CommandBuffers created
     ///     with this pool must be submitted to a DeviceQueue of the same queue family index.
     //----------------------------------------------------------------------------------------------------
-    class CommandPool final : public GraphicsResource
+    class CommandPool final : public DeviceAsset
     {
     public:
-        explicit                CommandPool(RenderDevice& device) : GraphicsResource(device) {}
+        explicit                CommandPool(RenderDevice& device) : DeviceAsset(device) {}
         virtual                 ~CommandPool() override;
 
         /// Operator to cast the Vulkan Type.

@@ -1,7 +1,7 @@
 ﻿// TimelineSemaphore.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "GraphicsResource.h"
+#include "DeviceAsset.h"
 
 namespace nes
 {
@@ -19,13 +19,13 @@ namespace nes
     /// In both cases, a copy of this class can be made to later check the completion status of the timeline
     /// semaphore.
     //----------------------------------------------------------------------------------------------------
-    class SemaphoreState final : public GraphicsResource
+    class SemaphoreState final : public DeviceAsset
     {
     public:
         static constexpr uint64 kDefaultTimeout = 5000 * 1000000ull; // 5 seconds, in microseconds.
         
     public:
-        explicit                SemaphoreState(RenderDevice& device) : GraphicsResource(device) {}
+        explicit                SemaphoreState(RenderDevice& device) : DeviceAsset(device) {}
         virtual                 ~SemaphoreState() override;
 
         /// Operator to convert to Vulkan Type.
