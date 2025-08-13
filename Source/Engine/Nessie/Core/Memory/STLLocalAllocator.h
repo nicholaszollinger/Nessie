@@ -88,10 +88,10 @@ namespace nes
             // If the pointer is outside our local buffer, fall back to the heap.
             if (!is_local(pOldPointer))
             {
-                if constexpr (AllocatorHasReallocate<Base>)
-                    return Base::reallocate(pOldPointer, newSize, oldSize);
+                if constexpr (STLAllocatorHasReallocate<Base>)
+                    return Base::reallocate(pOldPointer, oldSize, newSize);
                 else
-                    return ReallocateImpl(pOldPointer, newSize, oldSize);
+                    return ReallocateImpl(pOldPointer, oldSize, newSize);
             }
 
             // If we happen to have space left, we only need to update our bookkeeping.
@@ -162,11 +162,12 @@ namespace nes
             return pNewPointer;
         }
         
-        alignas(Type) uint8     m_elements[N * sizeof(N)]; // Uninitialized local buffer of elements.
+        alignas(Type) uint8     m_elements[N * sizeof(Type)]; // Uninitialized local buffer of elements.
         size_type               m_numElementsUsed = 0;
     };
 
 #else
-    
+    template <typename Type, size_t N>
+    using STLLocalAllocator = std::allocator<Type>;
 #endif
 }

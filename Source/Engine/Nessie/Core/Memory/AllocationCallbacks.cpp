@@ -32,7 +32,7 @@ namespace nes
     {
         NES_FREE(pMemory);
     }
-
+    
     AllocationCallbacks::AllocationCallbacks()
         : m_alloc(AlignedMalloc)
         , m_free(AlignedFree)

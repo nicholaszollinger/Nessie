@@ -23,9 +23,7 @@ namespace nes
         using difference_type = ptrdiff_t;
         using is_always_equal = std::true_type;                         /// Allocator is stateless
         using propagate_on_container_move_assigment = std::true_type;   /// Supports moving.
-
-        static constexpr bool has_reallocate = TypeAllowsSTLReallocate<Type>;
-
+        
         /// Constructor
         inline STLAllocator() = default;
 
@@ -49,11 +47,12 @@ namespace nes
         /// @brief : Reallocate Memory. Only available if the type is trivially copyable and doesn't need to
         ///     be aligned.
         //----------------------------------------------------------------------------------------------------
-        template <bool HasReallocateV = has_reallocate, typename = std::enable_if_t<HasReallocateV>>
-        inline pointer  reallocate(pointer pOldPointer, const size_type oldSize, size_t newSize)
+        inline pointer  reallocate(pointer pOldPointer, const size_type /*oldSize*/, const size_t newSize) requires (TypeAllowsSTLReallocate<Type>)
         {
             NES_ASSERT(newSize > 0); // Reallocating to size zero is implementation-dependent, so we don't allow it.
-            return pointer(memory::internal::Reallocate(pOldPointer, oldSize * sizeof(value_type), newSize * sizeof(value_type)));
+        
+            
+            return pointer(memory::internal::Reallocate(pOldPointer, newSize * sizeof(value_type)));
         }
 
         //----------------------------------------------------------------------------------------------------
@@ -82,7 +81,11 @@ namespace nes
     };
 
     template <typename Type>
-    concept AllocatorHasReallocate = Type::has_reallocate;
+    concept STLAllocatorHasReallocate = requires()
+    {
+        Type::value_type;
+        TypeAllowsSTLReallocate<typename Type::value_type>;
+    };
     
 #else
     template <typename Type> using STLAllocator = std::allocator<Type>;
