@@ -1,18 +1,10 @@
 ﻿// STLAllocator.h
 #pragma once
-#include <type_traits>
-#include "Nessie/Core/Memory/Memory.h"
-#include "Nessie/Debug/Assert.h"
+#include "Nessie/Core/Memory/STLCallbackAllocator.h"
 
 namespace nes
 {
 #if !defined(NES_DISABLE_CUSTOM_ALLOCATOR)
-
-    template <typename Type>
-    concept TypeNeedsAlignedAllocate = alignof(Type) > (NES_CPU_ADDRESS_BITS == 32? 8 : 16);
-
-    template <typename Type>
-    concept TypeAllowsSTLReallocate = std::is_trivially_copyable_v<Type> && TypeNeedsAlignedAllocate<Type>;
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : STL Allocator that forwards to our allocation functions. 
