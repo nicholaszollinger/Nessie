@@ -7,11 +7,8 @@
 
 namespace nes
 {
-    //using AssetHandle = uint32;
     using AssetID = UUID;
-
     static constexpr AssetID kInvalidAssetID = std::numeric_limits<UUID::ValueType>::max();
-    //static constexpr AssetHandle kInvalidAssetHandle = std::numeric_limits<AssetHandle>::max();
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Current status of the Asset. 
@@ -19,7 +16,7 @@ namespace nes
     enum class EAssetState : uint8
     {
         Invalid,            // Initial state.
-        Loading,            // The Asset is being loaded.
+        Loading,            // The Asset is currently being loaded on the Asset Thread.
         Loaded,             // The Asset has been loaded. However, the load could have failed. This just says that the load operation has completed. See EAssetResult.
         //NeedsReload,      // TODO: If the asset on disk has been updated, this would be set as the status.
         Freeing,            // The Asset has been requested to be freed. Once the Asset has no more locks, it will be freed.
@@ -31,7 +28,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class ELoadResult : uint8
     {
-        Invalid,            // Initial State. Used to indicate that the Asset is being loaded.
+        Pending,            // Initial State. Used to indicate that the Asset is being loaded.
         Success,            // The Load was successful.
         Failure,            // The Load failed.
         MissingDependency,  // The Asset failed to load a dependency.

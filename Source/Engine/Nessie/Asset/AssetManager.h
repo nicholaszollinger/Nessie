@@ -43,6 +43,79 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class AssetManager
     {
+        /// Load function used on the Asset Thread. This is used to wrap an Assets load implementation to be performed on the Asset Thread.
+        using ThreadLoadFunc = std::function<ELoadResult()>;
+
+        /// Value given to Load Requests to track their completion status.
+        using LoadRequestID = uint16;
+
+    public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : A load request is a group of load operations that can be tracked with an ID.
+        //----------------------------------------------------------------------------------------------------
+        class LoadRequest
+        {
+        public:
+            using OnProgressUpdated     = std::function<void(float)>;
+            using OnComplete            = std::function<void(ELoadResult)>;
+            
+        private:
+            friend class AssetManager;
+
+            // Private Copy Construct/Assign.
+            LoadRequest(const LoadRequest& other) = default;
+            LoadRequest& operator=(const LoadRequest& other);
+            
+        public:
+            LoadRequest(LoadRequest&& other) noexcept;
+            LoadRequest& operator=(LoadRequest&& other) noexcept;
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Add a load operation to this Request.
+            ///	@tparam Type : Asset Type you are trying to load.
+            /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,
+            ///     a new ID will be generated and stored in the reference.
+            /// @param path : Path to the asset on disk.
+            //----------------------------------------------------------------------------------------------------
+            template <ValidAssetType Type>
+            void                        AppendLoad(AssetID& id, const std::filesystem::path& path);
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Set the callback invoked when the request has completed.
+            //----------------------------------------------------------------------------------------------------
+            void                        SetOnCompleteCallback(const OnComplete& callback)               { m_onComplete = callback; }
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Set the callback invoked when a single load operation in the request is completed.
+            //----------------------------------------------------------------------------------------------------
+            void                        SetOnProgressUpdatedCallback(const OnProgressUpdated& callback) { m_onProgressUpdated = callback; }
+
+        private:
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Private constructor for the AssetManager.
+            //----------------------------------------------------------------------------------------------------
+            explicit                    LoadRequest(AssetManager& manager, const LoadRequestID id);
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Adds a Job generated from a call to AppendLoad().
+            //----------------------------------------------------------------------------------------------------
+            void                        AddJob(const ThreadLoadFunc& job);
+
+        private:
+            AssetManager*               m_pAssetManager = nullptr;
+            LoadRequestID               m_requestId;
+            std::vector<ThreadLoadFunc> m_jobs{};
+
+            /// Called after the completion (successful or not) of a single load operation in a request.
+            /// The float value will be between [0, 1], where 0 == no progress, and 1 = completed.
+            OnProgressUpdated           m_onProgressUpdated = nullptr;
+
+            /// Called when all load operations on a request are complete. Passes the result of the operation.
+            OnComplete                  m_onComplete = nullptr;
+        };
+
+        
+        
     public:
         AssetManager();
         ~AssetManager();
@@ -50,7 +123,7 @@ namespace nes
         AssetManager& operator=(const AssetManager&) = delete;
         AssetManager(AssetManager&&) = delete;
         AssetManager& operator=(AssetManager&&) = delete;
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Load an asset, synchronously (meaning this function will not return until complete).
         ///	@tparam Type : Asset Type you are trying to load.
@@ -60,7 +133,7 @@ namespace nes
         /// @returns : Result of the load.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        static ELoadResult          LoadSync(AssetID& id, const std::filesystem::path& path);
+        static ELoadResult              LoadSync(AssetID& id, const std::filesystem::path& path);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Load an asset, asynchronously. This queues the asset to be loaded on a separate thread.
@@ -68,9 +141,36 @@ namespace nes
         /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,
         ///     a new ID will be generated.
         /// @param path : Path to the asset on disk.
+        /// @param onComplete : Optional callback function to be notified when the Asset is loaded.
+        ///     If the asset is already loaded, and the onComplete callback is set, then it will be called immediately.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        static ELoadResult          LoadAsync(AssetID& id, const std::filesystem::path& path);
+        static void                     LoadAsync(AssetID& id, const std::filesystem::path& path, const LoadRequest::OnComplete& onComplete = nullptr);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Begin a new load request that groups multiple load operations together.
+        ///
+        /// Example Usage: <code>
+        ///     LoadRequest request = BeginLoadRequest();               // Create a new LoadRequest.
+        ///     request.AppendLoad<Texture>("Test.png");                // Adds loading "Test.png" to this request.
+        ///     request.AppendLoad<Mesh>("Mesh.gltf");                  // Adds loading "Mesh.gltf" to this request.
+        ///     AssetManager::SubmitLoadRequest(std::move(request));    // Submits the load request to the Asset Thread.
+        /// </code>
+        //----------------------------------------------------------------------------------------------------
+        static LoadRequest              BeginLoadRequest();
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submits a load request to the Asset Thread.
+        /// @param request : Request object to be submitted. Should be moved into this function.
+        ///
+        /// Example Usage: <code>
+        ///     LoadRequest request = BeginLoadRequest();               // Create a new LoadRequest.
+        ///     request.AppendLoad<Texture>("Test.png");                // Adds loading "Test.png" to this request.
+        ///     request.AppendLoad<Mesh>("Mesh.gltf");                  // Adds loading "Mesh.gltf" to this request.
+        ///     AssetManager::SubmitLoadRequest(std::move(request));    // Submits the load request to the Asset Thread.
+        /// </code>
+        //----------------------------------------------------------------------------------------------------
+        static void                     SubmitLoadRequest(LoadRequest&& request);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add an asset that was constructed outside the AssetManager. This will take ownership of
@@ -78,112 +178,114 @@ namespace nes
         /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,
         ///     a new ID will be generated.
         /// @param asset : Asset that will be stored in the appropriate asset pool.
-        /// @returns : If the AssetPool is full, this will return EAssetResult::OutOfMemory and the Asset will be freed.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        static ELoadResult          AddMemoryAsset(AssetID& id, Type&& asset);
+        static ELoadResult              AddMemoryAsset(AssetID& id, Type&& asset);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a loaded asset. If the asset has not been loaded, the reference will be invalid.
         /// @note : Assets can only be accessed on the main thread.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        static AssetPtr<Type>       GetAsset(const AssetID& id);
+        static AssetPtr<Type>           GetAsset(const AssetID& id);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Checks if the asset has been loaded.
+        /// @brief : Checks if the asset has been loaded and is usable.
         //----------------------------------------------------------------------------------------------------
-        static bool                 IsValidAsset(const AssetID& id);
+        static bool                     IsValidAsset(const AssetID& id);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Free an asset associated with the given id.
         //----------------------------------------------------------------------------------------------------
-        static void                 FreeAsset(const AssetID& id);
+        static void                     FreeAsset(const AssetID& id);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Generates a new, unique asset id. 
         //----------------------------------------------------------------------------------------------------
-        static AssetID              GenerateAssetID();
+        static AssetID                  GenerateAssetID();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Generate an asset id from a path. 
         //----------------------------------------------------------------------------------------------------
-        static constexpr AssetID    GenerateAssetIDFromPath(const std::filesystem::path& path) { return HashString64(path.string().c_str()); }
+        static constexpr AssetID        GenerateAssetIDFromPath(const std::filesystem::path& path) { return HashString64(path.string().c_str()); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the current thread is the Asset Thread.
         //----------------------------------------------------------------------------------------------------
-        static bool                 IsAssetThread();
+        static bool                     IsAssetThread();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the AssetManager - this will start the Asset Thread.
         //----------------------------------------------------------------------------------------------------
-        bool                        Init();
+        bool                            Init();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : This will process all finished load operations processed on the Asset thread.
         ///     Any failed loads will have their assets destroyed.
         //----------------------------------------------------------------------------------------------------
-        void                        SyncFrame();
+        void                            SyncFrame();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Shutdown the AssetManager. This will destroy all loaded assets.
         //----------------------------------------------------------------------------------------------------
-        void                        Shutdown();
+        void                            Shutdown();
     
     private:
+        // Indicates a loaded memory asset does not belong to a request. This can be used to indicate that an Asset
+        // loaded another asset as part of its load function. Ex: A Mesh loading a Texture.
+        static constexpr LoadRequestID  kInvalidRequestID = std::numeric_limits<LoadRequestID>::max();
+        static constexpr uint64         kInvalidLoadIndex = std::numeric_limits<uint64>::max();
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : State information about the Asset, including Type, State flags, and Load result. 
         //----------------------------------------------------------------------------------------------------
         struct AssetInfo
         {
-            TypeID                  m_typeID        = 0;                        // Type of asset.
-            EAssetState             m_state         = EAssetState::Invalid;     // The current status of the Asset.
-            ELoadResult             m_loadResult    = ELoadResult::Invalid;     // The result of the load operation.
+            uint64                      m_loadedIndex   = kInvalidLoadIndex;        // Index in the Loaded Assets array. Only set if successfully loaded.
+            TypeID                      m_typeID        = 0;                        // Type of asset.
+            EAssetState                 m_state         = EAssetState::Invalid;     // The current status of the Asset.
+            ELoadResult                 m_loadResult    = ELoadResult::Pending;     // The result of the load operation.
 
             //----------------------------------------------------------------------------------------------------
             /// @brief : An asset is considered 'valid' if it is in the Loaded state and the load was successful.
             //----------------------------------------------------------------------------------------------------
-            bool                    IsValid() const   { return m_state == EAssetState::Loaded && m_loadResult == ELoadResult::Success; }
+            bool                        IsValid() const   { return m_loadedIndex != kInvalidLoadIndex && m_state == EAssetState::Loaded && m_loadResult == ELoadResult::Success; }
         };
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Contains the Asset Location and whether the load operation was successful.
+        /// @brief : Information about the status of an open Load Request. Owned by the main thread.
         //----------------------------------------------------------------------------------------------------
-        struct alignas (NES_CACHE_LINE_SIZE) AssetLoadResult
+        struct LoadRequestStatus
         {
-            // Number of Assets that have been loaded as a part of the operation.
-            uint32                  m_numMemoryAssets = 0;
+            LoadRequest::OnComplete     m_onCompleted{};                            // Callbacks for responding to the request completed.
+            LoadRequest::OnProgressUpdated m_onProgressUpdated{};                   // Callbacks for responding to progress updates.
+            uint16                      m_numLoads = 1;                             // Number of loads that are needed to complete the request
+            uint16                      m_completedLoads = 0;                       // Number of loads completed so far.
+            ELoadResult                 m_result = ELoadResult::Success;            // The result of the entire load request.
+            
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Returns a value from [0, 1] for the current progress of an operation.
+            //----------------------------------------------------------------------------------------------------
+            float                       GetProgress() const { return static_cast<float>(m_completedLoads) / static_cast<float>(m_numLoads); }
 
-            // Result of the load operation.
-            ELoadResult             m_result = ELoadResult::Invalid;
-
-            // Boolean operator that returns true if the load was successful.
-            inline                  operator bool() const { return m_result == ELoadResult::Success; }
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Returns true if the request was aborted due to an error, or all load operations have completed. 
+            //----------------------------------------------------------------------------------------------------
+            bool                        IsComplete() const { return m_result != ELoadResult::Success || m_completedLoads == m_numLoads; }
         };
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : A LoadMemoryAsset is created when an asset load operation needs to load other assets as
-        ///     a part of the load process. Until the FrameSync(), this loaded asset does not exist in the
-        ///     loaded asset map.
+        /// @brief : A LoadMemoryAsset is created on the Asset Thread, and processed on the Main Thread.
+        ///     - The Asset itself will be destroyed on the main thread only.
+        ///     - Attached to a request ID for load status tracking.
         //----------------------------------------------------------------------------------------------------
         struct LoadedMemoryAsset
         {
-            // The loaded asset.
-            AssetBase*              m_pAsset = nullptr;
-
-            // ID of the Asset.
-            AssetID                 m_id = kInvalidAssetID;
-
-            // Type of Asset.
-            TypeID                  m_typeID = 0;
-            
-            // The index of the result that was responsible for loading this asset. Used to process all 
-            // memory assets tied to a single load operation during Sync.
-            uint32                  m_resultIndex = std::numeric_limits<uint32>::max();
-
-            // The Result from the load operation.
-            ELoadResult             m_result = ELoadResult::Success;
+            AssetBase*                  m_pAsset = nullptr;                         // The Loaded Asset itself.
+            AssetID                     m_id = kInvalidAssetID;                     // Unique ID of the Asset.
+            TypeID                      m_typeID = 0;                               // TypeID of the asset.
+            LoadRequestID               m_requestID = 0;                            // Which Load Request this asset was loaded for.
+            ELoadResult                 m_result = ELoadResult::Success;            // The result of the load operation.
         };
 
         //----------------------------------------------------------------------------------------------------
@@ -197,24 +299,23 @@ namespace nes
         // Asset Thread Type:
         using AssetThread = WorkerThread<EAssetThreadInstruction>;
 
-        // Result Buffer Type: An array of results managed as a ring buffer.
-        static constexpr uint32     kMaxLoadOperations = 256;
-        using ResultBuffer = std::array<AssetLoadResult, kMaxLoadOperations>;
+        // Array of loaded assets. The index for a particular asset is located in its AssetInfo.
+        using AssetArray = std::vector<AssetBase*>;
 
-        // Map of loaded assets.
-        using AssetMap = std::unordered_map<AssetID, AssetBase*, UUIDHasher>;
-
-        // Asset Location Map: Maps an AssetID to the Asset's Info.
+        // Asset Info Map: Maps an AssetID to the Asset's Info.
         using AssetInfoMap = std::unordered_map<AssetID, AssetInfo, UUIDHasher>;
 
         // Load function. This is used to wrap an Assets load implementation to be performed on the Asset Thread.
         using ThreadLoadFunc = std::function<ELoadResult()>;
 
         // Queue of Load functions to be executed on the Asset Thread.
-        using ThreadJobQueue = ThreadSafeQueue<ThreadLoadFunc>;
+        using ThreadJobQueue = ThreadSafeQueue<LoadRequest>;
 
         // Buffer of Memory Assets that have been loaded, but not added to the Asset Map.
         using MemoryAssetBuffer = std::vector<LoadedMemoryAsset>;
+
+        // Maps a Request ID to its result.
+        using RequestMap = std::unordered_map<LoadRequestID, LoadRequestStatus>;
     
     private:
         //----------------------------------------------------------------------------------------------------
@@ -229,6 +330,11 @@ namespace nes
         static bool                 IsMainThread();
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Asset Info for an asset if it exists. 
+        //----------------------------------------------------------------------------------------------------
+        AssetInfo*                  GetAssetInfo(const AssetID& id);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Main thread synchronous load implementation.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
@@ -238,19 +344,7 @@ namespace nes
         /// @brief : Asset thread synchronous load implementation.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        ELoadResult                 ThreadLoadSync(const AssetID& id, const std::filesystem::path& path);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Queues an asset to be loaded on the Asset Thread.
-        //----------------------------------------------------------------------------------------------------
-        template <ValidAssetType Type>
-        ELoadResult                 QueueLoadAsset(AssetID& id, const std::filesystem::path& path);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Add memory asset implementation.
-        //----------------------------------------------------------------------------------------------------
-        template <ValidAssetType Type>
-        ELoadResult                 AddMemoryAssetImpl(const AssetID& id, Type&& asset);
+        ELoadResult                 ThreadLoadSync(const AssetID& id, const std::filesystem::path& path, const LoadRequestID requestID = kInvalidRequestID);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Asset thread's instruction handler.
@@ -272,23 +366,29 @@ namespace nes
         /// @brief : Free any assets that have been queued to free and contain no more locks. 
         //----------------------------------------------------------------------------------------------------
         void                        ProcessFreeQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Update the Asset Info of a newly loaded asset. This will update the Load Request Result if
+        ///     the requestID is valid as well. The asset is assumed to be valid, and will be deleted if
+        ///     the result has failed.
+        //----------------------------------------------------------------------------------------------------
+        void                        ProcessLoadedAsset(AssetBase*& pAsset, const TypeID typeID, const AssetID& id, const ELoadResult result, const LoadRequestID requestID = kInvalidRequestID);
         
     private:
-        AssetInfoMap                m_infoMap{};                    // Owned by the main thread. Maps an AssetID to the state of the Asset.
-        AssetInfoMap                m_threadInfoMap{};              // Owned by the asset thread. Maps the AssetID to the state of the Asset.
-        AssetMap                    m_loadedAssets{};               // Owned by the main thread. Maps an AssetID to the loaded Asset object.
-        std::vector<AssetID>        m_assetsToFree{};               // Array of Assets that are waiting to be freed.
-        AssetThread                 m_assetThread;                  // Asset thread object.            
-        ResultBuffer                m_results{};                    // Used as a ring buffer.
-        ThreadJobQueue              m_threadJobQueue{};             // Queue of jobs to process. Both threads read and write to this queue.
-        MemoryAssetBuffer           m_threadMemoryAssets{};         // Buffer of Assets that have been loaded as a part of a single load operation. They will be stored in the AssetManager on FrameSync().         
-        Mutex                       m_threadMemoryAssetsMutex;      // Mutex used to restrict access to the Asset Thread's memory asset buffer.
-        Mutex                       m_threadInfoMapMutex;           // Mutex to restrict access to the thread's asset info map. 
-        std::atomic<uint32>         m_resultReadIndex = 0;          // Position for the main thread to read completed results. Updated by the Main Thread.
-        std::atomic<uint32>         m_resultWriteIndex = 0;         // Position for the Asset thread to write results. Updated by the Asset Thread.
-        bool                        m_threadInfoMapNeedsSync = false; // Flag to indicate that the Asset Thread needs a new copy of the asset info map. 
+        AssetInfoMap                m_infoMap{};                        // Owned by the main thread. Maps an AssetID to the state of the Asset.
+        AssetInfoMap                m_threadInfoMap{};                  // Owned by the asset thread. Maps the AssetID to the state of the Asset.
+        RequestMap                  m_requestResultMap{};               // Owned by the main thread. Maps a RequestID to the request's status.
+        AssetArray                  m_loadedAssets{};                   // Owned by the main thread. Array of loaded assets.
+        std::vector<AssetID>        m_assetsToFree{};                   // Array of Assets that are waiting to be freed.
+        AssetThread                 m_assetThread;                      // Asset thread object.            
+        ThreadJobQueue              m_threadJobQueue{};                 // Queue of jobs to process. Both threads read and write to this queue.
+        MemoryAssetBuffer           m_threadMemoryAssets{};             // Buffer of Assets that have been loaded as a part of a single load operation. They will be stored in the AssetManager on FrameSync().         
+        Mutex                       m_threadMemoryAssetsMutex;          // Mutex used to restrict access to the Asset Thread's memory asset buffer.
+        Mutex                       m_threadInfoMapMutex;               // Mutex to restrict access to the thread's asset info map. 
+        LoadRequestID               m_nextRequestID = 0;                // Counter incremented when a new request is made, used to set an ID to a LoadRequest.
+        bool                        m_threadInfoMapNeedsSync = false;   // Flag to indicate that the Asset Thread needs a new copy of the asset info map. 
     };
-    
+
     //----------------------------------------------------------------------------------------------------
     /// @brief : An AssetPtr is a non-owning reference to an Asset. To get a valid AssetPtr, you must request it
     ///     from the AssetManager by calling GetAsset().
@@ -357,6 +457,9 @@ namespace nes
         Type*                       m_pAsset = nullptr;         // The Asset reference.
         AssetID                     m_id = kInvalidAssetID;     // The Asset's ID. This is used to ensure that the pointer still points to an asset.
     };
+    
+    using LoadRequest = AssetManager::LoadRequest;
 }
+
 
 #include "AssetManager.inl"

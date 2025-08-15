@@ -89,6 +89,11 @@ namespace nes
         bool                        IsTerminated() const        { return m_isTerminated; }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if this thread is currently idle. 
+        //----------------------------------------------------------------------------------------------------
+        bool                        IsIdle()                    { return m_idleEvent.IsIdle(); }
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get this thread's ID. If the thread is terminated, it will return an invalid id.
         //----------------------------------------------------------------------------------------------------
         std::thread::id             GetThreadId() const         { return m_isTerminated? std::thread::id() : m_thread.get_id(); }
