@@ -20,26 +20,14 @@ namespace nes
     class AssetPtr;
     
     //----------------------------------------------------------------------------------------------------
-    // NOTES:
-    // I got async asset loading to work, but when I have time, I'd like to make some changes (or at least consider them).
-    //  1. Change LoadSync() and LoadAsync() to simply Load(). Always defer to loading asynchronously. If you
-    //     do this, you need to have a way to wait for a particular load operation (WaitForLoad(AsyncLoadRequest/Result/...)).
-    //  2. 'AssetLoadStatus'. I want a way to know how far along a load operation is for things like a loading bar.
-    //     Using the BarrierImpl's 'm_numLeftToAcquire' (more on a Job System below) would be a good
-    //     value to track. Every increment to that value would increase the 'total' value, and every decrement would decrease
-    //     the 'remaining' value. This would have to be locked by mutex, of course.
-    //  3. Figure out what to return from the LoadAsync. The return value should have an implicit boolean conversion
-    //     to denote if the Asset is ready to go, and be able to be used to get information about the load status.
-    //  4. Asset Listeners. Dispatch an event to those who are waiting on a particular asset to load.
-    //  5. Use the Job System classes. I spent a long time trying to figure this out, but I just went with the
-    //     current implementation to get some momentum again. I believe that a Barrier can be tied to a single
-    //     call to Load(). The main thread could then use that barrier to wait for a particular operation to finish.
-    //     Plus, dependent jobs, like loading texture maps when loading a mesh, could use this same barrier to add
-    //     Jobs to. A LoadContext object that contains the AssetID of the original load request and the barrier could
-    //     be passed to an overload of the Load function to help denote dependent load operations.
-    //
     /// @brief : Manages the lifetime of assets. Assets are explicitly loaded and freed.
-    ///     Provides a static API for loading and unloading assets.
+    ///     - Provides a static API for loading and unloading assets.
+    ///     - Assets can be loaded asynchronously with LoadAsync().
+    ///     - Multiple load operations can be grouped together in a single LoadRequest. See BeginLoadRequest() for more details.
+    ///
+    /// @note : When implementing a load function for an asset, if you need to load an asset within that function,
+    ///     (like a Mesh needed to load a texture map), use LoadSync(). It will load that dependent Asset synchronously
+    ///     on the asset thread.
     //----------------------------------------------------------------------------------------------------
     class AssetManager
     {
