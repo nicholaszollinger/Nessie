@@ -1,5 +1,6 @@
 ﻿// AssetManager.inl
 #pragma once
+#include "AssetBase.h"
 
 namespace nes
 {
@@ -23,7 +24,6 @@ namespace nes
         // If we don't have an entry already, create one.
         if (!m_pAssetManager->GetAssetInfo(id))
         {
-            //m_pAssetManager->m_infoMap[id] = AssetInfo(kInvalidLoadIndex, Type::GetStaticTypeID(), EAssetState::Invalid, ELoadResult::Pending);
             m_pAssetManager->m_infoMap[id] = AssetInfo(kInvalidLoadIndex, Type::GetStaticTypeID(), EAssetState::Loading, ELoadResult::Pending);
         }
         
@@ -61,7 +61,7 @@ namespace nes
     }
     
     template <ValidAssetType Type>
-    void AssetManager::LoadAsync(AssetID& id, const std::filesystem::path& path, const LoadRequest::OnComplete& onComplete)
+    void AssetManager::LoadAsync(AssetID& id, const std::filesystem::path& path, const LoadRequest::OnAssetLoaded& onComplete)
     {
 #ifdef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
         const ELoadResult result = LoadSync<Type>(id, std::filesystem::path(path));
@@ -95,7 +95,8 @@ namespace nes
 
                     if (onComplete)
                     {
-                        onComplete(pInfo->m_loadResult);
+                        AsyncLoadResult result(id, *pInfo);
+                        onComplete(result, 1.f);
                     }
                     return;
                 }
@@ -111,7 +112,7 @@ namespace nes
         
         // Submit a new load request with a single asset.
         LoadRequest request = BeginLoadRequest();
-        request.SetOnCompleteCallback(onComplete);
+        request.SetOnAssetLoadedCallback(onComplete);
         request.AppendLoad<Type>(id, path);
         SubmitLoadRequest(std::move(request));
 #endif
@@ -132,7 +133,6 @@ namespace nes
         }
         
         // Create the new Asset:
-        // Set the handle and ID of the asset.
         AssetBase* pAsset = NES_NEW(Type(std::forward<Type>(asset)));
         assetManager.ProcessLoadedAsset(pAsset, Type::GetStaticTypeID(), id, ELoadResult::Success);
 
@@ -187,14 +187,6 @@ namespace nes
         {
             switch (pInfo->m_state)
             {
-                // We are already loading it:
-                // This can happen if the Asset Thread was tasked with loading the
-                // Asset, then LoadSync was called for the same asset.
-                case EAssetState::Loading:
-                {
-                    return ELoadResult::Pending;
-                }
-
                 // We have finished, return the previous result.
                 case EAssetState::Loaded:
                 {
@@ -208,15 +200,30 @@ namespace nes
                     return ELoadResult::Success;
                 }
 
-                // If invalid or freed, perform the load.
+                // If the Asset Thread was tasked with loading the Asset, perform the load now.
+                // - The Asset Thread will also perform the load; the duplicate asset will be destroyed on Frame Sync.
+                case EAssetState::Loading:
+                // If Invalid or Freed, perform the load.
                 case EAssetState::Invalid:
                 case EAssetState::Freed:
                     break;
+
+                // Should not occur on the main thread. This state is only used on the Asset Thread, to denote that
+                // it is actively being loaded. 
+                case EAssetState::ThreadLoading:
+                {
+                    NES_ASSERT(false, "Main thread AssetState should never have 'ThreadLoading' set!");
+                    break;
+                }
             }
         }
+
+        else
+        {
+            // Create a new entry:
+            m_infoMap[id] = AssetInfo(kInvalidLoadIndex, Type::GetStaticTypeID(), EAssetState::Loading, ELoadResult::Pending);
+        }
         
-        // Create a new entry:
-        m_infoMap[id] = AssetInfo(kInvalidLoadIndex, Type::GetStaticTypeID(), EAssetState::Loading, ELoadResult::Pending);
         m_threadInfoMapNeedsSync = true;
         
         // Load the Asset: 
@@ -225,7 +232,10 @@ namespace nes
 
         // Process the loaded result.
         ProcessLoadedAsset(pAsset, Type::GetStaticTypeID(), id, result);
-        return result;         
+
+        // A synchronous load operation must have a completed result.
+        NES_ASSERT(result != ELoadResult::Pending);
+        return result;
     }
 
     template <ValidAssetType Type>
@@ -233,87 +243,51 @@ namespace nes
     {
         NES_ASSERT(IsAssetThread());
 
-        // New MemoryAsset that will be added to our buffer.
-        LoadedMemoryAsset memoryAsset{};
-        memoryAsset.m_id = id;
-        memoryAsset.m_typeID = Type::GetStaticTypeID();
-        memoryAsset.m_requestID = requestID;
-        memoryAsset.m_result = ELoadResult::Pending;
-        memoryAsset.m_pAsset = nullptr; // Only created if we need to perform the load.
-
-        // Updated info for the asset.
-        AssetInfo newInfo
+        // New memory asset that will be added to our buffer. Even if we don't need to perform a load operation,
+        // this memory asset will be used to notify the load request.
+        LoadedMemoryAsset memoryAsset
         {
-            .m_loadedIndex = kInvalidLoadIndex,
+            .m_pAsset = nullptr, // Only created if we need to perform the load.
+            .m_id = id,
             .m_typeID = Type::GetStaticTypeID(),
-            .m_state = EAssetState::Loading,
-            .m_loadResult = ELoadResult::Pending,
+            .m_requestID = requestID,
+            .m_result = ELoadResult::Pending,
         };
 
-        // Check if the asset is already loaded or not.
-        if (AssetInfo* pInfo = GetAssetInfo(id))
+        // Check if we need to perform a load:
+        bool needsToLoad = false;
         {
-            switch (pInfo->m_state)
+            for (;;)
             {
-                case EAssetState::Loading:
+                if (!ThreadCanProceed(id, Type::GetStaticTypeID(), memoryAsset.m_result, needsToLoad))
                 {
-                    // The asset will be loaded before this, and the result will be overwritten.
-                    // Break out.
-                    newInfo = *pInfo;
-                    memoryAsset.m_result = ELoadResult::Success;
-                    break;
-                }
-                
-                // We have finished already, use the previous result.
-                case EAssetState::Loaded:
-                {
-                    memoryAsset.m_result = pInfo->m_loadResult;
-                    newInfo = *pInfo;
-                    break;
+                    std::this_thread::sleep_for(std::chrono::microseconds(100));
+                    continue;
                 }
 
-                // If we were freeing the asset, mark it as Loaded (this will make sure it isn't freed), and return success.
-                case EAssetState::Freeing:
-                {
-                    newInfo.m_state = EAssetState::Loaded;
-                    memoryAsset.m_result = ELoadResult::Success;
-                    break;
-                }
-
-                // If queued, invalid or freed, set to the loading state, and perform the load.
-                //case EAssetState::Queued:
-                case EAssetState::Invalid:
-                case EAssetState::Freed:
-                {
-                    // Create the asset on the heap and load:
-                    newInfo.m_state = EAssetState::Loading;
-                    memoryAsset.m_pAsset = NES_NEW(Type());
-                    memoryAsset.m_result = memoryAsset.m_pAsset->LoadFromFile(path);
-                    break;
-                }
+                break;
             }
         }
 
-        // No Info, create the Asset:
-        else
+        // Perform the load if necessary:
+        if (needsToLoad)
         {
             // Create the asset on the heap and load:
             memoryAsset.m_pAsset = NES_NEW(Type());
             memoryAsset.m_result = memoryAsset.m_pAsset->LoadFromFile(path);
-            newInfo.m_loadResult = memoryAsset.m_result;
-        }
-
-        // Update the threadInfoMap:
-        // This ensures that we don't try to load this asset multiple times on the asset thread.
-        {
+            
+            // Set the result of the load in the map.
             std::lock_guard lock(m_threadInfoMapMutex);
-            m_threadInfoMap[id] = newInfo;
+            
+            auto& info = m_threadInfoMap.at(id); 
+            info.m_loadResult = memoryAsset.m_result;
+            info.m_state = EAssetState::Loaded;
         }
 
         // Add the loaded memory asset to thread's buffer to be synced with the main thread.
-        // The asset will be freed if it failed to load.
-        // Note: Even if the Asset was previously loaded, we still add a memory asset (it's value will be null, but the result can be Success).
-        // This ensures that separete requests for the same asset have their callbacks called appropriately. 
+        // The asset memory will be freed if it failed to load.
+        // Note: Even if the Asset was previously loaded, we still add a memory asset object (it's value will be null, but the result can be Success).
+        // This ensures that separate requests for the same asset have their callbacks invoked correctly. 
         {
             std::lock_guard lock(m_threadMemoryAssetsMutex);
             m_threadMemoryAssets.emplace_back(memoryAsset);

@@ -18,10 +18,22 @@ public:
         std::string texturePath1 = NES_CONTENT_DIR;
         texturePath1 += "miramar_bk.png";
 
-        // Load Sync Test:
+        // Load Async Test:
+        {
+            auto onSingleComplete = [this](const nes::AsyncLoadResult& result, const float)
+            {
+                NES_LOG("Single Load Request complete!\n\tFreeing Texture 1...");
+        
+                if (result.IsValid())
+                    nes::AssetManager::FreeAsset(result.GetAssetID());
+            };
+            nes::AssetManager::LoadAsync<nes::Texture>(m_texture1, texturePath1, onSingleComplete);
+        }
+
+        // Load Sync Test (forces the texture to be loaded now, regardless of the Async Load above).
         {
             const nes::ELoadResult result = nes::AssetManager::LoadSync<nes::Texture>(m_texture1, texturePath1);
-            if (result != nes::ELoadResult::Success && result != nes::ELoadResult::Pending)
+            if (result != nes::ELoadResult::Success)
             {
                 NES_ERROR("Failed to load texture!");
                 return false;
@@ -30,11 +42,11 @@ public:
 
         // Load Request Test:
         {
-            auto onProgress = [](const float progress)
+            auto onAssetLoaded = [](const nes::AsyncLoadResult&, const float progress)
             {
-                NES_LOG("Load Progress: {0:2f}", progress);  
+                NES_LOG("Load Progress: {0:2f}", progress);
             };
-
+        
             auto onComplete = [this](const nes::ELoadResult result)
             {
                 if (result == nes::ELoadResult::Success)
@@ -46,7 +58,7 @@ public:
             // Begin a load request:
             nes::LoadRequest request = nes::AssetManager::BeginLoadRequest();
             request.SetOnCompleteCallback(onComplete);
-            request.SetOnProgressUpdatedCallback(onProgress);
+            request.SetOnAssetLoadedCallback(onAssetLoaded);
             
             request.AppendLoad<nes::Texture>(m_texture1, texturePath1);
             
@@ -56,18 +68,6 @@ public:
             
             // Submit the request:
             nes::AssetManager::SubmitLoadRequest(std::move(request));
-        }
-        
-        // Load Async Test:
-        {
-            auto onSingleComplete = [this](const nes::ELoadResult result)
-            {
-                NES_LOG("Single Load Request complete!\n\tFreeing Texture 1...");
-        
-                if (result == nes::ELoadResult::Success)
-                    nes::AssetManager::FreeAsset(m_texture1);
-            };
-            nes::AssetManager::LoadAsync<nes::Texture>(m_texture1, texturePath1, onSingleComplete);
         }
 
         return true;

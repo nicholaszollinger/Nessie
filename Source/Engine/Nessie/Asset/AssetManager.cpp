@@ -18,12 +18,27 @@ namespace nes
         , m_requestId(other.m_requestId)
         , m_jobs(std::move(other.m_jobs))
         , m_onComplete(other.m_onComplete)
-        , m_onProgressUpdated(other.m_onProgressUpdated)
+        , m_onAssetLoaded(other.m_onAssetLoaded)
     {
         other.m_requestId = kInvalidRequestID;
         other.m_pAssetManager = nullptr;
         other.m_onComplete = nullptr;
-        other.m_onProgressUpdated = nullptr;
+        other.m_onAssetLoaded = nullptr;
+    }
+    
+    TypeID AsyncLoadResult::GetAssetTypeID() const
+    {
+        return m_assetInfo.m_typeID;
+    }
+
+    ELoadResult AsyncLoadResult::GetResult() const
+    {
+        return m_assetInfo.m_loadResult;
+    }
+
+    bool AsyncLoadResult::IsValid() const
+    {
+        return m_assetInfo.IsValid();
     }
 
     LoadRequest& LoadRequest::operator=(const LoadRequest& other)
@@ -34,7 +49,7 @@ namespace nes
             m_jobs = other.m_jobs;
             m_requestId = other.m_requestId;
             m_onComplete = other.m_onComplete;
-            m_onProgressUpdated = other.m_onProgressUpdated;
+            m_onAssetLoaded = other.m_onAssetLoaded;
         }
 
         return *this;
@@ -48,12 +63,12 @@ namespace nes
             m_requestId = other.m_requestId; // Copy is fine.
             m_pAssetManager = other.m_pAssetManager;
             m_onComplete = other.m_onComplete;
-            m_onProgressUpdated = other.m_onProgressUpdated;
+            m_onAssetLoaded = other.m_onAssetLoaded;
 
             other.m_requestId = kInvalidRequestID;
             other.m_pAssetManager = nullptr;
             other.m_onComplete = nullptr;
-            other.m_onProgressUpdated = nullptr;
+            other.m_onAssetLoaded = nullptr;
         }
         
         return *this;
@@ -105,13 +120,13 @@ namespace nes
         // Create a new Status object for this request:
         LoadRequestStatus status{};
         status.m_onCompleted = request.m_onComplete;
-        status.m_onProgressUpdated = request.m_onProgressUpdated;
+        status.m_onAssetLoaded = request.m_onAssetLoaded;
         status.m_numLoads = static_cast<uint16>(request.m_jobs.size());
         instance.m_requestResultMap.emplace(request.m_requestId, std::move(status));
-
+        
         // Enqueue the request to be processed on the asset thread
         instance.m_threadJobQueue.EnqueueLocked(std::move(request));
-
+        
         // Wake the asset thread.
         instance.m_assetThread.SendInstruction(EAssetThreadInstruction::ProcessLoadOperations);
 
@@ -131,10 +146,10 @@ namespace nes
 
             ++completed;
 
-            if (localRequest.m_onProgressUpdated)
+            if (localRequest.m_onAssetLoaded)
             {
                 const float progress = static_cast<float>(completed) / static_cast<float>(total);
-                localRequest.m_onProgressUpdated(progress);
+                localRequest.m_onAssetLoaded(progress);
             }
         }
 
@@ -456,7 +471,7 @@ namespace nes
             };
             pInfo = &m_infoMap.at(id);
         }
-
+        
         // Load Success
         if (result == ELoadResult::Success)
         {
@@ -468,9 +483,9 @@ namespace nes
             //   make sense per request.
             if (pAsset != nullptr)
             {
-                // Case: Asset Thread loaded a dependent asset which was loaded synchronously by the
-                // Main Thread before syncing. Shouldn't happen, but possible.
-                if (pInfo->IsValid())
+                // Case: Asset Thread loaded an asset which was then loaded synchronously by the
+                // Main Thread before syncing. The Asset can be fully loaded or Freed. Either way, our asset is not needed.
+                if (pInfo->IsValid() || pInfo->m_state == EAssetState::Freed)
                 {
                     // Delete the memory without storing it.
                     NES_SAFE_DELETE(pAsset);
@@ -525,13 +540,14 @@ namespace nes
                 NES_ASSERT(requestResult.m_completedLoads <= requestResult.m_numLoads);
 
                 // Set the memory asset result as the request's result.
-                // If there was an error, IsComplete() will return true.
+                // If there was an error, IsComplete() will return true even if there are more loads to process.
                 requestResult.m_result = result;
                 
                 // Update the progress:
-                if (requestResult.m_onProgressUpdated)
+                if (requestResult.m_onAssetLoaded)
                 {
-                    requestResult.m_onProgressUpdated(requestResult.GetProgress());
+                    const AsyncLoadResult asyncResult(id, *pInfo);
+                    requestResult.m_onAssetLoaded(asyncResult, requestResult.GetProgress());
                 }
 
                 // Check for completed:
@@ -548,5 +564,57 @@ namespace nes
                 }
             }
         }
+    }
+
+    bool AssetManager::ThreadCanProceed(const AssetID& id, const TypeID& typeID, ELoadResult& outResult, bool& outShouldLoad)
+    {
+        std::lock_guard lock(m_threadInfoMapMutex);
+
+        auto it = m_threadInfoMap.find(id);
+        
+        // No current info exists, we need to perform the load!
+        if (it == m_threadInfoMap.end())
+        {
+            m_threadInfoMap[id] = AssetInfo(kInvalidLoadIndex, typeID, EAssetState::ThreadLoading, ELoadResult::Pending);
+            outShouldLoad = true;
+        }
+
+        // We have existing info:
+        else
+        {
+            AssetInfo& info = it->second;
+
+            switch (info.m_state)
+            {
+                // Another thread is currently trying to load this asset. The result is not
+                // valid to read in this case.
+                case EAssetState::ThreadLoading:
+                {
+                    return false;
+                }
+                    
+                // We have finished already, use the previous result.
+                case EAssetState::Loaded:
+                {
+                    outResult = info.m_loadResult;
+                    break;
+                }
+
+                case EAssetState::Loading:
+                case EAssetState::Invalid:
+                case EAssetState::Freeing:
+                case EAssetState::Freed:
+                {
+                    // Claim the Asset to load on this thread.
+                    info.m_state = EAssetState::ThreadLoading;
+                    outShouldLoad = true;
+                    break;
+                } 
+            }
+        }
+
+        // No other thread is trying to load this asset. We either need to perform the load or
+        // we can use an existing result.
+        return true;
     }
 }

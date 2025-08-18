@@ -15,27 +15,43 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class EAssetState : uint8
     {
-        Invalid,            // Initial state.
-        Loading,            // The Asset is currently being loaded on the Asset Thread.
-        Loaded,             // The Asset has been loaded. However, the load could have failed. This just says that the load operation has completed. See EAssetResult.
-        //NeedsReload,      // TODO: If the asset on disk has been updated, this would be set as the status.
-        Freeing,            // The Asset has been requested to be freed. Once the Asset has no more locks, it will be freed.
-        Freed,              // The Asset has been freed from memory. It can be loaded again.
+        Invalid,                // Initial state.
+        Loading,                // The Asset is queued to load on the Asset Thread.
+        ThreadLoading,          // The Asset is currently being loaded by the Asset Thread.
+        Loaded,                 // The Asset has completed its load operation. If the load was successful, this Asset is now considered valid and can be used.  
+        //NeedsReload,          // TODO: If the asset on disk has been updated, this would be set as the status.
+        Freeing,                // The Asset has been requested to be freed. Once the Asset has no more locks, it will be freed.
+        Freed,                  // The Asset has been freed from memory. It can be loaded again.
     };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Possible results when trying to load an Asset.
     //----------------------------------------------------------------------------------------------------
-    enum class ELoadResult : uint8
+    enum class ELoadResult : int8
     {
-        Pending,            // Initial State. Used to indicate that the Asset is being loaded.
-        Success,            // The Load was successful.
-        Failure,            // The Load failed.
-        MissingDependency,  // The Asset failed to load a dependency.
-        InvalidArgument,    // Input params for the load were invalid.
+        Pending = -1,           // Initial State. Used to indicate that the Asset is being loaded.
+        Success = 0,            // The Load was successful.
+        Failure = 1,            // The Load failed.
+        MissingDependency = 2,  // The Asset failed to load a dependency.
+        InvalidArgument = 3,    // Input params for the load were invalid.
     };
-    // [TODO]: 
-    //constexpr const char* GetAssetResultString(const EAssetResult result);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Returns a string representation of the ELoadResult value.
+    //----------------------------------------------------------------------------------------------------
+    constexpr const char* GetLoadResultString(const ELoadResult result)
+    {
+        switch (result)
+        {
+            case ELoadResult::Pending: return "Pending";
+            case ELoadResult::Success: return "Success";
+            case ELoadResult::Failure: return "Failure";
+            case ELoadResult::MissingDependency: return "MissingDependency";
+            case ELoadResult::InvalidArgument: return "InvalidArgument";
+        }
+        
+        return "Unknown";
+    }
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Base class for all Assets. The destructor should handle all clean up.
@@ -104,11 +120,13 @@ namespace nes
     private:
         mutable std::atomic<uint32> m_lockCount = 0;
         AssetID             m_id = kInvalidAssetID;         /// Unique identifier for this specific asset.
-        //AssetHandle         m_handle = kInvalidAssetHandle; /// Index into the AssetPool.
     };
 
     template <typename Type>
-    concept ValidAssetType = TypeIsDerivedFrom<Type, AssetBase>
+    concept ValidAssetType = std::same_as<Type, AssetBase> ||
+        (TypeIsDerivedFrom<Type, AssetBase>
         && std::is_default_constructible_v<Type>
-        && HasValidTypeInfo<Type>;
+        && HasValidTypeInfo<Type>);
+
+    static_assert(ValidAssetType<AssetBase>);
 }
