@@ -64,6 +64,12 @@ namespace nes
             /// @brief : Get whether this load was successful.
             //----------------------------------------------------------------------------------------------------
             bool                        IsValid() const;
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : The request progress is a value between [0, 1] and is equal to:
+            ///     'number of completed loads for the request' / 'total number of loads for the request'.
+            //----------------------------------------------------------------------------------------------------
+            float                       GetRequestProgress() const { return m_requestProgress; }
             
         private:
             friend class AssetManager;
@@ -71,10 +77,11 @@ namespace nes
             //----------------------------------------------------------------------------------------------------
             /// @brief : Private constructor for the result. 
             //----------------------------------------------------------------------------------------------------
-            explicit                    AsyncLoadResult(const AssetID& id, const AssetInfo& info) : m_assetInfo(info), m_assetID(id) {}
+            explicit                    AsyncLoadResult(const AssetID& id, const AssetInfo& info, const float progress) : m_assetInfo(info), m_assetID(id), m_requestProgress(progress) {}
 
-            const AssetInfo&            m_assetInfo;    // Info about the loaded asset.
-            AssetID                     m_assetID;      // ID of the Asset.
+            const AssetInfo&            m_assetInfo;                // Info about the loaded asset.
+            AssetID                     m_assetID;                  // ID of the Asset.
+            float                       m_requestProgress = 0.f;    // 
         };
 
         //----------------------------------------------------------------------------------------------------
@@ -83,8 +90,8 @@ namespace nes
         class LoadRequest
         {
         public:
-            using OnAssetLoaded         = std::function<void(const AsyncLoadResult& /*assetResult*/, float /*requestProgress*/)>;
-            using OnComplete     = std::function<void(ELoadResult /*result*/)>;
+            using OnAssetLoaded         = std::function<void(const AsyncLoadResult& /*assetResult*/)>;
+            using OnComplete            = std::function<void(ELoadResult /*result*/)>;
             
         private:
             friend class AssetManager;
@@ -141,7 +148,7 @@ namespace nes
             OnAssetLoaded               m_onAssetLoaded = nullptr;
 
             /// Called when all load operations on a request are complete, or on the first error. Passes the result of the operation.
-            OnComplete           m_onComplete = nullptr;
+            OnComplete                  m_onComplete = nullptr;
         };
     
     public:

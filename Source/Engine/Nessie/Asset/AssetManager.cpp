@@ -397,6 +397,12 @@ namespace nes
         if (m_assetsToFree.empty())
             return;
 
+        if (m_loadedAssets.empty())
+        {
+            m_assetsToFree.clear();
+            return;
+        }
+
         // We are updating asset state, so we will have to sync.
         m_threadInfoMapNeedsSync = true;
         
@@ -408,14 +414,14 @@ namespace nes
             
             auto& assetInfo = m_infoMap.at(id);
             
-            // If the asset has been requested again before freeing, remove from the array.
-            if (assetInfo.m_state < EAssetState::Freeing)
+            // If the asset has been requested again, or it has been freed already, remove from the array.
+            if (assetInfo.m_state != EAssetState::Freeing)
             {
                 std::swap(m_assetsToFree[i], m_assetsToFree.back());
                 m_assetsToFree.pop_back();
                 continue;
             }
-
+            
             NES_ASSERT(assetInfo.m_loadedIndex < m_loadedAssets.size());
             NES_ASSERT(assetInfo.m_typeID == m_loadedAssets[assetInfo.m_loadedIndex]->GetTypeID());
 
@@ -428,13 +434,13 @@ namespace nes
                 // Delete the asset.
                 NES_SAFE_DELETE(pAsset);
                 
-                // Remove the asset from the loaded map:
+                // Remove the asset from the loaded array:
                 if (freeIndex != m_loadedAssets.size() - 1)
                 {
                     const AssetID lastAssetID = m_loadedAssets.back()->m_id;
                     auto& lastAssetInfo = m_infoMap.at(lastAssetID);
 
-                    // Update the loaded Indices:
+                    // Update the loaded index for the swapped asset:
                     lastAssetInfo.m_loadedIndex = freeIndex;
                     
                     // Swap:
@@ -466,7 +472,7 @@ namespace nes
             {
                 .m_loadedIndex = kInvalidLoadIndex,
                 .m_typeID = typeID,
-                .m_state = EAssetState::Loaded,
+                .m_state = EAssetState::Loading, // Not immediately set to loaded, so that it will not be queued to free.
                 .m_loadResult = result
             };
             pInfo = &m_infoMap.at(id);
@@ -522,9 +528,13 @@ namespace nes
         // If the load failed, free the temporary asset now.
         else
         {
-            pInfo->m_state = EAssetState::Freed;
-            pInfo->m_loadedIndex = kInvalidLoadIndex;
-            pInfo->m_loadResult = result;
+            if (!pInfo->IsValid())
+            {
+                pInfo->m_state = EAssetState::Freed;
+                pInfo->m_loadedIndex = kInvalidLoadIndex;
+                pInfo->m_loadResult = result;
+            }
+            
             NES_SAFE_DELETE(pAsset);
         }
         
@@ -546,8 +556,8 @@ namespace nes
                 // Update the progress:
                 if (requestResult.m_onAssetLoaded)
                 {
-                    const AsyncLoadResult asyncResult(id, *pInfo);
-                    requestResult.m_onAssetLoaded(asyncResult, requestResult.GetProgress());
+                    const AsyncLoadResult asyncResult(id, *pInfo, requestResult.GetProgress());
+                    requestResult.m_onAssetLoaded(asyncResult);
                 }
 
                 // Check for completed:

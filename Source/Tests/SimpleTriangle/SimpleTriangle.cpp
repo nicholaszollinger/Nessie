@@ -20,7 +20,7 @@ public:
 
         // Load Async Test:
         {
-            auto onSingleComplete = [this](const nes::AsyncLoadResult& result, const float)
+            auto onSingleComplete = [this](const nes::AsyncLoadResult& result)
             {
                 NES_LOG("Single Load Request complete!\n\tFreeing Texture 1...");
         
@@ -42,9 +42,9 @@ public:
 
         // Load Request Test:
         {
-            auto onAssetLoaded = [](const nes::AsyncLoadResult&, const float progress)
+            auto onAssetLoaded = []([[maybe_unused]] const nes::AsyncLoadResult& result)
             {
-                NES_LOG("Load Progress: {0:2f}", progress);
+                NES_LOG("Load Progress: {0:2f}", result.GetRequestProgress());
             };
         
             auto onComplete = [this](const nes::ELoadResult result)
