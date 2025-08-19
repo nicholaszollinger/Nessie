@@ -333,11 +333,10 @@ namespace nes
             // Run the Load Operation.
             for (auto& job : loadRequest.m_jobs)
             {
-                const ELoadResult result = job();
-
-                // Break on the first error:
-                if (result != ELoadResult::Success)
-                    break;
+                // We don't use the result. Even if there is an error, we will
+                // try to load all Assets, so that all entries in the main thread's info
+                // map are updated appropriately when processing the loaded results.
+                [[maybe_unused]] const auto result = job();
             }
         }
     }
@@ -549,9 +548,10 @@ namespace nes
                 requestResult.m_completedLoads += 1;
                 NES_ASSERT(requestResult.m_completedLoads <= requestResult.m_numLoads);
 
-                // Set the memory asset result as the request's result.
+                // Set the memory asset result as the request's result. If there was an error.
                 // If there was an error, IsComplete() will return true even if there are more loads to process.
-                requestResult.m_result = result;
+                if (result == ELoadResult::Success)
+                    requestResult.m_successfulLoads += 1;
                 
                 // Update the progress:
                 if (requestResult.m_onAssetLoaded)
@@ -566,7 +566,7 @@ namespace nes
                     // Call the completed callback if valid.
                     if (requestResult.m_onCompleted)
                     {
-                        requestResult.m_onCompleted(requestResult.m_result);
+                        requestResult.m_onCompleted(requestResult.IsSuccessful());
                     }
 
                     // Remove the Request Result from the map:

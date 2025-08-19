@@ -95,7 +95,7 @@ namespace nes
 
                     if (onComplete)
                     {
-                        AsyncLoadResult result(id, *pInfo, 1.f);
+                        const AsyncLoadResult result(id, *pInfo, 1.f);
                         onComplete(result);
                     }
                     return;

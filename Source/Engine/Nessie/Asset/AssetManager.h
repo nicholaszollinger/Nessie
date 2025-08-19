@@ -91,7 +91,7 @@ namespace nes
         {
         public:
             using OnAssetLoaded         = std::function<void(const AsyncLoadResult& /*assetResult*/)>;
-            using OnComplete            = std::function<void(ELoadResult /*result*/)>;
+            using OnComplete            = std::function<void(bool /*wasSuccessful*/)>;
             
         private:
             friend class AssetManager;
@@ -296,7 +296,7 @@ namespace nes
             LoadRequest::OnAssetLoaded  m_onAssetLoaded{};                          // Callback for responding to individual asset loads.
             uint16                      m_numLoads = 1;                             // Number of loads that are needed to complete the request
             uint16                      m_completedLoads = 0;                       // Number of loads completed so far.
-            ELoadResult                 m_result = ELoadResult::Success;            // The result of the entire load request.
+            uint16                      m_successfulLoads = 0;                      // Number of loads that returned ELoadResult::Success.
             
             //----------------------------------------------------------------------------------------------------
             /// @brief : Returns a value from [0, 1] for the current progress of an operation.
@@ -304,9 +304,14 @@ namespace nes
             float                       GetProgress() const { return static_cast<float>(m_completedLoads) / static_cast<float>(m_numLoads); }
 
             //----------------------------------------------------------------------------------------------------
-            /// @brief : Returns true if the request was aborted due to an error, or all load operations have completed. 
+            /// @brief : Returns true if all load operations have completed. 
             //----------------------------------------------------------------------------------------------------
-            bool                        IsComplete() const { return m_result != ELoadResult::Success || m_completedLoads == m_numLoads; }
+            bool                        IsComplete() const { return m_completedLoads == m_numLoads; }
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Returns if all assets were loaded successfully.
+            //----------------------------------------------------------------------------------------------------
+            bool                        IsSuccessful() const { return m_numLoads == m_successfulLoads; }
         };
 
         //----------------------------------------------------------------------------------------------------

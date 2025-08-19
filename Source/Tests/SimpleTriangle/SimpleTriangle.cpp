@@ -47,11 +47,11 @@ public:
                 NES_LOG("Load Progress: {0:2f}", result.GetRequestProgress());
             };
         
-            auto onComplete = [this](const nes::ELoadResult result)
+            auto onComplete = [this](const bool success)
             {
-                if (result == nes::ELoadResult::Success)
+                if (success)
                 {
-                    NES_LOG("Load Request complete!");
+                    NES_LOG("Load Request Successful!");
                 }
             };
             
