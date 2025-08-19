@@ -93,6 +93,8 @@ namespace nes
 
     LoadRequest AssetManager::BeginLoadRequest()
     {
+        NES_ASSERT(IsMainThread(), "Load Requests can only be made on the Main Thread.");
+        
         AssetManager& instance = GetInstance();
         
         // Create the new Request:
@@ -115,14 +117,14 @@ namespace nes
 
 #ifndef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
         AssetManager& instance = GetInstance();
-        NES_ASSERT(!instance.m_requestResultMap.contains(request.m_requestId));
+        NES_ASSERT(!instance.m_requestStatusMap.contains(request.m_requestId));
         
         // Create a new Status object for this request:
         LoadRequestStatus status{};
         status.m_onCompleted = request.m_onComplete;
         status.m_onAssetLoaded = request.m_onAssetLoaded;
         status.m_numLoads = static_cast<uint16>(request.m_jobs.size());
-        instance.m_requestResultMap.emplace(request.m_requestId, std::move(status));
+        instance.m_requestStatusMap.emplace(request.m_requestId, std::move(status));
         
         // Enqueue the request to be processed on the asset thread
         instance.m_threadJobQueue.EnqueueLocked(std::move(request));
@@ -330,7 +332,7 @@ namespace nes
             m_threadJobQueue.Pop();
             m_threadJobQueue.Unlock();
             
-            // Run the Load Operation.
+            // Run each job.
             for (auto& job : loadRequest.m_jobs)
             {
                 // We don't use the result. Even if there is an error, we will
@@ -540,7 +542,7 @@ namespace nes
         // If the asset belongs to a load request, update it:
         if (requestID != kInvalidRequestID)
         {
-            if (auto it = m_requestResultMap.find(requestID); it != m_requestResultMap.end())
+            if (auto it = m_requestStatusMap.find(requestID); it != m_requestStatusMap.end())
             {
                 auto& requestResult = it->second;
 
@@ -548,12 +550,11 @@ namespace nes
                 requestResult.m_completedLoads += 1;
                 NES_ASSERT(requestResult.m_completedLoads <= requestResult.m_numLoads);
 
-                // Set the memory asset result as the request's result. If there was an error.
-                // If there was an error, IsComplete() will return true even if there are more loads to process.
+                // If the load was successful, increment the success count.
                 if (result == ELoadResult::Success)
                     requestResult.m_successfulLoads += 1;
                 
-                // Update the progress:
+                // Call on Asset Loaded, if provided
                 if (requestResult.m_onAssetLoaded)
                 {
                     const AsyncLoadResult asyncResult(id, *pInfo, requestResult.GetProgress());
@@ -570,7 +571,7 @@ namespace nes
                     }
 
                     // Remove the Request Result from the map:
-                    m_requestResultMap.erase(it);
+                    m_requestStatusMap.erase(it);
                 }
             }
         }

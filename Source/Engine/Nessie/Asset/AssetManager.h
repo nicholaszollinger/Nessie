@@ -292,11 +292,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct LoadRequestStatus
         {
-            LoadRequest::OnComplete     m_onCompleted{};                            // Callback for responding to the request completed.
-            LoadRequest::OnAssetLoaded  m_onAssetLoaded{};                          // Callback for responding to individual asset loads.
-            uint16                      m_numLoads = 1;                             // Number of loads that are needed to complete the request
-            uint16                      m_completedLoads = 0;                       // Number of loads completed so far.
-            uint16                      m_successfulLoads = 0;                      // Number of loads that returned ELoadResult::Success.
+            LoadRequest::OnComplete     m_onCompleted{};        // Callback for responding to the request completed.
+            LoadRequest::OnAssetLoaded  m_onAssetLoaded{};      // Callback for responding to individual asset loads.
+            uint16                      m_numLoads = 1;         // Number of loads that are needed to complete the request
+            uint16                      m_completedLoads = 0;   // Number of loads completed so far.
+            uint16                      m_successfulLoads = 0;  // Number of loads that returned ELoadResult::Success.
             
             //----------------------------------------------------------------------------------------------------
             /// @brief : Returns a value from [0, 1] for the current progress of an operation.
@@ -321,11 +321,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct LoadedMemoryAsset
         {
-            AssetBase*                  m_pAsset = nullptr;                         // The Loaded Asset itself.
-            AssetID                     m_id = kInvalidAssetID;                     // Unique ID of the Asset.
-            TypeID                      m_typeID = 0;                               // TypeID of the asset.
-            LoadRequestID               m_requestID = 0;                            // Which Load Request this asset was loaded for.
-            ELoadResult                 m_result = ELoadResult::Success;            // The result of the load operation.
+            AssetBase*                  m_pAsset = nullptr;                 // The Loaded Asset itself.
+            AssetID                     m_id = kInvalidAssetID;             // Unique ID of the Asset.
+            TypeID                      m_typeID = 0;                       // TypeID of the asset.
+            LoadRequestID               m_requestID = kInvalidRequestID;    // Which Load Request this asset was loaded for.
+            ELoadResult                 m_result = ELoadResult::Success;    // The result of the load operation.
         };
 
         //----------------------------------------------------------------------------------------------------
@@ -351,10 +351,10 @@ namespace nes
         // Queue of Load functions to be executed on the Asset Thread.
         using ThreadJobQueue = ThreadSafeQueue<LoadRequest>;
 
-        // Buffer of Memory Assets that have been loaded, but not added to the Asset Map.
+        // Buffer of Memory Assets that have been loaded, but not processed on the main thread.
         using MemoryAssetBuffer = std::vector<LoadedMemoryAsset>;
 
-        // Maps a Request ID to its result.
+        // Maps a Request ID to its status.
         using RequestMap = std::unordered_map<LoadRequestID, LoadRequestStatus>;
     
     private:
@@ -429,16 +429,16 @@ namespace nes
     private:
         AssetInfoMap                    m_infoMap{};                        // Owned by the main thread. Maps an AssetID to the state of the Asset.
         AssetInfoMap                    m_threadInfoMap{};                  // Owned by the asset thread. Maps the AssetID to the state of the Asset.
-        RequestMap                      m_requestResultMap{};               // Owned by the main thread. Maps a RequestID to the request's status.
+        RequestMap                      m_requestStatusMap{};               // Owned by the main thread. Maps a RequestID to the request's status.
         AssetArray                      m_loadedAssets{};                   // Owned by the main thread. Array of loaded assets.
         std::vector<AssetID>            m_assetsToFree{};                   // Array of Assets that are waiting to be freed.
         AssetThread                     m_assetThread;                      // Asset thread object.            
         ThreadJobQueue                  m_threadJobQueue{};                 // Queue of jobs to process. Both threads read and write to this queue.
-        MemoryAssetBuffer               m_threadMemoryAssets{};             // Buffer of Assets that have been loaded as a part of a single load operation. They will be stored in the AssetManager on FrameSync().         
+        MemoryAssetBuffer               m_threadMemoryAssets{};             // Buffer of Assets that have been loaded as on the Asset Thread.         
         Mutex                           m_threadMemoryAssetsMutex;          // Mutex used to restrict access to the Asset Thread's memory asset buffer.
         Mutex                           m_threadInfoMapMutex;               // Mutex to restrict access to the thread's asset info map. 
-        LoadRequestID                   m_nextRequestID = 0;                // Counter incremented when a new request is made, used to set an ID to a LoadRequest.
-        bool                            m_threadInfoMapNeedsSync = false;   // Flag to indicate that the Asset Thread needs a new copy of the asset info map. 
+        LoadRequestID                   m_nextRequestID = 0;                // Counter incremented when a new request is made, used to set the ID of a LoadRequest.
+        bool                            m_threadInfoMapNeedsSync = false;   // Flag to indicate that the Asset Thread needs an updated copy of the asset info map. 
     };
     
     //----------------------------------------------------------------------------------------------------
