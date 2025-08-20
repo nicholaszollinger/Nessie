@@ -26,13 +26,13 @@ Over the summer, I am going to be doing some project-wide refactors, with the ai
 - Refactor Math classes with SIMD operations. ✅
 - Refactor Logging & Profiling code to be more robust. ✅
 - Port Asset System Work from last semester. ✅
-- Finish basic Physics System ✅
+- Finish basic Physics System. ✅
+- Asset System overhaul with a multithreaded architecture. ✅
 - Renderer Refactor, Render Thread, Debug Rendering API. ⌛
 - Create a Physics Test with boxes falling on each other.
 
 ### Fall Goals:
 Overall, I plan on having the basic structure to make small demos using my engine. Being able to load a project, edit and run all in the editor.
-- Asset System overhaul with a multithreaded architecture.
 - ECS revisit.
 - Editor UI
 - Engine vs Game Applications
@@ -44,8 +44,6 @@ Overall, I plan on having the basic structure to make small demos using my engin
 - Scripting, in python (lower priority, as I will be the solo dev for this engine).
 
 # Branches
-### Core
-I am going to use this branch to perform the syntax and project structure refactors.
 
 ### Physics Branch
 **This branch should not be used yet! This is currently under-development!*
