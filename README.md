@@ -6,7 +6,8 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 
 **Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
-**Vulkan**: *The engine requires Vulkan to be installed. Use the following link to install a compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.304.0/windows/VulkanSDK-1.4.304.0-Installer.exe)
+
+**Vulkan**: *The engine requires Vulkan to be installed. Use the following link and to install the compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.321.1/windows/vulkansdk-windows-X64-1.4.321.1.exe)
 * Make sure to select the `Shader Toolchain Debug Symbols` component when installing.
 
 **HardWare**: *Currently, I am only testing on my machine, which uses an NVIDIA 3090 GPU and AMD Ryzen 9 5950X CPU. I am working on checking for 

@@ -5,6 +5,10 @@
 #include "Nessie/Math/Math.h"
 #include <array>
 
+// [TODO]: I don't want to have this include here.
+#include <vulkan/vulkan_raii.hpp>
+#undef SendMessage
+
 #define NES_BEGIN_GRAPHICS_NAMESPACE namespace nes::graphics {
 #define NES_END_GRAPHICS_NAMESPACE }
 
@@ -22,7 +26,7 @@
 //----------------------------------------------------------------------------------------------------
 // Forward declare VMA types.
 //----------------------------------------------------------------------------------------------------
-    
+
 NES_GRAPHICS_DEFINE_HANDLE(VmaAllocator);
 NES_GRAPHICS_DEFINE_HANDLE(VmaAllocation);
 NES_GRAPHICS_DEFINE_HANDLE(VmaPool);
@@ -45,13 +49,14 @@ namespace nes
     struct  ShaderDesc;
     class   DeviceImage;
     class   Texture;
-    struct  TextureDesc;
-    struct  AllocateTextureDesc;
+    struct  ImageDesc;
+    struct  AllocateImageDesc;
     class   DeviceMemory;
     class   DeviceBuffer;
     struct  AllocateBufferDesc;
     struct  BufferDesc;
     class   Descriptor;
+    class   Pipeline;
     class   PipelineLayout;
     
     //----------------------------------------------------------------------------------------------------

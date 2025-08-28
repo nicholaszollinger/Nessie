@@ -2,6 +2,7 @@
 #pragma once
 #include "Nessie/Core/Memory/Memory.h"
 #include "Nessie/Debug/CheckedCast.h"
+#undef GetObject
 
 namespace nes::internal
 {

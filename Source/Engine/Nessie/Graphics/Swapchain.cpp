@@ -1,24 +1,19 @@
 ﻿// Swapchain.cpp
 #include "Swapchain.h"
 
-#include <vulkan/vk_enum_string_helper.h>
-
+#include <GLFW/glfw3.h>
 #include "CommandPool.h"
+#include "DeviceImage.h"
 #include "DeviceQueue.h"
 #include "RenderDevice.h"
+#include "Descriptor.h"
+#include "Vulkan/VulkanGLFW.h"
 
 namespace nes
 {
     Swapchain::~Swapchain()
     {
         DestroySwapchain();
-
-        // Destroy the surface
-        if (m_surface)
-        {
-            vkDestroySurfaceKHR(m_device, m_surface, m_device.GetVkAllocationCallbacks());
-            m_surface = nullptr;
-        }
     }
 
     EGraphicsResult Swapchain::Init(const SwapchainDesc& swapchainDesc)
@@ -35,32 +30,17 @@ namespace nes
 
         // Create the surface.
         const NativeWindow& nativeWindow = swapchainDesc.m_pWindow->GetNativeWindow();
-    #if NES_PLATFORM_WINDOWS
-        if (nativeWindow.m_windows.m_hwnd)
-        {
-            VkWin32SurfaceCreateInfoKHR win32SurfaceInfo = {VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR};
-            win32SurfaceInfo.hwnd = static_cast<HWND>(nativeWindow.m_windows.m_hwnd);
-            
-            NES_VK_FAIL_RETURN(m_device, vkCreateWin32SurfaceKHR(m_device, &win32SurfaceInfo, m_device.GetVkAllocationCallbacks(), &m_surface));   
-        }
-    #else
-    #error "Unsupported Swapchain platform!"
-    #endif
+        m_pWindow = static_cast<GLFWwindow*>(nativeWindow.m_glfw);
+        
+        VkSurfaceKHR surface = vulkan::glfw::CreateSurface(m_device, m_pWindow);
+        m_surface = vk::raii::SurfaceKHR(m_device, surface);
 
         // Check that the given device queue can be used to present to the surface.
+        const VkBool32 presentSupported = m_device.GetVkPhysicalDevice().getSurfaceSupportKHR(familyIndex, *m_surface);
+        if (!presentSupported)
         {
-            VkBool32 supportsPresent = VK_FALSE;
-            const VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(m_device, familyIndex, m_surface, &supportsPresent);
-        
-            if (supportsPresent != VK_TRUE)
-            {
-                NES_GRAPHICS_ERROR(m_device, "Selected Queue family {} cannot present to the surface! Swapchain creation failed!", familyIndex);
-                return EGraphicsResult::InitializationFailed;
-            }
-            if (result != VK_SUCCESS)
-            {
-                return ConvertVkResultToGraphics(result);
-            }
+            NES_GRAPHICS_ERROR(m_device, "Selected Queue family {} cannot present to the surface! Swapchain creation failed!", familyIndex);
+            return EGraphicsResult::Unsupported;
         }
         
         // Build the initial swapchain to the size of the Window.
@@ -70,7 +50,7 @@ namespace nes
     EGraphicsResult Swapchain::OnResize(const UVec2 desiredWindowSize, const bool enableVsync)
     {
         // Wait for all frames to finish rendering before recreating the swapchain
-        vkQueueWaitIdle(m_pQueue->GetHandle());
+        m_pQueue->WaitUntilIdle();
 
         m_frameResourceIndex = 0;
         m_needsRebuild = false;
@@ -90,24 +70,25 @@ namespace nes
         // Acquire the next image from the swapchain
         // This will signal frame.imageAvailable when the image is ready
         // and store the index of the acquired image in m_nextImageIndex
-        VkResult result = vkAcquireNextImageKHR(m_device, m_swapchain, std::numeric_limits<uint64>::max(), frame.m_imageAvailable, nullptr, &m_frameImageIndex);
-
+        auto [result, nextImageIndex] = m_swapchain.acquireNextImage(std::numeric_limits<uint64>::max(), frame.m_imageAvailable, nullptr);
+        m_frameImageIndex = nextImageIndex;
+        
         switch (result)
         {
-            case VK_SUCCESS:
-            case VK_SUBOPTIMAL_KHR:         // Still valid for presentation.
+            case vk::Result::eSuccess:
+            case vk::Result::eSuboptimalKHR:         // Still valid for presentation.
                 break;
 
-            case VK_ERROR_OUT_OF_DATE_KHR:  // The swapchain is no longer compatible with the surface and needs to be recreated
+            case vk::Result::eErrorOutOfDateKHR:  // The swapchain is no longer compatible with the surface and needs to be recreated
                 m_needsRebuild = true;
                 break;
                 
             default:
-                NES_GRAPHICS_WARN(m_device, "Failed to acquire swapchain image: Vulkan Error: {}", string_VkResult(result));
+                NES_GRAPHICS_WARN(m_device, "Failed to acquire swapchain image: Vulkan Error: {}", vk::to_string(result));
                 break;
         }
         
-        return ConvertVkResultToGraphics(result);
+        return ConvertVkResultToGraphics(static_cast<VkResult>(result));
     }
 
     void Swapchain::PresentFrame()
@@ -120,264 +101,240 @@ namespace nes
         // associated with the image we just finished rendering
         auto& frame = m_frameResources[m_frameImageIndex];
 
-        const VkPresentInfoKHR presentInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-            .pNext = nullptr,
-            .waitSemaphoreCount = 1,
-            .pWaitSemaphores = &frame.m_renderFinished,
-            .swapchainCount = 1,
-            .pSwapchains = &m_swapchain,
-            .pImageIndices = &m_frameImageIndex,
-            .pResults = nullptr,
-        };
+        const vk::PresentInfoKHR presentInfo = vk::PresentInfoKHR()
+            .setWaitSemaphoreCount(1)
+            .setWaitSemaphores(*frame.m_renderFinished)
+            .setSwapchainCount(1)
+            .setSwapchains(*m_swapchain)
+            .setPImageIndices(&m_frameImageIndex)
+            .setPResults(nullptr);
 
-        const VkResult result = vkQueuePresentKHR(*m_pQueue, &presentInfo);
-        if (result == VK_ERROR_OUT_OF_DATE_KHR)
+        const vk::Result result = m_pQueue->GetVkQueue().presentKHR(presentInfo);
+        
+        if (result == vk::Result::eErrorOutOfDateKHR)
         {
             m_needsRebuild = true;
         }
         else
         {
-            NES_GRAPHICS_ASSERT(m_device, result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
+            NES_GRAPHICS_ASSERT(m_device, result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
         }
 
         // Advance to the next frame in the swapchain
         m_frameResourceIndex = (m_frameResourceIndex + 1) % m_maxFramesInFlight;
     }
 
-    void Swapchain::SetDebugName(const char* name)
+    void Swapchain::SetDebugName(const std::string& name)
     {
-        m_device.SetDebugNameToTrivialObject(m_swapchain, name);
-        m_device.SetDebugNameToTrivialObject(m_surface, "Swapchain Surface");
+        vk::SwapchainKHR swapchain = *m_swapchain;
+        m_device.SetDebugNameToTrivialObject(swapchain, name);
+
+        vk::SurfaceKHR surface = *m_surface;
+        m_device.SetDebugNameToTrivialObject(surface, "Swapchain Surface");
     }
 
-    EGraphicsResult Swapchain::BuildSwapchain(const UVec2 desiredWindowSize, const bool enableVsync)
+    EGraphicsResult Swapchain::BuildSwapchain(const UVec2 /*desiredWindowSize*/, const bool enableVsync)
     {
-        // Get the physical device's capabilities for the given surface:
-        const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo2
-        {
-            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
-            .surface = m_surface,
-        };
-
-        VkSurfaceCapabilities2KHR capabilities2{ .sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR };
-        NES_VK_FAIL_RETURN(m_device, vkGetPhysicalDeviceSurfaceCapabilities2KHR(m_device, &surfaceInfo2, &capabilities2));
-
-        uint32 formatCount;
-        NES_VK_FAIL_RETURN(m_device, vkGetPhysicalDeviceSurfaceFormats2KHR(m_device, &surfaceInfo2, &formatCount, nullptr));
-        std::vector<VkSurfaceFormat2KHR> formats(formatCount, { .sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR });
-        NES_VK_FAIL_RETURN(m_device, vkGetPhysicalDeviceSurfaceFormats2KHR(m_device, &surfaceInfo2, &formatCount, formats.data()));
-
-        uint32 presentModeCount;
-        NES_VK_FAIL_RETURN(m_device, vkGetPhysicalDeviceSurfacePresentModesKHR(m_device, m_surface, &presentModeCount, nullptr));
-        std::vector<VkPresentModeKHR> presentModes(presentModeCount);
-        NES_VK_FAIL_RETURN(m_device, vkGetPhysicalDeviceSurfacePresentModesKHR(m_device, m_surface, &presentModeCount, presentModes.data()));
+        const auto& physicalDevice = m_device.GetVkPhysicalDevice();
+        auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
+        std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(m_surface);
+        std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(m_surface);
 
         // Choose the best available surface format and present mode
-        const VkSurfaceFormat2KHR surfaceFormat2 = SelectSwapSurfaceFormat(formats);
-        const VkPresentModeKHR presentMode = SelectSwapPresentMode(presentModes, enableVsync);
+        m_swapchainImageFormat = SelectSwapSurfaceFormat(availableFormats);
+        const vk::PresentModeKHR presentMode = SelectSwapPresentMode(availablePresentModes, enableVsync);
+        m_swapchainExtent = SelectSwapExtent(surfaceCapabilities);
 
-        // Ensure a valid window dimension:
-        const auto& surfaceCaps = capabilities2.surfaceCapabilities;
-        const bool isValidWidth = desiredWindowSize.x >= surfaceCaps.minImageExtent.width && desiredWindowSize.x <= surfaceCaps.maxImageExtent.width;
-        NES_GRAPHICS_RETURN_FAIL(m_device, isValidWidth, EGraphicsResult::InvalidArgument, "Invalid window width! Must be in range [{}, {}]", surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width);
-        const bool isValidHeight = desiredWindowSize.y >= surfaceCaps.minImageExtent.height && desiredWindowSize.y <= surfaceCaps.maxImageExtent.height;
-        NES_GRAPHICS_RETURN_FAIL(m_device, isValidHeight, EGraphicsResult::InvalidArgument, "Invalid window height! Must be in range [{}, {}]", surfaceCaps.minImageExtent.width, surfaceCaps.maxImageExtent.width);
+        auto minImageCount = math::Max(3u, surfaceCapabilities.minImageCount);
+        minImageCount = ( surfaceCapabilities.maxImageCount > 0 && minImageCount > surfaceCapabilities.maxImageCount ) ? surfaceCapabilities.maxImageCount : minImageCount;
+
+        vk::SwapchainCreateInfoKHR swapChainCreateInfo = vk::SwapchainCreateInfoKHR()
+            .setSurface(m_surface)
+            .setMinImageCount(minImageCount)
+            .setImageFormat(m_swapchainImageFormat)
+            .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
+            .setImageArrayLayers(1)
+            .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst)
+            .setImageExtent(m_swapchainExtent)
+            .setImageSharingMode(vk::SharingMode::eExclusive)
+            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+            .setPresentMode(presentMode)
+            .setPreTransform(surfaceCapabilities.currentTransform)
+            .setClipped(true);
+
+        m_swapchain = vk::raii::SwapchainKHR(m_device, swapChainCreateInfo);
         
-        // Set the number of images in flight, respecting the GPU's maxImageCount limit.
-        // If maxImageCount is equal to 0, then there is no limit other than memory,
-        // so don't change m_maxFramesInFlight.
-        if (surfaceCaps.maxImageCount > 0)
-        {
-            m_maxFramesInFlight = math::Min(m_maxFramesInFlight, surfaceCaps.maxImageCount);
-        }
+        // Create the image resources for the swapchain.
+        CreateImages();
 
-        // Store the chosen image format
-        m_imageFormat = surfaceFormat2.surfaceFormat.format;
-
-        // Create the swapchain:
-        const VkSwapchainCreateInfoKHR swapchainCreateInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .surface = m_surface,
-            .minImageCount = m_maxFramesInFlight,
-            .imageFormat = surfaceFormat2.surfaceFormat.format,
-            .imageColorSpace = surfaceFormat2.surfaceFormat.colorSpace,
-            .imageExtent = surfaceCaps.currentExtent,
-            .imageArrayLayers = 1,
-            .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-            .preTransform = surfaceCaps.currentTransform,
-            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            .presentMode = presentMode,
-            .clipped = VK_TRUE,
-        };
-        NES_VK_FAIL_RETURN(m_device, vkCreateSwapchainKHR(m_device, &swapchainCreateInfo, m_device.GetVkAllocationCallbacks(), &m_swapchain));
-        SetDebugName("Swapchain");
-
-        // Retrieve swapchain images:
-        uint32 imageCount;
-        NES_VK_FAIL_RETURN(m_device, vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, nullptr));
         // We can get more images than the minimum requested.
         // We still need to get a handle for each image in the swapchain
         // (because vkAcquireNextImageKHR can return an index to each image),
         // so adjust m_maxFramesInFlight.
-        NES_GRAPHICS_ASSERT(m_device, m_maxFramesInFlight <= imageCount);
-        m_maxFramesInFlight = imageCount;
-        std::vector<VkImage> swapImages(m_maxFramesInFlight);
-        NES_VK_FAIL_RETURN(m_device, vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, swapImages.data()));
+        m_maxFramesInFlight = static_cast<uint32>(m_images.size());
+        
+        // Create the image views for the image resources.
+        CreateImageViews();
 
-        // Store the swap chain images and create views for them.
-        m_images.resize(m_maxFramesInFlight);
-        VkImageViewCreateInfo imageViewCreateInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = nullptr,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = m_imageFormat,
-            .components  = {.r = VK_COMPONENT_SWIZZLE_IDENTITY, .g = VK_COMPONENT_SWIZZLE_IDENTITY, .b = VK_COMPONENT_SWIZZLE_IDENTITY, .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-            .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .baseMipLevel = 0, .levelCount = 1, .baseArrayLayer = 0, .layerCount = 1},
-        };
-
-        for (uint32 i = 0; i < m_maxFramesInFlight; ++i)
-        {
-            m_images[i].m_image = swapImages[i];
-            m_device.SetDebugNameToTrivialObject(m_images[i].m_image, fmt::format("Swapchain Image ({})", i));
-            imageViewCreateInfo.image = m_images[i].m_image;
-            NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &imageViewCreateInfo, m_device.GetVkAllocationCallbacks(), &m_images[i].m_view));
-            m_device.SetDebugNameToTrivialObject(m_images[i].m_view, fmt::format("Swapchain Image View ({})", i));
-        }
-
-        // Initialize the frame resources for each swapchain image.
-        m_frameResources.resize(m_maxFramesInFlight);
-        for (uint32 i = 0; i < m_maxFramesInFlight; ++i)
-        {
-            constexpr VkSemaphoreCreateInfo semaphoreCreateInfo {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
-            NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_frameResources[i].m_imageAvailable));
-            m_device.SetDebugNameToTrivialObject(m_frameResources[i].m_imageAvailable, fmt::format("Swapchain Image Available ({})", i));
-            NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_frameResources[i].m_renderFinished));
-            m_device.SetDebugNameToTrivialObject(m_frameResources[i].m_renderFinished, fmt::format("Swapchain Render Finished ({})", i));
-        }
-
-        // Transition all images to the present layout:
-        {
-            CommandBuffer* pBuffer = nullptr;
-            m_pCommandPool->CreateCommandBuffer(pBuffer);
-            
-            ImageMemoryBarrierDesc imageMemoryBarrierDesc{};
-            imageMemoryBarrierDesc.SetLayoutTransition(VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-            
-            pBuffer->Begin();
-            for (uint32 i = 0; i < m_maxFramesInFlight; ++i)
-            {
-                EGraphicsResult result = pBuffer->TransitionImageLayout(m_images[i].m_image, imageMemoryBarrierDesc);
-                NES_GRAPHICS_RETURN_FAIL(m_device, result == EGraphicsResult::Success, EGraphicsResult::Failure, "Failed to transition swapchain image to present layout!");
-            }
-            pBuffer->End();
-            
-            // Submit to the Queue:
-            m_pQueue->SubmitSingleTimeCommands(*pBuffer);
-            m_device.FreeResource(pBuffer);
-        }
+        // Create the frame resources:
+        CreateFrameResources();
         
         return EGraphicsResult::Success;
     }
 
     void Swapchain::DestroySwapchain()
     {
-        vkDestroySwapchainKHR(m_device, m_swapchain, m_device.GetVkAllocationCallbacks());
-        for (auto& frame : m_frameResources)
+        // Destroy current descriptors
+        for (auto* pDescriptor : m_imageViews)
         {
-            vkDestroySemaphore(m_device, frame.m_imageAvailable, m_device.GetVkAllocationCallbacks());
-            vkDestroySemaphore(m_device, frame.m_renderFinished, m_device.GetVkAllocationCallbacks());
+            m_device.FreeResource(pDescriptor);
         }
-        m_frameResources.clear();
-
-        for (auto& image : m_images)
+        m_imageViews.clear();
+        
+        // Destroy current image resources (this will not destroy the vk::Images, as they are owned by the swapchain).
+        for (auto* pImage : m_images)
         {
-            vkDestroyImageView(m_device, image.m_view, m_device.GetVkAllocationCallbacks());
+            m_device.FreeResource(pImage);
         }
         m_images.clear();
+
+        // raii type cleans up the swapchain object.
+        m_swapchain = nullptr;
+
+        // This will clean up all resources, since we use the vk::raii objects.
+        m_frameResources.clear();
+        
     }
 
-    VkSurfaceFormat2KHR Swapchain::SelectSwapSurfaceFormat(const std::vector<VkSurfaceFormat2KHR>& availableFormats) const
+    vk::Format Swapchain::SelectSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) const
     {
-        // If there's only one available format, and it's undefined, return a default format.
-        if (availableFormats.size() == 1 && availableFormats[0].surfaceFormat.format == VK_FORMAT_UNDEFINED)
-        {
-            static constexpr VkSurfaceFormat2KHR kDefault
+        const auto formatIt = std::ranges::find_if(availableFormats, [](const auto& format)
             {
-                .sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
-                .pNext = nullptr,
-                .surfaceFormat = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR },
-            };
-            return kDefault;
-        }
-
-        static constexpr VkSurfaceFormat2KHR preferredFormats[]
-        {
-            VkSurfaceFormat2KHR
-            {
-                .sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR, .pNext = nullptr,
-                .surfaceFormat = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
-            },
-            
-            VkSurfaceFormat2KHR
-            {
-                .sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR, .pNext = nullptr,
-                .surfaceFormat = {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
-            },
-        };
-
-        for (const auto& preferredFormat : preferredFormats)
-        {
-            for (const auto& availableFormat : availableFormats)
-            {
-                // Return the first matching preferred format:
-                if (availableFormat.surfaceFormat.format == preferredFormat.surfaceFormat.format
-                    && availableFormat.surfaceFormat.colorSpace == preferredFormat.surfaceFormat.colorSpace)
-                {
-                    return availableFormat;
-                }
-            }
-        }
+                return format.format == vk::Format::eB8G8R8A8Srgb && format.colorSpace == vk::ColorSpaceKHR::eSrgbNonlinear;
+            });
 
         // If no preferred format is available, then return the first available.
-        return availableFormats[0];
+        return formatIt != availableFormats.end() ? formatIt->format : availableFormats[0].format;
     }
-
-    VkPresentModeKHR Swapchain::SelectSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, const bool vSyncEnabled) const
+    
+    vk::PresentModeKHR Swapchain::SelectSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes, const bool vSyncEnabled) const
     {
         if (vSyncEnabled)
         {
-            return VK_PRESENT_MODE_FIFO_KHR;
+            return vk::PresentModeKHR::eFifo;
         }
 
         bool mailboxSupported = false;
         bool immediateSupported = false;
 
-        for (const VkPresentModeKHR mode : availablePresentModes)
+        for (const vk::PresentModeKHR mode : availablePresentModes)
         {
             // If this is the preferred mode, return it.
             if (mode == m_preferredVsyncOffMode)
                 return mode;
 
-            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+            if (mode == vk::PresentModeKHR::eMailbox)
                 mailboxSupported = true;
 
-            if (mode == VK_PRESENT_MODE_IMMEDIATE_KHR)
+            if (mode == vk::PresentModeKHR::eImmediate)
                 immediateSupported = true;
         }
 
         // Immediate is preferred for low latency.
         if (immediateSupported)
-            return VK_PRESENT_MODE_IMMEDIATE_KHR;
+            return vk::PresentModeKHR::eImmediate;
 
         if (mailboxSupported)
-            return VK_PRESENT_MODE_MAILBOX_KHR;
+            return vk::PresentModeKHR::eMailbox;
         
-        return VK_PRESENT_MODE_FIFO_KHR;
+        return vk::PresentModeKHR::eFifo;
+    }
+
+    vk::Extent2D Swapchain::SelectSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const
+    {
+        if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+            return capabilities.currentExtent;
+
+        // Get the current width and height.
+        int width, height;
+        glfwGetFramebufferSize(m_pWindow, &width, &height);
+
+        return
+        {
+            math::Clamp<uint32>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
+            math::Clamp<uint32>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)
+        };
+    }
+
+    void Swapchain::CreateImages()
+    {
+        for (auto* pImage : m_images)
+        {
+            m_device.FreeResource(pImage);
+        }
+        m_images.clear();
+
+        auto vkImages = m_swapchain.getImages();
+        m_images.resize(vkImages.size());
+        for (uint32 i = 0; i < vkImages.size(); i++)
+        {
+            ImageDesc desc = {};
+            desc.m_format = GetFormat(static_cast<uint32>(m_swapchainImageFormat));
+            desc.m_type = EImageType::Image2D;
+            desc.m_width = m_swapchainExtent.width;
+            desc.m_height = m_swapchainExtent.height;
+            desc.m_depth = 1;
+            desc.m_mipCount = 1;
+            desc.m_layerCount = 1;
+            desc.m_sampleCount = 1;
+
+            DeviceImage* pImage = Allocate<DeviceImage>(m_device.GetAllocationCallbacks(), m_device);
+            pImage->Init(vkImages[i], desc);
+            m_images[i] = pImage;
+        }
+    }
+
+    void Swapchain::CreateImageViews()
+    {
+        // Destroy current descriptors
+        for (auto* pDescriptor : m_imageViews)
+        {
+            m_device.FreeResource(pDescriptor);
+        }
+        m_imageViews.clear();
+
+        Image2DViewDesc desc{};
+        desc.m_format = GetFormat(static_cast<uint32>(m_swapchainImageFormat));
+        desc.m_viewType = EImage2DViewType::ColorAttachment;
+        desc.m_baseMipLevel = 0;
+        desc.m_mipCount = 1;
+        desc.m_baseLayer = 0;
+        desc.m_layerCount = 1;
+        
+        // Create the new descriptors:
+        for (const auto* pImage : m_images)
+        {
+            //imageViewCreateInfo.image = image;
+            desc.m_pImage = pImage;
+            Descriptor* pView = nullptr;
+            
+            m_device.CreateResource<Descriptor>(pView, desc);
+            m_imageViews.emplace_back(pView);
+        }
+    }
+
+    void Swapchain::CreateFrameResources()
+    {
+        // raii types handle destruction.
+        m_frameResources.clear();
+
+        constexpr vk::SemaphoreCreateInfo kSemaphoreInfo = vk::SemaphoreCreateInfo();
+        
+        m_frameResources.resize(m_images.size());
+        for (size_t i = 0; i < m_images.size(); ++i)
+        {
+            m_frameResources[i].m_renderFinished = vk::raii::Semaphore(m_device, kSemaphoreInfo, m_device.GetVkAllocationCallbacks());
+            m_frameResources[i].m_imageAvailable = vk::raii::Semaphore(m_device, kSemaphoreInfo, m_device.GetVkAllocationCallbacks());
+        }
     }
 }

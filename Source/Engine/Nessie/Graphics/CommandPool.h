@@ -20,7 +20,7 @@ namespace nes
         virtual                 ~CommandPool() override;
 
         /// Operator to cast the Vulkan Type.
-        operator                VkCommandPool() const { return m_handle; }
+        operator                const vk::raii::CommandPool&() const { return m_pool; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Command Pool object. This will allocate the Vulkan resource.
@@ -30,7 +30,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this command pool. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            SetDebugName(const char* name) override;
+        virtual void            SetDebugName(const std::string& name) override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create a new command buffer.
@@ -51,7 +51,7 @@ namespace nes
         const EQueueType&       GetQueueType() const { return m_queueType; }
 
     private:
-        VkCommandPool           m_handle{};
+        vk::raii::CommandPool   m_pool = nullptr;
         EQueueType              m_queueType{}; /// What Queue Type should all commands be submitted to?
         Mutex                   m_mutex;
     };

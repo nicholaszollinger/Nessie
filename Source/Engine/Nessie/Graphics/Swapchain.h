@@ -2,6 +2,8 @@
 #pragma once
 #include "DeviceAsset.h"
 
+struct GLFWwindow;
+
 //-------------------------------------------------------------------------------------------------
 // Under development. I am in the process of abstracting the Vulkan API.
 //-------------------------------------------------------------------------------------------------
@@ -75,7 +77,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Sets the debug name for both the swapchain and the surface. 
         //----------------------------------------------------------------------------------------------------
-        virtual void                SetDebugName(const char* name) override;
+        virtual void                SetDebugName(const std::string& name) override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Forces the rebuild of the swapchain. 
@@ -90,17 +92,22 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current image that we are rendering to. 
         //----------------------------------------------------------------------------------------------------
-        VkImage                     GetImage() const                    { return m_images[m_frameImageIndex].m_image; }
+        const DeviceImage&          GetImage() const                    { return *m_images[m_frameImageIndex]; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the image view for the current image that we are rendering to.
+        /// @brief : Get the descriptor for the current swapchain image. This is the image view. 
         //----------------------------------------------------------------------------------------------------
-        VkImageView                 GetImageView() const                { return m_images[m_frameImageIndex].m_view; }
+        const Descriptor&           GetImageDescriptor() const          { return *m_imageViews[m_frameImageIndex]; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current size of the swapchain.
+        //----------------------------------------------------------------------------------------------------
+        vk::Extent2D                GetExtent() const                   { return m_swapchainExtent;}
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the image format used for the swapchain images.
         //----------------------------------------------------------------------------------------------------
-        VkFormat                    GetImageFormat() const              { return m_imageFormat; }
+        vk::Format                  GetImageFormat() const              { return m_swapchainImageFormat; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the max number of frames that can be processed concurrently. 
@@ -110,37 +117,30 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current semaphore that will be signaled when the next image is ready for rendering.
         //----------------------------------------------------------------------------------------------------
-        VkSemaphore                 GetImageAvailableSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_imageAvailable; }
+        vk::Semaphore               GetImageAvailableSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_imageAvailable; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current semaphore that will be signaled when rendering to the image has finished.
         //----------------------------------------------------------------------------------------------------
-        VkSemaphore                 GetRenderFinishedSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_renderFinished; }
+        vk::Semaphore               GetRenderFinishedSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_renderFinished; }
 
     private:
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Represents an image within the swapchain that can be rendered to. 
-        //----------------------------------------------------------------------------------------------------
-        struct SwapchainImage
-        {
-            // [TODO]: Change to Texture* and Descriptor* (Image View)
-            VkImage                 m_image{};                  /// Image to render to.
-            VkImageView             m_view{};                   /// Image view to access the image.
-        };
+        using SwapchainImages = std::vector<DeviceImage*>;
+        using SwapchainViews = std::vector<Descriptor*>;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Resources associated with each frame being processed. 
         //----------------------------------------------------------------------------------------------------
         struct FrameResources
         {
-            VkSemaphore             m_imageAvailable{};         /// Signals when the image is ready for rendering.
-            VkSemaphore             m_renderFinished{};         /// Signals when rendering is finished.
+            vk::raii::Semaphore     m_imageAvailable = nullptr;  /// Signals when the image is ready for rendering.
+            vk::raii::Semaphore     m_renderFinished = nullptr;  /// Signals when rendering is finished.
         };
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Select the format that is most common and supported by the physical device.
         //----------------------------------------------------------------------------------------------------
-        VkSurfaceFormat2KHR         SelectSwapSurfaceFormat(const std::vector<VkSurfaceFormat2KHR>& availableFormats) const;
+        vk::Format                  SelectSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Choose the present mode based on vSyncEnabled.
@@ -150,7 +150,27 @@ namespace nes
         ///     - The IMMEDIATE mode is used when vSync is disabled, and is the best mode for low latency.
         ///     - The MAILBOX mode is used when vSync is disabled, and is the best mode for triple buffering.
         //----------------------------------------------------------------------------------------------------
-        VkPresentModeKHR            SelectSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes, const bool vSyncEnabled = true) const;
+        vk::PresentModeKHR          SelectSwapPresentMode(const std::vector<vk::PresentModeKHR>& availablePresentModes, const bool vSyncEnabled = true) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Select the swap extent size based on the current window and surface capabilities. 
+        //----------------------------------------------------------------------------------------------------
+        vk::Extent2D                SelectSwapExtent(const vk::SurfaceCapabilitiesKHR& capabilities) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create the image resources from the swapchain images.
+        //----------------------------------------------------------------------------------------------------
+        void                        CreateImages();
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create the image views for each of the swapchain images.
+        //----------------------------------------------------------------------------------------------------
+        void                        CreateImageViews();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create the frame sync resources.
+        //----------------------------------------------------------------------------------------------------
+        void                        CreateFrameResources();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Build the swapchain and all of its resources, aside from the surface.
@@ -163,18 +183,21 @@ namespace nes
         void                        DestroySwapchain();
 
     private:
-        DeviceQueue*                m_pQueue = nullptr;         /// The queue used to submit command buffers to the GPU
-        VkSwapchainKHR              m_swapchain{};              /// The swapchain object.
-        VkFormat                    m_imageFormat{};            /// The image format for the swapchain images.
-        VkSurfaceKHR                m_surface{};                /// The surface to present images to. Owned by the swapchain.
-        CommandPool*                m_pCommandPool{};           /// The command pool for the swapchain.
-        std::vector<SwapchainImage> m_images{};                 /// The swapchain images and their views.
-        std::vector<FrameResources> m_frameResources{};         /// Synchronization primitives for each frame.
-        uint32                      m_frameResourceIndex = 0;   /// Index of the current frame.
-        uint32                      m_frameImageIndex = 0;      /// Index of the swapchain image we are rendering to.
-        bool                        m_needsRebuild = false;     /// Flag indicating that the swapchain needs to be rebuilt.
+        DeviceQueue*                m_pQueue = nullptr;                                 /// The queue used to submit command buffers to the GPU
+        GLFWwindow*                 m_pWindow = nullptr;                                /// Window that we render to.
+        vk::raii::SwapchainKHR      m_swapchain = nullptr;                              /// The swapchain object.
+        vk::Format                  m_swapchainImageFormat = vk::Format::eUndefined;    /// The image format for the swapchain images.
+        vk::raii::SurfaceKHR        m_surface = nullptr;                                /// The surface to present images to. Owned by the swapchain.
+        CommandPool*                m_pCommandPool{};                                   /// The command pool for the swapchain.
+        SwapchainImages             m_images;                                           /// Swapchain image resources.
+        SwapchainViews              m_imageViews;                                       /// Swapchain image views resources. Recreated when the Swapchain is recreated.
+        std::vector<FrameResources> m_frameResources{};                                 /// Synchronization primitives for each frame.
+        vk::Extent2D                m_swapchainExtent{};                                /// Current size of the swapchain.
+        uint32                      m_frameResourceIndex = 0;                           /// Index of the current frame.
+        uint32                      m_frameImageIndex = 0;                              /// Index of the swapchain image we are rendering to.
+        bool                        m_needsRebuild = false;                             /// Flag indicating that the swapchain needs to be rebuilt.
 
-        VkPresentModeKHR            m_preferredVsyncOffMode = VK_PRESENT_MODE_MAX_ENUM_KHR;  /// Used if available. 
+        vk::PresentModeKHR          m_preferredVsyncOffMode = static_cast<vk::PresentModeKHR>(VK_PRESENT_MODE_MAX_ENUM_KHR); 
         uint32                      m_maxFramesInFlight = 3;    /// Best for most cases.
     };
 }

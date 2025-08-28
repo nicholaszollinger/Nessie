@@ -1,7 +1,7 @@
 ﻿// GraphicsResource.h
 #pragma once
 #include "GraphicsCore.h"
-#include "volk.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 
 namespace nes
 {
@@ -24,7 +24,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the debug name for a resource.
         //----------------------------------------------------------------------------------------------------
-        virtual void    SetDebugName(const char* name) = 0;
+        virtual void    SetDebugName(const std::string& name) = 0;
 
     protected:
         RenderDevice&   m_device;
@@ -35,9 +35,19 @@ namespace nes
     ///     a public GetDevice() function that returns the RenderDevice&.
     //----------------------------------------------------------------------------------------------------
     template <typename Type>
-    concept DeviceAssetType = requires(RenderDevice& device, Type type)
+    concept DeviceAssetType = requires(Type type)
     {
-        Type(device);
+        ValidConstructorForType<Type, RenderDevice&>;
         { type.GetDevice() } -> std::same_as<RenderDevice&>;
     };
+
+
+    template <typename Type>
+    concept ValidDeviceAssetType = requires()
+    {
+        Type(nullptr);
+        std::is_move_constructible_v<Type>;    
+        std::is_move_assignable_v<Type>;
+    };
+    
 }

@@ -3,6 +3,7 @@
 
 #include <stb_image.h>
 #include "RenderDevice.h"
+#include "Renderer.h"
 #include "Nessie/Application/Application.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 
@@ -14,7 +15,6 @@ namespace nes
         
         if (m_pImage)
         {
-            // [TODO]: Queue the Device Asset to be freed on the Renderer:
             auto& device = DeviceManager::GetRenderDevice();
             device.FreeResource(m_pImage);
         }
@@ -28,7 +28,7 @@ namespace nes
             m_pImage->SetDebugName(name);
     }
 
-    const TextureDesc& Texture::GetDesc() const
+    const ImageDesc& Texture::GetDesc() const
     {
         NES_ASSERT(m_pImage);
         return m_pImage->GetDesc();
@@ -51,10 +51,11 @@ namespace nes
             NES_ERROR("Failed to load texture! Failed to load from file!\n\tPath: {} \n\tError: {}", path.string(), stbi_failure_reason());
             return ELoadResult::Failure;
         }
+        
         m_imageData = Buffer(pData, width * height * STBI_rgb_alpha);
 
         // Texture Description
-        TextureDesc textureDesc{};
+        ImageDesc textureDesc{};
         textureDesc.m_width = math::Max(static_cast<uint32>(width), 1U);
         textureDesc.m_height = math::Max(static_cast<uint32>(height), 1U);
         textureDesc.m_depth = 1;
@@ -62,12 +63,12 @@ namespace nes
         textureDesc.m_layerCount = 1;
         textureDesc.m_mipCount = 1;    // [TODO]: Mip Levels
         textureDesc.m_sampleCount = 1;
-        textureDesc.m_type = ETextureType::Texture2D;
-        textureDesc.m_usage = ETextureUsageBits::ShaderResource;
+        textureDesc.m_type = EImageType::Image2D;
+        textureDesc.m_usage = EImageUsageBits::ShaderResource;
         textureDesc.m_clearValue = ClearValue{};
 
         // Allocation description. 
-        const AllocateTextureDesc allocDesc
+        const AllocateImageDesc allocDesc
         {
             .m_desc = textureDesc,
             .m_memoryLocation = EMemoryLocation::Device,

@@ -12,6 +12,9 @@ static_assert(VK_HEADER_VERSION >= 304,
 
 namespace nes
 {
+    template <DeviceAssetType Type>
+    class DeviceAssetPtr;
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : A RenderDevice is the intermediary between the program and the hardware device (GPU).
     //----------------------------------------------------------------------------------------------------
@@ -26,10 +29,13 @@ namespace nes
         /* Destructor */            ~RenderDevice();
 
         /// Operators for converting to Vulkan Types.
-        operator                    VkInstance() const          { return m_vkInstance; }
-        operator                    VkPhysicalDevice() const    { return m_vkPhysicalDevice; }
-        operator                    VkDevice() const            { return m_vkDevice; }
-        operator                    VmaAllocator() const        { return m_vmaAllocator; }
+        operator                    VkInstance() const                      { return *m_vkInstance; }
+        operator                    VkPhysicalDevice() const                { return *m_vkPhysicalDevice; }
+        operator                    VkDevice() const                        { return *m_vkDevice; }
+        operator                    VmaAllocator() const                    { return m_vmaAllocator; }
+        operator                    const vk::raii::Instance&() const       { return m_vkInstance; } 
+        operator                    const vk::raii::Device&() const         { return m_vkDevice; }
+        operator                    const vk::raii::PhysicalDevice&() const { return m_vkPhysicalDevice; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Device. 
@@ -42,9 +48,9 @@ namespace nes
         void                        Destroy();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Wait until all Device Queues are finished.
+        /// @brief : Wait until all Device Queues are idle.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             WaitUntilIdle();
+        void                        WaitUntilIdle();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get info about this device. 
@@ -85,14 +91,39 @@ namespace nes
         const AllocationCallbacks&  GetAllocationCallbacks() const          { return m_allocationCallbacks; }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the vulkan allocation callbacks object, to be used with vulkan API calls.   
+        //----------------------------------------------------------------------------------------------------
+        const vk::AllocationCallbacks& GetVkAllocationCallbacks() const      { return m_vkAllocationCallbacks; }
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get the pointer for the vulkan allocation callbacks object, to be used with vulkan API calls.   
         //----------------------------------------------------------------------------------------------------
-        VkAllocationCallbacks*      GetVkAllocationCallbacks() const        { return m_vkAllocationCallbacksPtr; }
+        const VkAllocationCallbacks* GetVkAllocationCallbacksPtr() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Vulkan Device. 
+        //----------------------------------------------------------------------------------------------------
+        const vk::raii::Device&     GetVkDevice() const                         { return m_vkDevice; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Vulkan Instance. 
+        //----------------------------------------------------------------------------------------------------
+        const vk::raii::Instance&   GetVkInstance() const                       { return m_vkInstance; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Vulkan Physical Device.  
+        //----------------------------------------------------------------------------------------------------
+        const vk::raii::PhysicalDevice& GetVkPhysicalDevice() const             { return m_vkPhysicalDevice; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Vulkan Pipeline Cache.
+        //----------------------------------------------------------------------------------------------------
+        const vk::raii::PipelineCache& GetVkPipelineCache() const               { return m_vkPipelineCache; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the supported Device Extensions for the physical device.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             GetSupportedDeviceExtensions(std::vector<VkExtensionProperties>& outSupportedExtensions) const;
+        EGraphicsResult             GetSupportedDeviceExtensions(std::vector<vk::ExtensionProperties>& outSupportedExtensions) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Test if the memory type at the given index is coherent memory. It does not need 
@@ -105,19 +136,19 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Fill out a vulkan buffer CreateInfo object, based on the given buffer description.
         //----------------------------------------------------------------------------------------------------
-        void                        FillCreateInfo(const BufferDesc& bufferDesc, VkBufferCreateInfo& outInfo) const;
+        void                        FillCreateInfo(const BufferDesc& bufferDesc, vk::BufferCreateInfo& outInfo) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Fill out a vulkan image CreateInfo object, based on the given texture description.
         //----------------------------------------------------------------------------------------------------
-        void                        FillCreateInfo(const TextureDesc& textureDesc, VkImageCreateInfo& outInfo) const;
+        void                        FillCreateInfo(const ImageDesc& textureDesc, vk::ImageCreateInfo& outInfo) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_VK_CHECK() rather than calling this directly.
         ///     If the result is a failure, this will report the message, assert, and exit. Treats errors as
         ///     fatal errors. 
         //----------------------------------------------------------------------------------------------------
-        bool                        CheckResult(const VkResult result, const char* resultStr, const char* file, int line) const;
+        bool                        CheckResult(const vk::Result result, const char* resultStr, const char* file, int line) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_GRAPHICS_ASSERT() rather than calling this directly.
@@ -135,7 +166,7 @@ namespace nes
         /// @brief : Use NES_VK_FAIL_REPORT() rather than calling this directly.
         ///     If the result is a failure, this will report the message, and return the result.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             ReportOnError(const VkResult result, const char* resultStr, const char* file, int line) const;
+        EGraphicsResult             ReportOnError(const vk::Result result, const char* resultStr, const char* file, int line) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Post a message using the set Debug Messenger callback.
@@ -146,18 +177,42 @@ namespace nes
         /// @brief : Set a debug name for a Vulkan object. 
         //----------------------------------------------------------------------------------------------------
         template <VulkanObjectType Type>
-        void                        SetDebugNameToTrivialObject(Type object, const std::string& name);
+        void                        SetDebugNameToTrivialObject(Type& object, const std::string& name);
     
     private:
+        static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();
+        static constexpr size_t     kGraphicsIndex = static_cast<size_t>(EQueueType::Graphics);
+        static constexpr size_t     kComputeIndex = static_cast<size_t>(EQueueType::Compute);
+        static constexpr size_t     kTransferIndex = static_cast<size_t>(EQueueType::Transfer);
+        
+        using QueueArray            = std::vector<DeviceQueue*>;
+        using QueueFamilyArray      = std::array<QueueArray, static_cast<size_t>(EQueueType::MaxNum)>;
+        using QueueIndicesArray     = std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)>; 
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the Vulkan Instance. Returns EGraphicsResult::Unsupported on failure.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult             CreateInstance(const ApplicationDesc& appDesc, const RendererDesc& rendererDesc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get required extensions for Nessie.
+        //----------------------------------------------------------------------------------------------------
+        std::vector<const char*>    GetRequiredInstanceExtensions(const RendererDesc& rendererDesc) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates the debug messenger, if necessary.
+        //----------------------------------------------------------------------------------------------------
+        void                        SetupDebugMessenger();
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Select a physical device to use for rendering. Returns EGraphicsResult::Failure on failure.
         //----------------------------------------------------------------------------------------------------
         EGraphicsResult             SelectPhysicalDevice(const RendererDesc& rendererDesc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns if the physical device is suitable based on its properties and features.
+        //----------------------------------------------------------------------------------------------------
+        bool                        QueryQueueFamilySupport(const RendererDesc& rendererDesc, const std::vector<vk::QueueFamilyProperties>& familyProps, QueueIndicesArray& outIndices);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the Logical Device. Returns EGraphicsResult::Failure on failure.
@@ -173,7 +228,7 @@ namespace nes
         /// @brief : Filters out unavailable extensions from the desired extensions based on the supported extensions.
         ///     If any unavailable extension was required, this will return false.
         //----------------------------------------------------------------------------------------------------
-        bool                        FilterAvailableExtensions(const std::vector<VkExtensionProperties>& supportedExtensions, const std::vector<ExtensionDesc>& desiredExtensions, std::vector<ExtensionDesc>& outFilteredExtensions) const;
+        bool                        FilterAvailableExtensions(const std::vector<vk::ExtensionProperties>& supportedExtensions, const std::vector<ExtensionDesc>& desiredExtensions, std::vector<ExtensionDesc>& outFilteredExtensions) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Adds a default of device extensions if they are available to the outDesiredExtensions array.
@@ -186,27 +241,22 @@ namespace nes
         void                        FillOutDeviceDesc();
 
     private:
-        static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();
-        
-        using QueueArray            = std::vector<DeviceQueue*>;
-        using QueueFamilyArray      = std::array<QueueArray, static_cast<size_t>(EQueueType::MaxNum)>;
-        using ActiveQueueIndicesArray = std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)>; 
-
         AllocationCallbacks         m_allocationCallbacks{};
         DebugMessenger              m_debugMessenger{};
+        vk::raii::Context           m_context{};
+        vk::raii::Instance          m_vkInstance = nullptr;
+        vk::raii::PhysicalDevice    m_vkPhysicalDevice = nullptr;
+        vk::raii::Device            m_vkDevice = nullptr;
+        vk::raii::DebugUtilsMessengerEXT m_vkDebugMessenger = nullptr;
+        vk::raii::PipelineCache     m_vkPipelineCache = nullptr;
+        vk::AllocationCallbacks     m_vkAllocationCallbacks = nullptr;
         QueueFamilyArray            m_queueFamilies{};      /// Contains an array of Queues for each EQueueType. 
         DeviceDesc                  m_desc{};
-        VkInstance                  m_vkInstance{};
-        VkPhysicalDevice            m_vkPhysicalDevice{};
-        VkDevice                    m_vkDevice{};
-        VkAllocationCallbacks       m_vkAllocationCallbacks{};
-        VkAllocationCallbacks*      m_vkAllocationCallbacksPtr = nullptr;
-        VkDebugUtilsMessengerEXT    m_vkDebugMessenger{};
-        VkPhysicalDeviceMemoryProperties m_memoryProperties{};
-        ActiveQueueIndicesArray     m_activeQueueIndices{};
+        vk::PhysicalDeviceMemoryProperties m_memoryProperties{};
+        QueueIndicesArray           m_activeQueueIndices{};
         Mutex                       m_activeQueueIndicesMutex{};
         uint32                      m_numActiveFamilyIndices = 0;
-        VmaAllocator                m_vmaAllocator;
+        VmaAllocator                m_vmaAllocator = nullptr;
     };
 
     template <DeviceAssetType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)
@@ -244,22 +294,34 @@ namespace nes
     }
 
     template <VulkanObjectType Type>
-    void RenderDevice::SetDebugNameToTrivialObject(Type object, const std::string& name)
+    void RenderDevice::SetDebugNameToTrivialObject([[maybe_unused]] Type& object, [[maybe_unused]] const std::string& name)
     {
-        if (vkSetDebugUtilsObjectNameEXT != nullptr && m_vkDevice != nullptr)
+#if NES_DEBUG
+        if (m_vkDevice != nullptr)
         {
-            constexpr VkObjectType kType = GetVkObjectType<Type>();
-            
-            VkDebugUtilsObjectNameInfoEXT nameInfo
-            {
-                .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_OBJECT_NAME_INFO_EXT,
-                .pNext = nullptr,
-                .objectType = kType,
-                .objectHandle = reinterpret_cast<uint64>(object),
-                .pObjectName = name.c_str(),
-            };
+            constexpr vk::ObjectType kType = GetVkObjectType<Type>();
 
-            vkSetDebugUtilsObjectNameEXT(m_vkDevice, &nameInfo);
+            uint64 handle;
+            // Case for C++ vulkan types:
+            if constexpr (requires(){typename Type::NativeType;})
+            {
+                using NativeType = typename Type::NativeType;
+                NativeType type = object;
+                handle = reinterpret_cast<uint64>(type);
+            }
+            // C version vulkan types.
+            else
+            {
+                handle = reinterpret_cast<uint64>(object);
+            }
+            
+            vk::DebugUtilsObjectNameInfoEXT nameInfo = vk::DebugUtilsObjectNameInfoEXT()
+                .setObjectHandle(handle)
+                .setObjectType(kType)
+                .setPObjectName(name.c_str());
+            
+            m_vkDevice.setDebugUtilsObjectNameEXT(nameInfo);
         }
+#endif
     }
 }

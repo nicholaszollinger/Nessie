@@ -6,6 +6,13 @@
 #include "Nessie/Physics/Collision/Shapes/BoxShape.h"
 #include "Nessie/Physics/Collision/Shapes/EmptyShape.h"
 #include "Tests/General/SimpleTest.h"
+#include "Nessie/Graphics/CommandBuffer.h"
+#include "Nessie/Graphics/DeviceImage.h"
+#include "Nessie/Graphics/Pipeline.h"
+#include "Nessie/Graphics/PipelineLayout.h"
+#include "Nessie/Graphics/RenderDevice.h"
+#include "Nessie/Graphics/Renderer.h"
+#include "Nessie/Graphics/Shader.h"
 
 static constexpr uint kNumBodies = 10240;
 static constexpr uint kNumBodyMutexes = 0; // Autodetect
@@ -60,7 +67,7 @@ bool TestApplication::Internal_AppInit()
     return true;
 }
 
-void TestApplication::Internal_AppRunFrame(const float deltaTime)
+void TestApplication::Internal_AppUpdate(const float deltaTime)
 {
     float worldDeltaTime = 0.f;
     if (m_requestedDeltaTime <= 0.f)
@@ -104,6 +111,47 @@ void TestApplication::Internal_AppRunFrame(const float deltaTime)
     }
     
     UpdateCamera(static_cast<float>(deltaTime));
+}
+
+void TestApplication::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+{
+    // Transition the swapchain image to color attachment optimal:
+    {
+        nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
+            .SetLayoutTransition(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)
+            .SetStages(vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eColorAttachmentOutput)
+            .SetAccessFlags({}, vk::AccessFlagBits2::eColorAttachmentWrite);
+    
+        commandBuffer.TransitionImageLayout(context.GetSwapchainImage().GetVkImage(), transitionBarrierDesc);
+    }
+    
+    // Set up the attachment for rendering:
+    nes::RenderTargetsDesc renderTargetsDesc = nes::RenderTargetsDesc()
+        .SetColorTargets(&context.GetSwapchainImageDescriptor());
+
+    // Begin a render
+    commandBuffer.BeginRendering(renderTargetsDesc);
+    {
+        // Clear the screen
+        nes::ClearDesc clearDesc = nes::ClearDesc()
+            .SetColorValue({ 0.01f, 0.01f, 0.01f, 1.0f });
+        commandBuffer.ClearRenderTargets(clearDesc);
+        
+        // [TODO]: 
+
+        // End
+        commandBuffer.EndRendering();
+    }
+
+    // Transition the image to present layout:
+    {
+        nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
+            .SetLayoutTransition(vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR)
+            .SetStages(vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe)
+            .SetAccessFlags(vk::AccessFlagBits2::eColorAttachmentWrite, {});
+    
+        commandBuffer.TransitionImageLayout(context.GetSwapchainImage().GetVkImage(), transitionBarrierDesc);
+    }
 }
 
 void TestApplication::Internal_AppShutdown()

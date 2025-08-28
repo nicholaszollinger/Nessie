@@ -19,7 +19,7 @@ namespace nes
 
     RenderDevice& DeviceManager::GetRenderDevice()
     {
-        return *(Platform::GetDeviceManager().m_pDevice);
+        return *(Platform::GetDeviceManager().m_pDevice.get());
     }
 
     bool DeviceManager::Init()

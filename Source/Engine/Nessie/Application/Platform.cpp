@@ -207,14 +207,17 @@ namespace nes
 
                 // Update input state.
                 m_pInputManager->Update(m_timeStep);
+
+                // Update the Application frame.
+                m_pApp->Internal_AppUpdate(m_timeStep);
             
                 // Begin a Render Frame:
                 // If false, then there was an error, or the swapchain needs to be rebuilt (out of date).
                 // Skip this render frame.
                 if (m_pRenderer->BeginFrame())
                 {
-                    // Run the Application frame.
-                    m_pApp->Internal_AppRunFrame(m_timeStep);
+                    // Render the frame.
+                    m_pApp->Internal_AppRender(m_pRenderer->GetCurrentCommandBuffer(), m_pRenderer->GetRenderFrameContext());
 
                     // Stop recording render commands.
                     m_pRenderer->EndFrame();
@@ -228,9 +231,10 @@ namespace nes
 
     void Platform::Shutdown()
     {
-        // Sync with the Renderer.
         if (m_pRenderer)
-            m_pRenderer->WaitForFrameCompletion();
+        {
+            m_pRenderer->WaitUntilAllFramesCompleted();
+        }
         
         // Shutdown the app.
         if (m_pApp != nullptr)
@@ -344,7 +348,7 @@ namespace nes
             m_pRenderer->BeginHeadlessFrame();
             
             // App Frame:
-            m_pApp->Internal_AppRunFrame(m_timeStep);
+            m_pApp->Internal_AppUpdate(m_timeStep);
 
             // End Render Frame:
             m_pRenderer->EndHeadlessFrame();

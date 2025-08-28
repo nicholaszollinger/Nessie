@@ -4,30 +4,29 @@
 #include "CommandBuffer.h"
 #include "DeviceQueue.h"
 #include "RenderDevice.h"
+#include "Renderer.h"
 
 namespace nes
 {
     CommandPool::~CommandPool()
     {
-        if (m_handle)
+        Renderer::SubmitResourceFree([commandPool = std::move(m_pool)]() mutable
         {
-            vkDestroyCommandPool(m_device, m_handle, m_device.GetVkAllocationCallbacks());
-        }
+            commandPool = nullptr;
+        });
     }
 
     EGraphicsResult CommandPool::Init(const DeviceQueue& queue)
     {
+        NES_ASSERT(m_pool == nullptr);
+        
         // Default to the Reset Command Buffer Bit.
-        const VkCommandPoolCreateInfo poolInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
-            .queueFamilyIndex = queue.GetFamilyIndex(),
-        };
-        NES_VK_FAIL_RETURN(m_device, vkCreateCommandPool(m_device, &poolInfo, m_device.GetVkAllocationCallbacks(), &m_handle));
+        vk::CommandPoolCreateInfo poolInfo = vk::CommandPoolCreateInfo()
+            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+            .setQueueFamilyIndex(queue.GetFamilyIndex());
 
-        m_queueType = queue.GetQueueType();   
+        m_pool = vk::raii::CommandPool(m_device, poolInfo);
+        m_queueType = queue.GetQueueType();
 
         return EGraphicsResult::Success;
     }
@@ -35,12 +34,13 @@ namespace nes
     void CommandPool::Reset()
     {
         std::lock_guard lock(m_mutex);
-        NES_VK_FAIL_RETURN_VOID(m_device, vkResetCommandPool(m_device, m_handle, VkCommandPoolResetFlags{}));
+        m_pool.reset();
     }
 
-    void CommandPool::SetDebugName(const char* name)
+    void CommandPool::SetDebugName(const std::string& name)
     {
-        m_device.SetDebugNameToTrivialObject(m_handle, name);
+        vk::CommandPool pool = *m_pool;
+        m_device.SetDebugNameToTrivialObject(pool, name);
     }
 
     EGraphicsResult CommandPool::CreateCommandBuffer(CommandBuffer*& pOutCommandBuffer)
@@ -49,20 +49,15 @@ namespace nes
         
         std::lock_guard lock(m_mutex);
 
-        const VkCommandBufferAllocateInfo info
-        {
-            .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-            .pNext = nullptr,
-            .commandPool = m_handle,
-            .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-            .commandBufferCount = 1,
-        };
+        vk::CommandBufferAllocateInfo allocInfo = vk::CommandBufferAllocateInfo()
+            .setCommandPool(m_pool)
+            .setLevel(vk::CommandBufferLevel::ePrimary)
+            .setCommandBufferCount(1);
 
-        VkCommandBuffer commandBufferHandle = VK_NULL_HANDLE;
-        NES_VK_FAIL_RETURN(m_device, vkAllocateCommandBuffers(m_device, &info, &commandBufferHandle));
+        auto commandBuffer = std::move(vk::raii::CommandBuffers(m_device, allocInfo).front());
 
         pOutCommandBuffer = Allocate<CommandBuffer>(m_device.GetAllocationCallbacks(), m_device);
-        pOutCommandBuffer->Init(this, commandBufferHandle);
+        pOutCommandBuffer->Init(this, std::move(commandBuffer));
         
         return EGraphicsResult::Success;
     }

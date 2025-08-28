@@ -1,7 +1,6 @@
 ﻿// Renderer.cpp
 #include "Renderer.h"
 
-#include "ShaderLibrary.h"
 #include "Nessie/Application/Application.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Graphics/CommandBuffer.h"
@@ -31,7 +30,13 @@ namespace nes
         NES_ASSERT(g_pRenderer == this);
         g_pRenderer = nullptr;
     }
-    
+
+    RenderDevice& Renderer::GetDevice()
+    {
+        NES_ASSERT(g_pRenderer != nullptr);
+        return g_pRenderer->m_device;
+    }
+
     RenderCommandQueue& Renderer::GetRenderResourceReleaseQueue(const uint32 index)
     {
         NES_ASSERT(index < Get()->m_resourceFreeQueues.size());
@@ -79,15 +84,15 @@ namespace nes
 
         // Create the Shader Library
         // [TODO]: Make the settings available for the RendererDesc.
-        m_pShaderLibrary = std::make_unique<ShaderLibrary>(m_device);
-        ShaderLibraryDesc shaderLibraryDesc{};
-        shaderLibraryDesc.m_searchDirs.emplace_back(NES_SHADER_DIR);
-        shaderLibraryDesc.m_compileOutDir = NES_SHADER_DIR;
-        if (!m_pShaderLibrary->Init(shaderLibraryDesc))
-        {
-            NES_GRAPHICS_ERROR(m_device, "Failed to initialize shader library!");
-            return false;
-        }
+        //m_pShaderLibrary = std::make_unique<ShaderLibrary>(m_device);
+        //ShaderLibraryDesc shaderLibraryDesc{};
+        //shaderLibraryDesc.m_searchDirs.emplace_back(NES_SHADER_DIR);
+        //shaderLibraryDesc.m_compileOutDir = NES_SHADER_DIR;
+        // if (!m_pShaderLibrary->Init(shaderLibraryDesc))
+        // {
+        //     NES_GRAPHICS_ERROR(m_device, "Failed to initialize shader library!");
+        //     return false;
+        // }
         
         // [TODO]: Create default resources.
 
@@ -98,14 +103,6 @@ namespace nes
     {
         m_device.WaitUntilIdle();
         
-        // [TODO]: Free default resources:
-
-        if (m_pShaderLibrary)
-        {
-            m_pShaderLibrary->Shutdown();
-            m_pShaderLibrary.reset();
-        }
-
         // Free any remaining resources:
         for (auto& releaseQueue : m_resourceFreeQueues)
         {
@@ -119,7 +116,7 @@ namespace nes
             m_device.FreeResource(frame.m_pCommandBuffer);
             m_device.FreeResource(frame.m_pCommandPool);
         }
-        vkDestroySemaphore(m_device, m_frameTimelineSemaphore, m_device.GetVkAllocationCallbacks());
+        m_frameTimelineSemaphore = nullptr;
 
         // Destroy the swapchain:
         if (m_pSwapchain != nullptr)
@@ -148,6 +145,9 @@ namespace nes
             m_pSwapchain->OnResize(windowSize, vsyncEnabled);
         }
 
+        // Wait until frame completed?
+        //WaitForFrameCompletion();
+
         // Acquire the next image to render to. If out of date (Needs rebuild) or an error occurred, return false.
         // No render commands should be made until the swapchain is rebuilt.
         if (m_pSwapchain->AcquireNextImage() != EGraphicsResult::Success)
@@ -173,20 +173,18 @@ namespace nes
         // Add Swapchain semaphores to the list of semaphores to wait for and signal:
         // First add the swapchain semaphore to wait for the image to be available
         m_waitSemaphores.push_back
-        ({
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .semaphore = m_pSwapchain->GetImageAvailableSemaphore(),
-            .stageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        });
+        (
+            vk::SemaphoreSubmitInfo()
+                .setSemaphore(m_pSwapchain->GetImageAvailableSemaphore())
+                .setStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput)
+        );
         // Then add the signal for the swapchain to present once everything else is done.
         m_signalSemaphores.push_back
-        ({
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .pNext = nullptr,
-            .semaphore = m_pSwapchain->GetRenderFinishedSemaphore(),
-            .stageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-        });
+        (
+         vk::SemaphoreSubmitInfo()
+                .setSemaphore(m_pSwapchain->GetRenderFinishedSemaphore())
+                .setStageMask(vk::PipelineStageFlagBits2::eBottomOfPipe)
+        );
 
         // Submit the current commands to the Render Queue.
         SubmitFrameCommands();
@@ -236,17 +234,31 @@ namespace nes
         frame.m_pCommandBuffer->Begin();
     }
 
+    RenderFrameContext Renderer::GetRenderFrameContext() const
+    {
+        NES_ASSERT(m_pSwapchain != nullptr);
+        
+        RenderFrameContext renderFrameContext;
+        renderFrameContext.m_swapchainImage = &m_pSwapchain->GetImage();
+        renderFrameContext.m_swapchainImageDescriptor = &m_pSwapchain->GetImageDescriptor();
+        renderFrameContext.m_swapchainExtent = m_pSwapchain->GetExtent();
+
+        return renderFrameContext;
+    }
+
     void Renderer::WaitForFrameCompletion()
     {
+        vk::SemaphoreWaitInfo waitInfo = vk::SemaphoreWaitInfo()
+            .setSemaphores(*m_frameTimelineSemaphore)
+            .setValues(m_frames[m_currentFrameIndex].m_frameNumber);
+
         // Wait until GPU has finished processing the frame that was using these resources previously (m_numFramesInFlight frames ago)
-        const VkSemaphoreWaitInfo waitInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-            .semaphoreCount = 1,
-            .pSemaphores = &m_frameTimelineSemaphore,
-            .pValues = &m_frames[m_currentFrameIndex].m_frameNumber,
-        };
-        vkWaitSemaphores(m_device, &waitInfo, std::numeric_limits<uint64_t>::max());
+        NES_VK_FAIL_REPORT(m_device, m_device.GetVkDevice().waitSemaphores(waitInfo, std::numeric_limits<uint64_t>::max()));
+    }
+
+    void Renderer::WaitUntilAllFramesCompleted() const
+    {
+        m_device.WaitUntilIdle();
     }
 
     void Renderer::PrepareFrameToSignal(const uint32 numFramesInFlight)
@@ -265,20 +277,15 @@ namespace nes
 
         // Create the timeline semaphore for GPU-CPU synchronization
         // This ensures that resources aren't overwritten while still in use by the GPU.
-        VkSemaphoreTypeCreateInfo timelineCreateInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-            .pNext = nullptr,
-            .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-            .initialValue = initialValue,
-        };
-        const VkSemaphoreCreateInfo semaphoreCreateInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = &timelineCreateInfo,
-        };
-        NES_VK_MUST_PASS(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_frameTimelineSemaphore));
-        m_device.SetDebugNameToTrivialObject(m_frameTimelineSemaphore, "Frame Timeline Semaphore");
+        vk::SemaphoreTypeCreateInfo timelineCreateInfo = vk::SemaphoreTypeCreateInfo()
+            .setSemaphoreType(vk::SemaphoreType::eTimeline)
+            .setInitialValue(initialValue);
+
+        vk::SemaphoreCreateInfo semaphoreCreateInfo = vk::SemaphoreCreateInfo()
+            .setPNext(&timelineCreateInfo);
+        
+        m_frameTimelineSemaphore = m_device.GetVkDevice().createSemaphore(semaphoreCreateInfo, m_device.GetVkAllocationCallbacks());
+        // [TODO]: m_device.SetDebugNameToTrivialObject(m_frameTimelineSemaphore, "Frame Timeline Semaphore");
         
         // Create a command pool and command buffer for each frame.
         // Each frame gets its own command pool to allow parallel command recording while previous frames may still be executing on the GPU.
@@ -311,33 +318,25 @@ namespace nes
         
         // Add timeline semaphore to signal when GPU completes this frame
         // The color attachment output stage is used since that's when the frame is fully rendered.
-        m_signalSemaphores.push_back
-        ({
-            .sType     = VK_STRUCTURE_TYPE_SEMAPHORE_SUBMIT_INFO,
-            .semaphore = m_frameTimelineSemaphore,
-            .value     = frame.m_frameNumber,
-            .stageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,  // Wait until everything is completed.
-        });
+        m_signalSemaphores.push_back(vk::SemaphoreSubmitInfo()
+            .setSemaphore(m_frameTimelineSemaphore)
+            .setValue(frame.m_frameNumber)
+            .setStageMask(vk::PipelineStageFlagBits2::eBottomOfPipe)); // Wait until everything is completed.
         
         // Adding the command buffer of the frame to the list of command buffers to submit
-        // Note: extra command buffers could have been added to the list from other parts of the application (elements)
-        m_commandBuffers.push_back({ .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_SUBMIT_INFO, .commandBuffer = *frame.m_pCommandBuffer} );
+        // Note: extra command buffers could have been added to the list from other parts of the render frame.
+        m_commandBuffers.push_back(vk::CommandBufferSubmitInfo()
+            .setCommandBuffer(frame.m_pCommandBuffer->GetVkCommandBuffer()));
 
-        const VkSubmitInfo2 submitInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO_2,
-            .pNext = nullptr,
-            .waitSemaphoreInfoCount = static_cast<uint32>(m_waitSemaphores.size()),
-            .pWaitSemaphoreInfos = m_waitSemaphores.data(),
-            .commandBufferInfoCount = static_cast<uint32>(m_commandBuffers.size()),
-            .pCommandBufferInfos = m_commandBuffers.data(),
-            .signalSemaphoreInfoCount = static_cast<uint32>(m_signalSemaphores.size()),
-            .pSignalSemaphoreInfos = m_signalSemaphores.data(),
-        };
+        const vk::SubmitInfo2 submitInfo = vk::SubmitInfo2()
+            .setWaitSemaphoreInfoCount(static_cast<uint32>(m_waitSemaphores.size()))
+            .setPWaitSemaphoreInfos(m_waitSemaphores.data())
+            .setCommandBufferInfoCount(static_cast<uint32>(m_commandBuffers.size()))
+            .setPCommandBufferInfos(m_commandBuffers.data())
+            .setSignalSemaphoreInfoCount(static_cast<uint32>(m_signalSemaphores.size()))
+            .setPSignalSemaphoreInfos(m_signalSemaphores.data());
 
-        // [TODO]: Should be m_pRenderSubmissionQueue->Submit().
-        // Submit the command buffer to the GPU and signal when it's done.
-        NES_VK_MUST_PASS(m_device, vkQueueSubmit2(*m_pRenderSubmissionQueue, 1, &submitInfo, nullptr));
+        m_pRenderSubmissionQueue->GetVkQueue().submit2(submitInfo, nullptr);
     }
 
     void Renderer::AdvanceToNextFrame(const uint32 numFramesInFlight)

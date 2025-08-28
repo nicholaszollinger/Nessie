@@ -1,6 +1,7 @@
 ﻿// Common.h
 #pragma once
 #include "GraphicsCore.h"
+#include "Formats.h"
 #include "Nessie/Core/Color.h"
 #include "Nessie/Core/Config.h"
 #include "Nessie/Core/Version.h"
@@ -20,65 +21,71 @@ namespace nes
     namespace graphics
     {
         /// Special value that marks that the remaining amount of some span (number of mips, number of image layers, etc.) should be used. 
-        static constexpr uint32 kUseRemaining = ~0UL;
+        static constexpr uint16 kUseRemaining = std::numeric_limits<uint16>::max();
     }
 //============================================================================================================================================================================================
 #pragma region [ Common ]
 //============================================================================================================================================================================================
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes a region of the framebuffer that the output will be rendered to.
+    ///
+    /// This is commonly set with m_offset = (0, 0) and m_extent = 'extent of the framebuffer', so the entire
+    /// framebuffer is drawn to.
+    ///
+    /// The min and max Depth values specify the range of depth values to use for the framebuffer. The values
+    /// must be in the range [0, 1]. If you aren't doing anything special, they should remain as min = 0.f and max = 1.f.
+    //----------------------------------------------------------------------------------------------------
     struct Viewport
     {
-        float m_minX;
-        float m_maxX;
-        float m_minY;
-        float m_maxY;
-        float m_minZ;
-        float m_maxZ;
-    
-        Viewport() : m_minX(0.0f), m_maxX(0.f), m_minY(0.f), m_maxY(0.f), m_minZ(0.f), m_maxZ(1.f) {}
-        Viewport(const float width, const float height) : m_minX(0.0f), m_maxX(width), m_minY(0.f), m_maxY(height), m_minZ(0.f), m_maxZ(1.f) {}
-        Viewport(const float minX, const float maxX, const float minY, const float maxY, const float minZ, const float maxZ) : m_minX(minX), m_maxX(maxX), m_minY(minY), m_maxY(maxY), m_minZ(minZ), m_maxZ(maxZ) {}
+        /// Constructors.
+        Viewport() = default;
+        Viewport(const uint32 width, const uint32 height, const uint32 xOffset = 0, const uint32 yOffset = 0);
 
-        bool operator==(const Viewport& other) const
-        {
-            return m_minX == other.m_minX
-                && m_maxX == other.m_maxX
-                && m_minY == other.m_minY
-                && m_maxY == other.m_maxY
-                && m_minZ == other.m_minZ
-                && m_maxZ == other.m_maxZ;
-        }
-        bool operator!=(const Viewport& other) const { return !(*this == other); }
+        /// Implicit conversion to the Vulkan Type.
+        operator    vk::Viewport() const { return vk::Viewport(m_offset.x, m_offset.y, m_extent.x, m_extent.y, m_minDepth, m_maxDepth); }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : This offset is in pixel coordinates of the framebuffer.
+        //----------------------------------------------------------------------------------------------------
+        Viewport&   SetOffset(const uint32 x, const uint32 y);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the Extent of the viewport, in pixels.
+        //----------------------------------------------------------------------------------------------------
+        Viewport&   SetExtent(const uint32 width, const uint32 height);
 
-        float Width() const     { return m_maxX - m_minX; }
-        float Height() const    { return m_maxY - m_minY; }
-        float Depth() const     { return m_maxZ - m_minZ; }
+        Vec2        m_offset = Vec2::Zero();    // Pixel offset for the target framebuffer.
+        Vec2        m_extent = Vec2::Zero();    // Pixel dimensions of the render area.
+        float       m_minDepth = 0.f;           
+        float       m_maxDepth = 1.f;
     };
 
-    struct Rect
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : While viewports define the transformation from the image to the framebuffer, scissor
+    ///     rectangles define in which region pixels will actually be stored. The rasterizer will discard
+    ///     any pixels outside the scissored rectangles. They function like a filter rather than a transformation.
+    ///
+    ///     So if we wanted to draw to the entire framebuffer, we would specify a scissor rectangle that
+    ///     covers it entirely: m_offset = (0, 0) and m_extent = 'extent of the framebuffer'.
+    //----------------------------------------------------------------------------------------------------
+    struct Scissor
     {
-        int m_minX;
-        int m_maxX;
-        int m_minY;
-        int m_maxY;
+        /// Constructors
+        Scissor() = default;
+        Scissor(const uint32 width, const uint32 height, const int xOffset = 0, const int yOffset = 0);
+        Scissor(const Viewport& viewport);
+        
+        /// Implicit conversion to the Vulkan Type.
+        inline      operator vk::Rect2D() const { return vk::Rect2D({m_offset.x, m_offset.y}, {m_extent.x, m_extent.y}); }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the scissor so that it contains the entire viewport.  
+        //----------------------------------------------------------------------------------------------------
+        Scissor&    FillViewport(const Viewport& viewport);
 
-        Rect() : m_minX(0), m_maxX(0), m_minY(0), m_maxY(0) {}
-        Rect(const int width, const int height) : m_minX(0), m_maxX(width), m_minY(0), m_maxY(height) {}
-        Rect(const int minX, const int maxX, const int minY, const int maxY) : m_minX(minX), m_maxX(maxX), m_minY(minY), m_maxY(maxY) {}
-        explicit Rect(const Viewport& viewport)
-            : m_minX(static_cast<int>(std::floorf(viewport.m_minX)))
-            , m_maxX(static_cast<int>(std::ceilf(viewport.m_maxX)))
-            , m_minY(static_cast<int>(std::floorf(viewport.m_minY)))
-            , m_maxY(static_cast<int>(std::ceilf(viewport.m_maxY)))
-        {
-            //
-        }
-
-        bool operator==(const Rect& other) const { return m_minX == other.m_minX && m_maxX == other.m_maxX && m_minY == other.m_minY && m_maxY == other.m_maxY; }
-        bool operator!=(const Rect& other) const { return !(*this == other); }
-
-        int Width() const { return m_maxX - m_minX; }
-        int Height() const { return m_maxY - m_minY; }
+        IVec2       m_offset = IVec2::Zero();
+        UVec2       m_extent = UVec2::Zero();
     };
 
     struct DepthStencil
@@ -108,216 +115,6 @@ namespace nes
 #pragma endregion
 
 //============================================================================================================================================================================================
-#pragma region [ Formats ]
-//============================================================================================================================================================================================
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Data format types. Includes information about what data types support which formats.
-    ///     Types are written in the bit order: left -> right : low -> high bits.
-    // Type Suffixes:
-    //     SINT    - Signed int.
-    //     UINT    - Unsigned int.
-    //     UNORM   - Unsigned floating point [0.f, 1.f].
-    //     SFLOAT  - Signed float.
-    //
-    // More Info:
-    // - https://registry.khronos.org/vulkan/specs/latest/man/html/VkFormat.html
-    // - https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format
-    //
-    // Support Key:
-    // Expected (but not guaranteed) "FormatSupportBits" are provided, but "GetFormatSupport" should be used for querying real hardware support
-    // To demote sRGB use the previous format, i.e. "format - 1"
-    //                                               STORAGE_BUFFER_ATOMICS
-    //                                                     VERTEX_BUFFER  |
-    //                                                 STORAGE_BUFFER  |  |
-    //                                                      BUFFER  |  |  |
-    //                                  STORAGE_TEXTURE_ATOMICS  |  |  |  |
-    //                                                 BLEND  |  |  |  |  |
-    //                           DEPTH_STENCIL_ATTACHMENT  |  |  |  |  |  |
-    //                                COLOR_ATTACHMENT  |  |  |  |  |  |  |
-    //                              STORAGE_TEXTURE  |  |  |  |  |  |  |  |
-    //                                   TEXTURE  |  |  |  |  |  |  |  |  |
-    //                                         |  |  |  |  |  |  |  |  |  |
-    //                                         |    FormatSupportBits     | 
-    //----------------------------------------------------------------------------------------------------
-    enum class EFormat
-    {
-        Unknown,                            // -  -  -  -  -  -  -  -  -  -
-
-        // Plain: 8 bits per channel
-        R8_UNORM,                           // +  +  +  -  +  -  +  +  +  -
-        R8_SNORM,                           // +  +  +  -  +  -  +  +  +  -
-        R8_UINT,                            // +  +  +  -  -  -  +  +  +  - // SHADING_RATE compatible, see NRI_SHADING_RATE macro
-        R8_SINT,                            // +  +  +  -  -  -  +  +  +  -
-
-        RG8_UNORM,                          // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        RG8_SNORM,                          // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        RG8_UINT,                           // +  +  +  -  -  -  +  +  +  -
-        RG8_SINT,                           // +  +  +  -  -  -  +  +  +  -
-
-        BGRA8_UNORM,                        // +  +  +  -  +  -  +  +  +  -
-        BGRA8_SRGB,                         // +  -  +  -  +  -  -  -  -  -
-
-        RGBA8_UNORM,                        // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        RGBA8_SRGB,                         // +  -  +  -  +  -  -  -  -  -
-        RGBA8_SNORM,                        // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        RGBA8_UINT,                         // +  +  +  -  -  -  +  +  +  -
-        RGBA8_SINT,                         // +  +  +  -  -  -  +  +  +  -
-
-        // Plain: 16 bits per channel
-        R16_UNORM,                          // +  +  +  -  +  -  +  +  +  -
-        R16_SNORM,                          // +  +  +  -  +  -  +  +  +  -
-        R16_UINT,                           // +  +  +  -  -  -  +  +  +  -
-        R16_SINT,                           // +  +  +  -  -  -  +  +  +  -
-        R16_SFLOAT,                         // +  +  +  -  +  -  +  +  +  -
-
-        RG16_UNORM,                         // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        RG16_SNORM,                         // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible
-        RG16_UINT,                          // +  +  +  -  -  -  +  +  +  -
-        RG16_SINT,                          // +  +  +  -  -  -  +  +  +  -
-        RG16_SFLOAT,                        // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible
-
-        RGBA16_UNORM,                       // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        RGBA16_SNORM,                       // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible
-        RGBA16_UINT,                        // +  +  +  -  -  -  +  +  +  -
-        RGBA16_SINT,                        // +  +  +  -  -  -  +  +  +  -
-        RGBA16_SFLOAT,                      // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible
-
-        // Plain: 32 bits per channel
-        R32_UINT,                           // +  +  +  -  -  +  +  +  +  +
-        R32_SINT,                           // +  +  +  -  -  +  +  +  +  +
-        R32_SFLOAT,                         // +  +  +  -  +  +  +  +  +  +
-
-        RG32_UINT,                          // +  +  +  -  -  -  +  +  +  -
-        RG32_SINT,                          // +  +  +  -  -  -  +  +  +  -
-        RG32_SFLOAT,                        // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible
-
-        RGB32_UINT,                         // +  -  -  -  -  -  +  -  +  -
-        RGB32_SINT,                         // +  -  -  -  -  -  +  -  +  -
-        RGB32_SFLOAT,                       // +  -  -  -  -  -  +  -  +  - // "AccelerationStructure" compatible
-
-        RGBA32_UINT,                        // +  +  +  -  -  -  +  +  +  -
-        RGBA32_SINT,                        // +  +  +  -  -  -  +  +  +  -
-        RGBA32_SFLOAT,                      // +  +  +  -  +  -  +  +  +  -
-
-        // Packed: 16 bits per pixel
-        B5_G6_R5_UNORM,                     // +  -  +  -  +  -  -  -  -  -
-        B5_G5_R5_A1_UNORM,                  // +  -  +  -  +  -  -  -  -  -
-        B4_G4_R4_A4_UNORM,                  // +  -  +  -  +  -  -  -  -  -
-
-        // Packed: 32 bits per pixel
-        R10_G10_B10_A2_UNORM,               // +  +  +  -  +  -  +  +  +  - // "AccelerationStructure" compatible (requires "tiers.rayTracing >= 2")
-        R10_G10_B10_A2_UINT,                // +  +  +  -  -  -  +  +  +  -
-        R11_G11_B10_UFLOAT,                 // +  +  +  -  +  -  +  +  +  -
-        R9_G9_B9_E5_UFLOAT,                 // +  -  -  -  -  -  -  -  -  -
-
-        // Block-compressed
-        BC1_RGBA_UNORM,                     // +  -  -  -  -  -  -  -  -  -
-        BC1_RGBA_SRGB,                      // +  -  -  -  -  -  -  -  -  -
-        BC2_RGBA_UNORM,                     // +  -  -  -  -  -  -  -  -  -
-        BC2_RGBA_SRGB,                      // +  -  -  -  -  -  -  -  -  -
-        BC3_RGBA_UNORM,                     // +  -  -  -  -  -  -  -  -  -
-        BC3_RGBA_SRGB,                      // +  -  -  -  -  -  -  -  -  -
-        BC4_R_UNORM,                        // +  -  -  -  -  -  -  -  -  -
-        BC4_R_SNORM,                        // +  -  -  -  -  -  -  -  -  -
-        BC5_RG_UNORM,                       // +  -  -  -  -  -  -  -  -  -
-        BC5_RG_SNORM,                       // +  -  -  -  -  -  -  -  -  -
-        BC6H_RGB_UFLOAT,                    // +  -  -  -  -  -  -  -  -  -
-        BC6H_RGB_SFLOAT,                    // +  -  -  -  -  -  -  -  -  -
-        BC7_RGBA_UNORM,                     // +  -  -  -  -  -  -  -  -  -
-        BC7_RGBA_SRGB,                      // +  -  -  -  -  -  -  -  -  -
-
-        // Depth-stencil
-        D16_UNORM,                          // -  -  -  +  -  -  -  -  -  -
-        D24_UNORM_S8_UINT,                  // -  -  -  +  -  -  -  -  -  -
-        D32_SFLOAT,                         // -  -  -  +  -  -  -  -  -  -
-        D32_SFLOAT_S8_UINT_X24,             // -  -  -  +  -  -  -  -  -  -
-
-        // Depth-stencil (SHADER_RESOURCE)
-        R24_UNORM_X8,       // .x - depth   // +  -  -  -  -  -  -  -  -  -
-        X24_G8_UINT,        // .y - stencil // +  -  -  -  -  -  -  -  -  -
-        R32_SFLOAT_X8_X24,  // .x - depth   // +  -  -  -  -  -  -  -  -  -
-        X32_G8_UINT_X24,    // .y - stencil // +  -  -  -  -  -  -  -  -  -
-    
-        MaxNum
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    // https://learn.microsoft.com/en-us/windows/win32/direct3d12/subresources#plane-slice
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageAspectFlagBits.html 
-    //----------------------------------------------------------------------------------------------------
-    enum class EPlaneBits : uint8
-    {
-        All     = 0,
-        Color   = NES_BIT(0),   // indicates "color" plane (same as "ALL" for color formats)
-        Depth   = NES_BIT(1),   // indicates "depth" plane (same as "ALL" for depth-only formats)
-        Stencil = NES_BIT(2),   // indicates "stencil" plane in depth-stencil formats
-    };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPlaneBits)
-
-    enum class EFormatType : uint8
-    {
-        Integer,
-        Normalized,
-        Float,
-        DepthStencil,
-    };
-
-    enum class EFormatSupportBits : uint16
-    {
-        Unsupported                 = 0,
-
-        // Texture
-        Texture                     = NES_BIT(0),
-        StorageTexture              = NES_BIT(1),
-        StorageTextureAtomics       = NES_BIT(2),
-        ColorAttachment             = NES_BIT(3),
-        DepthStencilAttachment      = NES_BIT(4),
-        Blend                       = NES_BIT(5),
-        Multisample2x               = NES_BIT(6),
-        Multisample4x               = NES_BIT(7),
-        Multisample8x               = NES_BIT(8),
-
-        // Buffer
-        Buffer                      = NES_BIT(9),
-        StorageBuffer               = NES_BIT(10),
-        StorageBufferAtomics        = NES_BIT(11),
-        VertexBuffer                = NES_BIT(12),
-        StorageLoadWithoutFormat    = NES_BIT(13),
-    };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EFormatSupportBits);
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Information about a format type. 
-    //----------------------------------------------------------------------------------------------------
-    struct FormatProps
-    {
-        const char* m_name;                 // Name of the format.
-        EFormat     m_format;               // The format value.
-        uint8       m_redBits;              // R (or depth) bits
-        uint8       m_greenBits;            // G (or stencil) bits (0 if channels are < 2)
-        uint8       m_blueBits;             // B bits (0 if channels < 3)
-        uint8       m_alphaBits;            // A (or shared exponent) bits (0 if channels are < 4)
-        uint32      m_stride        : 6;    // Block size in bytes
-        uint32      m_blockWidth    : 4;    // 1 for plain formats, >1 for compressed
-        uint32_t    m_blockHeight   : 4;    // 1 for plain formats, >1 for compressed
-        uint32      m_isBgr         : 1;    // Reversed channels (RGBA => BGRA)
-        uint32      m_isCompressed  : 1;    // Block-compressed format
-        uint32      m_isDepth       : 1;    // Has depth component.
-        uint32      m_isExpShared   : 1;    // Shared exponent in alpha channel
-        uint32      m_isFloat       : 1;    // Floating point
-        uint32      m_isPacked      : 1;    // 16- or 32- bit packed
-        uint32      m_isInteger     : 1;    // integer
-        uint32      m_isNorm        : 1;    // [0; 1] normalized
-        uint32      m_isSigned      : 1;    // signed.
-        uint32      m_isSrgb        : 1;    // sRGB
-        uint32      m_isStencil     : 1;    // has stencil component
-        uint32      m_unused        : 7;
-    };
-
-#pragma endregion
-
-//============================================================================================================================================================================================
 #pragma region [ Pipline Stages and Barriers ]
 //============================================================================================================================================================================================
 
@@ -329,39 +126,39 @@ namespace nes
         All                     = 0,
         None                    = 0x7FFFFFFF,
 
-        // Graphics, invoked by "CmdDraw*" commands.
-        IndexInput              = NES_BIT(0),   /// Index buffer consumption
-        VertexShader            = NES_BIT(1),   /// Vertex Shader
-        TessControlShader       = NES_BIT(2),   /// Tesselation control (hull) shader
-        TessEvaluationShader    = NES_BIT(3),   /// Tesselation evaluation (domain) shader
-        GeometryShader          = NES_BIT(4),   /// Geometry Shader
-        MeshControlShader       = NES_BIT(5),   /// Mesh control (task) shader
-        MeshEvaluationShader    = NES_BIT(6),   /// Mesh evaluation (amplification) shader
-        FragmentShader          = NES_BIT(7),   /// Fragment (pixel) shader
-        DepthStencilAttachment  = NES_BIT(8),   /// Depth-stencil read/write operations
-        ColorAttachment         = NES_BIT(9),   /// Color read/write operations
+        // Graphics
+        IndexInput              = NES_BIT(0),   // Index buffer consumption
+        VertexShader            = NES_BIT(1),   // Vertex Shader
+        TessControlShader       = NES_BIT(2),   // Tesselation control (hull) shader
+        TessEvaluationShader    = NES_BIT(3),   // Tesselation evaluation (domain) shader
+        GeometryShader          = NES_BIT(4),   // Geometry Shader
+        MeshControlShader       = NES_BIT(5),   // Mesh control (task) shader
+        MeshEvaluationShader    = NES_BIT(6),   // Mesh evaluation (amplification) shader
+        FragmentShader          = NES_BIT(7),   // Fragment (pixel) shader
+        DepthStencilAttachment  = NES_BIT(8),   // Depth-stencil read/write operations
+        ColorAttachment         = NES_BIT(9),   // Color read/write operations
 
-        // Compute, invoked by "CmdDispatch*" commands. (Not rays).
-        ComputeShader           = NES_BIT(10),  /// Compute Shader
+        // Compute
+        ComputeShader           = NES_BIT(10),  // Compute Shader
 
-        // Ray Tracing, invoked by "CmdDispatchRays*" commands.
-        RayGenShader            = NES_BIT(11),  /// Ray generation shader
-        MissShader              = NES_BIT(12),  /// Miss shader
-        IntersectionShader      = NES_BIT(13),  /// Intersection shader
-        ClosestHitShader        = NES_BIT(14),  /// Closest hit shader.
-        AnyHitShader            = NES_BIT(15),  /// Any hit shader
-        CallableShader          = NES_BIT(16),  /// Callable shader
+        // Ray Tracing
+        RayGenShader            = NES_BIT(11),  // Ray generation shader
+        MissShader              = NES_BIT(12),  // Miss shader
+        IntersectionShader      = NES_BIT(13),  // Intersection shader
+        ClosestHitShader        = NES_BIT(14),  // Closest hit shader.
+        AnyHitShader            = NES_BIT(15),  // Any hit shader
+        CallableShader          = NES_BIT(16),  // Callable shader
 
-        AccelerationStructure   = NES_BIT(17),  /// Invoked by "Cmd*AccelerationStructure*" commands.
-        MicroMap                = NES_BIT(18),  /// Invoked by "Cmd*Micromap*" commands
+        AccelerationStructure   = NES_BIT(17),  // 
+        MicroMap                = NES_BIT(18),  // 
 
         // Other
-        Copy                    = NES_BIT(19),  /// Invoked by "CmdCopy*", "CmdUpload*" and "CmdReadback*"
-        Resolve                 = NES_BIT(20),  /// Invoked by "CmdResolveTexture"
-        ClearStorage            = NES_BIT(21),  /// Invoked by "CmdClearStorage"
+        Copy                    = NES_BIT(19),  // 
+        Resolve                 = NES_BIT(20),  // 
+        ClearStorage            = NES_BIT(21),  // 
 
         // Modifiers
-        Indirect                = NES_BIT(22), /// Invoked by "Indirect" commands (used in addition to other bits)
+        Indirect                = NES_BIT(22), // Invoked by "Indirect" commands (used in addition to other bits)
 
         // Grouped Stages
         TessellationShaders     = TessControlShader | TessEvaluationShader,
@@ -379,9 +176,9 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class EAccessBits : uint32
     {
-        None                        = 0,
-
         //                                          ACCESS         Compatible EStageBits (including All)
+        None                        = 0,
+    
         // Buffer
         IndexBuffer                 = NES_BIT(0),   // Read         IndexInput
         VertexBuffer                = NES_BIT(1),   // Read         VertexShader
@@ -398,7 +195,7 @@ namespace nes
         // Acceleration Structure
         AccelerationStructureRead   = NES_BIT(9),   // Read         ComputeShader, RayTracingShaders, AccelerationStructure
         AccelerationStructureWrite  = NES_BIT(10),  // Write        AccelerationStructure
-
+    
         // Micromap
         MicromapRead                = NES_BIT(11),  // Read         Micromap, AccelerationStructure
         MicromapWrite               = NES_BIT(12),  // Write        Micromap
@@ -407,7 +204,7 @@ namespace nes
         ShaderResourceRead          = NES_BIT(13),  // Read         GraphicsShaders, ComputeShader, RayTracingShaders
         ShaderResourceStorage       = NES_BIT(14),  // Read/Write   GraphicsShaders, ComputeShader, RayTracingShaders, ClearStorage
         ShaderBindingTable          = NES_BIT(15),  // Read         RayTracingShaders
-
+    
         // Copy
         CopySource                  = NES_BIT(16),  // Read         Copy
         CopyDestination             = NES_BIT(17),  // Write        Copy
@@ -421,15 +218,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Image Layout types.
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageLayout.html
-    // https://microsoft.github.io/DirectX-Specs/d3d/D3D12EnhancedBarriers.html#d3d12_barrier_layout
     //----------------------------------------------------------------------------------------------------
     enum class ELayout : uint8
     {
         // Special
         Undefined,
         General,                // ~All access, but not optimal.
-        Present,                // None
-
+        Present,                // No Access
+    
         // Access Specific
         ColorAttachment,        // ColorAttachment
         ShadingRateAttachment,  // ShadingRateAttachment
@@ -443,117 +239,6 @@ namespace nes
         ResolveDestination,     // ResolveDestination
         MaxNum,
     };
-    
-    //----------------------------------------------------------------------------------------------------
-    // BARRIERS:
-    // Barriers consist of two phases:
-    // - before (source scope, 1st synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
-    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
-    //   - "Layout" for textures
-    // - after (destination scope, 2nd synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
-    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
-    //   - "Layout" for textures
-    //----------------------------------------------------------------------------------------------------
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Defines an access level that the resource should be in, as well as what
-    ///     stage in the pipeline that it should have that access.
-    //----------------------------------------------------------------------------------------------------
-    struct AccessStage
-    {
-        EAccessBits         m_access;
-        EPipelineStageBits  m_stages;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Defines an access level and image layout that the resource should be in, as well as what
-    ///     stage in the pipeline that it should have these values.
-    //----------------------------------------------------------------------------------------------------
-    struct AccessLayoutStage
-    {
-        EAccessBits         m_access;
-        ELayout             m_layout;
-        EPipelineStageBits  m_stages;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Barrier information for a resource.
-    // Barriers consist of two phases:
-    // - before (source scope, 1st synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
-    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
-    // - after (destination scope, 2nd synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
-    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
-    //----------------------------------------------------------------------------------------------------
-    struct GlobalBarrierDesc
-    {
-        AccessStage         m_before;
-        AccessStage         m_after;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Barrier description for a buffer.
-    // Barriers consist of two phases:
-    // - before (source scope, 1st synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
-    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
-    // - after (destination scope, 2nd synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
-    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
-    //----------------------------------------------------------------------------------------------------
-    struct BufferBarrierDesc
-    {
-        //GBuffer*            m_pBuffer;
-        AccessStage         m_before;
-        AccessStage         m_after;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Barrier description for a texture.
-    // Barriers consist of two phases:
-    // - before (source scope, 1st synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage since the preceding barrier or the start of "QueueSubmit" scope
-    //   - "PipelineStageBits" of all preceding GPU work that must be completed before executing the barrier (stages to wait before the barrier)
-    //   - "Layout" is the image layout preceding the barrier.
-    // - after (destination scope, 2nd synchronization scope):
-    //   - "AccessBits" corresponding with any relevant resource usage after the barrier completes.
-    //   - "PipelineStageBits" of all subsequent GPU work that must wait until the barrier execution is finished (stages to halt until the barrier is executed).
-    //   - "Layout" is the layout after the barrier completes.
-    //----------------------------------------------------------------------------------------------------
-    struct TextureBarrierDesc
-    {
-        //GTexture*           m_pTexture;
-        AccessLayoutStage   m_before;                                   // The layout the texture should be in.
-        AccessLayoutStage   m_after;                                    // The layout the texture should transition to.
-
-        // Subresource Range: what portions of the image should be affected? 
-        uint32              m_baseMip       = 0;                        // Starting mip level.
-        uint32              m_mipCount      = graphics::kUseRemaining;  // Number of mip levels from the baseMip.
-        uint32              m_baseLayer     = 0;                        // Starting layer value.
-        uint32              m_layerCount    = graphics::kUseRemaining;  // Number of layers from the baseLayer.
-        EPlaneBits          m_planes        = EPlaneBits::Color;        // Which planes of the image data should be affected.
-
-        // Queue ownership transfer is potentially needed only for "EXCLUSIVE" textures
-        // https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#synchronization-queue-transfers
-        DeviceQueue*        m_pSrcQueue     = nullptr;                      // The owning queue at the start.
-        DeviceQueue*        m_pDstQueue     = nullptr;                      // The queue that should take ownership.
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Grouping of global, buffer and texture barriers. 
-    //----------------------------------------------------------------------------------------------------
-    struct BarrierGroupDesc
-    {
-        const GlobalBarrierDesc*    m_pGlobals = nullptr;
-        uint32                      m_globalsCount = 0;
-        const BufferBarrierDesc*    m_pBuffers = nullptr;
-        uint32                      m_bufferCount = 0;
-        const TextureBarrierDesc*   m_pTextures = nullptr;
-        uint32                      m_textureCount = 0;
-    };
 
 #pragma endregion
 
@@ -561,11 +246,11 @@ namespace nes
 #pragma region [ Resources: creation ]
 //============================================================================================================================================================================================
 
-    enum class ETextureType : uint8
+    enum class EImageType : uint8
     {
-        Texture1D,
-        Texture2D,
-        Texture3D,
+        Image1D,
+        Image2D,
+        Image3D,
         MaxNum
     };
 
@@ -584,9 +269,9 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Bit flags for how a texture will be used. 
+    /// @brief : Bit flags for how an image will be used. 
     //----------------------------------------------------------------------------------------------------
-    enum class ETextureUsageBits : uint8
+    enum class EImageUsageBits : uint8
     {
                                                         // Min Compatible Access:               Usage:
         None                            = 0,
@@ -596,7 +281,7 @@ namespace nes
         DepthStencilAttachment          = NES_BIT(3),   // DepthStencilAttachmentRead/Write     Depth-stencil attachment (depth-stencil target)
         ShadingRateAttachment           = NES_BIT(4),   // ShadingRateAttachment                Shading rate attachment (source)
     };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ETextureUsageBits);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EImageUsageBits);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Bit flags for how a buffer will be used. 
@@ -609,7 +294,7 @@ namespace nes
         ShaderResourceStorage           = NES_BIT(1),   // ShaderResourceStorage                Read/write shader resource (UAV)
         VertexBuffer                    = NES_BIT(2),   // VertexBuffer                         Vertex Buffer
         IndexBuffer                     = NES_BIT(3),   // IndexBuffer                          Index Buffer
-        ConstantBuffer                  = NES_BIT(4),   // ConstantBuffer                       Constant buffer.
+        UniformBuffer                   = NES_BIT(4),   // UniformBuffer                        Uniform buffer.
         ArgumentBuffer                  = NES_BIT(5),   // ArgumentBuffer                       Argument buffer in "Indirect" commands
         ScratchBuffer                   = NES_BIT(6),   // ScratchBuffer                        Scratch buffer in "CmdBuild*" commands
         ShaderBindingTable              = NES_BIT(7),   // ShaderBindingTable                   Shader binding table (SBT) in "CmdDispatchRays*" commands
@@ -620,10 +305,10 @@ namespace nes
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EBufferUsageBits);
 
-    struct TextureDesc
+    struct ImageDesc
     {
-        ETextureType        m_type = ETextureType::Texture2D;
-        ETextureUsageBits   m_usage = ETextureUsageBits::ShaderResource;
+        EImageType        m_type = EImageType::Image2D;
+        EImageUsageBits   m_usage = EImageUsageBits::ShaderResource;
         EFormat             m_format = EFormat::Unknown;
         uint32              m_width = 1;
         uint32              m_height = 1;
@@ -725,14 +410,14 @@ namespace nes
     struct AllocateBufferDesc
     {
         BufferDesc          m_desc;
-        EMemoryLocation     m_location;
-        float               m_priority;
-        bool                m_isDedicated;
+        EMemoryLocation     m_location      = EMemoryLocation::Device;
+        float               m_priority      = 0.f;
+        bool                m_isDedicated   = false;
     };
 
-    struct AllocateTextureDesc
+    struct AllocateImageDesc
     {
-        TextureDesc         m_desc;
+        ImageDesc           m_desc;
         EMemoryLocation     m_memoryLocation;
         float               m_priority = 0.f;
         bool                m_isDedicated = false;
@@ -745,7 +430,7 @@ namespace nes
         uint64              m_offset = 0;
     };
 
-    struct TextureMemoryBindingDesc
+    struct ImageMemoryBindingDesc
     {
         Texture*            m_pTexture = nullptr;
         VmaAllocation       m_pMemory = nullptr;
@@ -758,7 +443,19 @@ namespace nes
 #pragma region [ Descriptor ]
 //============================================================================================================================================================================================
 
-    enum class ETexture1DViewType : uint8
+    //----------------------------------------------------------------------------------------------------
+    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageAspectFlagBits.html 
+    //----------------------------------------------------------------------------------------------------
+    enum class EPlaneBits : uint8
+    {
+        All     = 0,
+        Color   = NES_BIT(0),   // indicates "color" plane (same as "ALL" for color formats)
+        Depth   = NES_BIT(1),   // indicates "depth" plane (same as "ALL" for depth-only formats)
+        Stencil = NES_BIT(2),   // indicates "stencil" plane in depth-stencil formats
+    };
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPlaneBits)
+    
+    enum class EImage1DViewType : uint8
     {
         ShaderResource1D,
         ShaderResource1DArray,
@@ -773,7 +470,7 @@ namespace nes
         MaxNum
     };
 
-    enum class ETexture2DViewType : uint8
+    enum class EImage2DViewType : uint8
     {
         ShaderResource2D,
         ShaderResource2DArray,
@@ -791,7 +488,7 @@ namespace nes
         MaxNum
     };
 
-    enum class ETexture3DViewType : uint8
+    enum class EImage3DViewType : uint8
     {
         ShaderResource3D,
         ShaderResourceStorage3D,
@@ -810,7 +507,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkFilter.html
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkSamplerMipmapMode.html
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_filter
     //----------------------------------------------------------------------------------------------------
     enum class EFilterType : uint8
     {
@@ -832,7 +528,6 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkSamplerAddressMode.html
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_texture_address_mode
     //----------------------------------------------------------------------------------------------------
     enum class EAddressMode : uint8
     {
@@ -865,57 +560,73 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Describes access to a 1D Texture resource. Used to create a Descriptor.
+    /// @brief : Describes a region of a texture for copy commands. 
     //----------------------------------------------------------------------------------------------------
-    struct Texture1DViewDesc
+    struct ImageRegionDesc
     {
-        const DeviceImage*  m_pTexture;
-        ETexture1DViewType  m_viewType;
-        EFormat             m_format;
-        uint32              m_mipOffset;
-        uint32              m_mipCount = graphics::kUseRemaining;
-        uint32              m_layerOffset;
-        uint32              m_layerCount = graphics::kUseRemaining;
+        uint32      x;
+        uint32      y;
+        uint32      z;
+        uint32      m_width;
+        uint32      m_height;
+        uint32      m_depth;
+        uint32      m_mipOffset;
+        uint32      m_layerOffset;
+        EPlaneBits  m_planes;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes access to a 1D Image resource. Used to create a Descriptor.
+    //----------------------------------------------------------------------------------------------------
+    struct Image1DViewDesc
+    {
+        const DeviceImage*  m_pImage;
+        EImage1DViewType    m_viewType;
+        EFormat             m_format = EFormat::Unknown;
+        uint16              m_baseMipLevel = 0;
+        uint16              m_mipCount = graphics::kUseRemaining;
+        uint16              m_baseLayer = 0;
+        uint16              m_layerCount = graphics::kUseRemaining;
     };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Describes access to a 2D Texture resource. Used to create a Descriptor.
     //----------------------------------------------------------------------------------------------------
-    struct Texture2DViewDesc
+    struct Image2DViewDesc
     {
-        const DeviceImage*  m_pTexture;
-        ETexture2DViewType  m_viewType;
-        EFormat             m_format;
-        uint32              m_mipOffset;
-        uint32              m_mipCount = graphics::kUseRemaining;
-        uint32              m_layerOffset;
-        uint32              m_layerCount = graphics::kUseRemaining;
+        const DeviceImage*  m_pImage = nullptr;
+        EImage2DViewType    m_viewType;
+        EFormat             m_format = EFormat::Unknown;
+        uint16              m_baseMipLevel = 0;
+        uint16              m_mipCount = graphics::kUseRemaining;
+        uint16              m_baseLayer = 0;
+        uint16              m_layerCount = graphics::kUseRemaining;
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Describes access to a 3D Texture resource. Used to create a Descriptor.
+    /// @brief : Describes access to a 3D Image resource. Used to create a Descriptor.
     //----------------------------------------------------------------------------------------------------
-    struct Texture3DViewDesc
+    struct Image3DViewDesc
     {
-        const DeviceImage*  m_pTexture;
-        ETexture3DViewType  m_viewType;
-        EFormat             m_format;
-        uint32              m_mipOffset;
-        uint32              m_mipCount = graphics::kUseRemaining;
-        uint32              m_sliceOffset;
-        uint32              m_sliceCount = graphics::kUseRemaining;
+        const DeviceImage*  m_pImage = nullptr;
+        EImage3DViewType    m_viewType;
+        EFormat             m_format = EFormat::Unknown;
+        uint16              m_baseMipLevel = 0;
+        uint16              m_mipCount = graphics::kUseRemaining;
+        uint16              m_baseSlice = 0;
+        uint16              m_sliceCount = graphics::kUseRemaining;
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Describes access to a DeviceBuffer resource. Used to create a Descriptor.
+    /// @brief : Describes access to a Buffer resource. Used to create a Descriptor.
     //----------------------------------------------------------------------------------------------------
     struct BufferViewDesc
     {
         const DeviceBuffer* m_pBuffer;
         EBufferViewType     m_viewType;
-        EFormat             m_format;
-        uint64              m_offset = 0;
-        uint64              m_size = graphics::kUseRemaining;
+        EFormat             m_format;               // Format of an element in the buffer.
+        uint64              m_offset = 0;           // Offset from the beginning 
+        uint64              m_size = vk::WholeSize;
 
         // Optional
         uint32              m_structuredStride; // This will equal the structure stride from "BufferDesc" if not provided.
@@ -959,43 +670,7 @@ namespace nes
 #pragma region [ Pipeline Layout and Descriptors Management ]
 //============================================================================================================================================================================================
 
-    /*
-    All indices are local in the currently bound pipeline layout.
-    
-    Pipeline layout example:
-        Descriptor set                  #0          // "setIndex" - a descriptor set index in the pipeline layout, provided as an argument or bound to the pipeline
-            Descriptor range                #0      // "rangeIndex" and "baseRange" - a descriptor range (base) index in the descriptor set
-                Descriptor                      #0  // "descriptorIndex" and "baseDescriptor" - a descriptor (base) index in the descriptor range
-                Descriptor                      #1
-                Descriptor                      #2
-            Descriptor range                #1
-                Descriptor                      #0
-                Descriptor                      #1
-            Dynamic constant buffer         #0      // "baseDynamicConstantBuffer" - an offset in "dynamicConstantBuffers" in the currently bound pipeline layout for the provided descriptor set
-            Dynamic constant buffer         #1
-    
-        Descriptor set                  #1
-            Descriptor range                #0
-                Descriptor                      #0
-    
-        Descriptor set                  #2
-            Descriptor range                #0
-                Descriptor                      #0
-                Descriptor                      #1
-                Descriptor                      #2
-            Descriptor range                #1
-                Descriptor                      #0
-                Descriptor                      #1
-            Descriptor range                #2
-                Descriptor                      #0
-            Dynamic constant buffer         #0
-    
-        RootConstantDesc                #0          // "rootConstantIndex" - an index in "rootConstants" in the currently bound pipeline layout
-    
-        RootDescriptorDesc              #0          // "rootDescriptorIndex" - an index in "rootDescriptors" in the currently bound pipeline layout
-        RootDescriptorDesc              #1
-    */
-
+    // [TODO]: 
     enum class EPipelineLayoutBits : uint8
     {
         None                                = 0,
@@ -1004,6 +679,7 @@ namespace nes
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPipelineLayoutBits);
 
+    // [TODO]: 
     enum class EDescriptorPoolBits : uint8
     {
         None                                = 0,
@@ -1011,6 +687,7 @@ namespace nes
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EDescriptorPoolBits);
 
+    // [TODO]: 
     enum class EDescriptorSetBits : uint8
     {
         None                                = 0,
@@ -1036,42 +713,17 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorType.html
     //----------------------------------------------------------------------------------------------------
-    enum class EDescriptorType : uint8
+    enum class EDescriptorType
     {
         None,
-        Sampler,            
-        ConstantBuffer,     // VK: Uniform Buffer
-        Texture,            // VK: Sampled Image
-        StorageTexture,     // VK: Storage Image
-        Buffer,             // VK: Uniform Texel Buffer
-        StorageBuffer,      // VK: Storage Texel Buffer
-        AccelerationStructure,
+        Sampler                 = vk::DescriptorType::eSampler,            
+        ConstantBuffer          = vk::DescriptorType::eUniformBuffer,
+        Texture                 = vk::DescriptorType::eSampledImage,
+        StorageTexture          = vk::DescriptorType::eStorageImage,     
+        Buffer                  = vk::DescriptorType::eUniformTexelBuffer,
+        StorageBuffer           = vk::DescriptorType::eStorageTexelBuffer,
+        AccelerationStructure   = vk::DescriptorType::eAccelerationStructureKHR,
     };
-
-    constexpr bool DescriptorIsBufferType(const EDescriptorType type)
-    {
-        switch (type)
-        {
-            case EDescriptorType::Buffer:
-            case EDescriptorType::ConstantBuffer:
-            case EDescriptorType::StorageBuffer:
-                return true;
-
-            default: return false;
-        }
-    }
-
-    constexpr bool DescriptorIsTextureType(const EDescriptorType type)
-    {
-        switch (type)
-        {
-            case EDescriptorType::Texture:
-            case EDescriptorType::StorageTexture:
-                return true;
-
-            default: return false;
-        }
-    }
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Descriptor Range consists of "Descriptor" entities. 
@@ -1131,15 +783,11 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct PipelineLayoutDesc
     {
-        uint32                      m_rootRegisterSpace;
-        const PushConstantDesc*     m_pRootConstants;
-        uint32                      m_rootConstantNum;
-        const PushDescriptorDesc*   m_pRootDescriptors;
-        uint32                      m_rootDescriptorNum;
-        const DescriptorSetDesc*    m_pDescriptorSets;
-        uint32                      m_descriptorSetNum;
-        EPipelineStageBits          m_shaderStages;
-        EPipelineLayoutBits         m_flags;
+        // [TODO]: Descriptor Sets.
+        // [TODO]: Push Constant Ranges.
+        
+        // What stages of the pipeline should be bound?
+        EPipelineStageBits          m_shaderStages = EPipelineStageBits::GraphicsShaders;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1167,7 +815,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DescriptorRangeUpdateDesc
     {
-        //const Descriptor* const*   m_pDescriptors;
+        const Descriptor* const*    m_pDescriptors;
         uint32                      m_descriptorNum;
         uint32                      m_baseDescriptor;
     };
@@ -1206,7 +854,7 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkVertexInputRate.html
+    /// https://registry.khronos.org/vulkan/specs/latest/man/html/VkVertexInputRate.html
     //----------------------------------------------------------------------------------------------------
     enum class EVertexStreamStepRate : uint8
     {
@@ -1215,30 +863,40 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkPrimitiveTopology.html
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3dcommon/ne-d3dcommon-d3d_primitive_topology
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ne-d3d12-d3d12_primitive_topology_type
+    /// @brief : Describes what kind of geometry will be drawn from the vertices.
+    /// @note : https://registry.khronos.org/vulkan/specs/latest/man/html/VkPrimitiveTopology.html 
     //----------------------------------------------------------------------------------------------------
     enum class ETopology : uint8
     {
-        PointList,
-        LineList,
-        LineStrip,
-        TriangleList,
-        TriangleStrip,
-        LineListWithAdjacency,
-        LineStripWithAdjacency,
-        TriangleListWithAdjacency,
-        TriangleStripWithAdjacency,
+        PointList,                  // Points from vertices.
+        LineList,                   // Line from every two vertices without reuse.
+        LineStrip,                  // The end vertex of every line is used as start vertex for the next line.
+        TriangleList,               // Triangle from every three vertices without reuse.
+        TriangleStrip,              // The second and third vertex of every triangle is used as first two vertices of the next triangle
+        TriangleFan,                // Specifies a series of connected triangle primitives with all triangles sharing a common vertex.
+        LineListWithAdjacency,      // Specifies a series of separate line primitives with adjacency
+        LineStripWithAdjacency,     // Specifies a series of connected line primitives with adjacency, with consecutive primitives sharing three vertices.
+        TriangleListWithAdjacency,  // Specifies a series of separate triangle primitives with adjacency.
+        TriangleStripWithAdjacency, // Specifies connected triangle primitives with adjacency, with consecutive triangles sharing an edge. 
+        PatchList,                  // Specifies separate patch primitives. https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#drawing-patch-lists 
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : The Input Assembly defines two things: what kind of geometry will be drawn from the
+    /// vertices and if 'primitive restart' should be enabled.
+    ///
+    /// Primitive Restart controls whether a special vertex index value is treated as restarting
+    /// the assembly of primitives. This only applies to indexed draws. More info in the link attached.
+    /// @note : https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineInputAssemblyStateCreateInfo.html
+    //----------------------------------------------------------------------------------------------------
     struct InputAssemblyDesc
     {
-        ETopology               m_topology;
-        uint8                   m_tessControlPointNum;
-        EPrimitiveRestart       m_primitiveRestart;
+        ETopology               m_topology              = ETopology::TriangleList;      // Type of geometry that will be drawn.
+        uint8                   m_tessControlPointCount = 0;                            // Only used with ETopology::PatchList. Number of control points per patch.
+        EPrimitiveRestart       m_primitiveRestart      = EPrimitiveRestart::Disabled;  // Whether Primitive resart should be enabled.
     };
 
+    // [TODO]: 
     struct VertexAttributeDesc
     {
         uint32                  m_location;
@@ -1247,12 +905,14 @@ namespace nes
         uint16                  m_streamIndex;
     };
 
+    // [TODO]: 
     struct VertexStreamDesc
     {
         uint16                  m_bindingSlot;
         EVertexStreamStepRate   m_stepRate;
     };
 
+    // [TODO]: 
     struct VertexInputDesc
     {
         const VertexAttributeDesc* m_pAttributes;
@@ -1261,6 +921,7 @@ namespace nes
         uint8                   m_streamNum;
     };
 
+    // [TODO]: 
     struct VertexBufferDesc
     {
         const DeviceBuffer*     m_pBuffer;
@@ -1274,23 +935,36 @@ namespace nes
 #pragma region [ Graphics Pipeline: Rasterization ]
 //============================================================================================================================================================================================
 
-    //----------------------------------------------------------------------------------------------------		
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkPolygonMode.html 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines where fragments are generated to be colored in by the fragment shader.
+    /// @note : https://registry.khronos.org/vulkan/specs/latest/man/html/VkPolygonMode.html 
     //----------------------------------------------------------------------------------------------------
     enum class EFillMode : uint8
     {
-        Solid,
-        Wireframe,
+        Solid,      // Fill the area of the polygon with fragments.
+        Wireframe,  // Polygon edges are drawn as lines.
+        Point,     // Polygon vertices are drawn as points.
     };
 
     //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkCullModeFlagBits.html
+    /// @brief : Determines which faces will be culled from rendering. 
+    /// @note : https://registry.khronos.org/vulkan/specs/latest/man/html/VkCullModeFlagBits.html
     //----------------------------------------------------------------------------------------------------
     enum class ECullMode : uint8
     {
-        None,
-        Front,
-        Back
+        None,       // No faces will be culled.
+        Front,      // Front faces will be culled.
+        Back,       // Back faces will be culled.
+        Both,       // Both front and back faces will be culled.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Vertex order can be used to determine which "direction" a polygon is facing.
+    //----------------------------------------------------------------------------------------------------
+    enum class EFrontFaceWinding : uint8
+    {
+        Clockwise,
+        CounterClockwise,
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1340,38 +1014,66 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DepthBiasDesc
     {
-        float           m_constant;
-        float           m_clamp;
-        float           m_slope;
+        float           m_constant  = 0.f;
+        float           m_clamp     = 0.f;
+        float           m_slope     = 1.f;
 
         bool            IsEnabled() const { return m_constant != 0.f || m_slope != 0.f; }
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : The rasterizer takes the geometry shaped by the vertices from the vertex shader and turns it
+    ///     into fragments to be colored by the fragment shader. It also performs depth testing, face culling,
+    ///     and the scissor test, and it can be configured to output fragments that fill entire polygons or
+    ///     just the edges (wireframe rendering).
+    //----------------------------------------------------------------------------------------------------
     struct RasterizationDesc
     {
-        DepthBiasDesc   m_depthBias;
-        EFillMode       m_fillMode;
-        ECullMode       m_cullMode;
-        bool            m_frontIsCounterClockwise;
-        bool            m_enableDepthClamp;
-        bool            m_enableLineSmoothing;          // Requires "features.m_lineSmoothing"
-        bool            m_enableConservativeRaster;     // Requires "tiers.m_conservativeRaster != 0"
-        bool            m_enableShadingRate;            // Requires "tiers.m_shadingRate != 0", expects "CmdSetShadingRate" and optionally "AttachmentsDesc::m_shadingRate"
+        DepthBiasDesc       m_depthBias;
+        EFillMode           m_fillMode                  = EFillMode::Solid;
+
+        // Determines the type of face culling to use. You can disable culling, cull the front faces,
+        // cull the back faces or both. The m_frontFace variable specifies the vertex order for the
+        // faces to be considered front-facing and can be clockwise or counterclockwise.
+        ECullMode           m_cullMode                  = ECullMode::Back;
+        EFrontFaceWinding   m_frontFace                 = EFrontFaceWinding::Clockwise;
+
+        // Describes the thickness of lines in terms of number of fragments.
+        // The maximum line width that is supported depends on the hardware and any line thicker
+        // than 1.0f requires you to enable the 'wideLines' GPU feature.
+        float               m_lineWidth                 = 1.f;
+        
+        // If true, then fragments that are beyond the near and far planes are clamped to them rather
+        // than discarding them. This is useful in some special cases like shadow maps.
+        // Using this requires enabling a GPU feature.
+        bool                m_enableDepthClamp          = false;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Multisampling is one of the ways to perform antialiasing.
+    ///
+    ///     It works by combining the fragment shader results of multiple polygons
+    ///     that rasterize to the same pixel. This mainly occurs along edges, which is also where
+    ///     the most noticeable aliasing artifacts occur. Because it does not need to run the fragment
+    ///     shader multiple times if only one polygon maps to a pixel, it is significantly less expensive
+    ///     than simply rendering to a higher resolution and then downscaling.
+    ///     Enabling it requires enabling a GPU feature.
+    ///
+    /// @note : https://en.wikipedia.org/wiki/Multisample_anti-aliasing
+    //----------------------------------------------------------------------------------------------------
     struct MultisampleDesc
     {
         uint32          m_sampleMask;
         uint32          m_sampleCount = 0;
         bool            m_alphaToCoverage = false;
-        bool            m_sampleLocations = false;              // Requires "tiers.m_sampleLocations != 0", expects "CmdSetSampleLocations"
+        bool            m_sampleLocations = false;
     };
 
     struct ShadingRateDesc
     {
-        EShadingRate    m_shadingRate;
-        EShadingRateCombiner m_primitiveCombiner;       // Requires "tiers.m_sampleLocations >= 2"
-        EShadingRateCombiner m_attachmentCombiner;      // Requires "tiers.m_sampleLocations >= 2
+        EShadingRate            m_shadingRate;
+        EShadingRateCombiner    m_primitiveCombiner;      
+        EShadingRateCombiner    m_attachmentCombiner;
     };
 
 #pragma endregion
@@ -1439,6 +1141,7 @@ namespace nes
         Invert,             // D = ~D
         IncrementAndWrap,   // D++
         DecrementAndWrap,   // D--
+        MaxNum
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1496,7 +1199,7 @@ namespace nes
     /// @brief : Which color components to use in a blend operation.
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkColorComponentFlagBits.html
     //----------------------------------------------------------------------------------------------------
-    enum class EColorWriteBits : uint8
+    enum class EColorComponentBits : uint8
     {
         None    = 0,
         R       = NES_BIT(0),
@@ -1507,7 +1210,7 @@ namespace nes
         RGB     = R | G | B,
         RGBA    = RGB | A,
     };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EColorWriteBits);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EColorComponentBits);
 
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkStencilOpState.html
@@ -1515,25 +1218,28 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct StencilDesc
     {
-        ECompareOp                  m_compareOp;        /// Comparison operation
-        EStencilOp                  m_failOp;           /// Value to use on fail.
-        EStencilOp                  m_passOp;           /// Value to use on pass.
-        EStencilOp                  m_depthFailOp;      /// Value to use on depth fail.
-        uint8                       m_writeMask;        /// Which color channels to write to.
-        uint8                       m_compareMask;      /// Which color channels to compare.
+        ECompareOp                  m_compareOp;        // How to compare depth values.
+        EStencilOp                  m_failOp;           // Value to use on fail.
+        EStencilOp                  m_passOp;           // Value to use on pass.
+        EStencilOp                  m_depthFailOp;      // Value to use on depth fail.
+        uint8                       m_writeMask;        // Which color channels to write to.
+        uint8                       m_compareMask;      // Which color channels to compare.
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes how incoming fragment depths should be compared to the current depth buffer. 
+    //----------------------------------------------------------------------------------------------------
     struct DepthAttachmentDesc
     {
-        ECompareOp                  m_compareOp;
-        bool                        m_enableWrite;
-        bool                        m_enableBoundsTest; /// Requires "features.m_depthBoundsTest", expects "CmdSetDepthBounds".   
+        ECompareOp                  m_compareOp = ECompareOp::Less; // How depth values should be compared. Default behavior is 'lesser' values are preferred.  
+        bool                        m_enableWrite = true;           // If true, depth values that pass will be written to the depth buffer.
+        bool                        m_enableBoundsTest = false;     // Requires "features.m_depthBoundsTest", expects "CmdSetDepthBounds".   
     };
 
     struct StencilAttachmentDesc
     {
         StencilDesc                 m_front;
-        StencilDesc                 m_back;             /// Requires "features.m_independentFrontAndBackStencilReferenceAndMasks" for "back.m_writeMask"
+        StencilDesc                 m_back;             // Requires "features.m_independentFrontAndBackStencilReferenceAndMasks" for "back.m_writeMask"
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1542,20 +1248,39 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct BlendDesc
     {
-        EBlendFactor                m_srcFactor;
-        EBlendFactor                m_dstFactor;
-        EBlendOp                    m_op;
+        EBlendFactor                m_srcFactor = EBlendFactor::SrcAlpha;
+        EBlendFactor                m_dstFactor = EBlendFactor::OneMinusSrc1Alpha;
+        EBlendOp                    m_op        = EBlendOp::Add;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Default Blend Description for blending color channels based on alpha. 
+        //----------------------------------------------------------------------------------------------------
+        static constexpr BlendDesc  ColorAlphaBlend() { return {}; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Default Blend Description for blending alpha channels for an 'alpha blending' color attachment. 
+        //----------------------------------------------------------------------------------------------------
+        static constexpr BlendDesc  AlphaBlend()      { return {.m_srcFactor = EBlendFactor::One, .m_dstFactor = EBlendFactor::Zero, .m_op = EBlendOp::Add }; }
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines how a color result from the fragment shader will be blended together with the current
+    ///     value in the framebuffer.
+    //----------------------------------------------------------------------------------------------------
     struct ColorAttachmentDesc
     {
-        EFormat                     m_format;
-        BlendDesc                   m_colorBlend;
-        BlendDesc                   m_alphaBlend;
-        EColorWriteBits             m_colorWriteMask;
-        bool                        m_enableBlend;
+        EFormat                     m_format            = EFormat::RGBA8_SRGB;          // The format of the color channels.
+        BlendDesc                   m_colorBlend        = BlendDesc::ColorAlphaBlend(); // Defines how the r,g,b components will be blended.
+        BlendDesc                   m_alphaBlend        = BlendDesc::AlphaBlend();      // Defines how the alpha channel will be blended.
+        EColorComponentBits         m_colorWriteMask    = EColorComponentBits::RGBA;    // Defines which color channels will actually be blended.
+        bool                        m_enableBlend       = true;                         // Should this blending attachment be enabled.
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines how fragments are written to the framebuffer. This includes
+    ///  how colors are blended together, and whether to perform depth testing to discard fragments that are
+    ///  occluded by others in 3D space.
+    //----------------------------------------------------------------------------------------------------
     struct OutputMergerDesc
     {
         const ColorAttachmentDesc*  m_pColors;
@@ -1563,22 +1288,74 @@ namespace nes
         DepthAttachmentDesc         m_depth;
         StencilAttachmentDesc       m_stencil;
         EFormat                     m_depthStencilFormat;
-        ELogicOp                    m_logicOp;              /// Requires "features.m_logicOp".
+        ELogicOp                    m_logicOp = ELogicOp::None;              
     
         // Optional
         uint32                      m_viewMask;             /// If non-0, requires "viewMaximum > 0".
         EMultiview                  m_multiView;            /// if "m_viewMask != 0", requires "features.(xxx)Muliview".
     };
 
-    struct AttachmentDesc
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines the images that will be rendered to for a series of draw calls. Set these attachments
+    ///     using CommandBuffer::BeginRendering().
+    ///
+    ///     Contains 1 or more color attachments (which is commonly the swapchain's color attachment) and
+    ///     an optional depth attachment.
+    //----------------------------------------------------------------------------------------------------
+    struct RenderTargetsDesc
     {
-        const Descriptor* const*    m_pColors = nullptr;
-        uint32                      m_colorCount = 0;
-    
-        // Optional
-        const Descriptor*           m_pDepthStencil = nullptr;
-        const Descriptor*           m_pShadingRate = nullptr;
-        uint32                      m_viewMask = 0;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the one or more color targets for a series of render commands.
+        //----------------------------------------------------------------------------------------------------
+        RenderTargetsDesc&          SetColorTargets(const vk::ArrayProxy<const Descriptor*>& colors);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set an optional depth image target. Depth information will be written to this image.
+        //----------------------------------------------------------------------------------------------------
+        RenderTargetsDesc&          SetDepthStencilTargets(const Descriptor* depthStencil);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns whether any attachments have been set.
+        //----------------------------------------------------------------------------------------------------
+        bool                        HasTargets() const { return (!m_colors.empty()) || m_pDepthStencil != nullptr; }
+
+        vk::ArrayProxy<const Descriptor*> m_colors{};
+        const Descriptor*           m_pDepthStencil = nullptr;  // Optional depth image.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines any of color, depth and stencil values to use to clear a single render target.
+    ///     To be used for CommandBuffer::ClearAttachments().
+    //----------------------------------------------------------------------------------------------------
+    struct ClearDesc
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the color that will be used to clear an image's pixels.
+        ///     This will add the vk::ImageAspectFlags::eColor flag to the aspect.
+        //----------------------------------------------------------------------------------------------------
+        ClearDesc&              SetColorValue(const vk::ClearColorValue& color, const uint32 attachmentIndex = 0);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the clear value for depth.
+        ///     This will add the vk::ImageAspectFlags::eDepth flag to the aspect.
+        //----------------------------------------------------------------------------------------------------
+        ClearDesc&              SetDepthValue(const float depth);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the clear for the stencil.
+        ///     This will add the vk::ImageAspectFlags::eStencil flag to the aspect.
+        //----------------------------------------------------------------------------------------------------
+        ClearDesc&              SetStencilValue(const uint32 stencil);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set both the depth and stencil clear values.
+        ///     This will add both the vk::ImageAspectFlags::eDepth & eStencil flags to the aspect.
+        //----------------------------------------------------------------------------------------------------
+        ClearDesc&              SetDepthStencilValue(const float depth, const uint32 stencil);
+        
+        vk::ClearValue          m_clearValue            = {};
+        vk::ImageAspectFlags    m_aspect                = vk::ImageAspectFlagBits::eNone;
+        uint32                  m_colorAttachmentIndex  = 0;
     };
 
 #pragma endregion
@@ -1606,24 +1383,57 @@ namespace nes
         bool                    IsValid() const { return m_pByteCode != nullptr && m_size > 0; }
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters to create a Pipeline capable of rendering to the screen.
+    //----------------------------------------------------------------------------------------------------
     struct GraphicsPipelineDesc
     {
-        const PipelineLayout*   m_pPipelineLayout;
-        const VertexInputDesc*  m_pVertexInput;     // Optional.
-        InputAssemblyDesc       m_inputAssembly;
-        RasterizationDesc       m_rasterizer;
-        const MultisampleDesc*  m_pMultisample;     // Optional.
-        OutputMergerDesc        m_outputMerger;
-        const ShaderDesc*       m_pShaders;
-        uint32                  m_shaderNum;
-        ERobustness             m_robustness;       // Optional.
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the shaders that will run at different stages in the pipeline's execution. 
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetShaderStages(const std::vector<ShaderDesc>& shaderStages);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set how vertices are grouped into geometry. 
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetInputAssemblyDesc(const InputAssemblyDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set how fragments are generated to be colored in by the fragment shader.
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetRasterizationDesc(const RasterizationDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the Multisample behavior for the pipeline. Since you are setting the behavior,
+        ///     this will enable multisampling.
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetMultisampleDesc(const MultisampleDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set whether multisampling should be enabled. It is disabled by default.
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetMultisampleEnabled(const bool enabled = true);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the behavior for writing resulting fragments to the framebuffer. This includes color
+        ///     blending and depth testing.
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetOutputMergerDesc(const OutputMergerDesc& desc);
+        
+        std::vector<ShaderDesc>         m_shaderStages;
+        InputAssemblyDesc               m_inputAssembly;
+        RasterizationDesc               m_rasterization;
+        MultisampleDesc                 m_multisample;
+        OutputMergerDesc                m_outputMerger;
+        bool                            m_enableMultisample = false;
     };
 
+    // [TODO]: 
     struct ComputePipelineDesc
     {
-        const PipelineLayout*   m_pPipelineLayout;
-        ShaderDesc              m_shader;
-        ERobustness             m_robustness;       // Optional.
+        const PipelineLayout*           m_pPipelineLayout;
+        ShaderDesc                      m_shader;
+        ERobustness                     m_robustness;       // Optional.
     };
 
 #pragma endregion
@@ -1660,22 +1470,22 @@ namespace nes
     struct PipelineStatisticsDesc
     {
         // Common Part
-        uint64      m_inputVertexNum;
-        uint64      m_inputPrimitiveNum;
-        uint64      m_vertexShaderInvocationNum;
-        uint64      m_geometryShaderInvocationNum;
-        uint64      m_geometryShaderPrimitiveNum;
+        uint64      m_inputVertexCount = 0;                 // The number of input vertices processed in the pipeline. 
+        uint64      m_inputPrimitiveCount = 0;              
+        uint64      m_vertexShaderCallCount = 0;            // The number of times the Vertex Shader was invoked.
+        uint64      m_geometryShaderCallCount = 0;          // The number of times the Geometry Shader was invoked.
+        uint64      m_geometryShaderPrimitiveNum = 0;
         uint64      m_rasterizerInPrimitiveNum;
         uint64      m_rasterizerOutPrimitiveNum;
-        uint64      m_fragmentShaderInvocationNum;
-        uint64      m_tessControlShaderInvocationNum;
-        uint64      m_tessEvaluationShaderInvocationNum;
-        uint64      m_computeShaderInvocationNum;
+        uint64      m_fragmentShaderCallCount = 0;          // The number of times the Fragment Shader was invoked.
+        uint64      m_tessControlShaderCallCount = 0;       // The number of times the Tesselation Control Shader was invoked.
+        uint64      m_tessEvaluationShaderCallCount = 0;    // The number of times the Tesselation Evaluation Shader was invoked.
+        uint64      m_computeShaderCallCount = 0;           // The number of times the Compute Shader was invoked.
 
         // If "features.m_meshShaderPipelineStats"
-        uint64      m_meshControlShaderInvocationNum;
-        uint64      m_meshEvaluationShaderInvocationNum;
-        uint64      m_meshEvaluationShaderPrimitiveNum;
+        uint64      m_meshControlShaderCallCount = 0;       // The number of times the Mesh Control Shader was invoked.
+        uint64      m_meshEvaluationShaderCallCount = 0;    // The number of times the Mesh Evaluation Shader was invoked.
+        uint64      m_meshEvaluationShaderPrimitiveCount = 0;
     };
 
 #pragma endregion
@@ -1684,23 +1494,37 @@ namespace nes
 #pragma region [ Command Signatures ]
 //============================================================================================================================================================================================
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines the set of vertices and instances that will be drawn.
+    //----------------------------------------------------------------------------------------------------
     struct DrawDesc
     {
-        uint32  m_vertexNum = 0;
-        uint32  m_instanceNum = 0;
-        uint32  m_baseVertex = 0;                   // Vertex buffer offset = CmdSetVertexBuffers.m_offset + m_baseVertex * VertexStreamDesc::m_stride
-        uint32  m_baseInstance = 0;
+        uint32  m_vertexCount = 0;      // Number of vertices to submit from the attached vertex buffer.
+        uint32  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                      
+        uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
+        uint32  m_firstInstance = 0;    // Used as an offset for instanced rendering.
+
+        DrawDesc(const uint32 numVertices, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters to submit an indexed draw call. By binding an index buffer alongside a vertex buffer,
+    ///     vertices can be reused, saving on memory.
+    //----------------------------------------------------------------------------------------------------
     struct DrawIndexedDesc
     {
-        uint32  m_indexNum = 0;
-        uint32  m_instanceNum = 0;
-        uint32  m_baseIndex = 0;                    // Index buffer offset = CmdSetIndexBuffer.m_offset + m_baseIndex * sizeof(CmdSetIndexBuffer.m_indexType)
-        int32   m_baseVertex = 0;                   // index += baseVertex;
-        uint32  m_baseInstance = 0;
+        uint32  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                   
+        uint32  m_indexCount = 0;       // Number of indices to submit.   
+        uint32  m_firstIndex = 0;       // Used as a byte offset into the index buffer. Must be calculated as: (sizeof(index) * index).                       
+        uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
+        uint32  m_firstInstance = 0;    // Used as an offset for instanced rendering.
+        
+        DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters to use when invoking a compute shader.
+    //----------------------------------------------------------------------------------------------------
     struct DispatchDesc
     {
         uint32  x = 0;
@@ -1709,80 +1533,7 @@ namespace nes
     };
 
 #pragma endregion
-
-//============================================================================================================================================================================================
-#pragma region [ Other ]
-//============================================================================================================================================================================================
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Describes a region of a texture for copy commands. 
-    //----------------------------------------------------------------------------------------------------
-    struct TextureRegionDesc
-    {
-        uint32      x;
-        uint32      y;
-        uint32      z;
-        uint32      m_width;
-        uint32      m_height;
-        uint32      m_depth;
-        uint32      m_mipOffset;
-        uint32      m_layerOffset;
-        EPlaneBits  m_planes;
-    };
-
-    struct TextureDataLayoutDesc
-    {
-        uint64      m_offset;       // A buffer offset must be a multiple of "m_uploadBufferTextureSliceAlignment" (data placement alignment)
-        uint32      m_rowPitch;     // Must be a multiple of "m_uploadBufferTextureRowAlignment"
-        uint32      m_slicePitch;   // Must be a multiple of "m_uploadBufferTextureSliceAlignment"
-    };
-
-    struct FenceSubmitDesc
-    {
-        // [TODO]: 
-        //GFence*           m_pFence;
-        uint64              m_value;
-        EPipelineStageBits  m_stages;
-    };
-
-    struct QueueSubmitDesc
-    {
-        const FenceSubmitDesc*  m_pWaitFences;
-        uint32                  m_waitFenceNum;
-        const CommandBuffer*    m_pCommandBuffers;
-        uint32                  m_commandBufferNum;
-        const FenceSubmitDesc*  m_pSignalFences;
-        uint32                  m_signalFenceNum;
-    };
-
-    struct ClearDesc
-    {
-        ClearValue              m_clearValue;
-        EPlaneBits              m_planes;
-        uint32                  m_colorAttachmentIndex;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    // For any buffers and textures with integer formats:
-    //  - Clears a storage view with bit-precise values, copying the lower "N" bits from "value.[f/ui/i].channel"
-    //    to the corresponding channel, where "N" is the number of bits in the "channel" of the resource format
-    // For textures with non-integer formats:
-    //  - Clears a storage view with float values with format conversion from "FLOAT" to "UNORM/SNORM" where appropriate
-    // For buffers:
-    //  - To avoid discrepancies in behavior between GAPIs use "R32f/ui/i" formats for views
-    //  - D3D: structured buffers are unsupported! 
-    //----------------------------------------------------------------------------------------------------
-    struct ClearStorageDesc
-    {
-        const Descriptor*       m_pStorage; // A "Storage" descriptor.
-        Color                   m_value;
-        uint32                  m_setIndex;
-        uint32                  m_rangeIndex;
-        uint32                  m_descriptorIndex;
-    };
-
-#pragma endregion
-
+    
 //============================================================================================================================================================================================
 #pragma region [ Device Description ]
 //============================================================================================================================================================================================
@@ -1818,18 +1569,16 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ExtensionDesc
     {
-        const char* m_extensionName = nullptr;      /// Name of the extension. Ex: VK_KHR_SWAPCHAIN_EXTENSION_NAME.
-        void*       m_pFeature = nullptr;           /// [optional] Pointer to the feature structure for the extension.
-        bool        m_isRequired = true;            /// [optional] If the extension is required.
-        uint32      m_version = 0;                  /// [optional] Spec version of the extension, this version or higher.
-        bool        m_requireExactVersion = false;  /// [optional] If true, the spec version must match exactly.
+        const char* m_extensionName = nullptr;      // Name of the extension.
+        void*       m_pFeature = nullptr;           // [optional] Pointer to the feature structure for the extension.
+        bool        m_isRequired = true;            // [optional] If the extension is required.
+        uint32      m_version = 0;                  // [optional] Spec version of the extension, this version or higher.
+        bool        m_requireExactVersion = false;  // [optional] If true, the spec version must match exactly.
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Helper function to return the EQueueType as an index value. (Casts to size_t).
+    /// @brief : Describes the Physical Device's properties.
     //----------------------------------------------------------------------------------------------------
-    constexpr size_t GetQueueTypeIndex(const EQueueType type) { return static_cast<size_t>(type); }
-
     struct PhysicalDeviceDesc
     {
         char                m_name[256]{};                                          /// Name of the Device.
@@ -1854,6 +1603,19 @@ namespace nes
         std::vector<ExtensionDesc>  m_deviceExtensions{};
 
         // Capabilities
+
+        // Buffer/Image Dimensions
+        struct
+        {
+            uint32                  m_maxTypedBufferDimension;
+            uint16                  m_maxDimensionAttachment;
+            uint16                  m_maxAttachmentLayerCount;
+            uint16                  m_maxImageDimension1D;
+            uint16                  m_maxImageDimension2D;
+            uint16                  m_maxImageDimension3D;
+            uint16                  m_maxImageLayerCount;
+            
+        } m_dimensions;
 
         // Tiered Feature Support: (0 = unsupported)
         struct
@@ -1947,15 +1709,15 @@ namespace nes
             uint32                  m_samplerAllocationMaxNum       = 0;
             uint32                  m_constantBufferMaxRange        = 0;
             uint32                  m_storageBufferMaxRange         = 0;
-            uint32                  m_bufferTextureGranularity      = 0;
+            uint32                  m_bufferImageGranularity      = 0;
             uint64                  m_bufferMaxSize                 = 0;
         } m_memory;
 
         // Memory Alignment Properties
         struct
         {
-            uint32                  m_uploadBufferTextureRow        = 0;
-            uint32                  m_uploadBufferTextureSlice      = 0;
+            uint32                  m_uploadBufferImageRow        = 0;
+            uint32                  m_uploadBufferImageSlice      = 0;
             uint32                  m_shaderBindingTable            = 0;
             uint32                  m_bufferShaderResourceOffset    = 0;
             uint32                  m_constantBufferOffset          = 0;

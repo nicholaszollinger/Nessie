@@ -6,6 +6,7 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
+    // [TODO]: Update the C++ API.
     /// @brief : Wrapper for a Timeline Semaphore object with a timeline value.
     ///
     /// It can only be in one of two states:
@@ -41,7 +42,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this semaphore.
         //----------------------------------------------------------------------------------------------------
-        virtual void            SetDebugName(const char* name) override;
+        virtual void            SetDebugName(const std::string& name) override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : This function can only be called once and is only allowed if the Semaphore was initialized

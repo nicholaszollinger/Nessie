@@ -39,23 +39,25 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the name of the application. Default is none.
         //----------------------------------------------------------------------------------------------------
-        ApplicationDesc&        SetApplicationName(const std::string& appName)      { m_appName = appName; return *this; }
+        ApplicationDesc&        SetApplicationName(const std::string& appName);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the version of the application. Default is 1.0.0
         //----------------------------------------------------------------------------------------------------
-        ApplicationDesc&        SetApplicationVersion(const Version& appVersion)    { m_appVersion = appVersion; return *this; }
+        ApplicationDesc&        SetApplicationVersion(const Version& appVersion);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the minimum time, in milliseconds, for the delta time passed to the Application.
         ///     The default is 0.03 ms.
         //----------------------------------------------------------------------------------------------------
-        ApplicationDesc&        SetMinTimeStep(const float minTimeStepMs)           { m_minTimeStepMs = minTimeStepMs; return *this; }
+        ApplicationDesc&        SetMinTimeStep(const float minTimeStepMs);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : If set to true, the renderer will not be able to present to the screen, but you can still use
         /// the GPU for rendering work. The Application will not receive input either!
+        /// @param isHeadless : Whether to run headless or not.
+        /// @param numFrames : The number of frames to run in headless mode. Default is 1.
         //----------------------------------------------------------------------------------------------------
-        ApplicationDesc&        SetIsHeadless(const bool isHeadless = true)         { m_isHeadless = isHeadless; return *this; }
+        ApplicationDesc&        SetIsHeadless(const bool isHeadless = true, const uint32 numFrames = 1);
     };
 }

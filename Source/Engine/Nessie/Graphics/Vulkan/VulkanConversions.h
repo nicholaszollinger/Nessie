@@ -57,15 +57,18 @@ namespace nes
         return EVendor::Unknown;
     }
 
-    constexpr EPhysicalDeviceType GetPhysicalDeviceTypeFromVulkanType(const VkPhysicalDeviceType type)
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Convert from a vk::PhysicalDeviceType to nes::EPhysicalDeviceType.
+    //----------------------------------------------------------------------------------------------------
+    constexpr EPhysicalDeviceType GetPhysicalDeviceTypeFromVulkanType(const vk::PhysicalDeviceType type)
     {
         switch (type)
         {
-            case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: return EPhysicalDeviceType::Integrated;
-            case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: return EPhysicalDeviceType::DiscreteGPU;
-            case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: return EPhysicalDeviceType::VirtualGPU;
-            case VK_PHYSICAL_DEVICE_TYPE_CPU: return EPhysicalDeviceType::CPU;
-
+            case vk::PhysicalDeviceType::eDiscreteGpu: return EPhysicalDeviceType::DiscreteGPU;
+            case vk::PhysicalDeviceType::eIntegratedGpu: return EPhysicalDeviceType::Integrated;
+            case vk::PhysicalDeviceType::eVirtualGpu: return EPhysicalDeviceType::VirtualGPU;
+            case vk::PhysicalDeviceType::eCpu: return EPhysicalDeviceType::CPU;
+            
             default: return EPhysicalDeviceType::Unknown;
         }
     }
@@ -119,7 +122,7 @@ namespace nes
             VK_FILTER_LINEAR,
         };
 
-        constexpr std::array<VkImageType, static_cast<size_t>(ETextureType::MaxNum)> kImageTypes =
+        constexpr std::array<VkImageType, static_cast<size_t>(EImageType::MaxNum)> kImageTypes =
         {
             VK_IMAGE_TYPE_1D,
             VK_IMAGE_TYPE_2D,
@@ -387,76 +390,88 @@ namespace nes
             VK_SAMPLER_REDUCTION_MODE_MAX,              // MAX
         };
 
-        constexpr std::array<VkImageUsageFlags, static_cast<size_t>(ETexture1DViewType::MaxNum)> kImageViewUsage1D =
+        constexpr std::array<vk::ImageUsageFlags, static_cast<size_t>(EImage1DViewType::MaxNum)> kImageViewUsage1D =
         {
-            VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_1D,
-            VK_IMAGE_USAGE_SAMPLED_BIT,                  // SHADER_RESOURCE_1D_ARRAY,
-            VK_IMAGE_USAGE_STORAGE_BIT,                  // SHADER_RESOURCE_STORAGE_1D,
-            VK_IMAGE_USAGE_STORAGE_BIT,                  // SHADER_RESOURCE_STORAGE_1D_ARRAY,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,         // COLOR_ATTACHMENT,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_STENCIL_ATTACHMENT
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_READONLY_STENCIL_ATTACHMENT,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_ATTACHMENT_STENCIL_READONLY,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, // DEPTH_STENCIL_READONLY,
+            vk::ImageUsageFlagBits::eSampled,                  // SHADER_RESOURCE_1D,
+            vk::ImageUsageFlagBits::eSampled,                  // SHADER_RESOURCE_1D_ARRAY,
+            vk::ImageUsageFlagBits::eStorage,                  // SHADER_RESOURCE_STORAGE_1D,
+            vk::ImageUsageFlagBits::eStorage,                  // SHADER_RESOURCE_STORAGE_1D_ARRAY,
+            vk::ImageUsageFlagBits::eColorAttachment,         // COLOR_ATTACHMENT,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment, // DEPTH_STENCIL_ATTACHMENT
+            vk::ImageUsageFlagBits::eDepthStencilAttachment, // DEPTH_READONLY_STENCIL_ATTACHMENT,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment, // DEPTH_ATTACHMENT_STENCIL_READONLY,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment, // DEPTH_STENCIL_READONLY,
         };
 
-        constexpr std::array<VkImageUsageFlags, static_cast<size_t>(ETexture2DViewType::MaxNum)> kImageViewUsage2D =
+        constexpr std::array<vk::ImageUsageFlags, static_cast<size_t>(EImage2DViewType::MaxNum)> kImageViewUsage2D =
         {
-            VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_2D,
-            VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_2D_ARRAY,
-            VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_CUBE,
-            VK_IMAGE_USAGE_SAMPLED_BIT,                              // SHADER_RESOURCE_CUBE_ARRAY,
-            VK_IMAGE_USAGE_STORAGE_BIT,                              // SHADER_RESOURCE_STORAGE_2D,
-            VK_IMAGE_USAGE_STORAGE_BIT,                              // SHADER_RESOURCE_STORAGE_2D_ARRAY,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,                     // COLOR_ATTACHMENT,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_STENCIL_ATTACHMENT
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_READONLY_STENCIL_ATTACHMENT,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_ATTACHMENT_STENCIL_READONLY,
-            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,             // DEPTH_STENCIL_READONLY,
-            VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR, // SHADING_RATE_ATTACHMENT
+            vk::ImageUsageFlagBits::eSampled,                              // SHADER_RESOURCE_2D,
+            vk::ImageUsageFlagBits::eSampled,                              // SHADER_RESOURCE_2D_ARRAY,
+            vk::ImageUsageFlagBits::eSampled,                              // SHADER_RESOURCE_CUBE,
+            vk::ImageUsageFlagBits::eSampled,                              // SHADER_RESOURCE_CUBE_ARRAY,
+            vk::ImageUsageFlagBits::eStorage,                              // SHADER_RESOURCE_STORAGE_2D,
+            vk::ImageUsageFlagBits::eStorage,                              // SHADER_RESOURCE_STORAGE_2D_ARRAY,
+            vk::ImageUsageFlagBits::eColorAttachment,                     // COLOR_ATTACHMENT,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,             // DEPTH_STENCIL_ATTACHMENT
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,             // DEPTH_READONLY_STENCIL_ATTACHMENT,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,             // DEPTH_ATTACHMENT_STENCIL_READONLY,
+            vk::ImageUsageFlagBits::eDepthStencilAttachment,             // DEPTH_STENCIL_READONLY,
+            vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR, // SHADING_RATE_ATTACHMENT
         };
 
-        constexpr std::array<VkImageUsageFlags, static_cast<size_t>(ETexture3DViewType::MaxNum)> kImageViewUsage3D =
+        constexpr std::array<vk::ImageUsageFlags, static_cast<size_t>(EImage3DViewType::MaxNum)> kImageViewUsage3D =
         {
-            VK_IMAGE_USAGE_SAMPLED_BIT,          // SHADER_RESOURCE_3D,
-            VK_IMAGE_USAGE_STORAGE_BIT,          // SHADER_RESOURCE_STORAGE_3D,
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // COLOR_ATTACHMENT
+            vk::ImageUsageFlagBits::eSampled,          // SHADER_RESOURCE_3D,
+            vk::ImageUsageFlagBits::eStorage,          // SHADER_RESOURCE_STORAGE_3D,
+            vk::ImageUsageFlagBits::eColorAttachment,   // COLOR_ATTACHMENT
         };
 
-        constexpr std::array<VkImageLayout, static_cast<size_t>(ETexture1DViewType::MaxNum)> kImageViewLayout1D =
+        constexpr std::array<vk::ImageLayout, static_cast<size_t>(EImage1DViewType::MaxNum)> kImageViewLayout1D =
         {
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                   // SHADER_RESOURCE_1D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                   // SHADER_RESOURCE_1D_ARRAY,
-            VK_IMAGE_LAYOUT_GENERAL,                                    // SHADER_RESOURCE_STORAGE_1D,
-            VK_IMAGE_LAYOUT_GENERAL,                                    // SHADER_RESOURCE_STORAGE_1D_ARRAY,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                   // COLOR_ATTACHMENT,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,           // DEPTH_STENCIL_ATTACHMENT
-            VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL, // DEPTH_READONLY_STENCIL_ATTACHMENT,
-            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL, // DEPTH_ATTACHMENT_STENCIL_READONLY,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,            // DEPTH_STENCIL_READONLY,
+            vk::ImageLayout::eShaderReadOnlyOptimal,                   // SHADER_RESOURCE_1D,
+            vk::ImageLayout::eShaderReadOnlyOptimal,                   // SHADER_RESOURCE_1D_ARRAY,
+            vk::ImageLayout::eGeneral,                                    // SHADER_RESOURCE_STORAGE_1D,
+            vk::ImageLayout::eGeneral,                                    // SHADER_RESOURCE_STORAGE_1D_ARRAY,
+            vk::ImageLayout::eColorAttachmentOptimal,                   // COLOR_ATTACHMENT,
+            vk::ImageLayout::eDepthStencilAttachmentOptimal,           // DEPTH_STENCIL_ATTACHMENT
+            vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal, // DEPTH_READONLY_STENCIL_ATTACHMENT,
+            vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal, // DEPTH_ATTACHMENT_STENCIL_READONLY,
+            vk::ImageLayout::eDepthStencilReadOnlyOptimal,            // DEPTH_STENCIL_READONLY,
         };
 
-        constexpr std::array<VkImageLayout, static_cast<size_t>(ETexture2DViewType::MaxNum)> kImageViewLayout2D =
+        constexpr std::array<vk::ImageLayout, static_cast<size_t>(EImage2DViewType::MaxNum)> kImageViewLayout2D =
         {
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_2D,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_2D_ARRAY,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_CUBE,
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,                     // SHADER_RESOURCE_CUBE_ARRAY,
-            VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE_2D,
-            VK_IMAGE_LAYOUT_GENERAL,                                      // SHADER_RESOURCE_STORAGE_2D_ARRAY,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,                     // COLOR_ATTACHMENT,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,             // DEPTH_STENCIL_ATTACHMENT
-            VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL,   // DEPTH_READONLY_STENCIL_ATTACHMENT,
-            VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL,   // DEPTH_ATTACHMENT_STENCIL_READONLY,
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,              // DEPTH_STENCIL_READONLY,
-            VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, // SHADING_RATE_ATTACHMENT
+            vk::ImageLayout::eShaderReadOnlyOptimal,                   // SHADER_RESOURCE_2D,
+            vk::ImageLayout::eShaderReadOnlyOptimal,                   // SHADER_RESOURCE_2D_ARRAY,
+            vk::ImageLayout::eShaderReadOnlyOptimal,                   // SHADER_RESOURCE_CUBE,
+            vk::ImageLayout::eShaderReadOnlyOptimal,                   // SHADER_RESOURCE_CUBE_ARRAY,
+            vk::ImageLayout::eGeneral,                                 // SHADER_RESOURCE_STORAGE_2D,
+            vk::ImageLayout::eGeneral,                                 // SHADER_RESOURCE_STORAGE_2D_ARRAY,
+            vk::ImageLayout::eColorAttachmentOptimal,                  // COLOR_ATTACHMENT,
+            vk::ImageLayout::eDepthStencilAttachmentOptimal,           // DEPTH_STENCIL_ATTACHMENT
+            vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal,   // DEPTH_READONLY_STENCIL_ATTACHMENT,
+            vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal,   // DEPTH_ATTACHMENT_STENCIL_READONLY,
+            vk::ImageLayout::eDepthStencilReadOnlyOptimal,             // DEPTH_STENCIL_READONLY,
+            vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR, // SHADING_RATE_ATTACHMENT
         };
 
-        constexpr std::array<VkImageLayout, static_cast<size_t>(ETexture3DViewType::MaxNum)> kImageViewLayout3D =
+        constexpr std::array<vk::ImageLayout, static_cast<size_t>(EImage3DViewType::MaxNum)> kImageViewLayout3D =
         {
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // SHADER_RESOURCE_3D,
-            VK_IMAGE_LAYOUT_GENERAL,                  // SHADER_RESOURCE_STORAGE_3D,
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // COLOR_ATTACHMENT
+            vk::ImageLayout::eShaderReadOnlyOptimal,    // SHADER_RESOURCE_3D,
+            vk::ImageLayout::eGeneral,                  // SHADER_RESOURCE_STORAGE_3D,
+            vk::ImageLayout::eColorAttachmentOptimal,   // COLOR_ATTACHMENT
+        };
+
+        constexpr std::array<vk::StencilOp, static_cast<size_t>(EStencilOp::MaxNum)> kStencilOp =
+        {
+            vk::StencilOp::eKeep, 
+            vk::StencilOp::eZero,
+            vk::StencilOp::eReplace,
+            vk::StencilOp::eIncrementAndClamp,
+            vk::StencilOp::eDecrementAndClamp,
+            vk::StencilOp::eInvert,
+            vk::StencilOp::eIncrementAndWrap,
+            vk::StencilOp::eDecrementAndWrap,
         };
     }
     
@@ -470,9 +485,9 @@ namespace nes
         return EFormat::Unknown;
     }
 
-    constexpr VkFormat GetVkFormat(const EFormat format)
+    constexpr vk::Format GetVkFormat(const EFormat format)
     {
-        return vulkan::kFormats[static_cast<uint32>(format)];
+        return static_cast<vk::Format>(vulkan::kFormats[static_cast<uint32>(format)]);
     }
 
     constexpr EQueryType GetQueryType(const uint32 queryTypeVk)
@@ -499,199 +514,203 @@ namespace nes
     /// @brief : Get the VkObjectType value from a Vulkan Type.
     //----------------------------------------------------------------------------------------------------
     template <VulkanObjectType Type>
-    constexpr VkObjectType GetVkObjectType()
+    constexpr vk::ObjectType GetVkObjectType()
     {
-        if constexpr(std::is_same_v<Type, VkBuffer>)
-            return VK_OBJECT_TYPE_BUFFER;
-        else if constexpr(std::is_same_v<Type, VkBufferView>)
-            return VK_OBJECT_TYPE_BUFFER_VIEW;
-        else if constexpr(std::is_same_v<Type, VkCommandBuffer>)
-            return VK_OBJECT_TYPE_COMMAND_BUFFER;
-        else if constexpr(std::is_same_v<Type, VkCommandPool>)
-            return VK_OBJECT_TYPE_COMMAND_POOL;
-        else if constexpr(std::is_same_v<Type, VkDescriptorPool>)
-            return VK_OBJECT_TYPE_DESCRIPTOR_POOL;
-        else if constexpr(std::is_same_v<Type, VkDescriptorSet>)
-            return VK_OBJECT_TYPE_DESCRIPTOR_SET;
-        else if constexpr(std::is_same_v<Type, VkDescriptorSetLayout>)
-            return VK_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT;
-        else if constexpr(std::is_same_v<Type, VkDevice>)
-            return VK_OBJECT_TYPE_DEVICE;
-        else if constexpr(std::is_same_v<Type, VkDeviceMemory>)
-            return VK_OBJECT_TYPE_DEVICE_MEMORY;
-        else if constexpr(std::is_same_v<Type, VkFence>)
-            return VK_OBJECT_TYPE_FENCE;
-        else if constexpr(std::is_same_v<Type, VkFramebuffer>)
-            return VK_OBJECT_TYPE_FRAMEBUFFER;
-        else if constexpr(std::is_same_v<Type, VkImage>)
-            return VK_OBJECT_TYPE_IMAGE;
-        else if constexpr(std::is_same_v<Type, VkImageView>)
-            return VK_OBJECT_TYPE_IMAGE_VIEW;
-        else if constexpr(std::is_same_v<Type, VkInstance>)
-            return VK_OBJECT_TYPE_INSTANCE;
-        else if constexpr(std::is_same_v<Type, VkPipeline>)
-            return VK_OBJECT_TYPE_PIPELINE;
-        else if constexpr(std::is_same_v<Type, VkPipelineCache>)
-            return VK_OBJECT_TYPE_PIPELINE_CACHE;
-        else if constexpr(std::is_same_v<Type, VkPipelineLayout>)
-            return VK_OBJECT_TYPE_PIPELINE_LAYOUT;
-        else if constexpr(std::is_same_v<Type, VkQueryPool>)
-            return VK_OBJECT_TYPE_QUERY_POOL;
-        else if constexpr(std::is_same_v<Type, VkRenderPass>)
-            return VK_OBJECT_TYPE_RENDER_PASS;
-        else if constexpr(std::is_same_v<Type, VkSampler>)
-            return VK_OBJECT_TYPE_SAMPLER;
-        else if constexpr(std::is_same_v<Type, VkSemaphore>)
-            return VK_OBJECT_TYPE_SEMAPHORE;
-        else if constexpr(std::is_same_v<Type, VkShaderModule>)
-            return VK_OBJECT_TYPE_SHADER_MODULE;
-        else if constexpr(std::is_same_v<Type, VkSurfaceKHR>)
-            return VK_OBJECT_TYPE_SURFACE_KHR;
-        else if constexpr(std::is_same_v<Type, VkSwapchainKHR>)
-            return VK_OBJECT_TYPE_SWAPCHAIN_KHR;
-        else if constexpr(std::is_same_v<Type, VkPhysicalDevice>)
-            return VK_OBJECT_TYPE_PHYSICAL_DEVICE;
-        else if constexpr(std::is_same_v<Type, VkQueue>)
-            return VK_OBJECT_TYPE_QUEUE;
-        else if constexpr(std::is_same_v<Type, VkShaderEXT>)
-            return VK_OBJECT_TYPE_SHADER_EXT;
-        else if constexpr(std::is_same_v<Type, VkAccelerationStructureKHR>)
-            return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;
+        #define SAME_OR_CONVERTIBLE(vkType) std::is_same_v<Type, vkType> || std::is_convertible_v<Type, vkType>
+        
+        if constexpr(SAME_OR_CONVERTIBLE(VkBuffer))
+            return vk::ObjectType::eBuffer;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkBufferView))
+            return vk::ObjectType::eBufferView;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkCommandBuffer))
+            return vk::ObjectType::eCommandBuffer;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkCommandPool))
+            return vk::ObjectType::eCommandPool;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkDescriptorPool))
+            return vk::ObjectType::eDescriptorPool;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkDescriptorSet))
+            return vk::ObjectType::eDescriptorSet;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkDescriptorSetLayout))
+            return vk::ObjectType::eDescriptorSetLayout;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkDevice))
+            return vk::ObjectType::eDevice;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkDeviceMemory))
+            return vk::ObjectType::eDeviceMemory;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkFence))
+            return vk::ObjectType::eFence;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkFramebuffer))
+            return vk::ObjectType::eFramebuffer;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkImage))
+            return vk::ObjectType::eImage;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkImageView))
+            return vk::ObjectType::eImageView;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkInstance))
+            return vk::ObjectType::eInstance;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkPipeline))
+            return vk::ObjectType::ePipeline;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkPipelineCache))
+            return vk::ObjectType::ePipelineCache;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkPipelineLayout))
+            return vk::ObjectType::ePipelineLayout;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkQueryPool))
+            return vk::ObjectType::eQueryPool;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkRenderPass))
+            return vk::ObjectType::eRenderPass;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkSampler))
+            return vk::ObjectType::eSampler;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkSemaphore))
+            return vk::ObjectType::eSemaphore;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkShaderModule))
+            return vk::ObjectType::eShaderModule;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkSurfaceKHR))
+            return vk::ObjectType::eSurfaceKHR;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkSwapchainKHR))
+            return vk::ObjectType::eSwapchainKHR;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkPhysicalDevice))
+            return vk::ObjectType::ePhysicalDevice;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkQueue))
+            return vk::ObjectType::eQueue;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkShaderEXT))
+            return vk::ObjectType::eShaderEXT;
+        else if constexpr(SAME_OR_CONVERTIBLE(VkAccelerationStructureKHR))
+            return vk::ObjectType::eAccelerationStructureKHR;
         else
         {
             static_assert(!std::is_same_v<Type, Type>, "Unsupported Vulkan object type");
-            return VK_OBJECT_TYPE_UNKNOWN;
+            return vk::ObjectType::eUnknown;
         }
+
+    #undef SAME_OR_CONVERTIBLE
     }
 
-    constexpr VkFilter GetVkFilterType(const EFilterType type)
+    constexpr vk::Filter GetVkFilterType(const EFilterType type)
     {
-        return vulkan::kFilters[static_cast<size_t>(type)];
+        return static_cast<vk::Filter>(vulkan::kFilters[static_cast<size_t>(type)]);
     }
 
-    constexpr VkImageType GetVkImageType(const ETextureType type)
+    constexpr vk::ImageType GetVkImageType(const EImageType type)
     {
-        return vulkan::kImageTypes[static_cast<size_t>(type)];
+        return static_cast<vk::ImageType>(vulkan::kImageTypes[static_cast<size_t>(type)]);
     }
 
-    constexpr VkSamplerMipmapMode GetVkSamplerMipMode(const EFilterType type)
+    constexpr vk::SamplerMipmapMode GetVkSamplerMipMode(const EFilterType type)
     {
-        return vulkan::kMipmapModes[static_cast<size_t>(type)];
+        return static_cast<vk::SamplerMipmapMode>(vulkan::kMipmapModes[static_cast<size_t>(type)]);
     }
 
-    constexpr VkBlendFactor GetVkBlendFactor(const EBlendFactor blendFactor)
+    constexpr vk::BlendFactor GetVkBlendFactor(const EBlendFactor blendFactor)
     {
-        return vulkan::kBlendFactors[static_cast<size_t>(blendFactor)];
+        return static_cast<vk::BlendFactor>(vulkan::kBlendFactors[static_cast<size_t>(blendFactor)]);
     }
 
-    constexpr VkCompareOp GetVkCompareOp(const ECompareOp compareOp)
+    constexpr vk::CompareOp GetVkCompareOp(const ECompareOp compareOp)
     {
-        return vulkan::kCompareOps[static_cast<size_t>(compareOp)];
+        return static_cast<vk::CompareOp>(vulkan::kCompareOps[static_cast<size_t>(compareOp)]);
     }
 
-    constexpr VkSamplerReductionMode GetVkSamplerReductionMode(const EReductionMode reductionMode)
+    constexpr vk::SamplerReductionMode GetVkSamplerReductionMode(const EReductionMode reductionMode)
     {
-        return vulkan::kSamplerReductionModes[static_cast<size_t>(reductionMode)];
+        return static_cast<vk::SamplerReductionMode>(vulkan::kSamplerReductionModes[static_cast<size_t>(reductionMode)]);
     }
 
-    constexpr VkSamplerAddressMode GetVkSamplerAddressMode(const EAddressMode addressMode)
+    constexpr vk::SamplerAddressMode GetVkSamplerAddressMode(const EAddressMode addressMode)
     {
-        return static_cast<VkSamplerAddressMode>(VK_SAMPLER_ADDRESS_MODE_REPEAT + static_cast<uint32>(addressMode));
+        return static_cast<vk::SamplerAddressMode>(VK_SAMPLER_ADDRESS_MODE_REPEAT + static_cast<uint32>(addressMode));
     }
 
-    constexpr VkImageViewType GetVkImageViewType(const ETexture1DViewType type, const uint32 numLayers)
+    constexpr vk::ImageViewType GetVkImageViewType(const EImage1DViewType type, const uint32 numLayers)
     {
-        if (type == ETexture1DViewType::ShaderResource1DArray || type == ETexture1DViewType::ShaderResourceStorage1DArray)
-            return VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+        if (type == EImage1DViewType::ShaderResource1DArray || type == EImage1DViewType::ShaderResourceStorage1DArray)
+            return vk::ImageViewType::e1DArray;
 
-        return numLayers > 1 ? VK_IMAGE_VIEW_TYPE_1D_ARRAY : VK_IMAGE_VIEW_TYPE_1D;
+        return numLayers > 1 ? vk::ImageViewType::e1DArray : vk::ImageViewType::e1D;
     }
 
-    constexpr VkImageViewType GetVkImageViewType(const ETexture2DViewType type, const uint32 numLayers)
+    constexpr vk::ImageViewType GetVkImageViewType(const EImage2DViewType type, const uint32 numLayers)
     {
-        if (type == ETexture2DViewType::ShaderResource2DArray || type == ETexture2DViewType::ShaderResourceStorage2DArray)
-            return VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+        if (type == EImage2DViewType::ShaderResource2DArray || type == EImage2DViewType::ShaderResourceStorage2DArray)
+            return vk::ImageViewType::e2DArray;
 
-        if (type == ETexture2DViewType::ShaderResourceCubeArray)
-            return VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+        if (type == EImage2DViewType::ShaderResourceCubeArray)
+            return vk::ImageViewType::eCubeArray;
 
-        return numLayers > 1 ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D;
+        return numLayers > 1 ? vk::ImageViewType::e2DArray : vk::ImageViewType::e2D;
     }
 
-    constexpr VkImageViewType GetVkImageViewType(const ETexture3DViewType /*type*/, const uint32 /*numLayers*/)
+    constexpr vk::ImageViewType GetVkImageViewType(const EImage3DViewType /*type*/, const uint32 /*numLayers*/)
     {
-        return VK_IMAGE_VIEW_TYPE_3D;
+        return vk::ImageViewType::e3D;
     }
 
-    constexpr VkBufferUsageFlags GetVkBufferUsageFlags(const EBufferUsageBits usage, const uint32_t structureStride, const bool isDeviceAddressSupported)
+    constexpr vk::BufferUsageFlags GetVkBufferUsageFlags(const EBufferUsageBits usage, const uint32_t structureStride, const bool isDeviceAddressSupported)
     {
-        VkBufferUsageFlags flags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT; // TODO: ban "the opposite" for Upload/Readback?
+        vk::BufferUsageFlags flags = vk::BufferUsageFlagBits::eTransferSrc | vk::BufferUsageFlagBits::eTransferDst; // TODO: ban "the opposite" for Upload/Readback?
 
         if (isDeviceAddressSupported)
-            flags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+            flags |= vk::BufferUsageFlagBits::eShaderDeviceAddress;
 
         if (usage & EBufferUsageBits::VertexBuffer)
-            flags |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            flags |= vk::BufferUsageFlagBits::eVertexBuffer;
 
         if (usage & EBufferUsageBits::IndexBuffer)
-            flags |= VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            flags |= vk::BufferUsageFlagBits::eIndexBuffer;
 
-        if (usage & EBufferUsageBits::ConstantBuffer)
-            flags |= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+        if (usage & EBufferUsageBits::UniformBuffer)
+            flags |= vk::BufferUsageFlagBits::eUniformBuffer;
 
         if (usage & EBufferUsageBits::ArgumentBuffer)
-            flags |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+            flags |= vk::BufferUsageFlagBits::eIndirectBuffer;
 
         if (usage & EBufferUsageBits::ScratchBuffer)
-            flags |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+            flags |= vk::BufferUsageFlagBits::eStorageBuffer;
 
         if (usage & EBufferUsageBits::ShaderBindingTable)
-            flags |= VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR;
+            flags |= vk::BufferUsageFlagBits::eShaderBindingTableKHR;
 
         if (usage & EBufferUsageBits::AccelerationStructureStorage)
-            flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR;
+            flags |= vk::BufferUsageFlagBits::eAccelerationStructureStorageKHR;
 
         if (usage & EBufferUsageBits::AccelerationStructureBuildInput)
-            flags |= VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+            flags |= vk::BufferUsageFlagBits::eAccelerationStructureBuildInputReadOnlyKHR;
 
         if (usage & EBufferUsageBits::MicromapStorage)
-            flags |= VK_BUFFER_USAGE_MICROMAP_STORAGE_BIT_EXT;
+            flags |= vk::BufferUsageFlagBits::eMicromapStorageEXT;
 
         if (usage & EBufferUsageBits::MicromapBuildInput)
-            flags |= VK_BUFFER_USAGE_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT;
+            flags |= vk::BufferUsageFlagBits::eMicromapBuildInputReadOnlyEXT;
 
         if (usage & EBufferUsageBits::ShaderResource)
-            flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+            flags |= structureStride ? vk::BufferUsageFlagBits::eStorageBuffer : vk::BufferUsageFlagBits::eUniformTexelBuffer;
 
         if (usage & EBufferUsageBits::ShaderResourceStorage)
-            flags |= structureStride ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+            flags |= structureStride ? vk::BufferUsageFlagBits::eStorageBuffer : vk::BufferUsageFlagBits::eStorageTexelBuffer;
 
         return flags;
     }
 
-    constexpr VkImageUsageFlags GetVkImageUsageFlags(const ETextureUsageBits usage)
+    constexpr vk::ImageUsageFlags GetVkImageUsageFlags(const EImageUsageBits usage)
     {
-        VkImageUsageFlags flags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+        vk::ImageUsageFlags flags = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
         
-        if (usage & ETextureUsageBits::ShaderResource)
-            flags |= VK_IMAGE_USAGE_SAMPLED_BIT;
+        if (usage & EImageUsageBits::ShaderResource)
+            flags |= vk::ImageUsageFlagBits::eSampled;
 
-        if (usage & ETextureUsageBits::ShaderResourceStorage)
-            flags |= VK_IMAGE_USAGE_STORAGE_BIT;
+        if (usage & EImageUsageBits::ShaderResourceStorage)
+            flags |= vk::ImageUsageFlagBits::eStorage;
 
-        if (usage & ETextureUsageBits::ColorAttachment)
-            flags |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        if (usage & EImageUsageBits::ColorAttachment)
+            flags |= vk::ImageUsageFlagBits::eColorAttachment;
 
-        if (usage & ETextureUsageBits::DepthStencilAttachment)
-            flags |= VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        if (usage & EImageUsageBits::DepthStencilAttachment)
+            flags |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
 
-        if (usage & ETextureUsageBits::ShadingRateAttachment)
-            flags |= VK_IMAGE_USAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+        if (usage & EImageUsageBits::ShadingRateAttachment)
+            flags |= vk::ImageUsageFlagBits::eFragmentShadingRateAttachmentKHR;
 
         return flags;
     }
 
-    constexpr VkImageAspectFlags GetVkImageAspectFlags(const EFormat format)
+    constexpr vk::ImageAspectFlags GetVkImageAspectFlags(const EFormat format)
     {
         switch (format)
         {
@@ -699,62 +718,206 @@ namespace nes
             case EFormat::D32_SFLOAT:
             case EFormat::R24_UNORM_X8:
             case EFormat::R32_SFLOAT_X8_X24:
-                return VK_IMAGE_ASPECT_DEPTH_BIT;
+                return vk::ImageAspectFlagBits::eDepth;
 
             case EFormat::D24_UNORM_S8_UINT:
             case EFormat::D32_SFLOAT_S8_UINT_X24:
-                return VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+                return vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
 
             case EFormat::X32_G8_UINT_X24:
             case EFormat::X24_G8_UINT:
-                return VK_IMAGE_ASPECT_STENCIL_BIT;
+                return vk::ImageAspectFlagBits::eStencil;
 
             default:
-                return VK_IMAGE_ASPECT_COLOR_BIT;
+                return vk::ImageAspectFlagBits::eColor;
         }
     }
 
-    constexpr VkImageAspectFlags GetVkImageAspectFlags(const EPlaneBits planes)
+    constexpr vk::ImageAspectFlags GetVkImageAspectFlags(const EPlaneBits planes)
     {
-        VkImageAspectFlags aspectFlags = 0;
+        vk::ImageAspectFlags aspectFlags{};
         if (planes & EPlaneBits::Color)
-            aspectFlags |= VK_IMAGE_ASPECT_COLOR_BIT;
+            aspectFlags |= vk::ImageAspectFlagBits::eColor;
         if (planes & EPlaneBits::Depth)
-            aspectFlags |= VK_IMAGE_ASPECT_DEPTH_BIT;
+            aspectFlags |= vk::ImageAspectFlagBits::eDepth;
         if (planes & EPlaneBits::Stencil)
-            aspectFlags |= VK_IMAGE_ASPECT_STENCIL_BIT;
+            aspectFlags |= vk::ImageAspectFlagBits::eStencil;
 
         return aspectFlags;
     }
 
-    constexpr VkImageUsageFlags GetVkImageViewUsage(ETexture1DViewType type)
+    constexpr vk::ImageUsageFlags GetVkImageViewUsage(const EImage1DViewType type)
     {
         return vulkan::kImageViewUsage1D[static_cast<size_t>(type)];
     }
 
-    constexpr VkImageUsageFlags GetVkImageViewUsage(ETexture2DViewType type)
+    constexpr vk::ImageUsageFlags GetVkImageViewUsage(const EImage2DViewType type)
     {
         return vulkan::kImageViewUsage2D[static_cast<size_t>(type)];
     }
 
-    constexpr VkImageUsageFlags GetVkImageViewUsage(ETexture3DViewType type)
+    constexpr vk::ImageUsageFlags GetVkImageViewUsage(const EImage3DViewType type)
     {
         return vulkan::kImageViewUsage3D[static_cast<size_t>(type)];
     }
 
-    constexpr VkImageLayout GetVkImageViewLayout(ETexture1DViewType type)
+    constexpr vk::ImageLayout GetVkImageViewLayout(const EImage1DViewType type)
     {
         return vulkan::kImageViewLayout1D[static_cast<size_t>(type)];
     }
 
-    constexpr VkImageLayout GetVkImageViewLayout(ETexture2DViewType type)
+    constexpr vk::ImageLayout GetVkImageViewLayout(const EImage2DViewType type)
     {
         return vulkan::kImageViewLayout2D[static_cast<size_t>(type)];
     }
 
-    constexpr VkImageLayout GetVkImageViewLayout(ETexture3DViewType type)
+    constexpr vk::ImageLayout GetVkImageViewLayout(const EImage3DViewType type)
     {
         return vulkan::kImageViewLayout3D[static_cast<size_t>(type)];
+    }
+
+    constexpr vk::StencilOp GetVkStencilOp(const EStencilOp op)
+    {
+        return vulkan::kStencilOp[static_cast<size_t>(op)];
+    }
+
+    constexpr vk::CullModeFlagBits GetVkCullMode(const ECullMode mode)
+    {
+        switch (mode)
+        {
+            case ECullMode::None: return vk::CullModeFlagBits::eNone;
+            case ECullMode::Front: return vk::CullModeFlagBits::eFront;
+            case ECullMode::Back: return vk::CullModeFlagBits::eBack;
+            case ECullMode::Both: return vk::CullModeFlagBits::eFrontAndBack;
+        }
+
+        return vk::CullModeFlagBits::eNone;
+    }
+
+    constexpr vk::PolygonMode GetVkPolygonMode(const EFillMode mode)
+    {
+        switch (mode)
+        {
+            case EFillMode::Solid: return vk::PolygonMode::eFill;
+            case EFillMode::Wireframe: return vk::PolygonMode::eLine;
+            case EFillMode::Point: return vk::PolygonMode::ePoint;
+        }
+
+        return vk::PolygonMode::eFill;
+    }
+
+    constexpr vk::FrontFace GetVkFrontFace(const EFrontFaceWinding winding)
+    {
+        switch (winding)
+        {
+            case EFrontFaceWinding::Clockwise: return vk::FrontFace::eClockwise;
+            default: return vk::FrontFace::eCounterClockwise;
+        }
+    }
+
+    constexpr vk::PrimitiveTopology GetVkTopology(const ETopology topology)
+    {
+        return static_cast<vk::PrimitiveTopology>(topology);
+    }
+
+    constexpr vk::ShaderStageFlags GetVkShaderStageFlags(const EPipelineStageBits stage)
+    {
+        if (stage == EPipelineStageBits::All)
+            return vk::ShaderStageFlagBits::eAll;
+
+        vk::ShaderStageFlags flags{};
+
+        if (stage & EPipelineStageBits::VertexShader)
+            flags |= vk::ShaderStageFlagBits::eVertex;
+
+        if (stage & EPipelineStageBits::TessControlShader)
+            flags |= vk::ShaderStageFlagBits::eTessellationControl;
+
+        if (stage & EPipelineStageBits::TessEvaluationShader)
+            flags |= vk::ShaderStageFlagBits::eTessellationEvaluation;
+
+        if (stage & EPipelineStageBits::GeometryShader)
+            flags |= vk::ShaderStageFlagBits::eGeometry;
+
+        if (stage & EPipelineStageBits::FragmentShader)
+            flags |= vk::ShaderStageFlagBits::eFragment;
+
+        if (stage & EPipelineStageBits::ComputeShader)
+            flags |= vk::ShaderStageFlagBits::eCompute;
+
+        if (stage & EPipelineStageBits::RayGenShader)
+            flags |= vk::ShaderStageFlagBits::eRaygenKHR;
+
+        if (stage & EPipelineStageBits::MissShader)
+            flags |= vk::ShaderStageFlagBits::eMissKHR;
+
+        if (stage & EPipelineStageBits::IntersectionShader)
+            flags |= vk::ShaderStageFlagBits::eIntersectionKHR;
+
+        if (stage & EPipelineStageBits::ClosestHitShader)
+            flags |= vk::ShaderStageFlagBits::eClosestHitKHR;
+
+        if (stage & EPipelineStageBits::AnyHitShader)
+            flags |= vk::ShaderStageFlagBits::eAnyHitKHR;
+
+        if (stage & EPipelineStageBits::CallableShader)
+            flags |= vk::ShaderStageFlagBits::eCallableKHR;
+
+        if (stage & EPipelineStageBits::MeshControlShader)
+            flags |= vk::ShaderStageFlagBits::eTaskEXT;
+
+        if (stage & EPipelineStageBits::MeshEvaluationShader)
+            flags |= vk::ShaderStageFlagBits::eMeshEXT;
+        
+        return flags;
+    }
+
+    constexpr vk::ShaderStageFlagBits GetVkShaderStageFlagBits(const EPipelineStageBits stage)
+    {
+        if (stage & EPipelineStageBits::VertexShader)
+            return vk::ShaderStageFlagBits::eVertex;
+
+        if (stage & EPipelineStageBits::TessControlShader)
+            return vk::ShaderStageFlagBits::eTessellationControl;
+
+        if (stage & EPipelineStageBits::TessEvaluationShader)
+            return vk::ShaderStageFlagBits::eTessellationEvaluation;
+
+        if (stage & EPipelineStageBits::GeometryShader)
+            return vk::ShaderStageFlagBits::eGeometry;
+
+        if (stage & EPipelineStageBits::FragmentShader)
+            return vk::ShaderStageFlagBits::eFragment;
+
+        if (stage & EPipelineStageBits::ComputeShader)
+            return vk::ShaderStageFlagBits::eCompute;
+
+        if (stage & EPipelineStageBits::RayGenShader)
+            return vk::ShaderStageFlagBits::eRaygenKHR;
+
+        if (stage & EPipelineStageBits::MissShader)
+            return vk::ShaderStageFlagBits::eMissKHR;
+
+        if (stage & EPipelineStageBits::IntersectionShader)
+            return vk::ShaderStageFlagBits::eIntersectionKHR;
+
+        if (stage & EPipelineStageBits::ClosestHitShader)
+            return vk::ShaderStageFlagBits::eClosestHitKHR;
+
+        if (stage & EPipelineStageBits::AnyHitShader)
+            return vk::ShaderStageFlagBits::eAnyHitKHR;
+
+        if (stage & EPipelineStageBits::CallableShader)
+            return vk::ShaderStageFlagBits::eCallableKHR;
+
+        if (stage & EPipelineStageBits::MeshControlShader)
+            return vk::ShaderStageFlagBits::eTaskEXT;
+
+        if (stage & EPipelineStageBits::MeshEvaluationShader)
+            return vk::ShaderStageFlagBits::eMeshEXT;
+
+        NES_ASSERT(false, "Failed to find specific Shader stage!");
+        return vk::ShaderStageFlagBits::eVertex;
     }
 
     // [TODO]: 

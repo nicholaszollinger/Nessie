@@ -8,7 +8,7 @@ namespace nes
     {
         if (m_handle != VK_NULL_HANDLE)
         {
-            vkDestroySemaphore(m_device, m_handle, m_device.GetVkAllocationCallbacks());
+            vkDestroySemaphore(m_device, m_handle, m_device.GetVkAllocationCallbacksPtr());
         }
     }
 
@@ -32,7 +32,7 @@ namespace nes
             .flags = 0,
         };
         
-        NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacks(), &m_handle));
+        NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacksPtr(), &m_handle));
 
         // If non-zero, then it is fixed.
         if (initialValue != 0)
@@ -48,7 +48,7 @@ namespace nes
         return EGraphicsResult::Success;
     }
 
-    void SemaphoreState::SetDebugName(const char* name)
+    void SemaphoreState::SetDebugName(const std::string& name)
     {
         m_device.SetDebugNameToTrivialObject(m_handle, name);
     }

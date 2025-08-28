@@ -82,6 +82,21 @@ namespace nes
         glfwSetWindowSizeCallback(pWindow, []([[maybe_unused]] GLFWwindow* pWindow, const int width, const int height)
         {
             auto& window = Platform::GetWindow();
+            window.m_swapChainNeedsRebuild = true;
+            window.m_desc.m_windowResolution.x = width;
+            window.m_desc.m_windowResolution.y = height;
+
+            // Set minimized state:
+            if (width == 0 && height == 0)
+                window.m_desc.m_isMinimized = true;
+            else
+                window.m_desc.m_isMinimized = false;
+        });
+
+        glfwSetFramebufferSizeCallback(pWindow, []([[maybe_unused]] GLFWwindow* pWindow, const int width, const int height)
+        {
+            auto& window = Platform::GetWindow();
+            window.m_swapChainNeedsRebuild = true;
             window.m_desc.m_windowResolution.x = width;
             window.m_desc.m_windowResolution.y = height;
 
@@ -247,9 +262,8 @@ namespace nes
 
     void ApplicationWindow::Resize(const uint32_t width, const uint32_t height)
     {
-        m_desc.m_windowResolution.x = width;
-        m_desc.m_windowResolution.y = height;
-        m_swapChainNeedsRebuild = true;
+        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
+        glfwSetWindowSize(pWindow, width, height);
     }
 
 }

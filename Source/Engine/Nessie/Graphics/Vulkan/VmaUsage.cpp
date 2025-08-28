@@ -8,8 +8,6 @@
 NES_SUPPRESS_WARNINGS_BEGIN
 NES_MSVC_SUPPRESS_WARNING(4100 4189) // Unreferenced parameters, unused variable. 
 
-// Must be included before VMA to enable "vmaImportVulkanFunctionsFromVolk()"
-#include <volk.h>
 #define VMA_IMPLEMENTATION
 #include "vk_mem_alloc.h"
 

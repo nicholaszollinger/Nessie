@@ -48,8 +48,13 @@ function p.ConfigureProject(dependencyInjector)
     local absoluteSolutionDir = path.getabsolute(projectCore.SolutionDir);
 
     -- Add the Shader files:
-    files { projectCore.SolutionDir .. "Shaders\\**.glsl", }
-    vpaths { ["Shaders/*"] = { absoluteSolutionDir .. "/Shaders/**.glsl"} }
+    files 
+    { 
+        projectCore.SolutionDir .. "Shaders\\**.glsl",
+        projectCore.SolutionDir .. "Shaders\\**.hlsl",
+        projectCore.SolutionDir .. "Shaders\\**.slang",
+    }
+    vpaths { ["Shaders/*"] = { absoluteSolutionDir .. "/Shaders/**.glsl", absoluteSolutionDir .. "/Shaders/**.slang"} }
 
     -- Add ThirdParty files and link
     dependencyInjector.AddFilesToProject("imgui");

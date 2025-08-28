@@ -1,6 +1,7 @@
 ﻿// DeviceBuffer.cpp
 #include "DeviceBuffer.h"
 #include "RenderDevice.h"
+#include "Renderer.h"
 
 #include "Vulkan/VmaUsage.h"
 
@@ -12,37 +13,42 @@ namespace nes
         {
             if (m_allocation)
             {
-                vmaDestroyBuffer(m_device, m_handle, m_allocation);
+                Renderer::SubmitResourceFree([buffer = m_buffer, allocation = m_allocation]() mutable
+                {
+                    auto& device = Renderer::GetDevice();
+                    vmaDestroyBuffer(device, buffer, allocation);
+                });
+                
+                m_buffer = nullptr;
                 m_allocation = nullptr;
-                m_handle = nullptr;
             }
         }
     }
 
-    EGraphicsResult DeviceBuffer::Init(const AllocateBufferDesc& bufferDesc)
+    EGraphicsResult DeviceBuffer::Init(const AllocateBufferDesc& allocDesc)
     {
-        NES_ASSERT(m_handle == nullptr);
+        NES_ASSERT(m_buffer == nullptr);
         
         // Fill out the BufferCreateInfo object. 
-        VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
-        m_device.FillCreateInfo(bufferDesc.m_desc, bufferInfo);
+        vk::BufferCreateInfo bufferInfo{};
+        m_device.FillCreateInfo(allocDesc.m_desc, bufferInfo);
 
         // Allocation CreateInfo:
         VmaAllocationCreateInfo allocCreateInfo = {};
         allocCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
-        allocCreateInfo.priority = bufferDesc.m_priority * 0.5f + 0.5f;
-        allocCreateInfo.usage = IsHostMemory(bufferDesc.m_location) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+        allocCreateInfo.priority = allocDesc.m_priority * 0.5f + 0.5f;
+        allocCreateInfo.usage = IsHostMemory(allocDesc.m_location) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
-        if (bufferDesc.m_isDedicated)
+        if (allocDesc.m_isDedicated)
             allocCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
-        if (IsHostVisibleMemory(bufferDesc.m_location))
+        if (IsHostVisibleMemory(allocDesc.m_location))
         {
             // VMA_ALLOCATION_CREATE_MAPPED_BIT keeps the allocation mapped.
             allocCreateInfo.flags |= VMA_ALLOCATION_CREATE_MAPPED_BIT;
             allocCreateInfo.requiredFlags |= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
             
-            if (bufferDesc.m_location == EMemoryLocation::HostReadback)
+            if (allocDesc.m_location == EMemoryLocation::HostReadback)
             {
                 allocCreateInfo.flags |= VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT;
                 allocCreateInfo.preferredFlags |= VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
@@ -57,45 +63,47 @@ namespace nes
         // Calculate Memory Alignment based on usage: 
         const DeviceDesc& deviceDesc = m_device.GetDesc();
         uint32 alignment = 1;
-        if (bufferDesc.m_desc.m_usage & (EBufferUsageBits::ShaderResource | EBufferUsageBits::ShaderResourceStorage))
+        if (allocDesc.m_desc.m_usage & (EBufferUsageBits::ShaderResource | EBufferUsageBits::ShaderResourceStorage))
             alignment = math::Max(alignment, deviceDesc.m_memoryAlignment.m_bufferShaderResourceOffset);
-        if (bufferDesc.m_desc.m_usage & EBufferUsageBits::ConstantBuffer)
+        if (allocDesc.m_desc.m_usage & EBufferUsageBits::UniformBuffer)
             alignment = math::Max(alignment, deviceDesc.m_memoryAlignment.m_constantBufferOffset);
-        if (bufferDesc.m_desc.m_usage & EBufferUsageBits::ShaderBindingTable)
+        if (allocDesc.m_desc.m_usage & EBufferUsageBits::ShaderBindingTable)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_shaderBindingTable);
-        if (bufferDesc.m_desc.m_usage & EBufferUsageBits::ScratchBuffer)
+        if (allocDesc.m_desc.m_usage & EBufferUsageBits::ScratchBuffer)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_scratchBufferOffset);
-        if (bufferDesc.m_desc.m_usage & EBufferUsageBits::AccelerationStructureStorage)
+        if (allocDesc.m_desc.m_usage & EBufferUsageBits::AccelerationStructureStorage)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_accelerationStructureOffset);
-        if (bufferDesc.m_desc.m_usage & EBufferUsageBits::MicromapStorage)
+        if (allocDesc.m_desc.m_usage & EBufferUsageBits::MicromapStorage)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_micromapOffset);
 
-        VmaAllocationInfo allocInfo = {};
-        NES_VK_FAIL_RETURN(m_device, vmaCreateBufferWithAlignment(m_device, &bufferInfo, &allocCreateInfo, alignment, &m_handle, &m_allocation, &allocInfo));
-        
+        // Create the buffer:
+        VmaAllocationInfo vmaAllocInfo = {};
+        VkBuffer vkBuffer = VK_NULL_HANDLE;
+        VkBufferCreateInfo& vkBufferInfo = bufferInfo;
+        NES_VK_FAIL_RETURN(m_device, vmaCreateBufferWithAlignment(m_device, &vkBufferInfo, &allocCreateInfo, alignment, &vkBuffer, &m_allocation, &vmaAllocInfo));
+        m_buffer = vkBuffer;
+
         // Mapped Memory, only necessary if host visible.
-        if (IsHostVisibleMemory(bufferDesc.m_location))
+        if (IsHostVisibleMemory(allocDesc.m_location))
         {
-            m_pMappedMemory = static_cast<uint8*>(allocInfo.pMappedData) - allocInfo.offset;
+             m_pMappedMemory = static_cast<uint8*>(vmaAllocInfo.pMappedData) - vmaAllocInfo.offset;
         }
-        
+
         // Device Address
         if (m_device.GetDesc().m_features.m_deviceAddress)
         {
-            VkBufferDeviceAddressInfo bufferDeviceAddressInfo = { VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
-            bufferDeviceAddressInfo.buffer = m_handle;
-            m_deviceAddress = vkGetBufferDeviceAddress(m_device, &bufferDeviceAddressInfo);
+            m_deviceAddress = m_device.GetVkDevice().getBufferAddress(m_buffer);
         }
         
-        // Description:
-        m_desc = bufferDesc.m_desc;
-
+        // Set the Description:
+        m_desc = allocDesc.m_desc;
+        
         return EGraphicsResult::Success;
     }
 
-    void DeviceBuffer::SetDebugName(const char* name)
+    void DeviceBuffer::SetDebugName(const std::string& name)
     {
-        m_device.SetDebugNameToTrivialObject(m_handle, name);
+        m_device.SetDebugNameToTrivialObject(m_buffer, name);
     }
 
     EGraphicsResult DeviceBuffer::CopyToBuffer(const void* data, const size_t offset, const size_t size)

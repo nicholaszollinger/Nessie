@@ -10,6 +10,9 @@ namespace nes
     class ApplicationWindow;
     class Event;
     class Renderer;
+    class Swapchain;
+    class RenderFrameContext;
+    class CommandBuffer;
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Base Application class.  
@@ -82,10 +85,18 @@ namespace nes
         virtual bool                Internal_AppInit()              { return true; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Run a single frame of the application.
+        /// @brief : Run a single update frame of the application.
         /// @note : Do not call directly! This is called by the Platform.
         //----------------------------------------------------------------------------------------------------
-        virtual void                Internal_AppRunFrame(const float timeStep) = 0;
+        virtual void                Internal_AppUpdate(const float timeStep) = 0;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Render the current frame.
+        ///	@param commandBuffer : The command buffer associated with this frame.
+        ///	@param context : The current frame context, including the swapchain image that will be rendered to.
+        /// @note : Do not call directly! This is called by the Platform.
+        //----------------------------------------------------------------------------------------------------
+        virtual void                Internal_AppRender(CommandBuffer& commandBuffer, const RenderFrameContext& context) = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Called after exiting the main loop. Use to clean up resources, etc.

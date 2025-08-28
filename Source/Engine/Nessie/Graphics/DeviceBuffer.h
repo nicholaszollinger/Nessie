@@ -6,17 +6,14 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : A device buffer is a region of memory used to store data.
+    /// @brief : A device buffer is a region of memory used to store data on the GPU.
     /// It can be used to store vertex data, index data, uniform data, and other types of data.
     //----------------------------------------------------------------------------------------------------
-    class DeviceBuffer
+    class DeviceBuffer : public DeviceAsset
     {
     public:
-        explicit            DeviceBuffer(RenderDevice& device) : m_device(device) {}
-        /* Destructor */    ~DeviceBuffer();
-
-        /// Operator to cast to Vulkan Type.
-        inline              operator VkBuffer() const       { return m_handle; }
+        explicit            DeviceBuffer(RenderDevice& device) : DeviceAsset(device) {}
+        virtual             ~DeviceBuffer() override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allocates a new buffer resource, and maps the memory if it is host visible.
@@ -26,7 +23,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the Debug name for this DeviceBuffer. 
         //----------------------------------------------------------------------------------------------------
-        void                SetDebugName(const char* name);
+        virtual void        SetDebugName(const std::string& name) override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the buffer's properties.
@@ -36,7 +33,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Vulkan buffer handle.
         //----------------------------------------------------------------------------------------------------
-        VkBuffer            GetHandle() const               { return m_handle; }
+        vk::Buffer          GetVkBuffer() const             { return m_buffer; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the address of the buffer in the shader.
@@ -73,11 +70,10 @@ namespace nes
         // - Flush/Invalidate()
 
     private:
-        RenderDevice&       m_device;                   
         BufferDesc          m_desc{};                   // Buffer properties.
-        VkBuffer            m_handle = nullptr;         // Vulkan handle.
-        VkDeviceAddress     m_deviceAddress = 0;        // Address of the buffer in the shader.
-        uint8*              m_pMappedMemory = nullptr;  
+        vk::Buffer          m_buffer = nullptr;         // Vulkan handle.
+        vk::DeviceAddress   m_deviceAddress = 0;        // Address of the buffer in the shader.
+        uint8*              m_pMappedMemory = nullptr;  // CPU mapped memory. 
         VmaAllocation       m_allocation = nullptr;     // Memory associated with the buffer.
         bool                m_ownsNativeObjects = true;
     };

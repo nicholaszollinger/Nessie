@@ -1,8 +1,10 @@
 ﻿// Descriptor.cpp
 #include "Descriptor.h"
+
 #include "Texture.h"
 #include "DeviceBuffer.h"
 #include "RenderDevice.h"
+#include "Renderer.h"
 
 namespace nes
 {
@@ -10,242 +12,267 @@ namespace nes
     {
         if (IsBufferType())
         {
-            if (m_bufferView)
-                vkDestroyBufferView(m_device, m_bufferView, m_device.GetVkAllocationCallbacks());
+            Renderer::SubmitResourceFree([bufferView = std::move(m_bufferView)]() mutable
+            {
+                bufferView = nullptr; 
+            });
         }
 
-        else if (IsTextureType())
+        else if (IsImageType())
         {
-            if (m_imageView)
-                vkDestroyImageView(m_device, m_imageView, m_device.GetVkAllocationCallbacks());
+            Renderer::SubmitResourceFree([imageView = std::move(m_imageView)]() mutable
+            {
+                imageView = nullptr; 
+            });
         }
 
         else if (m_type == EDescriptorType::Sampler)
         {
-            if (m_sampler)
-                vkDestroySampler(m_device, m_sampler, m_device.GetVkAllocationCallbacks());
+            Renderer::SubmitResourceFree([sampler = std::move(m_sampler)]() mutable
+            {
+                sampler = nullptr; 
+            });
         }
     }
 
-    void Descriptor::SetDebugName(const char* name)
+    void Descriptor::SetDebugName(const std::string& name)
     {
         if (IsBufferType())
         {
-            m_device.SetDebugNameToTrivialObject(m_bufferView, name);
+            vk::BufferView bufferView = *m_bufferView;
+            m_device.SetDebugNameToTrivialObject(bufferView, name);
         }
 
-        else if (IsTextureType())
+        else if (IsImageType())
         {
-            m_device.SetDebugNameToTrivialObject(m_imageView, name);
+            vk::ImageView imageView = *m_imageView;
+            m_device.SetDebugNameToTrivialObject(imageView, name);
         }
 
         else if (m_type == EDescriptorType::Sampler)
         {
-            m_device.SetDebugNameToTrivialObject(m_sampler, name);
+            vk::Sampler sampler = *m_sampler;
+            m_device.SetDebugNameToTrivialObject(sampler, name);
         }
     }
 
     EGraphicsResult Descriptor::Init(const BufferViewDesc& bufferViewDesc)
     {
+        NES_ASSERT(bufferViewDesc.m_pBuffer != nullptr);
+        NES_ASSERT(m_bufferView == nullptr);
+
         const DeviceBuffer& buffer = *bufferViewDesc.m_pBuffer;
         const BufferDesc& bufferDesc = buffer.GetDesc();
 
-        m_type = GetDescriptorType(bufferViewDesc.m_viewType);
+        m_type = EDescriptorType::Buffer;
         m_bufferDesc.m_offset = bufferViewDesc.m_offset;
         m_bufferDesc.m_size = (bufferViewDesc.m_size == graphics::kUseRemaining) ? bufferDesc.m_size : bufferViewDesc.m_size;
-        m_bufferDesc.m_handle = buffer.GetHandle();
+        m_bufferDesc.m_pBuffer = bufferViewDesc.m_pBuffer;
         m_bufferDesc.m_viewType = bufferViewDesc.m_viewType;
 
         if (bufferViewDesc.m_format == EFormat::Unknown)
             return EGraphicsResult::Success;
 
-        VkBufferViewCreateInfo info = { VK_STRUCTURE_TYPE_BUFFER_VIEW_CREATE_INFO };
-        info.flags = static_cast<VkBufferViewCreateFlags>(0);
-        info.buffer = buffer.GetHandle();
-        info.format = GetVkFormat(bufferViewDesc.m_format);
-        info.offset = bufferViewDesc.m_offset;
-        info.range = m_bufferDesc.m_size;
-        NES_VK_FAIL_RETURN(m_device, vkCreateBufferView(m_device, &info, m_device.GetVkAllocationCallbacks(), &m_bufferView));
+        vk::BufferViewCreateInfo info = vk::BufferViewCreateInfo()
+            .setBuffer(buffer.GetVkBuffer())
+            .setFormat(GetVkFormat(bufferViewDesc.m_format))
+            .setOffset(bufferViewDesc.m_offset)
+            .setRange(m_bufferDesc.m_size);
+
+        auto& device = m_device.GetVkDevice();
+        m_bufferView = device.createBufferView(info, m_device.GetVkAllocationCallbacks());
         
         return EGraphicsResult::Success;
     }
 
-    EGraphicsResult Descriptor::Init(const Texture1DViewDesc& textureViewDesc)
+    EGraphicsResult Descriptor::Init(const Image1DViewDesc& imageViewDesc)
     {
-        NES_ASSERT(textureViewDesc.m_pTexture);
-        const DeviceImage& texture = *textureViewDesc.m_pTexture;
-        const TextureDesc& textureDesc = texture.GetDesc();
-        const uint32 remainingMips = textureDesc.m_mipCount - textureViewDesc.m_mipOffset;
-        const uint32 remainingLayers = textureDesc.m_layerCount - textureViewDesc.m_layerOffset;
+        NES_ASSERT(imageViewDesc.m_pImage);
+        NES_ASSERT(m_imageView == nullptr); 
+
+        const DeviceImage& image = *imageViewDesc.m_pImage;
+        const ImageDesc& imageDesc = image.GetDesc();
+        const uint32 remainingMips = imageDesc.m_mipCount - imageViewDesc.m_baseMipLevel;
+        const uint32 remainingLayers = imageDesc.m_layerCount - imageViewDesc.m_baseLayer;
+
+        vk::ImageViewUsageCreateInfo usageInfo = vk::ImageViewUsageCreateInfo()
+            .setUsage(GetVkImageViewUsage(imageViewDesc.m_viewType));
+
+        const vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
+            .setAspectMask(GetVkImageAspectFlags(imageViewDesc.m_format))
+            .setBaseMipLevel(imageViewDesc.m_baseMipLevel)
+            .setBaseArrayLayer(imageViewDesc.m_baseLayer)
+            .setLevelCount(imageViewDesc.m_mipCount == graphics::kUseRemaining ? remainingMips : imageViewDesc.m_mipCount)
+            .setLayerCount(imageViewDesc.m_layerCount == graphics::kUseRemaining ? remainingLayers : imageViewDesc.m_layerCount);
         
-        VkImageViewUsageCreateInfo usageInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO };
-        usageInfo.usage = GetVkImageViewUsage(textureViewDesc.m_viewType);
+        vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+            .setPNext(&usageInfo)
+            .setViewType(GetVkImageViewType(imageViewDesc.m_viewType, subresourceRange.layerCount))
+            .setImage(image.GetVkImage())
+            .setSubresourceRange(subresourceRange)
+            .setFormat(GetVkFormat(imageViewDesc.m_format));
 
-        const VkImageSubresourceRange subresource =
-        {
-            .aspectMask = GetVkImageAspectFlags(textureViewDesc.m_format),
-            .baseMipLevel = textureViewDesc.m_mipOffset,
-            .levelCount = textureViewDesc.m_mipCount == graphics::kUseRemaining ? remainingMips : textureViewDesc.m_mipCount,
-            .baseArrayLayer = textureViewDesc.m_layerOffset,
-            .layerCount = textureViewDesc.m_layerCount == graphics::kUseRemaining ? remainingLayers : textureViewDesc.m_layerCount,
-        };
-        
-        VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-        createInfo.pNext = &usageInfo;
-        createInfo.viewType = GetVkImageViewType(textureViewDesc.m_viewType, subresource.layerCount);
-        createInfo.format = GetVkFormat(textureViewDesc.m_format);
-        createInfo.subresourceRange = subresource;
-        createInfo.image = texture.GetHandle();
+        // Create the image view
+        auto& device = m_device.GetVkDevice();
+        m_imageView = device.createImageView(viewInfo, m_device.GetVkAllocationCallbacks());
 
-        NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_imageView));
-
-        m_type = GetDescriptorType(textureViewDesc.m_viewType);
-        m_textureDesc.m_pImage = textureViewDesc.m_pTexture;
-        m_textureDesc.m_imageLayout = GetVkImageViewLayout(textureViewDesc.m_viewType);
-        m_textureDesc.m_aspectFlags = GetVkImageAspectFlags(textureViewDesc.m_format);
-        m_textureDesc.m_layerOffset = textureViewDesc.m_layerOffset;
-        m_textureDesc.m_layerCount = subresource.layerCount;
-        m_textureDesc.m_sliceOffset = 0;
-        m_textureDesc.m_sliceCount = 1;
-        m_textureDesc.m_mipOffset = textureViewDesc.m_mipOffset;
-        m_textureDesc.m_mipCount = subresource.levelCount;
+        // Set description values.
+        m_type = GetDescriptorType(imageViewDesc.m_viewType);
+        m_imageDesc.m_pImage = imageViewDesc.m_pImage;
+        m_imageDesc.m_imageLayout = GetVkImageViewLayout(imageViewDesc.m_viewType);
+        m_imageDesc.m_aspectFlags = GetVkImageAspectFlags(imageViewDesc.m_format);
+        m_imageDesc.m_layerOffset = imageViewDesc.m_baseLayer;
+        m_imageDesc.m_layerCount = static_cast<uint16>(subresourceRange.layerCount);
+        m_imageDesc.m_sliceOffset = 0;
+        m_imageDesc.m_sliceCount = 1;
+        m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
+        m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
         
         return EGraphicsResult::Success;
     }
 
-    EGraphicsResult Descriptor::Init(const Texture2DViewDesc& textureViewDesc)
+    EGraphicsResult Descriptor::Init(const Image2DViewDesc& imageViewDesc)
     {
-        NES_ASSERT(textureViewDesc.m_pTexture);
-        const DeviceImage& texture = *textureViewDesc.m_pTexture;
-        const TextureDesc& textureDesc = texture.GetDesc();
-        const uint32 remainingMips = textureDesc.m_mipCount - textureViewDesc.m_mipOffset;
-        const uint32 remainingLayers = textureDesc.m_layerCount - textureViewDesc.m_layerOffset;
+        NES_ASSERT(imageViewDesc.m_pImage);
+        NES_ASSERT(m_imageView == nullptr); 
+
+        const DeviceImage& image = *imageViewDesc.m_pImage;
+        const ImageDesc& imageDesc = image.GetDesc();
+        const uint32 remainingMips = imageDesc.m_mipCount - imageViewDesc.m_baseMipLevel;
+        const uint32 remainingLayers = imageDesc.m_layerCount - imageViewDesc.m_baseLayer;
+
+        vk::ImageViewUsageCreateInfo usageInfo = vk::ImageViewUsageCreateInfo()
+            .setUsage(GetVkImageViewUsage(imageViewDesc.m_viewType));
+
+        const vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
+            .setAspectMask(GetVkImageAspectFlags(imageViewDesc.m_format))
+            .setBaseMipLevel(imageViewDesc.m_baseMipLevel)
+            .setBaseArrayLayer(imageViewDesc.m_baseLayer)
+            .setLevelCount(imageViewDesc.m_mipCount == graphics::kUseRemaining ? remainingMips : imageViewDesc.m_mipCount)
+            .setLayerCount(imageViewDesc.m_layerCount == graphics::kUseRemaining ? remainingLayers : imageViewDesc.m_layerCount);
         
-        VkImageViewUsageCreateInfo usageInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO };
-        usageInfo.usage = GetVkImageViewUsage(textureViewDesc.m_viewType);
+        vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+            .setPNext(&usageInfo)
+            .setViewType(GetVkImageViewType(imageViewDesc.m_viewType, subresourceRange.layerCount))
+            .setImage(image.GetVkImage())
+            .setSubresourceRange(subresourceRange)
+            .setFormat(GetVkFormat(imageViewDesc.m_format));
 
-        const VkImageSubresourceRange subresource =
-        {
-            .aspectMask = GetVkImageAspectFlags(textureViewDesc.m_format),
-            .baseMipLevel = textureViewDesc.m_mipOffset,
-            .levelCount = textureViewDesc.m_mipCount == graphics::kUseRemaining ? remainingMips : textureViewDesc.m_mipCount,
-            .baseArrayLayer = textureViewDesc.m_layerOffset,
-            .layerCount = textureViewDesc.m_layerCount == graphics::kUseRemaining ? remainingLayers : textureViewDesc.m_layerCount,
-        };
+        // Create the image view
+        auto& device = m_device.GetVkDevice();
+        m_imageView = device.createImageView(viewInfo, m_device.GetVkAllocationCallbacks());
+
+        // Set description values.
+        m_type = GetDescriptorType(imageViewDesc.m_viewType);
+        m_imageDesc.m_pImage = imageViewDesc.m_pImage;
+        m_imageDesc.m_imageLayout = GetVkImageViewLayout(imageViewDesc.m_viewType);
+        m_imageDesc.m_aspectFlags = GetVkImageAspectFlags(imageViewDesc.m_format);
+        m_imageDesc.m_layerOffset = imageViewDesc.m_baseLayer;
+        m_imageDesc.m_layerCount = static_cast<uint16>(subresourceRange.layerCount);
+        m_imageDesc.m_sliceOffset = 0;
+        m_imageDesc.m_sliceCount = 1;
+        m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
+        m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
         
-        VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-        createInfo.pNext = &usageInfo;
-        createInfo.viewType = GetVkImageViewType(textureViewDesc.m_viewType, subresource.layerCount);
-        createInfo.format = GetVkFormat(textureViewDesc.m_format);
-        createInfo.subresourceRange = subresource;
-        createInfo.image = texture.GetHandle();
-
-        NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_imageView));
-
-        m_type = GetDescriptorType(textureViewDesc.m_viewType);
-        m_textureDesc.m_pImage = textureViewDesc.m_pTexture;
-        m_textureDesc.m_imageLayout = GetVkImageViewLayout(textureViewDesc.m_viewType);
-        m_textureDesc.m_aspectFlags = GetVkImageAspectFlags(textureViewDesc.m_format);
-        m_textureDesc.m_layerOffset = textureViewDesc.m_layerOffset;
-        m_textureDesc.m_layerCount = subresource.layerCount;
-        m_textureDesc.m_sliceOffset = 0;
-        m_textureDesc.m_sliceCount = 1;
-        m_textureDesc.m_mipOffset = textureViewDesc.m_mipOffset;
-        m_textureDesc.m_mipCount = subresource.levelCount;
         return EGraphicsResult::Success;
     }
 
-    EGraphicsResult Descriptor::Init(const Texture3DViewDesc& textureViewDesc)
+    EGraphicsResult Descriptor::Init(const Image3DViewDesc& imageViewDesc)
     {
-        NES_ASSERT(textureViewDesc.m_pTexture);
-        const DeviceImage& texture = *textureViewDesc.m_pTexture;
-        const TextureDesc& textureDesc = texture.GetDesc();
-        const uint32 remainingMips = textureDesc.m_mipCount - textureViewDesc.m_mipOffset;
-        const uint32 remainingLayers = textureDesc.m_layerCount - textureViewDesc.m_sliceOffset;
+        NES_ASSERT(imageViewDesc.m_pImage);
+        NES_ASSERT(m_imageView == nullptr); 
 
-        VkImageViewSlicedCreateInfoEXT slicesInfo = {VK_STRUCTURE_TYPE_IMAGE_VIEW_SLICED_CREATE_INFO_EXT};
-        slicesInfo.sliceOffset = textureViewDesc.m_sliceOffset;
-        slicesInfo.sliceCount = textureViewDesc.m_sliceCount == graphics::kUseRemaining ? remainingLayers : textureViewDesc.m_sliceCount;
+        const DeviceImage& image = *imageViewDesc.m_pImage;
+        const ImageDesc& imageDesc = image.GetDesc();
+        const uint32 remainingMips = imageDesc.m_mipCount - imageViewDesc.m_baseMipLevel;
+        const uint32 remainingLayers = imageDesc.m_layerCount - imageViewDesc.m_baseSlice;
+
+        vk::ImageViewSlicedCreateInfoEXT slicesInfo = vk::ImageViewSlicedCreateInfoEXT()
+            .setSliceCount(imageViewDesc.m_sliceCount == graphics::kUseRemaining? remainingLayers : imageViewDesc.m_sliceCount)
+            .setSliceOffset(imageViewDesc.m_baseSlice);
+
+        vk::ImageViewUsageCreateInfo usageInfo = vk::ImageViewUsageCreateInfo()
+            .setUsage(GetVkImageViewUsage(imageViewDesc.m_viewType));
+
+        if (m_device.GetDesc().m_features.m_imageSlicedView)
+            usageInfo.setPNext(&slicesInfo);
+
+        const vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
+            .setAspectMask(GetVkImageAspectFlags(imageViewDesc.m_format))
+            .setBaseMipLevel(imageViewDesc.m_baseMipLevel)
+            .setLevelCount(imageViewDesc.m_mipCount == graphics::kUseRemaining ? remainingMips : imageViewDesc.m_mipCount)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1);
         
-        VkImageViewUsageCreateInfo usageInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_USAGE_CREATE_INFO };
-        usageInfo.usage = GetVkImageViewUsage(textureViewDesc.m_viewType);
+        vk::ImageViewCreateInfo viewInfo = vk::ImageViewCreateInfo()
+            .setPNext(&usageInfo)
+            .setViewType(GetVkImageViewType(imageViewDesc.m_viewType, subresourceRange.layerCount))
+            .setImage(image.GetVkImage())
+            .setSubresourceRange(subresourceRange)
+            .setFormat(GetVkFormat(imageViewDesc.m_format));
 
-        const VkImageSubresourceRange subresource =
-        {
-            .aspectMask = GetVkImageAspectFlags(textureViewDesc.m_format),
-            .baseMipLevel = textureViewDesc.m_mipOffset,
-            .levelCount = textureViewDesc.m_mipCount == graphics::kUseRemaining ? remainingMips : textureViewDesc.m_mipCount,
-            .baseArrayLayer = 0,
-            .layerCount = 1,
-        };
+        // Create the image view
+        auto& device = m_device.GetVkDevice();
+        m_imageView = device.createImageView(viewInfo, m_device.GetVkAllocationCallbacks());
+
+        // Set description values.
+        m_type = GetDescriptorType(imageViewDesc.m_viewType);
+        m_imageDesc.m_pImage = imageViewDesc.m_pImage;
+        m_imageDesc.m_imageLayout = GetVkImageViewLayout(imageViewDesc.m_viewType);
+        m_imageDesc.m_aspectFlags = GetVkImageAspectFlags(imageViewDesc.m_format);
+        m_imageDesc.m_layerOffset = 0;
+        m_imageDesc.m_layerCount = 1;
+        m_imageDesc.m_sliceOffset = imageViewDesc.m_baseSlice;
+        m_imageDesc.m_sliceCount = imageViewDesc.m_sliceCount;
+        m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
+        m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
         
-        VkImageViewCreateInfo createInfo = { VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-        createInfo.pNext = &usageInfo;
-        createInfo.viewType = GetVkImageViewType(textureViewDesc.m_viewType, subresource.layerCount);
-        createInfo.format = GetVkFormat(textureViewDesc.m_format);
-        createInfo.subresourceRange = subresource;
-        createInfo.image = texture.GetHandle();
-
-        NES_VK_FAIL_RETURN(m_device, vkCreateImageView(m_device, &createInfo, m_device.GetVkAllocationCallbacks(), &m_imageView));
-
-        m_type = GetDescriptorType(textureViewDesc.m_viewType);
-        m_textureDesc.m_pImage = textureViewDesc.m_pTexture;
-        m_textureDesc.m_imageLayout = GetVkImageViewLayout(textureViewDesc.m_viewType);
-        m_textureDesc.m_aspectFlags = GetVkImageAspectFlags(textureViewDesc.m_format);
-        m_textureDesc.m_layerOffset = 0;
-        m_textureDesc.m_layerCount = 1;
-        m_textureDesc.m_sliceOffset = textureViewDesc.m_sliceOffset;
-        m_textureDesc.m_sliceCount = textureViewDesc.m_sliceCount;
-        m_textureDesc.m_mipOffset = textureViewDesc.m_mipOffset;
-        m_textureDesc.m_mipCount = subresource.levelCount;
         return EGraphicsResult::Success;
     }
 
     EGraphicsResult Descriptor::Init(const SamplerDesc& samplerDesc)
     {
-        VkSamplerCreateInfo info = { VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO };
-        info.flags = static_cast<VkSamplerCreateFlags>(0);
-        info.magFilter = GetVkFilterType(samplerDesc.m_filters.m_mag);
-        info.minFilter = GetVkFilterType(samplerDesc.m_filters.m_min);
-        info.mipmapMode = GetVkSamplerMipMode(samplerDesc.m_filters.m_mip);
-        info.addressModeU = GetVkSamplerAddressMode(samplerDesc.m_addressModes.u);
-        info.addressModeV = GetVkSamplerAddressMode(samplerDesc.m_addressModes.v);
-        info.addressModeW = GetVkSamplerAddressMode(samplerDesc.m_addressModes.w);
-        info.mipLodBias = samplerDesc.m_mipBias;
-        info.anisotropyEnable = static_cast<VkBool32>(static_cast<float>(samplerDesc.m_anisotropy) > 1.f);
-        info.maxAnisotropy = static_cast<float>(samplerDesc.m_anisotropy);
-        info.compareEnable = static_cast<VkBool32>(samplerDesc.m_compareOp != ECompareOp::None);
-        info.compareOp = GetVkCompareOp(samplerDesc.m_compareOp);
-        info.minLod = samplerDesc.m_mipMin;
-        info.maxLod = samplerDesc.m_mipMax;
-        
-        const void** pTail = &info.pNext;
-        VkSamplerReductionModeCreateInfo reductionModeInfo = {VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO};
+        vk::SamplerCreateInfo info = vk::SamplerCreateInfo()
+            .setMagFilter(GetVkFilterType(samplerDesc.m_filters.m_mag))
+            .setMinFilter(GetVkFilterType(samplerDesc.m_filters.m_min))
+            .setMipmapMode(GetVkSamplerMipMode(samplerDesc.m_filters.m_mip))
+            .setAddressModeU(GetVkSamplerAddressMode(samplerDesc.m_addressModes.u))
+            .setAddressModeV(GetVkSamplerAddressMode(samplerDesc.m_addressModes.v))
+            .setAddressModeW(GetVkSamplerAddressMode(samplerDesc.m_addressModes.w))
+            .setMipLodBias(samplerDesc.m_mipBias)
+            .setAnisotropyEnable(static_cast<float>(samplerDesc.m_anisotropy) > 1.f)
+            .setCompareEnable(samplerDesc.m_compareOp != ECompareOp::None)
+            .setMinLod(samplerDesc.m_mipMin)
+            .setMaxLod(samplerDesc.m_mipMax);
+
+        const void** pTail = &info.pNext; 
+
+        vk::SamplerReductionModeCreateInfo reductionModeInfo = vk::SamplerReductionModeCreateInfo();
         if (m_device.GetDesc().m_features.m_textureFilterMinMax)
         {
-            reductionModeInfo.reductionMode = GetVkSamplerReductionMode(samplerDesc.m_filters.m_reduction);
+            reductionModeInfo.setReductionMode(GetVkSamplerReductionMode(samplerDesc.m_filters.m_reduction));
             *pTail = &reductionModeInfo;
             pTail = &reductionModeInfo.pNext;
         }
-        
-        VkSamplerCustomBorderColorCreateInfoEXT borderColorInfo = {VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT};
+
+        vk::SamplerCustomBorderColorCreateInfoEXT borderColorInfo = vk::SamplerCustomBorderColorCreateInfoEXT();
         if (m_device.GetDesc().m_features.m_customBorderColor)
         {
-            info.borderColor = samplerDesc.m_isInteger ? VK_BORDER_COLOR_INT_CUSTOM_EXT : VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
-            static_assert(sizeof(VkClearColorValue) == sizeof(samplerDesc.m_borderColor), "Unexpected sizeof");
+            info.setBorderColor(samplerDesc.m_isInteger ? vk::BorderColor::eIntCustomEXT : vk::BorderColor::eFloatCustomEXT);
+            static_assert(sizeof(vk::ClearColorValue) == sizeof(samplerDesc.m_borderColor), "Unexpected sizeof");
             memcpy(&borderColorInfo.customBorderColor, &samplerDesc.m_borderColor, sizeof(borderColorInfo.customBorderColor));
+
             *pTail = &borderColorInfo;
-            pTail = &borderColorInfo.pNext;
         }
 
-        VkResult result = vkCreateSampler(m_device, &info, m_device.GetVkAllocationCallbacks(), &m_sampler);
-        NES_VK_FAIL_RETURN(m_device, result);
-
+        auto& device = m_device.GetVkDevice();
+        m_sampler = device.createSampler(info, m_device.GetVkAllocationCallbacks());
         m_type = EDescriptorType::Sampler;
+
         return EGraphicsResult::Success;
     }
 
-    bool Descriptor::IsTextureType() const
+    bool Descriptor::IsImageType() const
     {
         return DescriptorIsTextureType(m_type);
     }
@@ -257,45 +284,45 @@ namespace nes
 
     const DescriptorBufferDesc& Descriptor::GetBufferDesc() const
     {
-        NES_ASSERT(IsTextureType());
+        NES_ASSERT(IsImageType());
         return m_bufferDesc;
     }
 
-    const DescriptorTextureDesc& Descriptor::GetTextureDesc() const
+    const DescriptorImageDesc& Descriptor::GetImageDesc() const
     {
-        NES_ASSERT(IsBufferType());
-        return m_textureDesc;
+        NES_ASSERT(IsImageType());
+        return m_imageDesc;
     }
 
-    VkImageView Descriptor::GetVulkanImageView() const
+    vk::ImageView Descriptor::GetVkImageView() const
     {
-        NES_ASSERT(IsTextureType());
-        return m_imageView;
+        NES_ASSERT(IsImageType());
+        return *m_imageView;
     }
 
-    VkSampler Descriptor::GetVulkanSampler() const
+    vk::Sampler Descriptor::GetVkSampler() const
     {
         NES_ASSERT(m_type == EDescriptorType::Sampler);
-        return m_sampler;
+        return *m_sampler;
     }
 
-    VkBufferView Descriptor::GetVulkanBufferView() const
+    vk::BufferView Descriptor::GetVkBufferView() const
     {
         NES_ASSERT(IsBufferType());
-        return m_bufferView;
+        return *m_bufferView;
     }
 
     bool Descriptor::IsDepthWritable() const
     {
-        NES_ASSERT(IsTextureType());
-        return m_textureDesc.m_imageLayout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL
-            && m_textureDesc.m_imageLayout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        NES_ASSERT(IsImageType());
+        return m_imageDesc.m_imageLayout != vk::ImageLayout::eDepthReadOnlyStencilAttachmentOptimal
+            && m_imageDesc.m_imageLayout != vk::ImageLayout::eDepthStencilReadOnlyOptimal;
     }
 
     bool Descriptor::IsStencilWritable() const
     {
-        NES_ASSERT(IsTextureType());
-        return m_textureDesc.m_imageLayout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL
-            && m_textureDesc.m_imageLayout != VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        NES_ASSERT(IsImageType());
+        return m_imageDesc.m_imageLayout != vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal
+            && m_imageDesc.m_imageLayout != vk::ImageLayout::eDepthStencilReadOnlyOptimal;
     }
 }

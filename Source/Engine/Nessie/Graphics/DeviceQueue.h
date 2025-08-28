@@ -7,8 +7,7 @@
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : A Device Queue is a logical queue that has access to a hardware queue. More broadly,
-    ///     a queue is a sequence of commands that are executed in order. The queue is used to submit
+    /// @brief : A Device Queue is a logical queue that has access to a hardware queue. The queue is used to submit
     ///     command buffers to the GPU.
     ///     - The Queue's family index is used to identify the type of queue (graphics, compute, transfer, ...).
     ///     - The Queue's index is used to identify the specific queue in the family - multiple queues can be in the same family.
@@ -17,35 +16,38 @@ namespace nes
     {
     public:
         DeviceQueue(RenderDevice& device) : DeviceAsset(device) {}
+        DeviceQueue(const DeviceQueue&) = delete;
+        DeviceQueue(DeviceQueue&&) noexcept;
+        DeviceQueue& operator=(const DeviceQueue&) = delete;
+        DeviceQueue& operator=(DeviceQueue&&) noexcept;
 
         /// Operator to cast to the Vulkan type.
-        operator        VkQueue() const         { return m_handle; }
+        operator        const vk::raii::Queue&() const         { return m_queue; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialization function for the Device Queue. This will be called by the Render Device. 
+        /// @brief : Initialize the Device Queue. Called by the RenderDevice upon creation.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult Init(const EQueueType type, const uint32 familyIndex, VkQueue handle);
+        EGraphicsResult Init(const EQueueType type, const uint32 familyIndex, const uint32 queueIndex);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Wait until this queue has finished all command submissions.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult WaitUntilIdle();
+        void            WaitUntilIdle();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Submits the commands and blocks until complete. CommandBuffer::End() must be called before
-        ///     this function!
+        /// @brief : Set the debug name for this device queue. 
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult SubmitSingleTimeCommands(const CommandBuffer& buffer);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Set a debug name for this Queue. 
-        //----------------------------------------------------------------------------------------------------
-        virtual void    SetDebugName(const char* name) override;
+        virtual void    SetDebugName(const std::string& name) override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : The Queue's family index is used to identify the type of queue (graphics, compute, transfer, ...).
         //----------------------------------------------------------------------------------------------------
         uint32          GetFamilyIndex() const  { return m_familyIndex; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the index of the queue in the family.
+        //----------------------------------------------------------------------------------------------------
+        uint32          GetQueueIndex() const  { return m_queueIndex; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : This is the type of Queue (graphics, compute, transfer, ...).
@@ -58,14 +60,16 @@ namespace nes
         Mutex&          GetMutex()              { return m_mutex; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the Vulkan handle.  
+        /// @brief : Get the Vulkan Queue. 
         //----------------------------------------------------------------------------------------------------
-        VkQueue         GetHandle() const       { return m_handle; }   
-    
+        vk::raii::Queue& GetVkQueue()           { return m_queue; } 
+
     private:
-        VkQueue         m_handle = nullptr;
-        uint32          m_familyIndex = static_cast<uint32>(-1);
-        EQueueType      m_queueType = EQueueType::MaxNum;
+        vk::raii::Queue m_queue         = nullptr;
         Mutex           m_mutex;
+        uint32          m_familyIndex   = std::numeric_limits<uint32>::max();
+        uint32          m_queueIndex    = std::numeric_limits<uint32>::max();
+        EQueueType      m_queueType     = EQueueType::MaxNum;
     };
+    static_assert(DeviceAssetType<DeviceQueue>);
 }

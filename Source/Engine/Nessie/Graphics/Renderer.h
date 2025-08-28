@@ -17,15 +17,46 @@ namespace nes
     class Material;
     class RenderCommandBuffer;
     class RenderPass;
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Class containing information about the current frame, including the current image in the swapchain
+    ///     to render to.
+    //----------------------------------------------------------------------------------------------------
+    class RenderFrameContext
+    {
+        friend class Renderer;
+        
+    public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current extent of the swapchain image. 
+        //----------------------------------------------------------------------------------------------------
+        const vk::Extent2D&         GetSwapchainExtent() const          { return m_swapchainExtent; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns a viewport that encompasses the entire swapchain image.
+        //----------------------------------------------------------------------------------------------------
+        Viewport                    GetSwapchainViewport() const        { return Viewport(m_swapchainExtent.width, m_swapchainExtent.height); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current swapchain image.
+        //----------------------------------------------------------------------------------------------------
+        const DeviceImage&          GetSwapchainImage() const           { return *m_swapchainImage; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the descriptor for the swapchain image. This can be used to set the swapchain image k
+        ///     as a render target for a series of render calls.
+        //----------------------------------------------------------------------------------------------------
+        const Descriptor&           GetSwapchainImageDescriptor() const { return *m_swapchainImageDescriptor; }
+        
+    private:
+        const DeviceImage*          m_swapchainImage = nullptr;
+        const Descriptor*           m_swapchainImageDescriptor = nullptr;
+        vk::Extent2D                m_swapchainExtent{};      
+    };
     
     //----------------------------------------------------------------------------------------------------
-    // The Renderer is responsible for:
-    // - Managing default graphics resources.
-    // - Managing the Swapchain.
-    // - Static API to issue draw commands.
-    //
-    /// @brief : The Renderer is a higher level API to issue commands to the GPU (draw commands, creating
-    /// resources, compute commands, etc.).
+    /// @brief : The Renderer is responsible for managing the Render Frame execution, the Swapchain, and
+    ///  Command submission.
     //----------------------------------------------------------------------------------------------------
     class Renderer
     {
@@ -35,6 +66,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         template <typename FuncType>
         static void                 SubmitResourceFree(FuncType&& func);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Render Device object. This contains the Vulkan Instance, Device, Physical Device,
+        ///     and Allocator utilities.
+        //----------------------------------------------------------------------------------------------------
+        static RenderDevice&        GetDevice();
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the RenderCommandQueue of a specific frame used to release render resources. 
@@ -94,9 +131,27 @@ namespace nes
         uint32                      GetCurrentFrameIndex() const            { return m_currentFrameIndex; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Blocks until the render thread has finished, and the GPU has finished processing.  
+        /// @brief : Get the current frame's command buffer to record commands. 
+        //----------------------------------------------------------------------------------------------------
+        CommandBuffer&              GetCurrentCommandBuffer() const         { return *m_frames[m_currentFrameIndex].m_pCommandBuffer; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the context of the current render frame. This includes information about the current
+        ///     swapchain image that we are rendering to.
+        //----------------------------------------------------------------------------------------------------
+        RenderFrameContext          GetRenderFrameContext() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Blocks until the frame at the current frame index is completed. When rendering multiple frames,
+        ///     this will be a previous frame that was submitted to the GPU. It ensures that we can render to the
+        ///     current frame.
         //----------------------------------------------------------------------------------------------------
         void                        WaitForFrameCompletion();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Wait until all frames have been completed.
+        //----------------------------------------------------------------------------------------------------
+        void                        WaitUntilAllFramesCompleted() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns how long the Render thread was waiting to render the next frame.
@@ -110,7 +165,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         float                       GetRenderThreadWorkTime() const { return m_renderThreadWaitTime; }
     
-    protected:
+    private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the singleton instance of the renderer. 
         //----------------------------------------------------------------------------------------------------
@@ -165,60 +220,58 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct FrameData
         {
-            CommandPool*                        m_pCommandPool{};                           /// The Command Pool used for recording commands for this frame.
-            CommandBuffer*                      m_pCommandBuffer{};                         /// The Command Buffer that contains this frame's rendering commands.
-            uint64                              m_frameNumber{};                            /// Timeline value for synchronization (increases each frame).
+            CommandPool*                        m_pCommandPool{};                           // The Command Pool used for recording commands for this frame.
+            CommandBuffer*                      m_pCommandBuffer{};                         // The Command Buffer that contains this frame's rendering commands.
+            uint64                              m_frameNumber{};                            // Timeline value for synchronization (increases each frame).
         };
         
-        RenderDevice&                           m_device;                                   /// Device to create graphics resources.
-        ApplicationWindow*                      m_pWindow;                                  /// Window that we are rendering to.
-        std::unique_ptr<ShaderLibrary>          m_pShaderLibrary{}; 
-        std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       /// Command queues specific for freeing resources.
+        RenderDevice&                           m_device;                                   // Device to create graphics resources.
+        ApplicationWindow*                      m_pWindow;                                  // Window that we are rendering to.
+        std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       // Command queues specific for freeing resources.
 
         DeviceQueue*                            m_pRenderSubmissionQueue = nullptr;
-        CommandPool*                            m_pPresentCommandPool = nullptr;            /// Command pool owned by the main thread. 
-        Swapchain*                              m_pSwapchain = nullptr;                     /// Object that manages the target framebuffer to render to.
-        std::vector<FrameData>                  m_frames{};                                 /// Collection of per-frame resources to support multiple frames in flight.
-        VkSemaphore                             m_frameTimelineSemaphore{};                 /// Timeline semaphore used to synchronize CPU submission and GPU completion.
-        uint32                                  m_currentFrameIndex = 0;                    /// The current frame index in the frame data array (cycles through like a ring).
+        CommandPool*                            m_pPresentCommandPool = nullptr;            // Command pool owned by the main thread. 
+        Swapchain*                              m_pSwapchain = nullptr;                     // Object that manages the target framebuffer to render to.
+        std::vector<FrameData>                  m_frames{};                                 // Collection of per-frame resources to support multiple frames in flight.
+        vk::raii::Semaphore                     m_frameTimelineSemaphore = nullptr;         // Timeline semaphore used to synchronize CPU submission and GPU completion.
+        uint32                                  m_currentFrameIndex = 0;                    // The current frame index in the frame data array (cycles through like a ring).
 
         // TODO: These should be wrapped, not the Vulkan Types.
-        std::vector<VkSemaphoreSubmitInfo>      m_waitSemaphores;                           /// Possible extra wait semaphores.
-        std::vector<VkSemaphoreSubmitInfo>      m_signalSemaphores;                         /// Possible extra frame signal semaphores.
-        std::vector<VkCommandBufferSubmitInfo>  m_commandBuffers;                           /// Possible extra frame command buffers.
+        std::vector<vk::SemaphoreSubmitInfo>      m_waitSemaphores;                           // Possible extra wait semaphores.
+        std::vector<vk::SemaphoreSubmitInfo>      m_signalSemaphores;                         // Possible extra frame signal semaphores.
+        std::vector<vk::CommandBufferSubmitInfo>  m_commandBuffers;                           // Possible extra frame command buffers.
         
         // Performance Values
-        float                                   m_renderThreadWorkTime;                     /// The amount of time the render thread was processing commands (ms).
-        float                                   m_renderThreadWaitTime;                     /// The amount of time the render thread was waiting for the main thread (ms).
+        float                                   m_renderThreadWorkTime;                     // The amount of time the render thread was processing commands (ms).
+        float                                   m_renderThreadWaitTime;                     // The amount of time the render thread was waiting for the main thread (ms).
     };
 
     template <typename FuncType>
     void Renderer::SubmitResourceFree(FuncType&& func)
     {
-        auto renderCommand = [](void* ptr)
-        {
-            // Call the function.
-            auto pFunc = static_cast<FuncType*>(ptr);
-            (*pFunc)();
-
-            // Destroy the object.
-            pFunc->~FuncType();
-        };
+        const uint32 frameIndex = Get()->GetCurrentFrameIndex();
         
-        // if (IsRenderThread())
-        // {
-        //     const uint32 index = RT_GetCurrentFrameIndex();
-        //     auto storageBuffer = GetRenderResourceReleaseQueue(index).Allocate(renderCommand, sizeof(func));
-        //     new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
-        // }
-        //else
+        // If the current frame is valid, add to the free queue.
+        if (frameIndex < Get()->m_resourceFreeQueues.size())
         {
-            const uint32 frameIndex = Get()->GetCurrentFrameIndex();
-            Submit([renderCommand, func, frameIndex]()
+            auto renderCommand = [](void* ptr)
             {
-                auto storageBuffer = GetRenderResourceReleaseQueue(frameIndex).Allocate(renderCommand, sizeof(func));
-                new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
-            });
+                // Call the function.
+                auto pFunc = static_cast<FuncType*>(ptr);
+                (*pFunc)();
+
+                // Destroy the object.
+                pFunc->~FuncType();
+            };
+            
+            auto storageBuffer = GetRenderResourceReleaseQueue(frameIndex).Allocate(renderCommand, sizeof(func));
+            new (storageBuffer) FuncType(std::forward<FuncType>((FuncType&&)func));
+        }
+        
+        // Otherwise, call it immediately. This can happen for resources destroyed after the Renderer has been closed.
+        else
+        {
+            func();
         }
     }
 }

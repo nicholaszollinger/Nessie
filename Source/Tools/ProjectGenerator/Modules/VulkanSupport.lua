@@ -11,9 +11,9 @@ m.VulkanSDKPath = os.getenv("VK_SDK_PATH");
 m.MinimumVulkanVersion = 1.4; -- Version 1.4 and up.
 
 -- If no Vulkan Version present, then try to install this one.
-m.InstallVulkanVersion = "1.4.304.0";
--- https://sdk.lunarg.com/sdk/download/1.4.304.0/windows/VulkanSDK-1.4.304.0-Installer.exe
-m.InstallVulkanURL = "https://sdk.lunarg.com/sdk/download/" .. m.InstallVulkanVersion .. "/windows/VulkanSDK-" .. m.InstallVulkanVersion .. "-Installer.exe";
+m.InstallVulkanVersion = "1.4.321.1";
+-- https://sdk.lunarg.com/sdk/download/[version]/windows/vulkansdk-windows-X64-[version].exe
+m.InstallVulkanURL = "https://sdk.lunarg.com/sdk/download/" .. m.InstallVulkanVersion .. "/windows/vulkansdk-windows-X64-" .. m.InstallVulkanVersion .. ".exe";
 m.InstallVulkanLocation = projectCore.ThirdPartyDir .. "VulkanSDK";
 
 -------------------------------------------------------------------------------------

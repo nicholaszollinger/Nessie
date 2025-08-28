@@ -21,39 +21,39 @@ namespace nes
 }
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : If the vkExpression doesn't evaluate to VK_SUCCESS, it will exit the program.
+/// @brief : If the vkExpression doesn't evaluate to vk::Result::eSuccess, it will exit the program.
 ///	@param renderDevice : Reference to the render device to report any errors. 
-///	@param vkExpression : Expression that should evaluate to a VkResult.
+///	@param vkExpression : Expression that should evaluate to a vk::Result.
 //----------------------------------------------------------------------------------------------------
-#define NES_VK_MUST_PASS(renderDevice, vkExpression)                                \
+#define NES_VK_MUST_PASS(renderDevice, vkExpression)                            \
 do                                                                              \
 {                                                                               \
-    const VkResult exprResult = vkExpression;                                   \
+    const vk::Result exprResult = static_cast<vk::Result>(vkExpression);;       \
     (renderDevice).CheckResult(exprResult, #vkExpression, __FILE__, __LINE__);  \
-    if (exprResult < 0)                                                         \
+    if (exprResult != vk::Result::eSuccess)                                     \
     {                                                                           \
        NES_BREAKPOINT;                                                          \
     }                                                                           \
 } while (0)
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : If the vkExpression doesn't evaluate to VK_SUCCESS, it will report an error message,
+/// @brief : If the vkExpression doesn't evaluate to vk::Result::eSuccess, it will report an error message,
 ///     and then return the equivalent EGraphicsResult value.
 ///	@param renderDevice : Reference to the render device to report any errors. 
 ///	@param vkExpression : Expression that should evaluate to a VkResult.
 //----------------------------------------------------------------------------------------------------
-#define NES_VK_FAIL_RETURN(renderDevice, vkExpression)  \
-do                                                      \
-{                                                       \
-    const VkResult exprResult = vkExpression;           \
-    if (exprResult < 0)                                 \
-    {                                                   \
+#define NES_VK_FAIL_RETURN(renderDevice, vkExpression)                                      \
+do                                                                                          \
+{                                                                                           \
+    const vk::Result exprResult = static_cast<vk::Result>(vkExpression);                    \
+    if (exprResult != vk::Result::eSuccess)                                                 \
+    {                                                                                       \
         return (renderDevice).ReportOnError(exprResult, #vkExpression, __FILE__, __LINE__); \
-    }                                                   \
+    }                                                                                       \
 } while (0)
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : If the vkExpression doesn't evaluate to VK_SUCCESS, it will report an error message,
+/// @brief : If the vkExpression doesn't evaluate to vk::Result::eSuccess, it will report an error message,
 ///     and then return the equivalent EGraphicsResult value.
 ///	@param renderDevice : Reference to the render device to report any errors. 
 ///	@param vkExpression : Expression that should evaluate to a VkResult.
@@ -61,8 +61,8 @@ do                                                      \
 #define NES_VK_FAIL_RETURN_VOID(renderDevice, vkExpression)  \
 do                                                      \
 {                                                       \
-    const VkResult exprResult = vkExpression;           \
-    if (exprResult < 0)                                 \
+    const vk::Result exprResult = static_cast<vk::Result>(vkExpression);           \
+    if (exprResult != vk::Result::eSuccess)                                 \
     {                                                   \
         (renderDevice).ReportOnError(exprResult, #vkExpression, __FILE__, __LINE__); \
         return;                                         \
@@ -70,7 +70,7 @@ do                                                      \
 } while (0)
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : If the vkExpression doesn't evaluate to VK_SUCCESS, it will report an error message. You can
+/// @brief : If the vkExpression doesn't evaluate to vk::Result::eSuccess, it will report an error message. You can
 ///     use this to set an EGraphicsResult variable. Ex: EGraphicsResult result = NES_VK_FAIL_REPORT(...).
 ///	@param renderDevice : Reference to the render device to report any errors. 
 ///	@param vkExpression : Expression that should evaluate to a VkResult.

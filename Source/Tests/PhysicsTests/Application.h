@@ -50,7 +50,8 @@ protected:
 private:
     /// Application overrides.
     virtual bool            Internal_AppInit() override;
-    virtual void            Internal_AppRunFrame(const float deltaTime) override;
+    virtual void            Internal_AppUpdate(const float deltaTime) override;
+    virtual void            Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& swapchainImageView) override;
     virtual void            Internal_AppShutdown() override;
     virtual void            PushEvent(nes::Event& e) override;
 

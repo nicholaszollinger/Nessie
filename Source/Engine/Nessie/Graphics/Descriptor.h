@@ -9,23 +9,23 @@ namespace nes
 
     struct DescriptorBufferDesc
     {
-        VkBuffer            m_handle;
-        uint64              m_offset;
-        uint64              m_size;
-        EBufferViewType     m_viewType;
+        const DeviceBuffer*         m_pBuffer = nullptr;
+        uint64                      m_offset = 0;
+        uint64                      m_size = 0;
+        EBufferViewType             m_viewType = EBufferViewType::ShaderResource;
     };
-        
-    struct DescriptorTextureDesc
+
+    struct DescriptorImageDesc
     {
-        const DeviceImage*  m_pImage = nullptr;
-        VkImageLayout       m_imageLayout;
-        VkImageAspectFlags  m_aspectFlags;
-        uint32              m_layerOffset = 0;
-        uint32              m_layerCount;
-        uint32              m_sliceOffset = 0;
-        uint32              m_sliceCount;
-        uint32              m_mipOffset = 0;
-        uint32              m_mipCount;
+        const DeviceImage*          m_pImage = nullptr;
+        vk::ImageLayout             m_imageLayout;
+        vk::ImageAspectFlags        m_aspectFlags = vk::ImageAspectFlagBits::eColor;
+        uint16                      m_layerOffset = 0;
+        uint16                      m_layerCount = 1;
+        uint16                      m_sliceOffset = 0;
+        uint16                      m_sliceCount = 1;
+        uint16                      m_mipOffset = 0;
+        uint16                      m_mipCount = 1;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -34,117 +34,119 @@ namespace nes
     class Descriptor final : public DeviceAsset
     {
     public:
-        explicit            Descriptor(RenderDevice& device) : DeviceAsset(device) {}
-        virtual             ~Descriptor() override;
+        explicit                    Descriptor(RenderDevice& device) : DeviceAsset(device) {}
+        virtual                     ~Descriptor() override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this Descriptor. 
         //----------------------------------------------------------------------------------------------------
-        virtual void        SetDebugName(const char* name) override;
+        virtual void                SetDebugName(const std::string& name) override;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a Buffer View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const BufferViewDesc& bufferViewDesc);
+        EGraphicsResult             Init(const BufferViewDesc& bufferViewDesc);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Creates a 1D Texture View Descriptor.
+        /// @brief : Creates a 1D Image View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const Texture1DViewDesc& textureViewDesc);
+        EGraphicsResult             Init(const Image1DViewDesc& textureViewDesc);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Creates a 2D Texture View Descriptor.
+        /// @brief : Creates a 2D Image View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const Texture2DViewDesc& textureViewDesc);
+        EGraphicsResult             Init(const Image2DViewDesc& imageViewDesc);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Creates a 3D Texture View Descriptor.
+        /// @brief : Creates a 3D Image View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const Texture3DViewDesc& textureViewDesc);
+        EGraphicsResult             Init(const Image3DViewDesc& textureViewDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a Sampler Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const SamplerDesc& samplerDesc);
+        EGraphicsResult             Init(const SamplerDesc& samplerDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the resource type that this Descriptor represents. 
         //----------------------------------------------------------------------------------------------------
-        EDescriptorType     GetType() const                                     { return m_type; }
+        EDescriptorType             GetType() const                                     { return m_type; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether the Descriptor was properly initialized.
         //----------------------------------------------------------------------------------------------------
-        bool                IsValid() const                                     { return m_type != EDescriptorType::None; }
+        bool                        IsValid() const                                     { return m_type != EDescriptorType::None; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Returns true if this descriptor represents a Texture resource.
+        /// @brief : Returns true if this descriptor represents an Image resource.
         //----------------------------------------------------------------------------------------------------
-        bool                IsTextureType() const;
+        bool                        IsImageType() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if this resource represents a Buffer resource.
         //----------------------------------------------------------------------------------------------------
-        bool                IsBufferType() const;
+        bool                        IsBufferType() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns information about the Buffer resource.
         /// @note : Only valid if the Descriptor is a buffer type. 
         //----------------------------------------------------------------------------------------------------
-        const DescriptorBufferDesc&   GetBufferDesc() const;
+        const DescriptorBufferDesc& GetBufferDesc() const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Returns information about the Texture resource.
+        /// @brief : Returns information about the image resource.
         /// @note : Only valid if the Descriptor is a texture type. 
         //----------------------------------------------------------------------------------------------------
-        const DescriptorTextureDesc&  GetTextureDesc() const;
+        const DescriptorImageDesc&  GetImageDesc() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the vulkan image view handle.
         /// @note : Only valid if the Descriptor is a texture type. 
         //----------------------------------------------------------------------------------------------------
-        VkImageView         GetVulkanImageView() const;
+        vk::ImageView               GetVkImageView() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the vulkan sampler handle.
         /// @note : Only valid if the Descriptor is a sampler type. 
         //----------------------------------------------------------------------------------------------------
-        VkSampler           GetVulkanSampler() const;
+        vk::Sampler                 GetVkSampler() const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the vulkan buffer view handle.
         /// @note : Only valid if the Descriptor is a buffer type. 
         //----------------------------------------------------------------------------------------------------
-        VkBufferView        GetVulkanBufferView() const;
+        vk::BufferView              GetVkBufferView() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the texture allows depth write operations.
         /// @note : Only valid if the Descriptor is a texture type. 
         //----------------------------------------------------------------------------------------------------
-        bool                IsDepthWritable() const;
+        bool                        IsDepthWritable() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the texture allows depth stencil write operations.
         /// @note : Only valid if the Descriptor is a texture type. 
         //----------------------------------------------------------------------------------------------------
-        bool                IsStencilWritable() const;
+        bool                        IsStencilWritable() const;
     
     private:
         /// Vulkan Resource Handle.
         union
         {
-            VkImageView     m_imageView = nullptr;
-            VkBufferView    m_bufferView;
-            VkSampler       m_sampler;
+            vk::raii::ImageView     m_imageView = nullptr;
+            vk::raii::BufferView    m_bufferView;
+            vk::raii::Sampler       m_sampler;
         };
 
         /// Descriptor Description.
         union
         {
-            DescriptorTextureDesc m_textureDesc = {};
-            DescriptorBufferDesc  m_bufferDesc;
+            DescriptorImageDesc     m_imageDesc = {};
+            DescriptorBufferDesc    m_bufferDesc;
         };
-        
-        EDescriptorType     m_type = EDescriptorType::None;
+
+        EDescriptorType             m_type = EDescriptorType::None;
     };
+
+    static_assert(DeviceAssetType<Descriptor>);
 }

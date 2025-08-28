@@ -20,7 +20,7 @@ function d.Include()
     {
         vulkanSupport.VulkanSDKPath .. "\\Include",
         d.BuildDirectory .. "\\VMA\\include",
-        d.BuildDirectory .. "\\Volk\\",
+        --d.BuildDirectory .. "\\Volk\\",
     }
 
     defines
@@ -29,7 +29,7 @@ function d.Include()
 
         -- Define VK_NO_PROTOTYPES to avoid including Vulkan prototypes
         -- This is necessary because we are using volk to load Vulkan functions
-        "VK_NO_PROTOTYPES",
+        --"VK_NO_PROTOTYPES",
     }
 
     filter "system:windows"
@@ -42,8 +42,8 @@ function d.AddFilesToProject()
     files
     {
         d.BuildDirectory .. "\\VMA\\include\\vk_mem_alloc.h",
-        d.BuildDirectory .. "\\Volk\\volk.h",
-        d.BuildDirectory .. "\\Volk\\volk.c",
+        --d.BuildDirectory .. "\\Volk\\volk.h",
+        --d.BuildDirectory .. "\\Volk\\volk.c",
         d.BuildScript,
     };
 end
@@ -56,7 +56,7 @@ function d.Link()
 
     links 
     {
-        --"vulkan-1.lib",
+        "vulkan-1.lib",
         "shaderc_shared.lib"
     }
 

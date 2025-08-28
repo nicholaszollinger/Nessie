@@ -1,23 +1,35 @@
 ﻿// Barriers.cpp
 #include "Barriers.h"
+#include "Vulkan/VulkanConversions.h"
 
 namespace nes
 {
-    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetLayoutTransition(const VkImageLayout oldLayout, const VkImageLayout newLayout)
+    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetLayoutTransition(const vk::ImageLayout oldLayout, const vk::ImageLayout newLayout)
     {
         m_oldLayout = oldLayout;
         m_newLayout = newLayout;
         return *this;
     }
 
-    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetAccessFlags(const VkAccessFlags2 srcAccess, const VkAccessFlags2 dstAccess)
+    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetImageSubresourceRange(const vk::ImageAspectFlags aspectFlags, const uint32 mipLevelCount, const uint32 baseMipLevel, const uint32 layerCount, const uint32 baseLayer)
+    {
+        m_subresourceRange.setAspectMask(aspectFlags)
+            .setBaseMipLevel(baseMipLevel)
+            .setLevelCount(mipLevelCount)
+            .setBaseArrayLayer(baseLayer)
+            .setLayerCount(layerCount);
+
+        return *this;
+    }
+
+    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetAccessFlags(const vk::AccessFlags2 srcAccess, const vk::AccessFlags2 dstAccess)
     {
         m_srcAccessMask = srcAccess;
         m_dstAccessMask = dstAccess;
         return *this;
     }
 
-    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetStages(const VkPipelineStageFlags2 srcStages, const VkPipelineStageFlags dstStages)
+    ImageMemoryBarrierDesc& ImageMemoryBarrierDesc::SetStages(const vk::PipelineStageFlags2 srcStages, const vk::PipelineStageFlags2 dstStages)
     {
         m_srcStageMask = srcStages;
         m_dstStageMask = dstStages;
@@ -31,109 +43,113 @@ namespace nes
         return *this;
     }
 
-    EGraphicsResult ImageMemoryBarrierDesc::CreateBarrier(const VkImage image, VkImageMemoryBarrier2& outBarrier)
+    vk::ImageMemoryBarrier2 ImageMemoryBarrierDesc::CreateVkBarrier(const vk::Image image)
     {
-        if (!image)
-        {
-            outBarrier = {};
-            return EGraphicsResult::Failure;
-        }
+        NES_ASSERT(image);
         
-        if (m_srcStageMask == vulkan::kInferBarrierParams && m_srcAccessMask == vulkan::kInferBarrierParams)
+        if (m_srcStageMask == graphics::kInferPipelineStage && m_srcAccessMask == graphics::kInferAccess)
         {
-            vulkan::InferPipelineStageAccess(m_oldLayout, m_srcStageMask, m_srcAccessMask);
+            graphics::InferPipelineStageAccess(m_oldLayout, m_srcStageMask, m_srcAccessMask);
         }
-        else if (m_srcAccessMask == vulkan::kInferBarrierParams)
+        else if (m_srcAccessMask == graphics::kInferAccess)
         {
-            NES_ASSERT(m_srcStageMask != vulkan::kInferBarrierParams);
-            m_srcAccessMask = vulkan::InferAccessMaskFromStage(m_srcStageMask, false);
+            NES_ASSERT(m_srcStageMask != graphics::kInferPipelineStage);
+            m_srcAccessMask = graphics::InferAccessMaskFromStage(m_srcStageMask, false);
         }
 
-        if (m_dstStageMask == vulkan::kInferBarrierParams && m_dstAccessMask == vulkan::kInferBarrierParams)
+        if (m_dstStageMask == graphics::kInferPipelineStage && m_dstAccessMask == graphics::kInferAccess)
         {
-            vulkan::InferPipelineStageAccess(m_newLayout, m_dstStageMask, m_dstAccessMask);
+            graphics::InferPipelineStageAccess(m_newLayout, m_dstStageMask, m_dstAccessMask);
         }
-        else if (m_dstAccessMask == vulkan::kInferBarrierParams)
+        else if (m_dstAccessMask == graphics::kInferAccess)
         {
-            NES_ASSERT(m_dstStageMask != vulkan::kInferBarrierParams);
-            m_dstAccessMask = vulkan::InferAccessMaskFromStage(m_dstStageMask, false);
+            NES_ASSERT(m_dstStageMask != graphics::kInferPipelineStage);
+            m_dstAccessMask = graphics::InferAccessMaskFromStage(m_dstStageMask, false);
         }
+
+        // [TODO]: Custom subresource range.
+        constexpr vk::ImageSubresourceRange kDefaultSubresourceRange = vk::ImageSubresourceRange()
+            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+            .setBaseMipLevel(0)
+            .setLevelCount(1)
+            .setBaseArrayLayer(0)
+            .setLayerCount(1);
         
-        outBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2;
-        outBarrier.pNext = nullptr;
-        outBarrier.image = image;
-        outBarrier.oldLayout = m_oldLayout;
-        outBarrier.newLayout = m_newLayout;
-        outBarrier.subresourceRange = m_subresourceRange;
-        outBarrier.srcAccessMask = m_srcAccessMask;
-        outBarrier.dstAccessMask = m_dstAccessMask;
-        outBarrier.srcStageMask = m_srcStageMask;
-        outBarrier.dstStageMask = m_dstStageMask;
-        outBarrier.srcQueueFamilyIndex = m_srcQueueFamilyIndex;
-        outBarrier.dstQueueFamilyIndex = m_dstQueueFamilyIndex;
-        
-        return EGraphicsResult::Success;
+        // Set the Barrier params.
+        const vk::ImageMemoryBarrier2 outBarrier = vk::ImageMemoryBarrier2()
+            .setImage(image)
+            .setSubresourceRange(kDefaultSubresourceRange)
+            .setOldLayout(m_oldLayout)
+            .setNewLayout(m_newLayout)
+            .setSrcStageMask(m_srcStageMask)
+            .setDstStageMask(m_dstStageMask)
+            .setSrcAccessMask(m_srcAccessMask)
+            .setDstAccessMask(m_dstAccessMask)
+            .setSrcQueueFamilyIndex(m_srcQueueFamilyIndex)
+            .setDstQueueFamilyIndex(m_dstQueueFamilyIndex);
+
+        return outBarrier;
     }
 
-    BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetBuffer(VkBuffer buffer, const VkDeviceSize offset, const VkDeviceSize size)
-    {
-        m_buffer = buffer;
-        m_offset = offset;
-        m_size = size;
-        return *this;
-    }
-
-    BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetAccessFlags(const VkAccessFlags2 srcAccess, const VkAccessFlags2 dstAccess)
-    {
-        m_srcAccessMask = srcAccess;
-        m_dstAccessMask = dstAccess;
-        return *this;
-    }
-
-    BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetStages(const VkPipelineStageFlags2 srcStages, const VkPipelineStageFlags dstStages)
-    {
-        m_srcStageMask = srcStages;
-        m_dstStageMask = dstStages;
-        return *this;
-    }
-
-    BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetQueueFamilyIndexTransition(const uint32 srcQueueFamilyIndex, const uint32 dstQueueFamilyIndex)
-    {
-        m_srcQueueFamilyIndex = srcQueueFamilyIndex;
-        m_dstQueueFamilyIndex = dstQueueFamilyIndex;
-        return *this;
-    }
-
-    EGraphicsResult BufferMemoryBarrierDesc::Resolve(VkBufferMemoryBarrier2& outBarrier)
-    {
-        if (!m_buffer)
-        {
-            outBarrier = {};
-            return EGraphicsResult::Failure;
-        }
-
-        if (m_srcAccessMask == vulkan::kInferBarrierParams)
-        {
-            m_srcAccessMask = vulkan::InferAccessMaskFromStage(m_srcStageMask, false);
-        }
-        
-        if (m_dstAccessMask == vulkan::kInferBarrierParams)
-        {
-            m_dstAccessMask = vulkan::InferAccessMaskFromStage(m_dstStageMask, true);
-        }
-
-        outBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
-        outBarrier.pNext = nullptr;
-        outBarrier.buffer = m_buffer;
-        outBarrier.offset = m_offset;
-        outBarrier.size = m_size;
-        outBarrier.srcAccessMask = m_srcAccessMask;
-        outBarrier.dstAccessMask = m_dstAccessMask;
-        outBarrier.srcStageMask = m_srcStageMask;
-        outBarrier.dstStageMask = m_dstStageMask;
-        outBarrier.srcQueueFamilyIndex = m_srcQueueFamilyIndex;
-        outBarrier.dstQueueFamilyIndex = m_dstQueueFamilyIndex;
-        
-        return EGraphicsResult::Success;
-    }
+    // BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetBuffer(VkBuffer buffer, const VkDeviceSize offset, const VkDeviceSize size)
+    // {
+    //     m_buffer = buffer;
+    //     m_offset = offset;
+    //     m_size = size;
+    //     return *this;
+    // }
+    //
+    // BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetAccessFlags(const VkAccessFlags2 srcAccess, const VkAccessFlags2 dstAccess)
+    // {
+    //     m_srcAccessMask = srcAccess;
+    //     m_dstAccessMask = dstAccess;
+    //     return *this;
+    // }
+    //
+    // BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetStages(const VkPipelineStageFlags2 srcStages, const VkPipelineStageFlags dstStages)
+    // {
+    //     m_srcStageMask = srcStages;
+    //     m_dstStageMask = dstStages;
+    //     return *this;
+    // }
+    //
+    // BufferMemoryBarrierDesc& BufferMemoryBarrierDesc::SetQueueFamilyIndexTransition(const uint32 srcQueueFamilyIndex, const uint32 dstQueueFamilyIndex)
+    // {
+    //     m_srcQueueFamilyIndex = srcQueueFamilyIndex;
+    //     m_dstQueueFamilyIndex = dstQueueFamilyIndex;
+    //     return *this;
+    // }
+    //
+    // EGraphicsResult BufferMemoryBarrierDesc::Resolve(VkBufferMemoryBarrier2& outBarrier)
+    // {
+    //     if (!m_buffer)
+    //     {
+    //         outBarrier = {};
+    //         return EGraphicsResult::Failure;
+    //     }
+    //
+    //     if (m_srcAccessMask == graphics::kInferBarrierParams)
+    //     {
+    //         m_srcAccessMask = graphics::InferAccessMaskFromStage(m_srcStageMask, false);
+    //     }
+    //     
+    //     if (m_dstAccessMask == graphics::kInferBarrierParams)
+    //     {
+    //         m_dstAccessMask = graphics::InferAccessMaskFromStage(m_dstStageMask, true);
+    //     }
+    //
+    //     outBarrier.sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2;
+    //     outBarrier.pNext = nullptr;
+    //     outBarrier.buffer = m_buffer;
+    //     outBarrier.offset = m_offset;
+    //     outBarrier.size = m_size;
+    //     outBarrier.srcAccessMask = m_srcAccessMask;
+    //     outBarrier.dstAccessMask = m_dstAccessMask;
+    //     outBarrier.srcStageMask = m_srcStageMask;
+    //     outBarrier.dstStageMask = m_dstStageMask;
+    //     outBarrier.srcQueueFamilyIndex = m_srcQueueFamilyIndex;
+    //     outBarrier.dstQueueFamilyIndex = m_dstQueueFamilyIndex;
+    //     
+    //     return EGraphicsResult::Success;
+    // }
 }
