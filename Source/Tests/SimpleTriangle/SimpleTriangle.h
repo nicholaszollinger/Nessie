@@ -17,7 +17,15 @@ public:
     virtual void Internal_AppShutdown() override;
 
 private:
+    struct Vertex
+    {
+        nes::Vec2 m_position{};
+        nes::Vec3 m_color{};
+    };
+    
     nes::AssetID            m_shaderID = nes::kInvalidAssetID;
     nes::PipelineLayout*    m_pPipelineLayout = nullptr;
     nes::Pipeline*          m_pPipeline = nullptr;
+    nes::DeviceBuffer*      m_pVertexBuffer = nullptr;
+    nes::VertexBufferDesc   m_vertexBufferDesc = {};
 };

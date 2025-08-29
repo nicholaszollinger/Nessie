@@ -35,10 +35,40 @@ namespace nes
         }
 
         // Vertex Input
-        // [TODO]: Current doesn't do anything.
-        vk::PipelineVertexInputStateCreateInfo vertexInputState = vk::PipelineVertexInputStateCreateInfo();
+        std::vector<vk::VertexInputAttributeDescription> vertexAttributes(desc.m_vertexInput.m_attributes.size());
+        std::vector<vk::VertexInputBindingDescription> vertexBindings(desc.m_vertexInput.m_streams.size());
         
+        vk::PipelineVertexInputStateCreateInfo vertexInputState = vk::PipelineVertexInputStateCreateInfo()
+            .setPVertexAttributeDescriptions(vertexAttributes.data())
+            .setVertexAttributeDescriptionCount(desc.m_vertexInput.m_attributes.size())
+            .setPVertexBindingDescriptions(vertexBindings.data())
+            .setVertexBindingDescriptionCount(desc.m_vertexInput.m_streams.size());
+
+        // Fill out attributes:
+        for (uint32 i = 0; i < desc.m_vertexInput.m_attributes.size(); ++i)
+        {
+            const auto& attribute = *(desc.m_vertexInput.m_attributes.begin() + i);
+            auto& vkAttribute = vertexAttributes[i];
+
+            vkAttribute.setFormat(GetVkFormat(attribute.m_format))
+                .setOffset(attribute.m_offset)
+                .setBinding(attribute.m_streamIndex)
+                .setLocation(attribute.m_location);
+        }
+
+        // Fill out bindings:
+        for (uint32 i = 0; i < desc.m_vertexInput.m_streams.size(); ++i)
+        {
+            const auto& stream = *(desc.m_vertexInput.m_streams.begin() + i);
+            auto& vkBinding = vertexBindings[i];
+
+            vkBinding.setBinding(stream.m_bindingIndex)
+                .setStride(stream.m_stride)
+                .setInputRate(stream.m_stepRate == EVertexStreamStepRate::PerVertex? vk::VertexInputRate::eVertex : vk::VertexInputRate::eInstance);
+        }
+
         // Input Assembly
+        // [TODO]: Current is hacked in.
         const auto& descInputAssembly = desc.m_inputAssembly;
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState = vk::PipelineInputAssemblyStateCreateInfo()
             .setTopology(vk::PrimitiveTopology::eTriangleList);//(GetVkTopology(descInputAssembly.m_topology))
@@ -142,7 +172,10 @@ namespace nes
         uint32 dynamicStateCount = 0;
         std::array<vk::DynamicState, 16> dynamicStates;
         dynamicStates[dynamicStateCount++] = vk::DynamicState::eViewport; // [TODO]: WithCount
-        dynamicStates[dynamicStateCount++] = vk::DynamicState::eScissor; // [TODO]: WithCount
+        dynamicStates[dynamicStateCount++] = vk::DynamicState::eScissor;  // [TODO]: WithCount
+
+        if (vertexInputState.pVertexAttributeDescriptions)
+            dynamicStates[dynamicStateCount++] = vk::DynamicState::eVertexInputBindingStride;
 
         vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
             .setDynamicStateCount(dynamicStateCount)

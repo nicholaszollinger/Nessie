@@ -4,6 +4,7 @@
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Asset/AssetManager.h"
 #include "Nessie/Graphics/CommandBuffer.h"
+#include "Nessie/Graphics/DeviceBuffer.h"
 #include "Nessie/Graphics/DeviceImage.h"
 #include "Nessie/Graphics/Pipeline.h"
 #include "Nessie/Graphics/PipelineLayout.h"
@@ -29,18 +30,58 @@ bool SimpleTriangle::Internal_AppInit()
         
     // Create a Graphics Pipeline:
     {
+        static const std::array<Vertex, 3> vertices =
+        {
+            Vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            Vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
+            Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}} 
+        };
+        
         auto& device = nes::DeviceManager::GetRenderDevice();
+
+        // Attributes of the Vertex struct
+        std::array<nes::VertexAttributeDesc, 2> attributes =
+        {
+            nes::VertexAttributeDesc(0, offsetof(Vertex, m_position), nes::EFormat::RG32_SFLOAT, 0),
+            nes::VertexAttributeDesc(1, offsetof(Vertex, m_color), nes::EFormat::RGB32_SFLOAT, 0),
+        };
+
+        // A single stream of Vertex elements:
+        nes::VertexStreamDesc vertexStreamDesc = nes::VertexStreamDesc()
+            .SetStride(sizeof(Vertex));
+
+        nes::VertexInputDesc vertexInputDesc = nes::VertexInputDesc()
+            .SetAttributes(attributes)
+            .SetStreams(vertexStreamDesc);
+
+        // Create the Vertex Buffer:
+        nes::BufferDesc vertexBufferDesc{};
+        vertexBufferDesc.m_usage = nes::EBufferUsageBits::VertexBuffer;
+        vertexBufferDesc.m_size = sizeof(Vertex) * vertices.size();
+        
+        nes::AllocateBufferDesc desc{};
+        desc.m_desc = vertexBufferDesc;
+        desc.m_location = nes::EMemoryLocation::HostUpload; // We are setting the vertex data from the GPU.
+        
+        nes::EGraphicsResult result = device.CreateResource<nes::DeviceBuffer>(m_pVertexBuffer, desc);
+        if (result != nes::EGraphicsResult::Success)
+        {
+            NES_ERROR("Failed to create Vertex Buffer!");
+            return false;
+        }
+        m_pVertexBuffer->CopyToBuffer(vertices.data());
+        m_vertexBufferDesc = nes::VertexBufferDesc(m_pVertexBuffer, sizeof(Vertex), 0);
         
         // Create the Pipeline Layout:
         nes::PipelineLayoutDesc layoutDesc{};
-        nes::EGraphicsResult result = device.CreateResource<nes::PipelineLayout>(m_pPipelineLayout, layoutDesc);
+        result = device.CreateResource<nes::PipelineLayout>(m_pPipelineLayout, layoutDesc);
         if (result != nes::EGraphicsResult::Success)
         {
             NES_ERROR("Failed to create Graphics Pipeline Layout!");
             return false;
         }
 
-        // Create the Pipeline
+        // Vertex Shader Stages:
         nes::AssetPtr<nes::Shader> triangleShader = nes::AssetManager::GetAsset<nes::Shader>(m_shaderID);
         if (!triangleShader)
         {
@@ -63,9 +104,11 @@ bool SimpleTriangle::Internal_AppInit()
             .m_size = byteCode.size(),
             .m_entryPointName = "fragMain",
         };
-        
+
+        // Create the Pipeline:
         nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
-            .SetShaderStages({ vertStage, fragStage });
+            .SetShaderStages({ vertStage, fragStage })
+            .SetVertexInput(vertexInputDesc);
 
         NES_ASSERT(m_pPipelineLayout != nullptr);
         result = device.CreateResource<nes::Pipeline>(m_pPipeline, *m_pPipelineLayout, pipelineDesc);
@@ -116,6 +159,7 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
         
         commandBuffer.SetViewports(viewport);
         commandBuffer.SetScissors(scissor);
+        commandBuffer.BindVertexBuffers(m_vertexBufferDesc);
 
         // Draw 3 vertices:
         commandBuffer.Draw(3);
@@ -137,6 +181,9 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
 void SimpleTriangle::Internal_AppShutdown()
 {
     auto& device = nes::DeviceManager::GetRenderDevice();
+
+    if (m_pVertexBuffer)
+        device.FreeResource(m_pVertexBuffer);
 
     // Free the pipeline resource.
     if (m_pPipeline)

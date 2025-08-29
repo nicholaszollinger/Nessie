@@ -9,7 +9,7 @@ namespace nes
     /// @brief : A device buffer is a region of memory used to store data on the GPU.
     /// It can be used to store vertex data, index data, uniform data, and other types of data.
     //----------------------------------------------------------------------------------------------------
-    class DeviceBuffer : public DeviceAsset
+    class DeviceBuffer final : public DeviceAsset
     {
     public:
         explicit            DeviceBuffer(RenderDevice& device) : DeviceAsset(device) {}

@@ -97,6 +97,11 @@ namespace nes
         void                    SetScissors(const vk::ArrayProxy<Scissor>& scissors);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Bind the vertex buffers used for the next draw call. 
+        //----------------------------------------------------------------------------------------------------
+        void                    BindVertexBuffers(const vk::ArrayProxy<nes::VertexBufferDesc>& buffers, const uint32 firstBinding = 0);  
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Submit a set of vertices to be drawn - the vertices are either directly in the shader for
         ///     simple cases, or map to the bound vertex buffer. 
         //----------------------------------------------------------------------------------------------------

@@ -342,9 +342,9 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct BufferDesc
     {
-        uint64              m_size = 0;
-        uint32              m_structuredStride = 0;
-        EBufferUsageBits    m_usage = EBufferUsageBits::ShaderResource;
+        uint64              m_size = 0;                                 // Byte size of the buffer.
+        uint32              m_structuredStride = 0;                     // 
+        EBufferUsageBits    m_usage = EBufferUsageBits::VertexBuffer;   // How the buffer will be used.
     };
 
 #pragma endregion
@@ -409,16 +409,19 @@ namespace nes
 
     struct AllocateBufferDesc
     {
-        BufferDesc          m_desc;
+        BufferDesc          m_desc{};
         EMemoryLocation     m_location      = EMemoryLocation::Device;
         float               m_priority      = 0.f;
+        
+        // Set this to true if the allocation should have its own memory block.
+        // Use it for special, big resources, like fullscreen images used as attachments.
         bool                m_isDedicated   = false;
     };
 
     struct AllocateImageDesc
     {
-        ImageDesc           m_desc;
-        EMemoryLocation     m_memoryLocation;
+        ImageDesc           m_desc{};
+        EMemoryLocation     m_memoryLocation = EMemoryLocation::Device;
         float               m_priority = 0.f;
         bool                m_isDedicated = false;
     };
@@ -858,8 +861,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class EVertexStreamStepRate : uint8
     {
-        PerVertex,
-        PerInstance,
+        PerVertex,      // Move to the next data entry after each vertex.
+        PerInstance,    // Move to the next data entry after each instance.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -896,37 +899,127 @@ namespace nes
         EPrimitiveRestart       m_primitiveRestart      = EPrimitiveRestart::Disabled;  // Whether Primitive resart should be enabled.
     };
 
-    // [TODO]: 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes a single attribute (or variable) in a vertex stream.
+    ///
+    /// Example: <code>
+    ///  struct Vertex
+    ///  {
+    ///      nes::Vec2 m_position;
+    ///      nes::Vec3 m_color;
+    ///  }
+    ///
+    ///  // For Position:
+    ///  VertexAttributeDesc positionDesc{};
+    ///  positionDesc.m_location = 0;                   // This is first element in the shaders input.
+    ///  positionDesc.m_offset = offsetof(Vertex, m_position); // Byte offset of this data.
+    ///  positionDesc.m_format = EFormat::RG32_SFloat;  // Position is 2, 32-bit floats
+    ///  positionDesc.m_streamIndex = 0;                // Which vertex stream is this a part of.
+    /// </code>
+    //----------------------------------------------------------------------------------------------------
     struct VertexAttributeDesc
     {
-        uint32                  m_location;
-        uint32                  m_offset;
-        EFormat                 m_format;
-        uint16                  m_streamIndex;
+        uint32                  m_location = 0;     // References the location directive of the input in the vertex shader.
+        uint32                  m_offset = 0;       // Byte offset of the attribute in the greater Vertex object.
+        EFormat                 m_format;           // Format of the data type.
+        uint16                  m_streamIndex = 0;  // Which stream index the per-vertex data comes through to the shader.
     };
 
-    // [TODO]: 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : A Vertex Stream is a buffer of a single data type sent to the shader. This describes
+    ///     the stream's binding position in the shader, as well as when you need to change the vertex data;
+    ///     either per vertex or per instance.
+    ///
+    ///     You can have a vertex stream that contains individual vertex information (position, normal, etc.),
+    ///     and another stream that contains an object's transform (world position, rotation, scale).
+    ///
+    ///     Having different vertex streams can allow you to bind less data per invocation of the vertex shader.
+    ///     For vertex specific data, that will have m_stepRate EVertexStreamStepRate::PerVertex, as it is
+    ///     different for each vertex. But the object's transform only changes per object, so that step rate
+    ///     can be EVertexStreamStepRate::PerInstance.
+    //----------------------------------------------------------------------------------------------------
     struct VertexStreamDesc
     {
-        uint16                  m_bindingSlot;
-        EVertexStreamStepRate   m_stepRate;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the number of bytes to move between consecutive elements within the buffer. This is
+        ///     commonly the size of the struct that you use to represent a vertex element.
+        /// @note : Be sure to take alignment into account!
+        //----------------------------------------------------------------------------------------------------
+        VertexStreamDesc&           SetStride(const uint32 stride);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set which index this stream will be bound to in the shader.
+        //----------------------------------------------------------------------------------------------------
+        VertexStreamDesc&           SetBinding(const uint32 index);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set how often we move to the next data entry, either for each vertex, or for each instance.
+        //----------------------------------------------------------------------------------------------------
+        VertexStreamDesc&           SetStepRate(const EVertexStreamStepRate stepRate);
+        
+        uint32                      m_stride = 0;                                   // The number of bytes to move between consecutive elements in the buffer.
+        uint16                      m_bindingIndex = 0;                             // Specifies the index in the array of vertex bindings.
+        EVertexStreamStepRate       m_stepRate = EVertexStreamStepRate::PerVertex;  // When should we move to the next data entry? After each vertex? Or after each instance?
     };
 
-    // [TODO]: 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Defines what data is sent to the vertex shader.
+    ///     - The Attributes define the individual data variables of a single element of a Vertex Stream.
+    ///     - The Streams define where the buffer will be bound in the shader, and how often it is updated.
+    /// @see : VertexAttributeDesc, VertexStreamDesc.
+    //----------------------------------------------------------------------------------------------------
     struct VertexInputDesc
     {
-        const VertexAttributeDesc* m_pAttributes;
-        uint8                   m_attributesNum;
-        const VertexStreamDesc* m_pStreams;
-        uint8                   m_streamNum;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the different attributes of all vertex streams. They describe the data layout and
+        ///     which stream they are a part of.
+        //----------------------------------------------------------------------------------------------------
+        VertexInputDesc&        SetAttributes(const vk::ArrayProxy<VertexAttributeDesc>& attributes);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the number of different vertex streams that will be sent to the shader.
+        //----------------------------------------------------------------------------------------------------
+        VertexInputDesc&        SetStreams(const vk::ArrayProxy<VertexStreamDesc>& streams);
+        
+        vk::ArrayProxy<VertexAttributeDesc> m_attributes{};
+        vk::ArrayProxy<VertexStreamDesc>    m_streams{};
     };
 
-    // [TODO]: 
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Perhaps make a VertexBuffer object that owns the DeviceBuffer. 
+    /// @brief : Information about a Vertex buffer that can be bound for a draw call. 
+    //----------------------------------------------------------------------------------------------------
     struct VertexBufferDesc
     {
-        const DeviceBuffer*     m_pBuffer;
-        uint64                  m_offset;
-        uint32                  m_stride;
+        VertexBufferDesc() = default;
+        VertexBufferDesc(const DeviceBuffer* pBuffer, const uint32 stride, const uint64 offset = 0);
+
+        VertexBufferDesc&       SetBuffer(const DeviceBuffer* pBuffer);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the offset, in bytes, that this vertex buffer should start from in the DeviceBuffer. 
+        //----------------------------------------------------------------------------------------------------
+        VertexBufferDesc&       SetOffset(const uint64 offset);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the stride, in bytes, to move to the next element in the buffer.
+        //----------------------------------------------------------------------------------------------------
+        VertexBufferDesc&       SetStride(const uint32 stride);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Useful function for vertex buffers of a single element type. Sets the stride equal to the
+        ///     sizeof the element type, and the offset equal to 'sizeof(ElementType) * firstElement'. 
+        //----------------------------------------------------------------------------------------------------
+        template <typename ElementType>
+        VertexBufferDesc&       SetFirstElement(const uint32 firstElement)
+        {
+            SetStride(sizeof(ElementType));
+            return SetOffset(sizeof(ElementType) * firstElement);
+        }
+        
+        const DeviceBuffer*     m_pBuffer = nullptr;
+        uint64                  m_offset = 0;
+        uint32                  m_stride = 0;
     };
 
 #pragma endregion
@@ -1392,6 +1485,11 @@ namespace nes
         /// @brief : Set the shaders that will run at different stages in the pipeline's execution. 
         //----------------------------------------------------------------------------------------------------
         GraphicsPipelineDesc&           SetShaderStages(const std::vector<ShaderDesc>& shaderStages);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the format of the data sent to the vertex shader. 
+        //----------------------------------------------------------------------------------------------------
+        GraphicsPipelineDesc&           SetVertexInput(const VertexInputDesc& vertexInput);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set how vertices are grouped into geometry. 
@@ -1420,11 +1518,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         GraphicsPipelineDesc&           SetOutputMergerDesc(const OutputMergerDesc& desc);
         
-        std::vector<ShaderDesc>         m_shaderStages;
-        InputAssemblyDesc               m_inputAssembly;
-        RasterizationDesc               m_rasterization;
-        MultisampleDesc                 m_multisample;
-        OutputMergerDesc                m_outputMerger;
+        std::vector<ShaderDesc>         m_shaderStages{};
+        VertexInputDesc                 m_vertexInput{};
+        InputAssemblyDesc               m_inputAssembly{};
+        RasterizationDesc               m_rasterization{};
+        MultisampleDesc                 m_multisample{};
+        OutputMergerDesc                m_outputMerger{};
         bool                            m_enableMultisample = false;
     };
 

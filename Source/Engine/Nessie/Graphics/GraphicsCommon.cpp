@@ -48,6 +48,68 @@ namespace nes
 #pragma endregion
 
 //============================================================================================================================================================================================
+#pragma region [ Graphics Pipeline: Input Assembly ]
+//============================================================================================================================================================================================
+    
+    VertexStreamDesc& VertexStreamDesc::SetStride(const uint32 stride)
+    {
+        m_stride = stride;
+        return *this;
+    }
+
+    VertexStreamDesc& VertexStreamDesc::SetBinding(const uint32 index)
+    {
+        m_bindingIndex = static_cast<uint16>(index);
+        return *this;
+    }
+
+    VertexStreamDesc& VertexStreamDesc::SetStepRate(const EVertexStreamStepRate stepRate)
+    {
+        m_stepRate = stepRate;
+        return *this;
+    }
+
+    VertexInputDesc& VertexInputDesc::SetAttributes(const vk::ArrayProxy<VertexAttributeDesc>& attributes)
+    {
+        m_attributes = attributes;
+        return *this;
+    }
+
+    VertexInputDesc& VertexInputDesc::SetStreams(const vk::ArrayProxy<VertexStreamDesc>& streams)
+    {
+        m_streams = streams;
+        return *this;
+    }
+
+    VertexBufferDesc::VertexBufferDesc(const DeviceBuffer* pBuffer, const uint32 stride, const uint64 offset)
+        : m_pBuffer(pBuffer)
+        , m_offset(offset)
+        , m_stride(stride)
+    {
+        //
+    }
+
+    VertexBufferDesc& VertexBufferDesc::SetBuffer(const DeviceBuffer* pBuffer)
+    {
+        m_pBuffer = pBuffer;
+        return *this;
+    }
+
+    VertexBufferDesc& VertexBufferDesc::SetOffset(const uint64 offset)
+    {
+        m_offset = offset;
+        return *this;
+    }
+
+    VertexBufferDesc& VertexBufferDesc::SetStride(const uint32 stride)
+    {
+        m_stride = stride;
+        return *this;
+    }
+
+#pragma endregion
+    
+//============================================================================================================================================================================================
 #pragma region [ Graphics Pipeline: Output Merger ]
 //============================================================================================================================================================================================
     
@@ -98,10 +160,15 @@ namespace nes
 #pragma region [ Pipelines ]
 //============================================================================================================================================================================================
 
-
     GraphicsPipelineDesc& GraphicsPipelineDesc::SetShaderStages(const std::vector<ShaderDesc>& shaderStages)
     {
         m_shaderStages = shaderStages;
+        return *this;
+    }
+
+    GraphicsPipelineDesc& GraphicsPipelineDesc::SetVertexInput(const VertexInputDesc& vertexInput)
+    {
+        m_vertexInput = vertexInput;
         return *this;
     }
 

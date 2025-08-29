@@ -4,8 +4,10 @@
 #include "RenderDevice.h"
 #include "CommandPool.h"
 #include "Descriptor.h"
+#include "DeviceBuffer.h"
 #include "DeviceImage.h"
 #include "Pipeline.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
 
 namespace nes
 {
@@ -258,6 +260,39 @@ namespace nes
         }
         
         m_buffer.setScissor(0, vkScissors);
+    }
+
+    void CommandBuffer::BindVertexBuffers(const vk::ArrayProxy<nes::VertexBufferDesc>& buffers, const uint32 firstBinding)
+    {
+        // [TODO]: Stack allocate each array.
+        const uint32 bufferCount = buffers.size();
+        std::vector<vk::Buffer> vkBuffers(bufferCount);
+        std::vector<vk::DeviceSize> vkOffsets(bufferCount);
+        std::vector<vk::DeviceSize> vkSizes(bufferCount);
+        std::vector<vk::DeviceSize> vkStrides(bufferCount);
+
+        for (uint32 i = 0; i < bufferCount; ++i)
+        {
+            const VertexBufferDesc& vertexBufferDesc = *(buffers.begin() + i);
+            const DeviceBuffer* pBuffer = vertexBufferDesc.m_pBuffer;
+
+            if (pBuffer)
+            {
+                vkBuffers[i] = pBuffer->GetVkBuffer();
+                vkOffsets[i] = vertexBufferDesc.m_offset;
+                vkSizes[i] = pBuffer->GetDesc().m_size - vertexBufferDesc.m_offset;
+                vkStrides[i] = vertexBufferDesc.m_stride;
+            }
+            else
+            {
+                vkBuffers[i] = nullptr;
+                vkOffsets[i] = 0;
+                vkSizes[i] = 0;
+                vkStrides[i] = 0;
+            }
+        }
+        
+        m_buffer.bindVertexBuffers2(firstBinding, vkBuffers, vkOffsets, vkSizes, vkStrides);
     }
 
     void CommandBuffer::Draw(const DrawDesc& draw)
