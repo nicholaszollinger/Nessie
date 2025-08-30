@@ -6,7 +6,6 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 
 **Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
-
 **Vulkan**: *The engine requires Vulkan to be installed. Use the following link and to install the compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.321.1/windows/vulkansdk-windows-X64-1.4.321.1.exe)
 * Make sure to select the `Shader Toolchain Debug Symbols` component when installing.
 
@@ -14,11 +13,11 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 hardware limitations with certain features, but until then, I can't guarantee it will be compatible on other machines.*
 
 # How to Build:
+Download the git repository and use the following build scripts:
 - `1_Deploy.bat`: Initializes and/or updates the git submodules.
 - `2_Build.bat`: Generates the solution files. From here you are good to go!
 - `3_CleanBuild.bat`: Cleans up the Build and Intermediate folders and solution files. *You don't have to re-deploy; use `2_Build.bat` to regenerate the solution*.
 - `4_CleanAll.bat`: Cleans the build just as above, but also deinitializes all git submodules. *You will have to re-deploy (`1_Deploy.bat`) before building*.
-
 
 # What I am Working On:
 ### Immediate:
@@ -34,14 +33,14 @@ Over the summer, I am going to be doing some project-wide refactors, with the ai
 
 ### Fall Goals:
 Overall, I plan on having the basic structure to make small demos using my engine. Being able to load a project, edit and run all in the editor.
-- ECS revisit.
-- Editor UI
-- Engine vs Game Applications
+- ECS refactor.
+- Editor UI.
+- Engine vs Game Applications.
 
 ### Next Year (Unless I can get to these sooner):
 - Proper Serialization - utilizing a binary format.
-- UI
-- Sound
+- UI.
+- Sound.
 - Scripting, in python (lower priority, as I will be the solo dev for this engine).
 
 # Branches
