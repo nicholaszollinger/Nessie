@@ -1,6 +1,7 @@
 ﻿// Swapchain.h
 #pragma once
-#include "DeviceAsset.h"
+#include "Descriptor.h"
+#include "DeviceImage.h"
 
 struct GLFWwindow;
 
@@ -17,9 +18,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct SwapchainDesc
     {
-        ApplicationWindow*  m_pWindow = nullptr;        /// Window that we are presenting to.
-        DeviceQueue*        m_pDeviceQueue = nullptr;   /// Device queue that will be used to submit present commands.
-        CommandPool*        m_pCommandPool = nullptr;   /// The Command Pool used to perform the initial image layout transition to present.
+        ApplicationWindow*  m_pWindow = nullptr;        // Window that we are presenting to.
+        DeviceQueue*        m_pDeviceQueue = nullptr;   // Device queue that will be used to submit present commands.
     };
     
     //----------------------------------------------------------------------------------------------------
@@ -37,20 +37,21 @@ namespace nes
     ///     The "next image index" points to the swapchain image that will be rendered next, which might differ from the current frame's index.
     ///     If the window is resized or certain conditions are met, the swapchain needs to be recreated (`m_needsRebuild` flag).
     //----------------------------------------------------------------------------------------------------
-    class Swapchain final : public DeviceAsset 
+    class Swapchain 
     {
     public:
-        explicit                    Swapchain(RenderDevice& device) : DeviceAsset(device) {}
-        virtual                     ~Swapchain() override;
-        /* Copy Ctor */             Swapchain(const Swapchain&) = delete;
-        /* Move Ctor */             Swapchain(Swapchain&&) noexcept = delete;
-        /* Copy Assignment */       Swapchain& operator=(const Swapchain&) = delete;
-        /* Move Assignment */       Swapchain& operator=(Swapchain&&) noexcept = delete;
-
+        Swapchain(std::nullptr_t) {}
+        Swapchain(const Swapchain&) = delete;
+        Swapchain(Swapchain&& other) noexcept;
+        Swapchain& operator=(std::nullptr_t);
+        Swapchain& operator=(const Swapchain&) = delete;
+        Swapchain& operator=(Swapchain&& other) noexcept;
+        ~Swapchain();
+        
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the swapchain.
+        /// @brief : Create the swapchain.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(const SwapchainDesc& swapchainDesc);
+        Swapchain(RenderDevice& device, const SwapchainDesc& swapchainDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Must be called any time the Window is resized, or if the vsync setting changes.
@@ -73,12 +74,7 @@ namespace nes
         /// @brief : Presents the rendered image to the screen. Advances to the next frame in the cycle.
         //----------------------------------------------------------------------------------------------------
         void                        PresentFrame();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Sets the debug name for both the swapchain and the surface. 
-        //----------------------------------------------------------------------------------------------------
-        virtual void                SetDebugName(const std::string& name) override;
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Forces the rebuild of the swapchain. 
         //----------------------------------------------------------------------------------------------------
@@ -92,12 +88,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current image that we are rendering to. 
         //----------------------------------------------------------------------------------------------------
-        const DeviceImage&          GetImage() const                    { return *m_images[m_frameImageIndex]; }
+        const DeviceImage&          GetImage() const                    { return m_images[m_frameImageIndex]; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the descriptor for the current swapchain image. This is the image view. 
         //----------------------------------------------------------------------------------------------------
-        const Descriptor&           GetImageDescriptor() const          { return *m_imageViews[m_frameImageIndex]; }
+        const Descriptor&           GetImageDescriptor() const          { return m_imageViews[m_frameImageIndex]; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current size of the swapchain.
@@ -124,10 +120,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         vk::Semaphore               GetRenderFinishedSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_renderFinished; }
 
-    private:
-        using SwapchainImages = std::vector<DeviceImage*>;
-        using SwapchainViews = std::vector<Descriptor*>;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Sets the debug name for both the swapchain and the surface. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetDebugName(const std::string& name);
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject              GetNativeVkObject() const;
+
+    private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Resources associated with each frame being processed. 
         //----------------------------------------------------------------------------------------------------
@@ -183,21 +186,23 @@ namespace nes
         void                        DestroySwapchain();
 
     private:
-        DeviceQueue*                m_pQueue = nullptr;                                 /// The queue used to submit command buffers to the GPU
-        GLFWwindow*                 m_pWindow = nullptr;                                /// Window that we render to.
-        vk::raii::SwapchainKHR      m_swapchain = nullptr;                              /// The swapchain object.
-        vk::Format                  m_swapchainImageFormat = vk::Format::eUndefined;    /// The image format for the swapchain images.
-        vk::raii::SurfaceKHR        m_surface = nullptr;                                /// The surface to present images to. Owned by the swapchain.
-        CommandPool*                m_pCommandPool{};                                   /// The command pool for the swapchain.
-        SwapchainImages             m_images;                                           /// Swapchain image resources.
-        SwapchainViews              m_imageViews;                                       /// Swapchain image views resources. Recreated when the Swapchain is recreated.
-        std::vector<FrameResources> m_frameResources{};                                 /// Synchronization primitives for each frame.
-        vk::Extent2D                m_swapchainExtent{};                                /// Current size of the swapchain.
-        uint32                      m_frameResourceIndex = 0;                           /// Index of the current frame.
-        uint32                      m_frameImageIndex = 0;                              /// Index of the swapchain image we are rendering to.
-        bool                        m_needsRebuild = false;                             /// Flag indicating that the swapchain needs to be rebuilt.
+        RenderDevice*               m_pDevice = nullptr;                                // The Render Device handle.
+        DeviceQueue*                m_pQueue = nullptr;                                 // The queue used to submit command buffers to the GPU
+        GLFWwindow*                 m_pWindow = nullptr;                                // Window that we render to.
+        vk::raii::SwapchainKHR      m_swapchain = nullptr;                              // The swapchain object.
+        vk::Format                  m_swapchainImageFormat = vk::Format::eUndefined;    // The image format for the swapchain images.
+        vk::raii::SurfaceKHR        m_surface = nullptr;                                // The surface to present images to. Owned by the swapchain.
+        std::vector<DeviceImage>    m_images{};                                         // Swapchain image resources.
+        std::vector<Descriptor>     m_imageViews{};                                     // Swapchain image views resources. Recreated when the Swapchain is recreated.
+        std::vector<FrameResources> m_frameResources{};                                 // Synchronization primitives for each frame.
+        vk::Extent2D                m_swapchainExtent{};                                // Current size of the swapchain.
+        uint32                      m_frameResourceIndex = 0;                           // Index of the current frame.
+        uint32                      m_frameImageIndex = 0;                              // Index of the swapchain image we are rendering to.
+        bool                        m_needsRebuild = false;                             // Flag indicating that the swapchain needs to be rebuilt.
 
         vk::PresentModeKHR          m_preferredVsyncOffMode = static_cast<vk::PresentModeKHR>(VK_PRESENT_MODE_MAX_ENUM_KHR); 
         uint32                      m_maxFramesInFlight = 3;    /// Best for most cases.
     };
+
+    static_assert(DeviceObjectType<Swapchain>);
 }

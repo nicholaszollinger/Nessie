@@ -8,59 +8,75 @@
 
 namespace nes
 {
-    Descriptor::~Descriptor()
+    Descriptor::Descriptor(Descriptor&& other) noexcept
+        : m_pDevice(other.m_pDevice)
+        , m_type(other.m_type)
     {
-        if (IsBufferType())
+        if (other.IsBufferType())
         {
-            Renderer::SubmitResourceFree([bufferView = std::move(m_bufferView)]() mutable
-            {
-                bufferView = nullptr; 
-            });
+            m_bufferView = std::move(other.m_bufferView);
+            m_bufferDesc = other.m_bufferDesc;
         }
 
-        else if (IsImageType())
+        else if (other.IsImageType())
         {
-            Renderer::SubmitResourceFree([imageView = std::move(m_imageView)]() mutable
-            {
-                imageView = nullptr; 
-            });
+            m_imageView = std::move(other.m_imageView);
+            m_imageDesc = other.m_imageDesc;
         }
 
-        else if (m_type == EDescriptorType::Sampler)
+        else if (other.m_type == EDescriptorType::Sampler)
         {
-            Renderer::SubmitResourceFree([sampler = std::move(m_sampler)]() mutable
-            {
-                sampler = nullptr; 
-            });
+            m_sampler = std::move(other.m_sampler);
         }
+
+        other.m_type = EDescriptorType::None;
+        other.m_pDevice = nullptr;
     }
 
-    void Descriptor::SetDebugName(const std::string& name)
+    Descriptor& Descriptor::operator=(std::nullptr_t)
     {
-        if (IsBufferType())
-        {
-            vk::BufferView bufferView = *m_bufferView;
-            m_device.SetDebugNameToTrivialObject(bufferView, name);
-        }
-
-        else if (IsImageType())
-        {
-            vk::ImageView imageView = *m_imageView;
-            m_device.SetDebugNameToTrivialObject(imageView, name);
-        }
-
-        else if (m_type == EDescriptorType::Sampler)
-        {
-            vk::Sampler sampler = *m_sampler;
-            m_device.SetDebugNameToTrivialObject(sampler, name);
-        }
+        FreeDescriptor();
+        return *this;
     }
 
-    EGraphicsResult Descriptor::Init(const BufferViewDesc& bufferViewDesc)
+    Descriptor& Descriptor::operator=(Descriptor&& other) noexcept
+    {
+        if (this != &other)
+        {
+            FreeDescriptor();
+            
+            m_pDevice = other.m_pDevice;
+            m_type = other.m_type;
+
+            if (other.IsBufferType())
+            {
+                m_bufferView = std::move(other.m_bufferView);
+                m_bufferDesc = other.m_bufferDesc;
+            }
+
+            else if (other.IsImageType())
+            {
+                m_imageView = std::move(other.m_imageView);
+                m_imageDesc = other.m_imageDesc;
+            }
+
+            else if (other.m_type == EDescriptorType::Sampler)
+            {
+                m_sampler = std::move(other.m_sampler);
+            }
+
+            other.m_type = EDescriptorType::None;
+            other.m_pDevice = nullptr;
+        }
+
+        return *this;
+    }
+
+    Descriptor::Descriptor(RenderDevice& device, const BufferViewDesc& bufferViewDesc)
+        : m_pDevice(&device)
     {
         NES_ASSERT(bufferViewDesc.m_pBuffer != nullptr);
-        NES_ASSERT(m_bufferView == nullptr);
-
+        
         const DeviceBuffer& buffer = *bufferViewDesc.m_pBuffer;
         const BufferDesc& bufferDesc = buffer.GetDesc();
 
@@ -71,7 +87,7 @@ namespace nes
         m_bufferDesc.m_viewType = bufferViewDesc.m_viewType;
 
         if (bufferViewDesc.m_format == EFormat::Unknown)
-            return EGraphicsResult::Success;
+            return;
 
         vk::BufferViewCreateInfo info = vk::BufferViewCreateInfo()
             .setBuffer(buffer.GetVkBuffer())
@@ -79,16 +95,14 @@ namespace nes
             .setOffset(bufferViewDesc.m_offset)
             .setRange(m_bufferDesc.m_size);
 
-        auto& device = m_device.GetVkDevice();
-        m_bufferView = device.createBufferView(info, m_device.GetVkAllocationCallbacks());
-        
-        return EGraphicsResult::Success;
+        auto& vkDevice = device.GetVkDevice();
+        m_bufferView = vkDevice.createBufferView(info, device.GetVkAllocationCallbacks());
     }
 
-    EGraphicsResult Descriptor::Init(const Image1DViewDesc& imageViewDesc)
+    Descriptor::Descriptor(RenderDevice& device, const Image1DViewDesc& imageViewDesc)
+        : m_pDevice(&device)
     {
         NES_ASSERT(imageViewDesc.m_pImage);
-        NES_ASSERT(m_imageView == nullptr); 
 
         const DeviceImage& image = *imageViewDesc.m_pImage;
         const ImageDesc& imageDesc = image.GetDesc();
@@ -113,8 +127,8 @@ namespace nes
             .setFormat(GetVkFormat(imageViewDesc.m_format));
 
         // Create the image view
-        auto& device = m_device.GetVkDevice();
-        m_imageView = device.createImageView(viewInfo, m_device.GetVkAllocationCallbacks());
+        auto& vkDevice = device.GetVkDevice();
+        m_imageView = vkDevice.createImageView(viewInfo, device.GetVkAllocationCallbacks());
 
         // Set description values.
         m_type = GetDescriptorType(imageViewDesc.m_viewType);
@@ -127,14 +141,12 @@ namespace nes
         m_imageDesc.m_sliceCount = 1;
         m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
         m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
-        
-        return EGraphicsResult::Success;
     }
 
-    EGraphicsResult Descriptor::Init(const Image2DViewDesc& imageViewDesc)
+    Descriptor::Descriptor(RenderDevice& device, const Image2DViewDesc& imageViewDesc)
+        : m_pDevice(&device)
     {
         NES_ASSERT(imageViewDesc.m_pImage);
-        NES_ASSERT(m_imageView == nullptr); 
 
         const DeviceImage& image = *imageViewDesc.m_pImage;
         const ImageDesc& imageDesc = image.GetDesc();
@@ -159,8 +171,8 @@ namespace nes
             .setFormat(GetVkFormat(imageViewDesc.m_format));
 
         // Create the image view
-        auto& device = m_device.GetVkDevice();
-        m_imageView = device.createImageView(viewInfo, m_device.GetVkAllocationCallbacks());
+        auto& vkDevice = device.GetVkDevice();
+        m_imageView = vkDevice.createImageView(viewInfo, device.GetVkAllocationCallbacks());
 
         // Set description values.
         m_type = GetDescriptorType(imageViewDesc.m_viewType);
@@ -173,14 +185,12 @@ namespace nes
         m_imageDesc.m_sliceCount = 1;
         m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
         m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
-        
-        return EGraphicsResult::Success;
     }
 
-    EGraphicsResult Descriptor::Init(const Image3DViewDesc& imageViewDesc)
+    Descriptor::Descriptor(RenderDevice& device, const Image3DViewDesc& imageViewDesc)
+        : m_pDevice(&device)
     {
         NES_ASSERT(imageViewDesc.m_pImage);
-        NES_ASSERT(m_imageView == nullptr); 
 
         const DeviceImage& image = *imageViewDesc.m_pImage;
         const ImageDesc& imageDesc = image.GetDesc();
@@ -194,7 +204,7 @@ namespace nes
         vk::ImageViewUsageCreateInfo usageInfo = vk::ImageViewUsageCreateInfo()
             .setUsage(GetVkImageViewUsage(imageViewDesc.m_viewType));
 
-        if (m_device.GetDesc().m_features.m_imageSlicedView)
+        if (device.GetDesc().m_features.m_imageSlicedView)
             usageInfo.setPNext(&slicesInfo);
 
         const vk::ImageSubresourceRange subresourceRange = vk::ImageSubresourceRange()
@@ -212,8 +222,8 @@ namespace nes
             .setFormat(GetVkFormat(imageViewDesc.m_format));
 
         // Create the image view
-        auto& device = m_device.GetVkDevice();
-        m_imageView = device.createImageView(viewInfo, m_device.GetVkAllocationCallbacks());
+        auto& vkDevice = device.GetVkDevice();
+        m_imageView = vkDevice.createImageView(viewInfo, device.GetVkAllocationCallbacks());
 
         // Set description values.
         m_type = GetDescriptorType(imageViewDesc.m_viewType);
@@ -226,11 +236,10 @@ namespace nes
         m_imageDesc.m_sliceCount = imageViewDesc.m_sliceCount;
         m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
         m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
-        
-        return EGraphicsResult::Success;
     }
 
-    EGraphicsResult Descriptor::Init(const SamplerDesc& samplerDesc)
+    Descriptor::Descriptor(RenderDevice& device, const SamplerDesc& samplerDesc)
+        : m_pDevice(&device)
     {
         vk::SamplerCreateInfo info = vk::SamplerCreateInfo()
             .setMagFilter(GetVkFilterType(samplerDesc.m_filters.m_mag))
@@ -248,7 +257,7 @@ namespace nes
         const void** pTail = &info.pNext; 
 
         vk::SamplerReductionModeCreateInfo reductionModeInfo = vk::SamplerReductionModeCreateInfo();
-        if (m_device.GetDesc().m_features.m_textureFilterMinMax)
+        if (device.GetDesc().m_features.m_textureFilterMinMax)
         {
             reductionModeInfo.setReductionMode(GetVkSamplerReductionMode(samplerDesc.m_filters.m_reduction));
             *pTail = &reductionModeInfo;
@@ -256,7 +265,7 @@ namespace nes
         }
 
         vk::SamplerCustomBorderColorCreateInfoEXT borderColorInfo = vk::SamplerCustomBorderColorCreateInfoEXT();
-        if (m_device.GetDesc().m_features.m_customBorderColor)
+        if (device.GetDesc().m_features.m_customBorderColor)
         {
             info.setBorderColor(samplerDesc.m_isInteger ? vk::BorderColor::eIntCustomEXT : vk::BorderColor::eFloatCustomEXT);
             static_assert(sizeof(vk::ClearColorValue) == sizeof(samplerDesc.m_borderColor), "Unexpected sizeof");
@@ -265,11 +274,19 @@ namespace nes
             *pTail = &borderColorInfo;
         }
 
-        auto& device = m_device.GetVkDevice();
-        m_sampler = device.createSampler(info, m_device.GetVkAllocationCallbacks());
+        auto& vkDevice = device.GetVkDevice();
+        m_sampler = vkDevice.createSampler(info, device.GetVkAllocationCallbacks());
         m_type = EDescriptorType::Sampler;
+    }
 
-        return EGraphicsResult::Success;
+    Descriptor::~Descriptor()
+    {
+        FreeDescriptor();
+    }
+
+    void Descriptor::SetDebugName(const std::string& name)
+    {
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
     bool Descriptor::IsImageType() const
@@ -324,5 +341,55 @@ namespace nes
         NES_ASSERT(IsImageType());
         return m_imageDesc.m_imageLayout != vk::ImageLayout::eDepthAttachmentStencilReadOnlyOptimal
             && m_imageDesc.m_imageLayout != vk::ImageLayout::eDepthStencilReadOnlyOptimal;
+    }
+
+    NativeVkObject Descriptor::GetNativeVkObject() const
+    {
+        if (IsImageType())
+        {
+            return NativeVkObject(*m_imageView, vk::ObjectType::eImageView);
+        }
+
+        else if (IsBufferType())
+        {
+            return NativeVkObject(*m_bufferView, vk::ObjectType::eBufferView);
+        }
+
+        else if (m_type == EDescriptorType::Sampler)
+        {
+            return NativeVkObject(*m_sampler, vk::ObjectType::eSampler);
+        }
+
+        return NativeVkObject();
+    }
+
+    void Descriptor::FreeDescriptor()
+    {
+        if (IsBufferType())
+        {
+            Renderer::SubmitResourceFree([bufferView = std::move(m_bufferView)]() mutable
+            {
+                bufferView = nullptr; 
+            });
+        }
+
+        else if (IsImageType())
+        {
+            Renderer::SubmitResourceFree([imageView = std::move(m_imageView)]() mutable
+            {
+                imageView = nullptr; 
+            });
+        }
+
+        else if (m_type == EDescriptorType::Sampler)
+        {
+            Renderer::SubmitResourceFree([sampler = std::move(m_sampler)]() mutable
+            {
+                sampler = nullptr; 
+            });
+        }
+
+        m_type = EDescriptorType::None;
+        m_pDevice = nullptr;
     }
 }

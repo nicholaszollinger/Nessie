@@ -8,27 +8,53 @@
 
 namespace nes
 {
-    CommandPool::~CommandPool()
+    CommandPool::CommandPool(CommandPool&& other) noexcept
+        : m_pDevice(other.m_pDevice)
+        , m_pool(std::move(other.m_pool))
+        , m_queueType(other.m_queueType)
     {
-        Renderer::SubmitResourceFree([commandPool = std::move(m_pool)]() mutable
-        {
-            commandPool = nullptr;
-        });
+        other.m_pDevice = nullptr;
+        other.m_queueType = EQueueType::MaxNum;
     }
 
-    EGraphicsResult CommandPool::Init(const DeviceQueue& queue)
+    CommandPool& CommandPool::operator=(std::nullptr_t)
     {
-        NES_ASSERT(m_pool == nullptr);
-        
+        FreePool();
+        return *this;
+    }
+
+    CommandPool& CommandPool::operator=(CommandPool&& other) noexcept
+    {
+        if (this != &other)
+        {
+            FreePool();
+
+            m_pool = std::move(other.m_pool);
+            m_pDevice = other.m_pDevice;
+            m_queueType = other.m_queueType;
+
+            other.m_pDevice = nullptr;
+            other.m_queueType = EQueueType::MaxNum;
+        }
+
+        return *this;
+    }
+
+    CommandPool::CommandPool(RenderDevice& device, const DeviceQueue& queue)
+        : m_pDevice(&device)
+    {
         // Default to the Reset Command Buffer Bit.
         vk::CommandPoolCreateInfo poolInfo = vk::CommandPoolCreateInfo()
             .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
             .setQueueFamilyIndex(queue.GetFamilyIndex());
 
-        m_pool = vk::raii::CommandPool(m_device, poolInfo);
+        m_pool = vk::raii::CommandPool(device, poolInfo);
         m_queueType = queue.GetQueueType();
+    }
 
-        return EGraphicsResult::Success;
+    CommandPool::~CommandPool()
+    {
+        FreePool();
     }
 
     void CommandPool::Reset()
@@ -37,15 +63,33 @@ namespace nes
         m_pool.reset();
     }
 
-    void CommandPool::SetDebugName(const std::string& name)
+    NativeVkObject CommandPool::GetNativeVkObject() const
     {
-        vk::CommandPool pool = *m_pool;
-        m_device.SetDebugNameToTrivialObject(pool, name);
+        return NativeVkObject(*m_pool, vk::ObjectType::eCommandPool);
     }
 
-    EGraphicsResult CommandPool::CreateCommandBuffer(CommandBuffer*& pOutCommandBuffer)
+    void CommandPool::FreePool()
     {
-        NES_GRAPHICS_ASSERT(m_device, pOutCommandBuffer == nullptr);
+        if (m_pool != nullptr)
+        {
+            Renderer::SubmitResourceFree([commandPool = std::move(m_pool)]() mutable
+            {
+                commandPool = nullptr;
+            });
+        }
+
+        m_pDevice = nullptr;
+    }
+
+    void CommandPool::SetDebugName(const std::string& name)
+    {
+        NES_ASSERT(m_pDevice != nullptr);
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
+    }
+
+    CommandBuffer CommandPool::CreateCommandBuffer()
+    {
+        NES_ASSERT(m_pDevice != nullptr);
         
         std::lock_guard lock(m_mutex);
 
@@ -54,11 +98,7 @@ namespace nes
             .setLevel(vk::CommandBufferLevel::ePrimary)
             .setCommandBufferCount(1);
 
-        auto commandBuffer = std::move(vk::raii::CommandBuffers(m_device, allocInfo).front());
-
-        pOutCommandBuffer = Allocate<CommandBuffer>(m_device.GetAllocationCallbacks(), m_device);
-        pOutCommandBuffer->Init(this, std::move(commandBuffer));
-        
-        return EGraphicsResult::Success;
+        auto commandBuffer = std::move(vk::raii::CommandBuffers(*m_pDevice, allocInfo).front());
+        return CommandBuffer(*m_pDevice, *this, std::move(commandBuffer));
     }
 }

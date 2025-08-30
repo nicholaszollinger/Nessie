@@ -12,32 +12,27 @@ namespace nes
     Texture::~Texture()
     {
         NES_ASSERT(Platform::IsMainThread());
-        
-        if (m_pImage)
-        {
-            auto& device = DeviceManager::GetRenderDevice();
-            device.FreeResource(m_pImage);
-        }
-        
+
+        m_image = nullptr;
         m_imageData.Free();
     }
 
     void Texture::SetDeviceDebugName(const char* name)
     {
-        if (m_pImage)
-            m_pImage->SetDebugName(name);
+        if (m_image != nullptr)
+            m_image.SetDebugName(name);
     }
 
     const ImageDesc& Texture::GetDesc() const
     {
-        NES_ASSERT(m_pImage);
-        return m_pImage->GetDesc();
+        NES_ASSERT(m_image != nullptr);
+        return m_image.GetDesc();
     }
 
     UInt3 Texture::GetExtent() const
     {
-        NES_ASSERT(m_pImage);
-        const auto extent = m_pImage->GetExtent();
+        NES_ASSERT(m_image != nullptr);
+        const auto extent = m_image.GetExtent();
         return UInt3(extent.width, extent.height, extent.depth);
     }
 
@@ -77,17 +72,8 @@ namespace nes
 
         // Create the Device Texture:
         auto& device = DeviceManager::GetRenderDevice();
-        const EGraphicsResult result = device.CreateResource(m_pImage, allocDesc);
-        if (result != EGraphicsResult::Success)
-        {
-            NES_ERROR("Failed to load texture! Failed to create Device Asset! \n\tPath: {} \n\tError: {}", path.string(), GraphicsResultToString(result));
-            
-            // Free the image data:
-            m_imageData.Free();
-            
-            return ELoadResult::Failure;
-        }
-
+        m_image = DeviceImage(device, allocDesc);
+        
         // [TODO]: Upload image data:
         
         return ELoadResult::Success;

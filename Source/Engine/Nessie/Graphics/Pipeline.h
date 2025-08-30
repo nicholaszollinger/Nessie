@@ -1,6 +1,6 @@
 ﻿// Pipeline.h
 #pragma once
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 #include "GraphicsCommon.h"
 
 namespace nes
@@ -15,21 +15,26 @@ namespace nes
     ///
     /// @see : https://docs.vulkan.org/tutorial/latest/03_Drawing_a_triangle/02_Graphics_pipeline_basics/00_Introduction.html
     //----------------------------------------------------------------------------------------------------
-    class Pipeline final : public DeviceAsset
+    class Pipeline
     {
     public:
-        explicit                    Pipeline(RenderDevice& device) : DeviceAsset(device) {}
-        virtual                     ~Pipeline() override;
+        Pipeline(std::nullptr_t) {}
+        Pipeline(const Pipeline&) = delete;
+        Pipeline(Pipeline&& other) noexcept;
+        Pipeline& operator=(std::nullptr_t);
+        Pipeline& operator=(const Pipeline&) = delete;
+        Pipeline& operator=(Pipeline&& other) noexcept;
+        ~Pipeline();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initializes this Pipeline as a Graphics Pipeline. 
+        /// @brief : Creates a Graphics Pipeline. 
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(PipelineLayout& layout, const GraphicsPipelineDesc& desc);
+        Pipeline(RenderDevice& device, PipelineLayout& layout, const GraphicsPipelineDesc& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this Pipeline. 
         //----------------------------------------------------------------------------------------------------
-        virtual void                SetDebugName(const std::string& name) override;
+        void                        SetDebugName(const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Defines the binding type for the Pipeline. Can be Graphics, Compute, RayTracing, etc.
@@ -41,11 +46,32 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         const vk::raii::Pipeline&   GetVkPipeline() const { return m_pipeline; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject              GetNativeVkObject() const;
+
     private:
-        EGraphicsResult             SetupShaderStage(vk::PipelineShaderStageCreateInfo& outStage, const ShaderDesc& desc, vk::raii::ShaderModule& outModule);
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates the Pipeline object. 
+        //----------------------------------------------------------------------------------------------------
+        void                        CreateGraphicsPipeline(const RenderDevice& device, PipelineLayout& layout, const GraphicsPipelineDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submits the resource to the Renderer to be freed.
+        //----------------------------------------------------------------------------------------------------
+        void                        FreePipeline();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Initializes a shader stage's create info and shader module based on the shader description. 
+        //----------------------------------------------------------------------------------------------------
+        EGraphicsResult             SetupShaderStage(const ShaderDesc& desc, vk::PipelineShaderStageCreateInfo& outStage, vk::raii::ShaderModule& outModule);
         
     private:
+        RenderDevice*               m_pDevice = nullptr;
         vk::raii::Pipeline          m_pipeline = nullptr;                           // Pipeline resource.
         vk::PipelineBindPoint       m_bindPoint = vk::PipelineBindPoint::eGraphics; // What stages the pipeline should be bound for use.
     };
+
+    static_assert(DeviceObjectType<Pipeline>);
 }

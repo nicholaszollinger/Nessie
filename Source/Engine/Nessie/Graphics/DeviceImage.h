@@ -1,7 +1,7 @@
 ﻿// DeviceImage.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 
 namespace nes
 {
@@ -9,27 +9,32 @@ namespace nes
     /// @brief : A Device image is the device resource for a Texture.
     ///      It represents a multidimensional array of data (1D, 2D or 3D).
     //----------------------------------------------------------------------------------------------------
-    class DeviceImage final : public DeviceAsset
+    class DeviceImage
     {
     public:
-        explicit            DeviceImage(RenderDevice& device) : DeviceAsset(device) {}
-        virtual             ~DeviceImage() override;
+        DeviceImage(std::nullptr_t) {}
+        DeviceImage(const DeviceImage&) = delete;
+        DeviceImage(DeviceImage&& other) noexcept;
+        DeviceImage& operator=(std::nullptr_t);
+        DeviceImage& operator=(const DeviceImage&) = delete;
+        DeviceImage& operator=(DeviceImage&& other) noexcept;
+        ~DeviceImage();
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a device image using an existing image. When this object is destroyed, the
+        /// @brief : Creates a device image using an existing image. When this object is destroyed, the
         ///     image resource will not be destroyed. This is to be used for cases like the Swapchain.  
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const vk::Image image, const ImageDesc& imageDesc);
-        
+        DeviceImage(RenderDevice& device, const vk::Image image, const ImageDesc& imageDesc);
+
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allocates a new image asset.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     Init(const AllocateImageDesc& allocDesc);
-
+        DeviceImage(RenderDevice& device, const AllocateImageDesc& allocDesc);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this image. 
         //----------------------------------------------------------------------------------------------------
-        virtual void        SetDebugName(const std::string& name) override;
+        void                SetDebugName(const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the image's properties.
@@ -44,17 +49,36 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Vulkan Image object.
         //----------------------------------------------------------------------------------------------------
-        vk::Image           GetVkImage() const       { return m_image; }
+        vk::Image           GetVkImage() const      { return m_image; } 
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the size of a particular dimension (width = 0, height = 1, depth = 2) for a given mip level.
         //----------------------------------------------------------------------------------------------------
         uint16              GetSize(const uint16 dimensionIndex, const uint16 mip = 0) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject      GetNativeVkObject() const;
     
     private:
-        vk::Image           m_image;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Allocates the Image. 
+        //----------------------------------------------------------------------------------------------------
+        void                AllocateResource(const RenderDevice& device, const AllocateImageDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submits the resource to the Renderer to be freed.
+        //----------------------------------------------------------------------------------------------------
+        void                FreeImage();
+        
+    private:
+        RenderDevice*       m_pDevice = nullptr;
+        vk::Image           m_image = nullptr;
         ImageDesc           m_desc{};
         VmaAllocation       m_allocation = nullptr;     // Device Memory associated with the Texture.
         bool                m_ownsNativeObjects = true; // If true, then on destruction the image will be freed.
     };
+
+    static_assert(DeviceObjectType<DeviceImage>);
 }

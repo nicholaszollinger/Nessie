@@ -8,7 +8,8 @@ NES_SUPPRESS_WARNINGS_BEGIN
 // 28251: Disabling the inconsistent naming warning in vulkan.hpp
 // 4996:  Disable strncpy warning in vulkan_structs.hpp
 NES_MSVC_SUPPRESS_WARNING(28251 4996)
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_raii.hpp>
+#undef SendMessage
 
 NES_SUPPRESS_WARNINGS_END
 

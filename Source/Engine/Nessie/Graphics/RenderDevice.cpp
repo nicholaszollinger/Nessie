@@ -7,6 +7,7 @@
 #include "Vulkan/VulkanConversions.h"
 #include "DeviceQueue.h"
 #include "GLFW/glfw3.h"
+#include "Nessie/Application/Device/DeviceManager.h"
 #undef SendMessage
 
 namespace nes
@@ -141,10 +142,6 @@ namespace nes
         // Destroy the Device Queue objects.
         for (auto& queueFamily : m_queueFamilies)
         {
-            for (auto* pQueue : queueFamily)
-            {
-                FreeResource(pQueue);
-            }
             queueFamily.clear();
         }
 
@@ -167,9 +164,9 @@ namespace nes
         // them or not. Better to do it one by one instead.
         for (auto& queueFamily : m_queueFamilies)
         {
-            for (auto* pQueue : queueFamily)
+            for (auto& queue : queueFamily)
             {
-                pQueue->WaitUntilIdle();
+                queue.WaitUntilIdle();
             }
         }
     }
@@ -182,7 +179,7 @@ namespace nes
         
         if (queueIndex < queueFamily.size())
         {
-            DeviceQueue* pQueue = queueFamily[queueIndex];
+            DeviceQueue* pQueue = &queueFamily[queueIndex];
             outQueue = pQueue;
         
             // Update the active family indices:
@@ -190,14 +187,14 @@ namespace nes
                 std::lock_guard lock(m_activeQueueIndicesMutex);
         
                 uint32 i = 0;
-                for (; i < m_activeQueueIndices.size(); ++i)
+                for (; i < m_numActiveFamilyIndices; ++i)
                 {
-                    if (m_activeQueueIndices[i] == pQueue->GetFamilyIndex())
+                    if (m_activeQueueFamilyIndices[i] == pQueue->GetFamilyIndex())
                         break;
                 }
         
                 if (i == m_numActiveFamilyIndices)
-                    m_activeQueueIndices[m_numActiveFamilyIndices++] = pQueue->GetFamilyIndex();
+                    m_activeQueueFamilyIndices[m_numActiveFamilyIndices++] = pQueue->GetFamilyIndex();
             }
         
             return EGraphicsResult::Success;
@@ -277,6 +274,19 @@ namespace nes
         if (m_debugMessenger.m_callback)
         {
             m_debugMessenger.SendMessage(level, file, line, message, tag);
+        }
+    }
+
+    void RenderDevice::SetDebugNameVkObject(const NativeVkObject& object, const std::string& name)
+    {
+        if (object.IsValid() && m_vkDevice != nullptr && m_vkDevice.getDispatcher()->vkSetDebugUtilsObjectNameEXT != nullptr)
+        {
+            vk::DebugUtilsObjectNameInfoEXT nameInfo = vk::DebugUtilsObjectNameInfoEXT()
+                .setObjectHandle(reinterpret_cast<uint64>(object.m_pHandle))
+                .setObjectType(object.m_type)
+                .setPObjectName(name.c_str());
+            
+            m_vkDevice.setDebugUtilsObjectNameEXT(nameInfo);
         }
     }
 
@@ -727,13 +737,9 @@ namespace nes
             {
                 for (uint32 j = 0; j < queueFamilyQueueCount; ++j)
                 {
-                    DeviceQueue* pQueue = nullptr;
-                    const EGraphicsResult queueResult = CreateResource<DeviceQueue>(pQueue, queueFamilyType, queueFamilyIndex, j);
-                    if (queueResult == EGraphicsResult::Success)
-                    {
-                        pQueue->SetDebugName(fmt::format("Queue [{}] : Family = {}", j, queueFamilyIndex));
-                        queueFamily.push_back(pQueue);
-                    }
+                    DeviceQueue queue = DeviceQueue(*this, queueFamilyType, queueFamilyIndex, j);
+                    queue.SetDebugName(fmt::format("Queue [{}] : Family = {}", j, queueFamilyIndex));
+                    queueFamily.push_back(std::move(queue));
                 }
         
                 // Update the number of queues available for this type to match the requested amount.
@@ -1496,7 +1502,7 @@ namespace nes
         outInfo.usage = GetVkBufferUsageFlags(bufferDesc.m_usage, bufferDesc.m_structuredStride, m_desc.m_features.m_deviceAddress);
         outInfo.sharingMode = m_numActiveFamilyIndices <= 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
         outInfo.queueFamilyIndexCount = m_numActiveFamilyIndices;
-        outInfo.pQueueFamilyIndices = m_activeQueueIndices.data();
+        outInfo.pQueueFamilyIndices = m_activeQueueFamilyIndices.data();
     }
 
     void RenderDevice::FillCreateInfo(const ImageDesc& textureDesc, vk::ImageCreateInfo& outInfo) const
@@ -1526,7 +1532,7 @@ namespace nes
         outInfo.usage = GetVkImageUsageFlags(textureDesc.m_usage);
         outInfo.sharingMode = (m_numActiveFamilyIndices <= 1 || textureDesc.m_sharingMode == ESharingMode::Exclusive) ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
         outInfo.queueFamilyIndexCount = m_numActiveFamilyIndices;
-        outInfo.pQueueFamilyIndices = m_activeQueueIndices.data();
+        outInfo.pQueueFamilyIndices = m_activeQueueFamilyIndices.data();
         outInfo.initialLayout = vk::ImageLayout::eUndefined;
     }
 }

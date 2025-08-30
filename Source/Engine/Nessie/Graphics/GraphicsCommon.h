@@ -307,8 +307,8 @@ namespace nes
 
     struct ImageDesc
     {
-        EImageType        m_type = EImageType::Image2D;
-        EImageUsageBits   m_usage = EImageUsageBits::ShaderResource;
+        EImageType          m_type = EImageType::Image2D;
+        EImageUsageBits     m_usage = EImageUsageBits::ShaderResource;
         EFormat             m_format = EFormat::Unknown;
         uint32              m_width = 1;
         uint32              m_height = 1;

@@ -35,12 +35,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the device image asset for this texture. 
         //----------------------------------------------------------------------------------------------------
-        DeviceImage*        GetDeviceImage() { return m_pImage; }
+        DeviceImage&        GetDeviceImage() { return m_image; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the device image asset for this texture (const version). 
         //----------------------------------------------------------------------------------------------------
-        const DeviceImage*  GetDeviceImage() const { return m_pImage; }
+        const DeviceImage&  GetDeviceImage() const { return m_image; }
 
     private:
         //----------------------------------------------------------------------------------------------------
@@ -49,8 +49,8 @@ namespace nes
         virtual ELoadResult LoadFromFile(const std::filesystem::path& path) override;
 
     private:
-        DeviceImage*        m_pImage = nullptr;         // Device Image Asset.
-        Buffer              m_imageData{};              // Raw image data.
+        DeviceImage         m_image = nullptr;         // Device Image Asset.
+        Buffer              m_imageData{};             // Raw image data.
     };
 }
 

@@ -4,10 +4,6 @@
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Asset/AssetManager.h"
 #include "Nessie/Graphics/CommandBuffer.h"
-#include "Nessie/Graphics/DeviceBuffer.h"
-#include "Nessie/Graphics/DeviceImage.h"
-#include "Nessie/Graphics/Pipeline.h"
-#include "Nessie/Graphics/PipelineLayout.h"
 #include "Nessie/Graphics/RenderDevice.h"
 #include "Nessie/Graphics/Renderer.h"
 #include "Nessie/Graphics/Shader.h"
@@ -27,7 +23,19 @@ bool SimpleTriangle::Internal_AppInit()
         }
         NES_LOG("Shader Loaded Successfully!");
     }
-        
+
+    auto& device = nes::DeviceManager::GetRenderDevice();
+
+    // Get a Transfer Queue
+    {
+        const auto result = device.GetQueue(nes::EQueueType::Transfer, 0, m_pTransferQueue);
+        if (result != nes::EGraphicsResult::Success)
+        {
+            NES_ERROR("Failed to get transfer queue!");
+            return false;
+        }
+    }
+    
     // Create a Graphics Pipeline:
     {
         static const std::array<Vertex, 3> vertices =
@@ -37,8 +45,6 @@ bool SimpleTriangle::Internal_AppInit()
             Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}} 
         };
         
-        auto& device = nes::DeviceManager::GetRenderDevice();
-
         // Attributes of the Vertex struct
         std::array<nes::VertexAttributeDesc, 2> attributes =
         {
@@ -62,24 +68,15 @@ bool SimpleTriangle::Internal_AppInit()
         nes::AllocateBufferDesc desc{};
         desc.m_desc = vertexBufferDesc;
         desc.m_location = nes::EMemoryLocation::HostUpload; // We are setting the vertex data from the GPU.
+        m_vertexBuffer = nes::DeviceBuffer(device, desc);
         
-        nes::EGraphicsResult result = device.CreateResource<nes::DeviceBuffer>(m_pVertexBuffer, desc);
-        if (result != nes::EGraphicsResult::Success)
-        {
-            NES_ERROR("Failed to create Vertex Buffer!");
-            return false;
-        }
-        m_pVertexBuffer->CopyToBuffer(vertices.data());
-        m_vertexBufferDesc = nes::VertexBufferDesc(m_pVertexBuffer, sizeof(Vertex), 0);
+        // [TODO]: Change this.
+        m_vertexBuffer.CopyToBuffer(vertices.data());
+        m_vertexBufferDesc = nes::VertexBufferDesc(&m_vertexBuffer, sizeof(Vertex), 0);
         
         // Create the Pipeline Layout:
         nes::PipelineLayoutDesc layoutDesc{};
-        result = device.CreateResource<nes::PipelineLayout>(m_pPipelineLayout, layoutDesc);
-        if (result != nes::EGraphicsResult::Success)
-        {
-            NES_ERROR("Failed to create Graphics Pipeline Layout!");
-            return false;
-        }
+        m_pipelineLayout = nes::PipelineLayout(device, layoutDesc);
 
         // Vertex Shader Stages:
         nes::AssetPtr<nes::Shader> triangleShader = nes::AssetManager::GetAsset<nes::Shader>(m_shaderID);
@@ -110,13 +107,8 @@ bool SimpleTriangle::Internal_AppInit()
             .SetShaderStages({ vertStage, fragStage })
             .SetVertexInput(vertexInputDesc);
 
-        NES_ASSERT(m_pPipelineLayout != nullptr);
-        result = device.CreateResource<nes::Pipeline>(m_pPipeline, *m_pPipelineLayout, pipelineDesc);
-        if (result != nes::EGraphicsResult::Success)
-        {
-            NES_ERROR("Failed to create Graphics Pipeline!");
-            return false;
-        }
+        NES_ASSERT(m_pipelineLayout != nullptr);
+        m_pipeline = nes::Pipeline(device, m_pipelineLayout, pipelineDesc);
     }
 
     return true;
@@ -124,7 +116,7 @@ bool SimpleTriangle::Internal_AppInit()
 
 void SimpleTriangle::Internal_AppUpdate([[maybe_unused]] const float timeStep)
 {
-        // [TODO]: 
+    // [TODO]: 
 }
 
 void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
@@ -154,8 +146,8 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
             .SetColorValue({ 0.01f, 0.01f, 0.01f, 1.0f });
         commandBuffer.ClearRenderTargets(clearDesc);
         
-        commandBuffer.BindPipeline(*m_pPipeline);
-        commandBuffer.BindPipelineLayout(*m_pPipelineLayout);
+        commandBuffer.BindPipeline(m_pipeline);
+        commandBuffer.BindPipelineLayout(m_pipelineLayout);
         
         commandBuffer.SetViewports(viewport);
         commandBuffer.SetScissors(scissor);
@@ -180,17 +172,9 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
 
 void SimpleTriangle::Internal_AppShutdown()
 {
-    auto& device = nes::DeviceManager::GetRenderDevice();
-
-    if (m_pVertexBuffer)
-        device.FreeResource(m_pVertexBuffer);
-
-    // Free the pipeline resource.
-    if (m_pPipeline)
-        device.FreeResource(m_pPipeline);
-
-    if (m_pPipelineLayout)
-        device.FreeResource(m_pPipelineLayout);
+    m_vertexBuffer = nullptr;
+    m_pipeline = nullptr;
+    m_pipelineLayout = nullptr;
 }
 
 std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outAppDesc, WindowDesc& outWindowDesc, RendererDesc& outRendererDesc)
@@ -204,7 +188,9 @@ std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outApp
         .EnableResize(true)
         .EnableVsync(false);
 
-    outRendererDesc.EnableValidationLayer();
+    outRendererDesc.EnableValidationLayer()
+        .RequireQueueType(EQueueType::Graphics)
+        .RequireQueueType(EQueueType::Transfer);
 
     return std::make_unique<SimpleTriangle>(outAppDesc);
 }

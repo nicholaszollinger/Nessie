@@ -1,7 +1,7 @@
 ﻿// Descriptor.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 
 namespace nes
 {
@@ -31,42 +31,47 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Descriptor represents access to a resource (texture, buffer, sampler, etc.).
     //----------------------------------------------------------------------------------------------------
-    class Descriptor final : public DeviceAsset
+    class Descriptor
     {
     public:
-        explicit                    Descriptor(RenderDevice& device) : DeviceAsset(device) {}
-        virtual                     ~Descriptor() override;
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Set a debug name for this Descriptor. 
-        //----------------------------------------------------------------------------------------------------
-        virtual void                SetDebugName(const std::string& name) override;
-
+        Descriptor(std::nullptr_t) {}
+        Descriptor(const Descriptor&) = delete;
+        Descriptor(Descriptor&& other) noexcept;
+        Descriptor& operator=(std::nullptr_t);
+        Descriptor& operator=(const Descriptor&) = delete;
+        Descriptor& operator=(Descriptor&& other) noexcept;
+        ~Descriptor();
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a Buffer View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(const BufferViewDesc& bufferViewDesc);
+        Descriptor(RenderDevice& device, const BufferViewDesc& bufferViewDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a 1D Image View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(const Image1DViewDesc& textureViewDesc);
+        Descriptor(RenderDevice& device, const Image1DViewDesc& imageViewDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a 2D Image View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(const Image2DViewDesc& imageViewDesc);
+        Descriptor(RenderDevice& device, const Image2DViewDesc& imageViewDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a 3D Image View Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(const Image3DViewDesc& textureViewDesc);
+        Descriptor(RenderDevice& device, const Image3DViewDesc& imageViewDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a Sampler Descriptor.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             Init(const SamplerDesc& samplerDesc);
+        Descriptor(RenderDevice& device, const SamplerDesc& samplerDesc);
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set a debug name for this Descriptor. 
+        //----------------------------------------------------------------------------------------------------
+        void                        SetDebugName(const std::string& name);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the resource type that this Descriptor represents. 
         //----------------------------------------------------------------------------------------------------
@@ -128,8 +133,20 @@ namespace nes
         /// @note : Only valid if the Descriptor is a texture type. 
         //----------------------------------------------------------------------------------------------------
         bool                        IsStencilWritable() const;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject              GetNativeVkObject() const;
     
     private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submits the Descriptor to the Renderer to be freed.  
+        //----------------------------------------------------------------------------------------------------
+        void                        FreeDescriptor();
+
+    private:
+        
         /// Vulkan Resource Handle.
         union
         {
@@ -145,8 +162,9 @@ namespace nes
             DescriptorBufferDesc    m_bufferDesc;
         };
 
+        RenderDevice*               m_pDevice = nullptr;
         EDescriptorType             m_type = EDescriptorType::None;
     };
 
-    static_assert(DeviceAssetType<Descriptor>);
+    static_assert(DeviceObjectType<Descriptor>);
 }

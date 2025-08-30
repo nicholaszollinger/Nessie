@@ -7,31 +7,82 @@
 
 namespace nes
 {
-    DeviceBuffer::~DeviceBuffer()
+    DeviceBuffer::DeviceBuffer(RenderDevice& device, const AllocateBufferDesc& desc)
+        : m_pDevice(&device)
     {
-        if (m_ownsNativeObjects)
-        {
-            if (m_allocation)
-            {
-                Renderer::SubmitResourceFree([buffer = m_buffer, allocation = m_allocation]() mutable
-                {
-                    auto& device = Renderer::GetDevice();
-                    vmaDestroyBuffer(device, buffer, allocation);
-                });
-                
-                m_buffer = nullptr;
-                m_allocation = nullptr;
-            }
-        }
+        AllocateBuffer(device, desc);
+    }
+    
+    DeviceBuffer::DeviceBuffer(DeviceBuffer&& other) noexcept
+        : m_pDevice(other.m_pDevice)
+        , m_buffer(other.m_buffer)
+        , m_desc(other.m_desc)
+        , m_allocation(other.m_allocation)
+        , m_deviceAddress(other.m_deviceAddress)
+        , m_pMappedMemory(other.m_pMappedMemory)
+    {
+        other.m_buffer = nullptr;
+        other.m_allocation = nullptr;
+        other.m_pDevice = nullptr;
+        other.m_pMappedMemory = nullptr;
+        other.m_deviceAddress = 0;
     }
 
-    EGraphicsResult DeviceBuffer::Init(const AllocateBufferDesc& allocDesc)
+    DeviceBuffer& DeviceBuffer::operator=(std::nullptr_t)
+    {
+        FreeBuffer();
+        return *this;
+    }
+
+    DeviceBuffer& DeviceBuffer::operator=(DeviceBuffer&& other) noexcept
+    {
+        if (this != &other)
+        {
+            FreeBuffer();
+
+            m_pDevice = other.m_pDevice;
+            m_buffer = other.m_buffer;
+            m_desc = other.m_desc;
+            m_allocation = other.m_allocation;
+            m_deviceAddress = other.m_deviceAddress;
+            m_pMappedMemory = other.m_pMappedMemory;
+
+            other.m_buffer = nullptr;
+            other.m_allocation = nullptr;
+            other.m_pDevice = nullptr;
+            other.m_pMappedMemory = nullptr;
+            other.m_deviceAddress = 0;
+        }
+
+        return *this;
+    }
+
+    DeviceBuffer::~DeviceBuffer()
+    {
+        FreeBuffer();
+    }
+
+    void DeviceBuffer::SetDebugName(const std::string& name)
+    {
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
+    }
+
+    NativeVkObject DeviceBuffer::GetNativeVkObject() const
+    {
+        return NativeVkObject
+        {
+            .m_pHandle = m_buffer,
+            .m_type = vk::ObjectType::eBuffer
+        };
+    }
+
+    void DeviceBuffer::AllocateBuffer(const RenderDevice& device, const AllocateBufferDesc& allocDesc)
     {
         NES_ASSERT(m_buffer == nullptr);
         
         // Fill out the BufferCreateInfo object. 
         vk::BufferCreateInfo bufferInfo{};
-        m_device.FillCreateInfo(allocDesc.m_desc, bufferInfo);
+        m_pDevice->FillCreateInfo(allocDesc.m_desc, bufferInfo);
 
         // Allocation CreateInfo:
         VmaAllocationCreateInfo allocCreateInfo = {};
@@ -61,7 +112,7 @@ namespace nes
         }
         
         // Calculate Memory Alignment based on usage: 
-        const DeviceDesc& deviceDesc = m_device.GetDesc();
+        const DeviceDesc& deviceDesc = device.GetDesc();
         uint32 alignment = 1;
         if (allocDesc.m_desc.m_usage & (EBufferUsageBits::ShaderResource | EBufferUsageBits::ShaderResourceStorage))
             alignment = math::Max(alignment, deviceDesc.m_memoryAlignment.m_bufferShaderResourceOffset);
@@ -80,7 +131,7 @@ namespace nes
         VmaAllocationInfo vmaAllocInfo = {};
         VkBuffer vkBuffer = VK_NULL_HANDLE;
         VkBufferCreateInfo& vkBufferInfo = bufferInfo;
-        NES_VK_FAIL_RETURN(m_device, vmaCreateBufferWithAlignment(m_device, &vkBufferInfo, &allocCreateInfo, alignment, &vkBuffer, &m_allocation, &vmaAllocInfo));
+        NES_VK_MUST_PASS(device, vmaCreateBufferWithAlignment(device, &vkBufferInfo, &allocCreateInfo, alignment, &vkBuffer, &m_allocation, &vmaAllocInfo));
         m_buffer = vkBuffer;
 
         // Mapped Memory, only necessary if host visible.
@@ -90,20 +141,13 @@ namespace nes
         }
 
         // Device Address
-        if (m_device.GetDesc().m_features.m_deviceAddress)
+        if (deviceDesc.m_features.m_deviceAddress)
         {
-            m_deviceAddress = m_device.GetVkDevice().getBufferAddress(m_buffer);
+            m_deviceAddress = device.GetVkDevice().getBufferAddress(m_buffer);
         }
         
         // Set the Description:
         m_desc = allocDesc.m_desc;
-        
-        return EGraphicsResult::Success;
-    }
-
-    void DeviceBuffer::SetDebugName(const std::string& name)
-    {
-        m_device.SetDebugNameToTrivialObject(m_buffer, name);
     }
 
     EGraphicsResult DeviceBuffer::CopyToBuffer(const void* data, const size_t offset, const size_t size)
@@ -116,7 +160,7 @@ namespace nes
             actualSize = m_desc.m_size - offset;
 
         NES_ASSERT(offset + actualSize <= m_desc.m_size);
-        NES_VK_FAIL_RETURN(m_device, vmaCopyMemoryToAllocation(m_device, data, m_allocation, offset, actualSize));
+        NES_VK_FAIL_RETURN(*m_pDevice, vmaCopyMemoryToAllocation(*m_pDevice, data, m_allocation, offset, actualSize));
 
         return EGraphicsResult::Success;
     }
@@ -131,8 +175,26 @@ namespace nes
             actualSize = m_desc.m_size - srcOffset;
 
         NES_ASSERT(srcOffset + actualSize <= m_desc.m_size);
-        NES_VK_FAIL_RETURN(m_device, vmaCopyAllocationToMemory(m_device, m_allocation, srcOffset, pOutData, actualSize));
+        NES_VK_FAIL_RETURN(*m_pDevice, vmaCopyAllocationToMemory(*m_pDevice, m_allocation, srcOffset, pOutData, actualSize));
 
         return EGraphicsResult::Success;
+    }
+
+    void DeviceBuffer::FreeBuffer()
+    {
+        if (m_allocation)
+        {
+            Renderer::SubmitResourceFree([buffer = m_buffer, allocation = m_allocation]() mutable
+            {
+                auto& device = Renderer::GetDevice();
+                vmaDestroyBuffer(device, buffer, allocation);
+            });
+        }
+
+        m_buffer = nullptr;
+        m_pDevice = nullptr;
+        m_allocation = nullptr;
+        m_pMappedMemory = nullptr;
+        m_deviceAddress = 0;
     }
 }

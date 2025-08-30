@@ -1,7 +1,7 @@
 ﻿// CommandPool.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 #include "Nessie/Core/Thread/Mutex.h"
 
 namespace nes
@@ -13,30 +13,31 @@ namespace nes
     ///     A Command Pool is created with a specific queue family index. All CommandBuffers created
     ///     with this pool must be submitted to a DeviceQueue of the same queue family index.
     //----------------------------------------------------------------------------------------------------
-    class CommandPool final : public DeviceAsset
+    class CommandPool
     {
     public:
-        explicit                CommandPool(RenderDevice& device) : DeviceAsset(device) {}
-        virtual                 ~CommandPool() override;
-
-        /// Operator to cast the Vulkan Type.
-        operator                const vk::raii::CommandPool&() const { return m_pool; }
+        CommandPool(std::nullptr_t) {}
+        CommandPool(const CommandPool&) = delete;
+        CommandPool(CommandPool&& other) noexcept;
+        CommandPool& operator=(std::nullptr_t);
+        CommandPool& operator=(const CommandPool&) = delete;
+        CommandPool& operator=(CommandPool&& other) noexcept;
+        ~CommandPool();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the Command Pool object. This will allocate the Vulkan resource.
+        /// @brief : Create the Command Pool object for the given queue.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult         Init(const DeviceQueue& queue);
-
+        CommandPool(RenderDevice& device, const DeviceQueue& queue);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this command pool. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            SetDebugName(const std::string& name) override;
+        void                    SetDebugName(const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a new command buffer.
-        /// VK: This creates a primary command buffer. 
+        /// @brief : Creates a new primary command buffer.
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult         CreateCommandBuffer(CommandBuffer*& pOutCommandBuffer);
+        CommandBuffer           CreateCommandBuffer();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Resetting a command pool recycles all resources from all command buffers
@@ -50,7 +51,19 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         const EQueueType&       GetQueueType() const { return m_queueType; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject          GetNativeVkObject() const;
+    
     private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submits the CommandPool to the Renderer to be freed. 
+        //----------------------------------------------------------------------------------------------------
+        void                    FreePool();
+        
+    private:
+        RenderDevice*           m_pDevice = nullptr;
         vk::raii::CommandPool   m_pool = nullptr;
         EQueueType              m_queueType{}; /// What Queue Type should all commands be submitted to?
         Mutex                   m_mutex;

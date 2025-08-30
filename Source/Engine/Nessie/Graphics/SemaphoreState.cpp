@@ -1,62 +1,91 @@
 ﻿// SemaphoreState.cpp
 #include "SemaphoreState.h"
 #include "RenderDevice.h"
+#include "Renderer.h"
 
 namespace nes
 {
-    SemaphoreState::~SemaphoreState()
+    SemaphoreState::SemaphoreState(SemaphoreState&& other) noexcept
+        : m_pDevice(other.m_pDevice)
+        , m_semaphore(std::move(other.m_semaphore))
+        , m_dynamicValue(std::move(other.m_dynamicValue))
+        , m_fixedValue(other.m_fixedValue)
     {
-        if (m_handle != VK_NULL_HANDLE)
-        {
-            vkDestroySemaphore(m_device, m_handle, m_device.GetVkAllocationCallbacksPtr());
-        }
+        other.m_pDevice = nullptr;
+        other.m_fixedValue = 0;
     }
 
-    EGraphicsResult SemaphoreState::Init(const uint64 initialValue)
+    SemaphoreState& SemaphoreState::operator=(std::nullptr_t)
     {
-        NES_GRAPHICS_ASSERT(m_device, m_handle == nullptr);
+        FreeSemaphore();
+        return *this;
+    }
 
-        // Create the semaphore:
-        VkSemaphoreTypeCreateInfo timelineSemaphoreCreateInfo
+    SemaphoreState& SemaphoreState::operator=(SemaphoreState&& other) noexcept
+    {
+        if (this != &other)
         {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO,
-            .pNext = nullptr,
-            .semaphoreType = VK_SEMAPHORE_TYPE_TIMELINE,
-            .initialValue = initialValue,
-        };
-        
-        VkSemaphoreCreateInfo semaphoreCreateInfo
+            m_pDevice = other.m_pDevice;
+            m_semaphore = std::move(other.m_semaphore);
+            m_dynamicValue = std::move(other.m_dynamicValue);
+            m_fixedValue = other.m_fixedValue;
+
+            other.m_pDevice = nullptr;
+            other.m_fixedValue = 0;
+        }
+
+        return *this;
+    }
+
+    void SemaphoreState::FreeSemaphore()
+    {
+        if (m_semaphore != nullptr)
         {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-            .pNext = &timelineSemaphoreCreateInfo,
-            .flags = 0,
-        };
+            Renderer::SubmitResourceFree([semaphore = std::move(m_semaphore)]() mutable
+            {
+                semaphore = nullptr;   
+            });
+        }
+
+        m_dynamicValue = nullptr;
+        m_fixedValue = 0;
+    }
+
+    SemaphoreState::~SemaphoreState()
+    {
+        FreeSemaphore();
+    }
+
+    SemaphoreState::SemaphoreState(RenderDevice& device, const uint64 initialValue)
+        : m_pDevice(&device)
+    {
+        vk::SemaphoreTypeCreateInfo timelineSemaphoreCreateInfo = vk::SemaphoreTypeCreateInfo()
+            .setSemaphoreType(vk::SemaphoreType::eTimeline)
+            .setInitialValue(initialValue);
+
+        vk::SemaphoreCreateInfo semaphoreCreateInfo = vk::SemaphoreCreateInfo()
+            .setPNext(&timelineSemaphoreCreateInfo);
         
-        NES_VK_FAIL_RETURN(m_device, vkCreateSemaphore(m_device, &semaphoreCreateInfo, m_device.GetVkAllocationCallbacksPtr(), &m_handle));
+        m_semaphore = vk::raii::Semaphore(device, semaphoreCreateInfo, device.GetVkAllocationCallbacks());
 
         // If non-zero, then it is fixed.
         if (initialValue != 0)
-        {
             m_fixedValue = initialValue;
-        }
+        
         // Otherwise, it is considered dynamic.
         else
-        {
             m_dynamicValue = std::make_shared<std::atomic<uint64>>(0);
-        }
-        
-        return EGraphicsResult::Success;
     }
 
     void SemaphoreState::SetDebugName(const std::string& name)
     {
-        m_device.SetDebugNameToTrivialObject(m_handle, name);
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
     void SemaphoreState::SetDynamicValue(const uint64 value)
     {
         // Must be dynamic and its dynamic value shouldn't have been set yet.
-        NES_GRAPHICS_ASSERT(m_device, IsDynamic() && m_dynamicValue->load() == 0);
+        NES_ASSERT(IsDynamic() && m_dynamicValue->load() == 0);
 
         // Update the shared_ptr value so that every copy of this semaphore
         // state has access to it.
@@ -68,22 +97,22 @@ namespace nes
 
     bool SemaphoreState::IsValid() const
     {
-        return m_handle && (m_fixedValue != 0 || m_dynamicValue);
+        return m_semaphore != nullptr && (m_fixedValue != 0 || m_dynamicValue);
     }
 
     bool SemaphoreState::IsDynamic() const
     {
-        return m_handle && (m_dynamicValue);
+        return m_semaphore != nullptr && (m_dynamicValue);
     }
 
     bool SemaphoreState::IsFixed() const
     {
-        return m_handle && (m_fixedValue != 0);
+        return m_semaphore != nullptr && (m_fixedValue != 0);
     }
 
     bool SemaphoreState::CanWait() const
     {
-        return m_handle && (m_fixedValue != 0 || (m_dynamicValue && m_dynamicValue->load() != 0));
+        return m_semaphore != nullptr && (m_fixedValue != 0 || (m_dynamicValue && m_dynamicValue->load() != 0));
     }
 
     bool SemaphoreState::CanWait()
@@ -98,12 +127,8 @@ namespace nes
         if (timelineValue == 0)
             return false;
 
-        uint64 currentValue;
-        const VkResult result = vkGetSemaphoreCounterValue(m_device, m_handle, &currentValue);
-        if (result == VK_SUCCESS)
-            return currentValue >= timelineValue;
-
-        return false;
+        const uint64 currentValue = m_semaphore.getCounterValue();
+        return currentValue >= timelineValue;
     }
 
     bool SemaphoreState::IsSignaled()
@@ -137,18 +162,12 @@ namespace nes
         // If zero, then the dynamic state hasn't been set!
         if (timelineValue == 0)
             return EGraphicsResult::InitializationFailed;
+        
+        const vk::SemaphoreWaitInfo waitInfo = vk::SemaphoreWaitInfo()
+            .setSemaphores(*m_semaphore)
+            .setValues(timelineValue);
 
-        const VkSemaphoreWaitInfo waitInfo
-        {
-            .sType = VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .semaphoreCount = 1,
-            .pSemaphores = &m_handle,
-            .pValues = &timelineValue,
-        };
-
-        NES_VK_FAIL_RETURN(m_device, vkWaitSemaphores(m_device, &waitInfo, timeout));
+        NES_VK_FAIL_RETURN(*m_pDevice, m_pDevice->GetVkDevice().waitSemaphores(waitInfo, timeout));
         
         return EGraphicsResult::Success;
     }
@@ -170,6 +189,11 @@ namespace nes
     //     NES_GRAPHICS_ASSERT(m_device, submitInfo.value != 0);
     //     return submitInfo;
     // }
+
+    NativeVkObject SemaphoreState::GetNativeVkObject() const
+    {
+        return NativeVkObject(*m_semaphore, vk::ObjectType::eSemaphore);
+    }
 
     void SemaphoreState::TryFixate()
     {

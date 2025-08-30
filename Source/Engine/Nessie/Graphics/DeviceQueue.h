@@ -12,64 +12,72 @@ namespace nes
     ///     - The Queue's family index is used to identify the type of queue (graphics, compute, transfer, ...).
     ///     - The Queue's index is used to identify the specific queue in the family - multiple queues can be in the same family.
     //----------------------------------------------------------------------------------------------------
-    class DeviceQueue final : public DeviceAsset
+    class DeviceQueue
     {
     public:
-        DeviceQueue(RenderDevice& device) : DeviceAsset(device) {}
+        DeviceQueue(std::nullptr_t) {}
         DeviceQueue(const DeviceQueue&) = delete;
-        DeviceQueue(DeviceQueue&&) noexcept;
+        DeviceQueue(DeviceQueue&& other) noexcept;
+        DeviceQueue& operator=(std::nullptr_t);
         DeviceQueue& operator=(const DeviceQueue&) = delete;
-        DeviceQueue& operator=(DeviceQueue&&) noexcept;
-
-        /// Operator to cast to the Vulkan type.
-        operator        const vk::raii::Queue&() const         { return m_queue; }
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialize the Device Queue. Called by the RenderDevice upon creation.
-        //----------------------------------------------------------------------------------------------------
-        EGraphicsResult Init(const EQueueType type, const uint32 familyIndex, const uint32 queueIndex);
+        DeviceQueue& operator=(DeviceQueue&& other) noexcept;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Wait until this queue has finished all command submissions.
         //----------------------------------------------------------------------------------------------------
-        void            WaitUntilIdle();
+        void                WaitUntilIdle();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the debug name for this device queue. 
         //----------------------------------------------------------------------------------------------------
-        virtual void    SetDebugName(const std::string& name) override;
+        void                SetDebugName(const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : The Queue's family index is used to identify the type of queue (graphics, compute, transfer, ...).
         //----------------------------------------------------------------------------------------------------
-        uint32          GetFamilyIndex() const  { return m_familyIndex; }
+        uint32              GetFamilyIndex() const  { return m_familyIndex; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the index of the queue in the family.
         //----------------------------------------------------------------------------------------------------
-        uint32          GetQueueIndex() const  { return m_queueIndex; }
+        uint32              GetQueueIndex() const  { return m_queueIndex; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : This is the type of Queue (graphics, compute, transfer, ...).
         //----------------------------------------------------------------------------------------------------
-        EQueueType      GetQueueType() const    { return m_queueType; }
+        EQueueType          GetQueueType() const    { return m_queueType; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Queue's mutex that is locked when waiting or submitting.
         //----------------------------------------------------------------------------------------------------
-        Mutex&          GetMutex()              { return m_mutex; }
+        Mutex&              GetMutex()              { return m_mutex; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the Vulkan Queue. 
+        /// @brief : Get the Vulkan Queue object.
         //----------------------------------------------------------------------------------------------------
-        vk::raii::Queue& GetVkQueue()           { return m_queue; } 
+        vk::raii::Queue&    GetVkQueue()          { return m_queue; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject      GetNativeVkObject() const;
+        
     private:
-        vk::raii::Queue m_queue         = nullptr;
-        Mutex           m_mutex;
-        uint32          m_familyIndex   = std::numeric_limits<uint32>::max();
-        uint32          m_queueIndex    = std::numeric_limits<uint32>::max();
-        EQueueType      m_queueType     = EQueueType::MaxNum;
+        friend class RenderDevice;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Private Ctor only for the Render Device. Device Queues are created during logical device
+        ///     construction and are tied to the lifetime of the Render Device. 
+        //----------------------------------------------------------------------------------------------------
+        DeviceQueue(RenderDevice& device, const EQueueType type, const uint32 familyIndex, const uint32 queueIndex);
+        
+        RenderDevice*       m_pDevice       = nullptr;
+        vk::raii::Queue     m_queue         = nullptr;
+        Mutex               m_mutex{};
+        uint32              m_familyIndex   = std::numeric_limits<uint32>::max();
+        uint32              m_queueIndex    = std::numeric_limits<uint32>::max();
+        EQueueType          m_queueType     = EQueueType::MaxNum;
     };
-    static_assert(DeviceAssetType<DeviceQueue>);
+    
+    static_assert(DeviceObjectType<DeviceQueue>);
 }

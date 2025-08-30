@@ -8,16 +8,51 @@
 
 namespace nes
 {
-    Pipeline::~Pipeline()
+    Pipeline::Pipeline(Pipeline&& other) noexcept
+        : m_pDevice(other.m_pDevice)
+        , m_pipeline(std::move(other.m_pipeline))
+        , m_bindPoint(other.m_bindPoint)
     {
-        Renderer::SubmitResourceFree([pipeline = std::move(m_pipeline)]() mutable
-        {
-            pipeline = nullptr;
-        });
+        other.m_pDevice = nullptr;
     }
 
-    EGraphicsResult Pipeline::Init(PipelineLayout& layout, const GraphicsPipelineDesc& desc)
+    Pipeline& Pipeline::operator=(std::nullptr_t)
     {
+        FreePipeline();
+        return *this;
+    }
+
+    Pipeline& Pipeline::operator=(Pipeline&& other) noexcept
+    {
+        if (this != &other)
+        {
+            FreePipeline();
+
+            m_pDevice = other.m_pDevice;
+            m_pipeline = std::move(other.m_pipeline);
+            m_bindPoint = other.m_bindPoint;
+
+            other.m_pDevice = nullptr;
+        }
+        
+        return *this;
+    }
+
+    Pipeline::Pipeline(RenderDevice& device, PipelineLayout& layout, const GraphicsPipelineDesc& desc)
+        : m_pDevice(&device)
+    {
+        CreateGraphicsPipeline(device, layout, desc);
+    }
+
+    NativeVkObject Pipeline::GetNativeVkObject() const
+    {
+        return NativeVkObject(*m_pipeline, vk::ObjectType::ePipeline);
+    }
+
+    void Pipeline::CreateGraphicsPipeline(const RenderDevice& device, PipelineLayout& layout, const GraphicsPipelineDesc& desc)
+    {
+        NES_ASSERT(layout != nullptr);
+        
         // Shaders
         const auto& descShaders = desc.m_shaderStages;
         std::vector<vk::PipelineShaderStageCreateInfo> stages(descShaders.size());
@@ -29,9 +64,7 @@ namespace nes
         {
             shaderModules.emplace_back(nullptr);
             auto& stage = stages[i];
-            EGraphicsResult result = SetupShaderStage(stage, descShaders[i], shaderModules[i]);
-            if (result != nes::EGraphicsResult::Success)
-                return result;
+            NES_GRAPHICS_MUST_PASS(device, SetupShaderStage(descShaders[i], stage, shaderModules[i]));
         }
 
         // Vertex Input
@@ -209,18 +242,36 @@ namespace nes
             //.setBasePipelineIndex(-1);
 
         // [TODO]: Pipeline Cache object.
-        m_pipeline = vk::raii::Pipeline(m_device, nullptr, info, m_device.GetVkAllocationCallbacks());
-        
-        return EGraphicsResult::Success;
+        m_pipeline = vk::raii::Pipeline(device, nullptr, info, device.GetVkAllocationCallbacks());
+    }
+
+    void Pipeline::FreePipeline()
+    {
+        if (m_pipeline != nullptr)
+        {
+            Renderer::SubmitResourceFree([pipeline = std::move(m_pipeline)]() mutable
+            {
+                pipeline = nullptr;
+            });
+        }
+
+        m_pDevice = nullptr;
+    }
+
+    Pipeline::~Pipeline()
+    {
+        Renderer::SubmitResourceFree([pipeline = std::move(m_pipeline)]() mutable
+        {
+            pipeline = nullptr;
+        });
     }
 
     void Pipeline::SetDebugName(const std::string& name)
     {
-        vk::Pipeline pipeline = *m_pipeline;
-        m_device.SetDebugNameToTrivialObject(pipeline, name);
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
-    EGraphicsResult Pipeline::SetupShaderStage(vk::PipelineShaderStageCreateInfo& outStage, const ShaderDesc& desc, vk::raii::ShaderModule& outModule)
+    EGraphicsResult Pipeline::SetupShaderStage(const ShaderDesc& desc, vk::PipelineShaderStageCreateInfo& outStage, vk::raii::ShaderModule& outModule)
     {
         vk::ShaderModuleCreateInfo createInfo = vk::ShaderModuleCreateInfo()
             .setCodeSize(desc.m_size)

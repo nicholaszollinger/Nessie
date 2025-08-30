@@ -1,6 +1,6 @@
 ﻿// DeviceBase.h
 #pragma once
-#include "DeviceAsset.h"
+#include "DeviceQueue.h"
 #include "RendererDesc.h"
 #include "Nessie/Application/ApplicationDesc.h"
 #include "Nessie/Core/Thread/Mutex.h"
@@ -12,9 +12,6 @@ static_assert(VK_HEADER_VERSION >= 304,
 
 namespace nes
 {
-    template <DeviceAssetType Type>
-    class DeviceAssetPtr;
-    
     //----------------------------------------------------------------------------------------------------
     /// @brief : A RenderDevice is the intermediary between the program and the hardware device (GPU).
     //----------------------------------------------------------------------------------------------------
@@ -56,29 +53,6 @@ namespace nes
         /// @brief : Get info about this device. 
         //----------------------------------------------------------------------------------------------------
         const DeviceDesc&           GetDesc() const                         { return m_desc; }
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a new graphics class with the given InitArgs. The resulting pointer will be
-        ///     stored in pOutObject.
-        ///	@tparam Type : Graphics class. Ex: DeviceQueue.
-        ///	@tparam InitArgs : Parameter types to send to the Init() function on the Graphics class.
-        ///	@param pOutObject : Pointer that will be set to the address of the created Graphics class.
-        ///	@param args : Parameters to send to the Init() function on the Graphics class.
-        ///	@returns : Result of the Graphics class's Init() function. If not EGraphicsResult::Success, the
-        ///     object will be destroyed.
-        //----------------------------------------------------------------------------------------------------
-        template <DeviceAssetType Type, typename...InitArgs> requires requires(Type type, InitArgs&&... args)
-        {
-            // Requires an Init function that takes in the give InitArgs, and returns an EGraphicsResult.
-            { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;
-        }
-        EGraphicsResult             CreateResource(Type*& pOutObject, InitArgs&&...args);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Free a graphics resource type.
-        //----------------------------------------------------------------------------------------------------
-        template <DeviceAssetType Type>
-        void                        FreeResource(Type*& pObject);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a Queue of a particular type.
@@ -174,10 +148,9 @@ namespace nes
         void                        ReportMessage(const ELogLevel level, const char* file, const uint32 line, const char* message, const nes::LogTag& tag = kGraphicsLogTag) const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set a debug name for a Vulkan object. 
+        /// @brief : Set the debug name for a Vulkan Object.
         //----------------------------------------------------------------------------------------------------
-        template <VulkanObjectType Type>
-        void                        SetDebugNameToTrivialObject(Type& object, const std::string& name);
+        void                        SetDebugNameVkObject(const NativeVkObject& object, const std::string& name);
     
     private:
         static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();
@@ -185,7 +158,7 @@ namespace nes
         static constexpr size_t     kComputeIndex = static_cast<size_t>(EQueueType::Compute);
         static constexpr size_t     kTransferIndex = static_cast<size_t>(EQueueType::Transfer);
         
-        using QueueArray            = std::vector<DeviceQueue*>;
+        using QueueArray            = std::vector<DeviceQueue>;
         using QueueFamilyArray      = std::array<QueueArray, static_cast<size_t>(EQueueType::MaxNum)>;
         using QueueIndicesArray     = std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)>; 
         
@@ -253,75 +226,9 @@ namespace nes
         QueueFamilyArray            m_queueFamilies{};      /// Contains an array of Queues for each EQueueType. 
         DeviceDesc                  m_desc{};
         vk::PhysicalDeviceMemoryProperties m_memoryProperties{};
-        QueueIndicesArray           m_activeQueueIndices{};
+        QueueIndicesArray           m_activeQueueFamilyIndices{};
         Mutex                       m_activeQueueIndicesMutex{};
         uint32                      m_numActiveFamilyIndices = 0;
         VmaAllocator                m_vmaAllocator = nullptr;
     };
-
-    template <DeviceAssetType Type, typename ... InitArgs> requires requires (Type type, InitArgs&&... args)
-    {
-        { type.Init(std::forward<InitArgs>(args)...) } -> std::same_as<EGraphicsResult>;
-    }
-    EGraphicsResult RenderDevice::CreateResource(Type*& pOutObject, InitArgs&&... args)
-    {
-        // First allocate the object, using passing the RenderDevice into the constructor.
-        Type* pImpl = Allocate<Type>(GetAllocationCallbacks(), *this);
-
-        // Then call the create function on the object itself.
-        EGraphicsResult result = pImpl->Init(std::forward<InitArgs>(args)...);
-        if (result != EGraphicsResult::Success)
-        {
-            Free<Type>(GetAllocationCallbacks(), pImpl);
-            pOutObject = nullptr;
-        }
-        else
-        {
-            pOutObject = pImpl;
-        }
-    
-        return result;
-    }
-
-    template <DeviceAssetType Type>
-    void RenderDevice::FreeResource(Type*& pObject)
-    {
-        if (pObject != nullptr)
-        {
-            Free<Type>(GetAllocationCallbacks(), pObject);
-            pObject = nullptr;
-        }
-    }
-
-    template <VulkanObjectType Type>
-    void RenderDevice::SetDebugNameToTrivialObject([[maybe_unused]] Type& object, [[maybe_unused]] const std::string& name)
-    {
-#if NES_DEBUG
-        if (m_vkDevice != nullptr)
-        {
-            constexpr vk::ObjectType kType = GetVkObjectType<Type>();
-
-            uint64 handle;
-            // Case for C++ vulkan types:
-            if constexpr (requires(){typename Type::NativeType;})
-            {
-                using NativeType = typename Type::NativeType;
-                NativeType type = object;
-                handle = reinterpret_cast<uint64>(type);
-            }
-            // C version vulkan types.
-            else
-            {
-                handle = reinterpret_cast<uint64>(object);
-            }
-            
-            vk::DebugUtilsObjectNameInfoEXT nameInfo = vk::DebugUtilsObjectNameInfoEXT()
-                .setObjectHandle(handle)
-                .setObjectType(kType)
-                .setPObjectName(name.c_str());
-            
-            m_vkDevice.setDebugUtilsObjectNameEXT(nameInfo);
-        }
-#endif
-    }
 }

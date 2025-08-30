@@ -6,6 +6,9 @@
 #include "Nessie/Core/Color.h"
 #include "Nessie/Core/Memory/StrongPtr.h"
 #include "Nessie/Core/Thread/WorkerThread.h"
+#include "DeviceQueue.h"
+#include "CommandPool.h"
+#include "Swapchain.h"
 
 //-------------------------------------------------------------------------------------------------
 // Under development. The Renderer is being refactored as I abstract the Vulkan API.
@@ -133,7 +136,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current frame's command buffer to record commands. 
         //----------------------------------------------------------------------------------------------------
-        CommandBuffer&              GetCurrentCommandBuffer() const         { return *m_frames[m_currentFrameIndex].m_pCommandBuffer; }
+        CommandBuffer&              GetCurrentCommandBuffer()               { return m_frames[m_currentFrameIndex].m_commandBuffer; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the context of the current render frame. This includes information about the current
@@ -220,26 +223,24 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct FrameData
         {
-            CommandPool*                        m_pCommandPool{};                           // The Command Pool used for recording commands for this frame.
-            CommandBuffer*                      m_pCommandBuffer{};                         // The Command Buffer that contains this frame's rendering commands.
-            uint64                              m_frameNumber{};                            // Timeline value for synchronization (increases each frame).
+            CommandPool                         m_commandPool = nullptr;                   // The Command Pool used for recording commands for this frame.
+            CommandBuffer                       m_commandBuffer = nullptr;                 // The Command Buffer that contains this frame's rendering commands.
+            uint64                              m_frameNumber = 0;                          // Timeline value for synchronization (increases each frame).
         };
         
         RenderDevice&                           m_device;                                   // Device to create graphics resources.
         ApplicationWindow*                      m_pWindow;                                  // Window that we are rendering to.
         std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       // Command queues specific for freeing resources.
 
-        DeviceQueue*                            m_pRenderSubmissionQueue = nullptr;
-        CommandPool*                            m_pPresentCommandPool = nullptr;            // Command pool owned by the main thread. 
-        Swapchain*                              m_pSwapchain = nullptr;                     // Object that manages the target framebuffer to render to.
+        DeviceQueue*                            m_pRenderQueue = nullptr;                   // Device Queue that render commands are submitted to.
+        Swapchain                               m_swapchain = nullptr;                      // Object that manages the target framebuffer to render to.
         std::vector<FrameData>                  m_frames{};                                 // Collection of per-frame resources to support multiple frames in flight.
         vk::raii::Semaphore                     m_frameTimelineSemaphore = nullptr;         // Timeline semaphore used to synchronize CPU submission and GPU completion.
         uint32                                  m_currentFrameIndex = 0;                    // The current frame index in the frame data array (cycles through like a ring).
-
-        // TODO: These should be wrapped, not the Vulkan Types.
-        std::vector<vk::SemaphoreSubmitInfo>      m_waitSemaphores;                           // Possible extra wait semaphores.
-        std::vector<vk::SemaphoreSubmitInfo>      m_signalSemaphores;                         // Possible extra frame signal semaphores.
-        std::vector<vk::CommandBufferSubmitInfo>  m_commandBuffers;                           // Possible extra frame command buffers.
+        
+        std::vector<vk::SemaphoreSubmitInfo>      m_waitSemaphores;                         // Possible extra wait semaphores.
+        std::vector<vk::SemaphoreSubmitInfo>      m_signalSemaphores;                       // Possible extra frame signal semaphores.
+        std::vector<vk::CommandBufferSubmitInfo>  m_commandBuffers;                         // Possible extra frame command buffers.
         
         // Performance Values
         float                                   m_renderThreadWorkTime;                     // The amount of time the render thread was processing commands (ms).

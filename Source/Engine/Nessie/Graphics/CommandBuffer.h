@@ -1,7 +1,7 @@
 ﻿// CommandBuffer.h
 #pragma once
 #include "Barriers.h"
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 #include "GraphicsCommon.h"
 
 namespace nes
@@ -10,21 +10,22 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Command Buffer is used to record commands that are then submitted to a DeviceQueue.
+    ///     Command Buffers are created with a Command Pool.
     //----------------------------------------------------------------------------------------------------
-    class CommandBuffer final : public DeviceAsset
+    class CommandBuffer
     {
     public:
-        explicit                CommandBuffer(RenderDevice& device) : DeviceAsset(device) {}
-        
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Do not call directly; this will be called by CommandPool::CreateCommandBuffer().
-        //----------------------------------------------------------------------------------------------------
-        EGraphicsResult         Init(CommandPool* pPool, vk::raii::CommandBuffer&& cmdBuffer);
+        CommandBuffer(std::nullptr_t) {}
+        CommandBuffer(const CommandBuffer&) = delete;
+        CommandBuffer(CommandBuffer&& other) noexcept;
+        CommandBuffer& operator=(std::nullptr_t);
+        CommandBuffer& operator=(const CommandBuffer&) = delete;
+        CommandBuffer& operator=(CommandBuffer&& other) noexcept;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this command buffer. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            SetDebugName(const std::string& name) override;
+        void                    SetDebugName(const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Begin recording commands to this command buffer.
@@ -117,6 +118,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         const vk::raii::CommandBuffer& GetVkCommandBuffer() const { return m_buffer; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject          GetNativeVkObject() const;
+
     public:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Helper class that will set a label for commands within the given scope.
@@ -130,10 +136,19 @@ namespace nes
         private:
             CommandBuffer* m_commandBuffer = nullptr;
         };
+
+    private:
+        friend class CommandPool;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Constructor called by the Command Pool. 
+        //----------------------------------------------------------------------------------------------------
+        CommandBuffer(RenderDevice& device, CommandPool& pool, vk::raii::CommandBuffer&& cmdBuffer);
     
     private:
         vk::raii::CommandBuffer m_buffer = nullptr;             // The Vulkan Command Buffer object.
         CommandPool*            m_pCommandPool = nullptr;       // The command pool that created this buffer.
+        RenderDevice*           m_pDevice = nullptr;
         
         const Pipeline*         m_pPipeline = nullptr;          // The currently bound pipeline.
         const PipelineLayout*   m_pPipelineLayout = nullptr;    // The currently bound pipeline layout.
@@ -142,4 +157,6 @@ namespace nes
         uint16                  m_renderWidth = 0;              // The width of the render area in pixels.
         uint16                  m_renderHeight = 0;             // The height of the render area in pixels. 
     };
+
+    static_assert(DeviceObjectType<CommandBuffer>);
 }

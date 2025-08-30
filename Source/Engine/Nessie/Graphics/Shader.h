@@ -1,7 +1,7 @@
 ﻿// Shader.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 #include "Nessie/Asset/AssetBase.h"
 #include "Nessie/Core/Memory/Buffer.h"
 

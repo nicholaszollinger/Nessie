@@ -11,20 +11,77 @@
 
 namespace nes
 {
-    EGraphicsResult CommandBuffer::Init(CommandPool* pPool, vk::raii::CommandBuffer&& cmdBuffer)
+    CommandBuffer::CommandBuffer(CommandBuffer&& other) noexcept
+        : m_buffer(std::move(other.m_buffer))
+        , m_pCommandPool(other.m_pCommandPool)
+        , m_pDevice(other.m_pDevice)
+        , m_pPipeline(other.m_pPipeline)
+        , m_pPipelineLayout(other.m_pPipelineLayout)
+        , m_depthStencil(other.m_depthStencil)
+        , m_renderLayerCount(other.m_renderLayerCount)
+        , m_renderWidth(other.m_renderWidth)
+        , m_renderHeight(other.m_renderHeight)
     {
-        NES_ASSERT(pPool != nullptr);
-        
-        m_pCommandPool = pPool;
-        m_buffer = std::move(cmdBuffer);
+        other.m_pDevice = nullptr;
+        other.m_pCommandPool = nullptr;
+        other.m_pPipeline = nullptr;
+        other.m_pPipelineLayout = nullptr;
+        other.m_depthStencil = nullptr;
+        other.m_renderWidth = 0;
+        other.m_renderHeight = 0;
+        other.m_renderLayerCount = 0;
+    }
 
-        return EGraphicsResult::Success;
+    CommandBuffer& CommandBuffer::operator=(std::nullptr_t)
+    {
+        m_pDevice = nullptr;
+        m_pCommandPool = nullptr;
+        m_pPipeline = nullptr;
+        m_pPipelineLayout = nullptr;
+        m_depthStencil = nullptr;
+        m_renderWidth = 0;
+        m_renderHeight = 0;
+        m_renderLayerCount = 0;
+        return *this;
+    }
+
+    CommandBuffer& CommandBuffer::operator=(CommandBuffer&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_buffer = std::move(other.m_buffer);
+            m_pCommandPool = other.m_pCommandPool;
+            m_pDevice = other.m_pDevice;
+            m_pPipeline = other.m_pPipeline;
+            m_pPipelineLayout = other.m_pPipelineLayout;
+            m_depthStencil = other.m_depthStencil;
+            m_renderLayerCount = other.m_renderLayerCount;
+            m_renderWidth = other.m_renderWidth;
+            m_renderHeight = other.m_renderHeight;
+            
+            other.m_pDevice = nullptr;
+            other.m_pCommandPool = nullptr;
+            other.m_pPipeline = nullptr;
+            other.m_pPipelineLayout = nullptr;
+            other.m_depthStencil = nullptr;
+            other.m_renderWidth = 0;
+            other.m_renderHeight = 0;
+            other.m_renderLayerCount = 0;
+        }
+
+        return *this;
+    }
+
+    CommandBuffer::CommandBuffer(RenderDevice& device, CommandPool& pool, vk::raii::CommandBuffer&& cmdBuffer)
+    {
+        m_pDevice = &device;
+        m_pCommandPool = &pool;
+        m_buffer = std::move(cmdBuffer);
     }
 
     void CommandBuffer::SetDebugName(const std::string& name)
     {
-        vk::CommandBuffer buffer = *m_buffer;
-        m_device.SetDebugNameToTrivialObject(buffer, name);
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
     void CommandBuffer::Begin()
@@ -35,6 +92,7 @@ namespace nes
         
         m_buffer.begin(beginInfo);
 
+        // Clear bound pipeline values.
         m_pPipeline = nullptr;
         m_pPipelineLayout = nullptr;
     }
@@ -46,20 +104,22 @@ namespace nes
 
     void CommandBuffer::BeginCommandLabel([[maybe_unused]] const std::string& label, [[maybe_unused]] const LinearColor& color)
     {
-    #if NES_DEBUG
-        vk::DebugUtilsLabelEXT debugLabel = vk::DebugUtilsLabelEXT()
+        if (m_buffer.getDispatcher()->vkCmdBeginDebugUtilsLabelEXT)
+        {
+            vk::DebugUtilsLabelEXT debugLabel = vk::DebugUtilsLabelEXT()
             .setPLabelName(label.c_str())
             .setColor({color.r, color.g, color.b, color.a});
         
-        m_buffer.beginDebugUtilsLabelEXT(debugLabel);
-    #endif
+            m_buffer.beginDebugUtilsLabelEXT(debugLabel);
+        }
     }
 
     void CommandBuffer::EndCommandLabel()
     {
-    #if NES_DEBUG
-        m_buffer.endDebugUtilsLabelEXT();
-    #endif
+        if (m_buffer.getDispatcher()->vkCmdEndDebugUtilsLabelEXT)
+        {
+            m_buffer.endDebugUtilsLabelEXT();
+        }
     }
 
     void CommandBuffer::TransitionImageLayout(const vk::Image image, ImageMemoryBarrierDesc& barrierDesc) const
@@ -78,7 +138,7 @@ namespace nes
     {
         NES_ASSERT(targetsDesc.HasTargets());
         
-        const DeviceDesc& deviceDesc = m_device.GetDesc();
+        const DeviceDesc& deviceDesc = m_pDevice->GetDesc();
         
         // From NRI:
         //  If there are no attachments, the render area is maxed.
@@ -181,7 +241,7 @@ namespace nes
     {
         if (clearDescs.empty())
             return;
-
+        
         // Create the array of clear attachments.
         uint32 attachmentCount = 0;
         std::vector<vk::ClearAttachment> attachments(clearDescs.size());
@@ -303,6 +363,11 @@ namespace nes
     void CommandBuffer::DrawIndexed(const DrawIndexedDesc& draw)
     {
         m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_firstVertex), draw.m_firstInstance);
+    }
+
+    NativeVkObject CommandBuffer::GetNativeVkObject() const
+    {
+        return NativeVkObject(*m_buffer, vk::ObjectType::eCommandBuffer);
     }
 
     CommandBuffer::ScopedCommandLabel::ScopedCommandLabel(CommandBuffer& buffer, const std::string& label, const LinearColor& color)

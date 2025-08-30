@@ -1,7 +1,7 @@
 ﻿// TimelineSemaphore.h
 #pragma once
 #include "GraphicsCommon.h"
-#include "DeviceAsset.h"
+#include "DeviceObject.h"
 
 namespace nes
 {
@@ -20,29 +20,26 @@ namespace nes
     /// In both cases, a copy of this class can be made to later check the completion status of the timeline
     /// semaphore.
     //----------------------------------------------------------------------------------------------------
-    class SemaphoreState final : public DeviceAsset
+    class SemaphoreState
     {
     public:
         static constexpr uint64 kDefaultTimeout = 5000 * 1000000ull; // 5 seconds, in microseconds.
         
     public:
-        explicit                SemaphoreState(RenderDevice& device) : DeviceAsset(device) {}
-        virtual                 ~SemaphoreState() override;
-
-        /// Operator to convert to Vulkan Type.
-        operator                VkSemaphore() const { return m_handle; }
+        SemaphoreState(std::nullptr_t) {}
+        SemaphoreState(const SemaphoreState&) = delete;
+        SemaphoreState(SemaphoreState&& other) noexcept;
+        SemaphoreState& operator=(std::nullptr_t);
+        SemaphoreState& operator=(const SemaphoreState&) = delete;
+        SemaphoreState& operator=(SemaphoreState&& other) noexcept;
+        ~SemaphoreState();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Initialization function called by the RenderDevice.
+        /// @brief : Creates a semaphore state.
         /// @param initialValue : If set to 0, the Semaphore will be Dynamic and will need to have SetDynamicValue()
         ///     called once at a later time. If non-zero, the Semaphore will be in the Fixed state. 
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult         Init(const uint64 initialValue);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Set a debug name for this semaphore.
-        //----------------------------------------------------------------------------------------------------
-        virtual void            SetDebugName(const std::string& name) override;
+        SemaphoreState(RenderDevice& device, const uint64 initialValue);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : This function can only be called once and is only allowed if the Semaphore was initialized
@@ -110,9 +107,19 @@ namespace nes
         EGraphicsResult         Wait(const uint64 timeout = kDefaultTimeout) const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the Vulkan Semaphore handle.
+        /// @brief : Set a debug name for this semaphore.
         //----------------------------------------------------------------------------------------------------
-        VkSemaphore             GetHandle() const { return m_handle; }
+        void                    SetDebugName(const std::string& name);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Vulkan Semaphore object.
+        //----------------------------------------------------------------------------------------------------
+        vk::Semaphore           GetVkSemaphore() const { return m_semaphore; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the native vulkan object handle, and the type.
+        //----------------------------------------------------------------------------------------------------
+        NativeVkObject          GetNativeVkObject() const;
         
         ////----------------------------------------------------------------------------------------------------
         ///// @brief : Create submit info for this Semaphore.
@@ -124,6 +131,11 @@ namespace nes
         /// @brief : Attempts to convert a dynamic state to a fixed value. This can speed up future waits. 
         //----------------------------------------------------------------------------------------------------
         void                    TryFixate();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Free the Semaphore object. 
+        //----------------------------------------------------------------------------------------------------
+        void                    FreeSemaphore();
         
     private:
         //----------------------------------------------------------------------------------------------------
@@ -132,8 +144,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         using DynamicValue = std::shared_ptr<std::atomic<uint64>>;
 
+        /// Render Device handle.
+        RenderDevice*           m_pDevice = nullptr;
+        
         /// Handle to the Semaphore object.
-        VkSemaphore             m_handle = nullptr;
+        vk::raii::Semaphore     m_semaphore = nullptr;
 
         /// The Dynamic value can be set only once and is a shared state across all copies of this Semaphore.
         /// This doesn't exist for a fixed-value semaphore state.
@@ -143,4 +158,6 @@ namespace nes
         /// If non-zero, this represents a fixed value or the locally cached value of the dynamic state.
         uint64                  m_fixedValue = 0;
     };
+
+    static_assert(DeviceObjectType<SemaphoreState>);
 }

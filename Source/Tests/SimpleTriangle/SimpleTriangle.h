@@ -2,6 +2,10 @@
 #pragma once
 #include "Nessie/Application/Application.h"
 #include "Nessie/Asset/AssetBase.h"
+#include "Nessie/Graphics/DeviceBuffer.h"
+#include "Nessie/Graphics/DeviceImage.h"
+#include "Nessie/Graphics/Pipeline.h"
+#include "Nessie/Graphics/PipelineLayout.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : This example application renders a Triangle to the screen.
@@ -24,8 +28,9 @@ private:
     };
     
     nes::AssetID            m_shaderID = nes::kInvalidAssetID;
-    nes::PipelineLayout*    m_pPipelineLayout = nullptr;
-    nes::Pipeline*          m_pPipeline = nullptr;
-    nes::DeviceBuffer*      m_pVertexBuffer = nullptr;
+    nes::PipelineLayout     m_pipelineLayout = nullptr;
+    nes::Pipeline           m_pipeline = nullptr;
+    nes::DeviceBuffer       m_vertexBuffer = nullptr;
     nes::VertexBufferDesc   m_vertexBufferDesc = {};
+    nes::DeviceQueue*       m_pTransferQueue = nullptr;
 };

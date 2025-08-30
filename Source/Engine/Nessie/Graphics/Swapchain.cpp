@@ -11,20 +11,68 @@
 
 namespace nes
 {
-    Swapchain::~Swapchain()
+    Swapchain::Swapchain(Swapchain&& other) noexcept
+        : m_pDevice(other.m_pDevice)
+        , m_pQueue(other.m_pQueue)
+        , m_pWindow(other.m_pWindow)
+        , m_swapchain(std::move(other.m_swapchain))
+        , m_swapchainImageFormat(other.m_swapchainImageFormat)
+        , m_surface(std::move(other.m_surface))
+        , m_images(std::move(other.m_images))
+        , m_imageViews(std::move(other.m_imageViews))
+        , m_frameResources(std::move(other.m_frameResources))
+        , m_swapchainExtent(other.m_swapchainExtent)
+        , m_frameResourceIndex(other.m_frameResourceIndex)
+        , m_frameImageIndex(other.m_frameImageIndex)
+        , m_needsRebuild(other.m_needsRebuild)
+        , m_preferredVsyncOffMode(other.m_preferredVsyncOffMode)
+        , m_maxFramesInFlight(other.m_maxFramesInFlight)
     {
-        DestroySwapchain();
+        other.m_pDevice = nullptr;
+        other.m_pQueue = nullptr;
+        other.m_pWindow = nullptr;
     }
 
-    EGraphicsResult Swapchain::Init(const SwapchainDesc& swapchainDesc)
+    Swapchain& Swapchain::operator=(std::nullptr_t)
     {
-        // Ensure that we haven't been initialized yet.
-        NES_GRAPHICS_ASSERT(m_device, m_surface == nullptr);
+        DestroySwapchain();
+        return *this;
+    }
 
+    Swapchain& Swapchain::operator=(Swapchain&& other) noexcept
+    {
+        if (this != &other)
+        {
+            DestroySwapchain();
+
+            m_pDevice = other.m_pDevice;
+            m_pQueue = other.m_pQueue;
+            m_pWindow = other.m_pWindow;
+            m_swapchain = std::move(other.m_swapchain);
+            m_swapchainImageFormat = other.m_swapchainImageFormat;
+            m_surface = std::move(other.m_surface);
+            m_images = std::move(other.m_images);
+            m_imageViews = std::move(other.m_imageViews);
+            m_frameResources = std::move(other.m_frameResources);
+            m_swapchainExtent = other.m_swapchainExtent;
+            m_frameResourceIndex = other.m_frameResourceIndex;
+            m_frameImageIndex = other.m_frameImageIndex;
+            m_needsRebuild = other.m_needsRebuild;
+            m_preferredVsyncOffMode = other.m_preferredVsyncOffMode;
+            m_maxFramesInFlight = other.m_maxFramesInFlight;
+
+            other.m_pDevice = nullptr;
+            other.m_pQueue = nullptr;
+            other.m_pWindow = nullptr;
+        }
+
+        return *this;
+    }
+
+    Swapchain::Swapchain(RenderDevice& device, const SwapchainDesc& swapchainDesc)
+        : m_pDevice(&device)
+    {
         m_pQueue = swapchainDesc.m_pDeviceQueue;
-        m_pCommandPool = swapchainDesc.m_pCommandPool;
-        NES_GRAPHICS_ASSERT(m_device, m_pQueue != nullptr);
-        NES_GRAPHICS_ASSERT(m_device, m_pCommandPool != nullptr);
         
         const uint32 familyIndex = m_pQueue->GetFamilyIndex();
 
@@ -32,19 +80,24 @@ namespace nes
         const NativeWindow& nativeWindow = swapchainDesc.m_pWindow->GetNativeWindow();
         m_pWindow = static_cast<GLFWwindow*>(nativeWindow.m_glfw);
         
-        VkSurfaceKHR surface = vulkan::glfw::CreateSurface(m_device, m_pWindow);
-        m_surface = vk::raii::SurfaceKHR(m_device, surface);
+        VkSurfaceKHR surface = vulkan::glfw::CreateSurface(device, m_pWindow);
+        m_surface = vk::raii::SurfaceKHR(device, surface);
 
         // Check that the given device queue can be used to present to the surface.
-        const VkBool32 presentSupported = m_device.GetVkPhysicalDevice().getSurfaceSupportKHR(familyIndex, *m_surface);
+        const VkBool32 presentSupported = device.GetVkPhysicalDevice().getSurfaceSupportKHR(familyIndex, *m_surface);
         if (!presentSupported)
         {
-            NES_GRAPHICS_ERROR(m_device, "Selected Queue family {} cannot present to the surface! Swapchain creation failed!", familyIndex);
-            return EGraphicsResult::Unsupported;
+            NES_FATAL("Selected Queue family {} cannot present to the surface! Swapchain creation failed!", familyIndex);
+            return;
         }
         
         // Build the initial swapchain to the size of the Window.
-        return BuildSwapchain(swapchainDesc.m_pWindow->GetResolution(), swapchainDesc.m_pWindow->IsVsyncEnabled());
+        BuildSwapchain(swapchainDesc.m_pWindow->GetResolution(), swapchainDesc.m_pWindow->IsVsyncEnabled());
+    }
+
+    Swapchain::~Swapchain()
+    {
+        DestroySwapchain();
     }
 
     EGraphicsResult Swapchain::OnResize(const UVec2 desiredWindowSize, const bool enableVsync)
@@ -60,7 +113,7 @@ namespace nes
 
     EGraphicsResult Swapchain::AcquireNextImage()
     {
-        NES_GRAPHICS_ASSERT(m_device, m_needsRebuild == false);
+        NES_ASSERT(m_needsRebuild == false);
 
         // Get the frame resources for the current frame
         // We use m_currentFrame here because we want to ensure we don't overwrite resources
@@ -84,7 +137,7 @@ namespace nes
                 break;
                 
             default:
-                NES_GRAPHICS_WARN(m_device, "Failed to acquire swapchain image: Vulkan Error: {}", vk::to_string(result));
+                NES_GRAPHICS_WARN(*m_pDevice, "Failed to acquire swapchain image: Vulkan Error: {}", vk::to_string(result));
                 break;
         }
         
@@ -117,7 +170,7 @@ namespace nes
         }
         else
         {
-            NES_GRAPHICS_ASSERT(m_device, result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
+            NES_ASSERT(result == vk::Result::eSuccess || result == vk::Result::eSuboptimalKHR);
         }
 
         // Advance to the next frame in the swapchain
@@ -126,16 +179,14 @@ namespace nes
 
     void Swapchain::SetDebugName(const std::string& name)
     {
-        vk::SwapchainKHR swapchain = *m_swapchain;
-        m_device.SetDebugNameToTrivialObject(swapchain, name);
-
-        vk::SurfaceKHR surface = *m_surface;
-        m_device.SetDebugNameToTrivialObject(surface, "Swapchain Surface");
+        NES_ASSERT(m_pDevice);
+        m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
+        m_pDevice->SetDebugNameVkObject(NativeVkObject(*m_surface, vk::ObjectType::eSurfaceKHR), "Swapchain Surface");
     }
 
     EGraphicsResult Swapchain::BuildSwapchain(const UVec2 /*desiredWindowSize*/, const bool enableVsync)
     {
-        const auto& physicalDevice = m_device.GetVkPhysicalDevice();
+        const auto& physicalDevice = m_pDevice->GetVkPhysicalDevice();
         auto surfaceCapabilities = physicalDevice.getSurfaceCapabilitiesKHR(m_surface);
         std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(m_surface);
         std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(m_surface);
@@ -162,7 +213,7 @@ namespace nes
             .setPreTransform(surfaceCapabilities.currentTransform)
             .setClipped(true);
 
-        m_swapchain = vk::raii::SwapchainKHR(m_device, swapChainCreateInfo);
+        m_swapchain = vk::raii::SwapchainKHR(*m_pDevice, swapChainCreateInfo);
         
         // Create the image resources for the swapchain.
         CreateImages();
@@ -184,26 +235,15 @@ namespace nes
 
     void Swapchain::DestroySwapchain()
     {
-        // Destroy current descriptors
-        for (auto* pDescriptor : m_imageViews)
-        {
-            m_device.FreeResource(pDescriptor);
-        }
         m_imageViews.clear();
-        
-        // Destroy current image resources (this will not destroy the vk::Images, as they are owned by the swapchain).
-        for (auto* pImage : m_images)
-        {
-            m_device.FreeResource(pImage);
-        }
         m_images.clear();
-
-        // raii type cleans up the swapchain object.
         m_swapchain = nullptr;
-
-        // This will clean up all resources, since we use the vk::raii objects.
         m_frameResources.clear();
-        
+    }
+
+    NativeVkObject Swapchain::GetNativeVkObject() const
+    {
+        return NativeVkObject(*m_swapchain, vk::ObjectType::eSwapchainKHR);
     }
 
     vk::Format Swapchain::SelectSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR>& availableFormats) const
@@ -268,14 +308,10 @@ namespace nes
 
     void Swapchain::CreateImages()
     {
-        for (auto* pImage : m_images)
-        {
-            m_device.FreeResource(pImage);
-        }
         m_images.clear();
 
         auto vkImages = m_swapchain.getImages();
-        m_images.resize(vkImages.size());
+        m_images.reserve(vkImages.size());
         for (uint32 i = 0; i < vkImages.size(); i++)
         {
             ImageDesc desc = {};
@@ -287,20 +323,14 @@ namespace nes
             desc.m_mipCount = 1;
             desc.m_layerCount = 1;
             desc.m_sampleCount = 1;
-
-            DeviceImage* pImage = Allocate<DeviceImage>(m_device.GetAllocationCallbacks(), m_device);
-            pImage->Init(vkImages[i], desc);
-            m_images[i] = pImage;
+            
+            m_images.emplace_back(DeviceImage(*m_pDevice, vkImages[i], desc));
         }
     }
 
     void Swapchain::CreateImageViews()
     {
         // Destroy current descriptors
-        for (auto* pDescriptor : m_imageViews)
-        {
-            m_device.FreeResource(pDescriptor);
-        }
         m_imageViews.clear();
 
         Image2DViewDesc desc{};
@@ -312,14 +342,10 @@ namespace nes
         desc.m_layerCount = 1;
         
         // Create the new descriptors:
-        for (const auto* pImage : m_images)
+        for (const auto& image : m_images)
         {
-            //imageViewCreateInfo.image = image;
-            desc.m_pImage = pImage;
-            Descriptor* pView = nullptr;
-            
-            m_device.CreateResource<Descriptor>(pView, desc);
-            m_imageViews.emplace_back(pView);
+            desc.m_pImage = &image;
+            m_imageViews.emplace_back(Descriptor(*m_pDevice, desc));
         }
     }
 
@@ -333,8 +359,8 @@ namespace nes
         m_frameResources.resize(m_images.size());
         for (size_t i = 0; i < m_images.size(); ++i)
         {
-            m_frameResources[i].m_renderFinished = vk::raii::Semaphore(m_device, kSemaphoreInfo, m_device.GetVkAllocationCallbacks());
-            m_frameResources[i].m_imageAvailable = vk::raii::Semaphore(m_device, kSemaphoreInfo, m_device.GetVkAllocationCallbacks());
+            m_frameResources[i].m_renderFinished = vk::raii::Semaphore(*m_pDevice, kSemaphoreInfo, m_pDevice->GetVkAllocationCallbacks());
+            m_frameResources[i].m_imageAvailable = vk::raii::Semaphore(*m_pDevice, kSemaphoreInfo, m_pDevice->GetVkAllocationCallbacks());
         }
     }
 }

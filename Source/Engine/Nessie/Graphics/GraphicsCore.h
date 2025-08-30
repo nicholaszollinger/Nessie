@@ -1,16 +1,11 @@
 ﻿// GraphicsCore.h
 #pragma once
+#include <array>
 #include "Nessie/Core/Config.h"
 #include "Nessie/Debug/Assert.h"
 #include "Nessie/Math/Math.h"
-#include <array>
 
-// [TODO]: I don't want to have this include here.
-#include <vulkan/vulkan_raii.hpp>
-#undef SendMessage
-
-#define NES_BEGIN_GRAPHICS_NAMESPACE namespace nes::graphics {
-#define NES_END_GRAPHICS_NAMESPACE }
+#include "Nessie/Graphics/Vulkan/VulkanObject.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Same as VK_DEFINE_HANDLE.
@@ -26,7 +21,6 @@
 //----------------------------------------------------------------------------------------------------
 // Forward declare VMA types.
 //----------------------------------------------------------------------------------------------------
-
 NES_GRAPHICS_DEFINE_HANDLE(VmaAllocator);
 NES_GRAPHICS_DEFINE_HANDLE(VmaAllocation);
 NES_GRAPHICS_DEFINE_HANDLE(VmaPool);
@@ -155,25 +149,4 @@ namespace nes
                 return returnVal;                                                           \
             }                                                                               \
         } while (false)
-
-#if NES_DEBUG
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Assert that an expression is true. This uses the RenderDevice's debug messenger callback.
-    ///	@param renderDevice : Reference to the render device to report the message. 
-    ///	@param expression : Boolean expression to test. 
-    //----------------------------------------------------------------------------------------------------
-    #define NES_GRAPHICS_ASSERT(renderDevice, expression)                                   \
-        do                                                                                  \
-        {                                                                                   \
-            (renderDevice).CheckResult(expression, #expression, __FILE__, __LINE__);        \
-            if (!(expression))                                                              \
-            {                                                                               \
-                NES_BREAKPOINT;                                                             \
-            }                                                                               \
-        } while (false)
-
-#else
-    #define NES_GRAPHICS_ASSERT(renderDevice, expression)
-#endif
-    
 }
