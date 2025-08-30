@@ -3,10 +3,10 @@
 #include "BodyCreateInfo.h"
 #include "BodyID.h"
 #include "MotionProperties.h"
-#include "Core/Generic/GenerationalID.h"
-#include "Math/Bit.h"
-#include "Physics/Collision/TransformedShape.h"
-#include "Physics/Collision/BroadPhase/BroadPhaseLayer.h"
+#include "Nessie/Core/GenerationalID.h"
+#include "Nessie/Math/Bit.h"
+#include "Nessie/Physics/Collision/TransformedShape.h"
+#include "Nessie/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
 
 namespace nes
 {
@@ -194,6 +194,11 @@ namespace nes
         inline bool             GetUseManifoldReduction() const                         { return GetFlag(EFlags::UseManifoldReduction); }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if the combination of this body and body2 should use manifold reduction.
+        //----------------------------------------------------------------------------------------------------
+        inline bool             GetUseManifoldReductionWithBody(const Body& body2) const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Set to indicate that gyroscopic force should be applied to this body.
         ///     (aka Dzhanibekov effect, see https://en.wikipedia.org/wiki/Tennis_racket_theorem)
         //----------------------------------------------------------------------------------------------------
@@ -225,7 +230,7 @@ namespace nes
         /// @brief : Check if this body can go to sleep. Note that disabling sleeping on a sleeping object will
         ///     not wake it up directly.
         //----------------------------------------------------------------------------------------------------
-        inline bool             CanSleep() const                                        { return m_pMotionProperties->m_canSleep; }
+        inline bool             CanSleep() const                                        { return m_pMotionProperties->m_allowSleeping; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether this body can go to sleep. Note that disabling sleeping on a sleeping object will
@@ -555,7 +560,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update eligibility for sleeping. 
         //----------------------------------------------------------------------------------------------------
-        EAllowedSleep           Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep);
+        ECanSleep               Internal_UpdateSleepState(const float deltaTime, float maxMovement, float timeBeforeSleep);
 
 #ifdef NES_LOGGING_ENABLED
         inline void             Internal_ValidateCachedBounds() const;

@@ -1,6 +1,6 @@
 ﻿// Camera.h
 #pragma once
-#include "Math/Math.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {
@@ -13,7 +13,7 @@ namespace nes
     class Camera
     {
     public:
-        enum EProjectionType : uint8_t
+        enum EProjectionType : uint8
         {
             Perspective = 0,
             Orthographic,
@@ -33,7 +33,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Update the Camera's Projection Matrix based on the new viewport. 
         //----------------------------------------------------------------------------------------------------
-        void            UpdateViewport(const uint32_t width, const uint32_t height, const bool flipYAxis = true);
+        void            UpdateViewport(const uint32 width, const uint32 height, const bool flipYAxis = true);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether this camera is perspective or orthographic.
@@ -64,7 +64,7 @@ namespace nes
         ///	@param farPlane : The far plane distance from the view position. 1000.f is a reasonable default.
         ///	@param flipYAxis : If you need to flip the Y-axis.
         //----------------------------------------------------------------------------------------------------
-        void            SetPerspective(const float fovRadians, const uint32_t viewWidth, const uint32_t viewHeight, const float nearPlane, const float farPlane, const bool flipYAxis = true);
+        void            SetPerspective(const float fovRadians, const uint32 viewWidth, const uint32 viewHeight, const float nearPlane, const float farPlane, const bool flipYAxis = true);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Create a Camera that uses single-point perspective. This is the standard viewing for most
@@ -108,7 +108,7 @@ namespace nes
         /// @param far : The far plane distance from the view position. 1000.f is a reasonable default.
         /// @param flipYAxis : If you need to flip the Y-axis.
         //----------------------------------------------------------------------------------------------------
-        void            SetOrthographic(const uint32_t viewWidth, const uint32_t viewHeight, const float orthographicSize, const float near = -1.0, const float far = 1.0, const bool flipYAxis = true);
+        void            SetOrthographic(const uint32 viewWidth, const uint32 viewHeight, const float orthographicSize, const float near = -1.0, const float far = 1.0, const bool flipYAxis = true);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the size of the orthographic projection.

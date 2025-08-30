@@ -1,5 +1,5 @@
-#pragma once
 // InputCodes.h
+#pragma once
 
 namespace nes
 {
@@ -91,6 +91,8 @@ namespace nes
         RightShift,
         RightAlt,
         RightSuper,
+
+        MaxNum
     };
 
     enum class EKeyAction : int
@@ -119,6 +121,8 @@ namespace nes
         Back,
         Forward,
         Unknown,
+
+        MaxNum
     };
 
     enum class EMouseAction : int

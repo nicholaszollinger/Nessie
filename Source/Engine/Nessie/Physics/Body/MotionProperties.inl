@@ -323,7 +323,7 @@ namespace nes
     void MotionProperties::Internal_ResetSleepTestSpheres(const Vec3* pPoints)
     {
 #ifdef NES_DOUBLE_PRECISION
-
+        // [TODO]: 
 #else
         for (int i = 0; i < 3; ++i)
         {
@@ -334,9 +334,9 @@ namespace nes
         m_sleepTestTimer = 0.f;
     }
 
-    EAllowedSleep MotionProperties::Internal_AccumulateSleepTime(const float deltaTime, const float timeBeforeSleep)
+    ECanSleep MotionProperties::Internal_AccumulateSleepTime(const float deltaTime, const float timeBeforeSleep)
     {
         m_sleepTestTimer += deltaTime;
-        return m_sleepTestTimer >= timeBeforeSleep? EAllowedSleep::CanSleep : EAllowedSleep::CannotSleep;
+        return m_sleepTestTimer >= timeBeforeSleep? ECanSleep::CanSleep : ECanSleep::CannotSleep;
     }
 }

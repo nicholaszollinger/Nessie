@@ -1,7 +1,7 @@
 ﻿// DOF.h
 #pragma once
 #include <cstdint>
-#include "Core/Generic/BitOperators.h"
+#include "Nessie/Core/Macro.h"
 
 namespace nes
 {

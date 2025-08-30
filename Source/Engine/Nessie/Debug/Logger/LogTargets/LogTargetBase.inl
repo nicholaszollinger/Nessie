@@ -1,6 +1,6 @@
 ﻿// LogTargetBase.inl
 #pragma once
-#include "Debug/Logger/LogFormatters/PatternFormatter.h"
+#include "Nessie/Debug/Logger/LogFormatters/PatternFormatter.h"
 
 namespace nes
 {

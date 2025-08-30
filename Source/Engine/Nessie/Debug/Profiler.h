@@ -1,7 +1,7 @@
 #pragma once
 // Profiler.h
-#include "Debug/Log.h"
-#include "Core/Time/Timer.h"
+#include "Nessie/Debug/Log.h"
+#include "Nessie/Core/Time/Timer.h"
 
 #if NES_LOGGING_ENABLED
 //----------------------------------------------------------------------------------------------------

@@ -1,12 +1,14 @@
 ﻿// MathConfig.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 /// Uncomment to set NES_PRECISION_TYPE to "double". This is used across all default math types.
 /// Otherwise, the precision type is "float".
 // #define NES_DOUBLE_PRECISION
 
 #ifdef NES_DOUBLE_PRECISION
+#error "Double Precision classes not setup properly yet!"
+
     #define NES_IF_SINGLE_PRECISION(...)
     #define NES_IF_SINGLE_PRECISION_ELSE(singleArg, doubleArg) doubleArg
     #define NES_IF_DOUBLE_PRECISION(...) __VA_ARGS__

@@ -1,8 +1,7 @@
 ﻿// FreeCamMoveComponent.h
 #pragma once
 #include "Entity3DComponent.h"
-#include "Math/Vec2.h"
-#include "Math/Vec3.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {

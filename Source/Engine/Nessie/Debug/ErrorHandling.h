@@ -1,25 +1,15 @@
 ﻿// ErrorHandling.h
 #pragma once
 #include "Log.h"
-#include "Platform/Platform.h"
-
-#ifndef NES_RELEASE
-    #define NES_ASSERTS_ENABLED 1
-#else
-    #define NES_ASSERTS_DISABLED 0
-#endif
-
-#if NES_ASSERTS_ENABLED
-    #define NES_IF_ASSERTS_ENABLED(...) __VA_ARGS__
-    #define NES_IF_ASSERTS_DISABLED(...)
-#else
-    #define NES_IF_ASSERTS_ENABLED(...)
-    #define NES_IF_ASSERTS_DISABLED(...) __VA_ARGS__
-#endif
-
+#include "Nessie/Core/PlatformConstants.h"
 
 namespace nes::internal
 {
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : You should not call this directly. Platform-specific response to a fatal error.
+    //----------------------------------------------------------------------------------------------------
+    extern void HandleFatalError(const std::string& reason, const std::string& message);
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Formats the Assertion failed message and posts the log if NES_LOGGING_ENABLED is defined. 
     //----------------------------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 // ScaleHelpers.h
 #pragma once
-#include "Math/Vec3.h"
-#include "Physics/PhysicsSettings.h"
+#include "Nessie/Math/Math.h"
+#include "Nessie/Physics/PhysicsSettings.h"
 
 namespace nes::ScaleHelpers
 {

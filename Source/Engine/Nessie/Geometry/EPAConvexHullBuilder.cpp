@@ -1,6 +1,6 @@
 // EPAConvexHullBuilder.cpp
 #include "EPAConvexHullBuilder.h"
-#include "Core/BinaryHeap.h"
+#include "Nessie/Core/BinaryHeap.h"
 
 namespace nes
 {
@@ -40,7 +40,7 @@ namespace nes
         // Therefore, we can suffice by just picking the shortest from 2 edges and use that with the 3rd edge to calculate the normal.
         // We first check which of the edges is shorter.
         float e20Dote20 = e20.Dot(e20);
-        float e21Dote21 = e20.Dot(e21);
+        float e21Dote21 = e21.Dot(e21);
         if (e20Dote20 < e21Dote21)
         {
             // We select the edges e10 and e20
@@ -149,21 +149,20 @@ namespace nes
         m_highWatermark = 0;
     }
 
-    EPAConvexHullBuilder::Triangle* EPAConvexHullBuilder::TriangleFactory::CreateTriangle(int index0, int index1,
-        int index2, const Vec3* pPositions)
+    EPAConvexHullBuilder::Triangle* EPAConvexHullBuilder::TriangleFactory::CreateTriangle(const int index0, const int index1, const int index2, const Vec3* pPositions)
     {
         Triangle* pResult;
         if (m_pNextFree != nullptr)
         {
             // Entry available in the free list
             pResult = reinterpret_cast<Triangle*>(&m_pNextFree->m_triangle);
-            m_pNextFree = m_pNextFree->m_pNextFreeBlock;
+            m_pNextFree = m_pNextFree->m_pNextFree;
         }
         else
         {
             // Allocate from never used before triangle storage
             if (m_highWatermark >= kMaxTriangles)
-                return nullptr;
+                return nullptr; // Buffer full.
             
             pResult = reinterpret_cast<Triangle*>(&m_triangles[m_highWatermark].m_triangle);
             ++m_highWatermark;
@@ -184,7 +183,7 @@ namespace nes
 
         // Add Triangle to the free list
         Block* pBlock = reinterpret_cast<Block*>(pTriangle);
-        pBlock->m_pNextFreeBlock = m_pNextFree;
+        pBlock->m_pNextFree = m_pNextFree;
         m_pNextFree = pBlock;
     }
 
@@ -283,8 +282,8 @@ namespace nes
             outTriangles.push_back(pNew);
 
             // Check if we need to put this triangle in the priority queue.
-            if ((pNew->m_closestPointInterior && pNew->m_closestLengthSqr < closestDistSqr)
-                || pNew->m_closestLengthSqr < 0.f)
+            if ((pNew->m_closestPointInterior && pNew->m_closestLengthSqr < closestDistSqr) // For the main algorithm.
+                || pNew->m_closestLengthSqr < 0.f)                                          // For when the origin is not inside the hull yet.
             {
                 m_queue.push_back(pNew);
             }
@@ -420,13 +419,13 @@ namespace nes
                 Triangle* pNeighbor = edge.m_pNeighborTriangle;
                 if (pNeighbor != nullptr && !pNeighbor->m_isRemoved)
                 {
-                    // Check if vertex is on the front side of this triangle
+                    // Check if the vertex is on the front side of this triangle
                     if (pNeighbor->IsFacing(vertex))
                     {
                         // Vertex on front, this triangle needs to be removed
                         pNeighbor->m_isRemoved = true;
 
-                        // Add element to the stack of elements to visit
+                        // Add the element to the stack of elements to visit
                         ++currentStackPos;
                         NES_ASSERT(currentStackPos < kMaxEdgeLength);
                         StackEntry& newEntry = stack[currentStackPos];
@@ -445,7 +444,7 @@ namespace nes
                         if (edge.m_startIndex != nextExpectedStartIndex && nextExpectedStartIndex != -1)
                             return false;
 
-                        // Next expected index is the start index of our neighbour's edge
+                        // The next expected index is the start index of our neighbor's edge
                         nextExpectedStartIndex = pNeighbor->m_edges[edge.m_neighborEdge].m_startIndex;
 
                         // Vertex behind, keep edge
@@ -459,8 +458,8 @@ namespace nes
         NES_ASSERT(outEdges.empty() || outEdges[0].m_startIndex == nextExpectedStartIndex);
 
         // When we start with two triangles facing away from each other and adding a point that is on the plane,
-        // sometimes we consider the point in front of both causing both triangles to be removed resulting in an empty edge list.
-        // In this case we fail to add the point which will result in no collision reported (the shapes are contacting in 1 point so there's 0 penetration)
+        // we sometimes consider the point in front of both causing both triangles to be removed This results in an empty edge-list.
+        // In this case, we fail to add the point which will result in no collision reported (the shapes are contacting in 1 point so there's 0 penetration).
         return outEdges.size() >= 3;
     }
 }

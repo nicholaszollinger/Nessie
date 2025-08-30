@@ -1,6 +1,5 @@
 -- DependencyInjector.lua
-
-local utility = require("Utility")
+local utility = require("Utility");
 local projectCore = require("ProjectCore");
 
 premake.modules.DependencyInjector = {};
@@ -15,6 +14,8 @@ local BUILD_EXTENSION = ".Build.lua";
 function m.Init()
     utility.SetupModule(m, "DependencyInjector", true);
     m._targets = {};
+    m._errorString = nil;
+    m._operationString = "Register Build Targets";
 
     local matches = os.matchdirs(projectCore.SourceFolder .. "\\*");
 
@@ -22,7 +23,7 @@ function m.Init()
     for i = 1, #matches do
         local folder = matches[i];
         if (m._RegisterBuildTargetsFromFolder(folder) == false) then
-            m.PrintError("Failed to run Build Targets from folder: '" .. folder .. "'!");
+            m.PrintError("Failed to run build target from folder: '" .. folder .. "'!");
             return false;
         end
     end
@@ -37,36 +38,42 @@ end
 ---@return boolean Success Whether the dependency was successfully linked.
 -----------------------------------------------------------------------------------
 function m.Link(targetName)
+    -- Early out if there were errors reported.
+    if (m._errorString ~= nil) then
+        return false;
+    end
+
     if (m._targets[targetName] ~= nil) then
         local target = m._targets[targetName];
 
         -- Ensure Include function
         if (target.Include == nil) then
-            m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Include() function found!");
+            m._errorString = "Failed to Link Dependency: '" .. targetName .. "'! No Include() function found!";
             return false;
         end
 
         -- Ensure Link function
         if (target.Link == nil) then
-            m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Link() function found!");
+            m._errorString = "Failed to Link Dependency: '" .. targetName .. "'! No Link() function found!";
             return false;
         end
 
         -- Set the flag for denoting that this Dependency is actually used.
         target.IsUsed = true;
 
-        target.Include(target.Directory);
-        target.Link(target.Directory);
+        target.Include();
+        target.Link();
 
         -- If the target is a Project, set it as a build dependency for the current project.
         if (target.ConfigureProject ~= nil) then
             dependson(targetName);
         end
-        
-        return true;
+
+        return m._errorString == nil;
     end
 
-    m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Dependency with that name was found!");
+    -- Failed to find the dependency.
+    m._errorString = "Failed to Link Dependency: '" .. targetName .. "'! No Dependency with that name was found!";
     return false;
 end
 
@@ -77,45 +84,55 @@ end
 ---@return boolean Success Whether the dependency was successfully linked.
 -----------------------------------------------------------------------------------
 function m.Include(targetName)
+    -- Early out if there were errors reported.
+    if (m._errorString ~= nil) then
+        return false;
+    end
+
     if (m._targets[targetName] ~= nil) then
         local target = m._targets[targetName];
 
         -- Ensure Include function
         if (target.Include == nil) then
-            m.PrintError("Failed to Link Dependency: '" .. targetName .. "'! No Include() function found!");
+            m._errorString = "Failed to Link Dependency: '" .. targetName .. "'! No Include() function found!";
             return false;
         end
 
         -- Set the flag for denoting that this Dependency is actually used.
         target.IsUsed = true;
-        target.Include(target.Directory);
+        target.Include();
 
-        return true;
+        return m._errorString == nil;
     end
 
-    m.PrintError("Failed to Include Dependency: '" .. targetName .. "'! No Dependency with that name was found!");
+    m._errorString = "Failed to Include Dependency: '" .. targetName .. "'! No Dependency with that name was found!";
     return false;
 end
 
 -----------------------------------------------------------------------------------
 --- Add the Dependencies' Files into the current project.
----@param dependencyName string Name of the Depedency.
+---@param targetName string Name of the Depedency.
 ---@return boolean Success Whether the files were successfully added.
 -----------------------------------------------------------------------------------
-function m.AddFilesToProject(dependencyName)
-    if (m._targets[dependencyName] == nil) then
-        m.PrintError("Failed to add Files to Current Project from Dependency: '" .. "'! No Dependency with that name was found!");
+function m.AddFilesToProject(targetName)
+    -- Early out if there were errors reported.
+    if (m._errorString ~= nil) then
         return false;
     end
 
-    local dependency = m._targets[dependencyName];
+    if (m._targets[targetName] == nil) then
+        m._errorString = "Failed to add Files to Current Project from Dependency: '" .. targetName .. "'! No Dependency with that name was found!";
+        return false;
+    end
+
+    local dependency = m._targets[targetName];
     if (dependency.Include == nil) then
-        m.PrintError("Failed to add Files to Current Project from Target: '" .. "'! No Include() function was found!");
+        m._errorString = "Failed to add Files to Current Project from Target: '" .. targetName .. "'! No Include() function was found!";
         return false;
     end
 
     if (dependency.AddFilesToProject == nil) then
-        m.PrintError("Failed to add Files to Current Project from Target: '" .. "'! No AddFilesToProject() function was found!");
+        m._errorString = "Failed to add Files to Current Project from Target: '" .. targetName .. "'! No AddFilesToProject() function was found!";
         return false;
     end
 
@@ -127,7 +144,7 @@ function m.AddFilesToProject(dependencyName)
     -- Add the Build Script as Well:
     files {dependency.BuildScript};
 
-    return true;
+    return m._errorString == nil;
 end
 
 -----------------------------------------------------------------------------------
@@ -148,41 +165,13 @@ function m.AddProjectsToWorkspace()
         end
 
         m.PrintMessage("Adding Required Project: " .. name);
-        group(target.Group)
-            project(target.Name);
-            location(projectCore.ProjectFilesLocation)
+        m._GenerateTargetProject(target);
 
-            if (target.UUID ~= nil) then
-                uuid(target.UUID);
-            end
-
-            target.ConfigureProject(target.Directory, m);
-
-            -- Reset the Filter.
-            filter {};
-
-            -- Add the Build Script
-            files {target.BuildScript};
-
-            local buildScriptDir = path.getdirectory(target.BuildScript);
-
-            -- [TODO]: I want:
-            --      - The Project's folder that contains the Source files to be in a filter called "Source"
-            --      - The Build Script to be on the outermost project filter.
-            --      - Any ThirdParty files that were added to be in a ThirdParty filter.
-            -- I have tried a bunch of combinations, but the order of how these rules are applied is non-determinent, so it's a bit
-            -- frustrating. The best I was able to get is having all of the included files' in a single source filter.
-            -- Not the best, but is the closest to what I want.
-            vpaths
-            {
-                --["ThirdParty/*"] = { projectCore.SourceFolder .. "**.*" },
-                --["Source/*"] = { target.Directory .. ".**"},
-                --["*"] = { buildScriptDir .. "*." .. BUILD_EXTENSION, projectCore.SourceFolder}
-                --{ ["ThirdParty/*"] = projectCore.SourceFolder .. "**.*"},
-                --{ ["*"] = projectCore.SourceFolder .. "/" .. target.Group .. "/**.*" },
-                --["*"] = { projectCore.SourceFolder .. "**.*"},
-                ["Source/*"] = { buildScriptDir .. "**.*"},
-            }
+        -- Report any errors:
+        if (m._errorString ~= nil) then
+            m.PrintError("Failed to Generate Project!: '" .. name .. "'! " .. m._errorString);
+            return false;
+        end
 
         -- End of Loop
         ::skip::
@@ -202,45 +191,50 @@ function m.AddProjectsToWorkspace()
         end
 
         m.PrintMessage("Adding Optional Project: " .. name);
-        group(target.Group)
-            project(target.Name);
-            location(projectCore.ProjectFilesLocation)
+        m._GenerateTargetProject(target);
 
-            if (target.UUID ~= nil) then
-                uuid(target.UUID);
-            end
-
-            target.ConfigureProject(target.Directory, m);
-
-            -- Reset the Filter.
-            filter {};
-
-            -- Add the Build Script
-            files {target.BuildScript};
-
-            local buildScriptDir = path.getdirectory(target.BuildScript);
-
-            -- [TODO]: I want:
-            --      - The Project's folder that contains the Source files to be in a filter called "Source"
-            --      - The Build Script to be on the outermost project filter.
-            --      - Any ThirdParty files that were added to be in a ThirdParty filter.
-            -- I have tried a bunch of combinations, but the order of how these rules are applied is non-determinent, so it's a bit
-            -- frustrating. The best I was able to get is having all of the included files' in a single source filter.
-            -- Not the best, but is the closest to what I want.
-            vpaths
-            {
-                --["ThirdParty/*"] = { projectCore.SourceFolder .. "**.*" },
-                --["Source/*"] = { target.Directory .. ".**"},
-                --["*"] = { buildScriptDir .. "*." .. BUILD_EXTENSION, projectCore.SourceFolder}
-                --{ ["ThirdParty/*"] = projectCore.SourceFolder .. "**.*"},
-                --{ ["*"] = projectCore.SourceFolder .. "/" .. target.Group .. "/**.*" },
-                --["*"] = { projectCore.SourceFolder .. "**.*"},
-                ["Source/*"] = { buildScriptDir .. "**.*"},
-            }
+        -- Report any errors:
+        if (m._errorString ~= nil) then
+            m.PrintError("Failed to Generate Project!: '" .. name .. "'! " .. m._errorString);
+            return false;
+        end
 
         -- End of Loop
         ::skip::
     end
+
+    return true;
+end
+
+-----------------------------------------------------------------------------------
+--- Builds the VS project. Uses the target's ConfigureProject function.
+--- This also adds the build script to the project's main folder in VS.
+---@param target table Build target registered to the dependency injector.
+-----------------------------------------------------------------------------------
+function m._GenerateTargetProject(target)
+    if (target == nil) then
+        m._errorString = "Build Target was nil!";
+        return;
+    end
+
+    vpaths {};
+    group(target.Group)
+        project(target.Name);
+        location(projectCore.ProjectFilesLocation)
+
+        if (target.UUID ~= nil) then
+            uuid(target.UUID);
+        end
+
+        target.ConfigureProject(m);
+
+        -- Add the Build Script
+        files { target.BuildScript };
+        vpaths { ["*"] = { target.BuildDirectory .. "/*" .. BUILD_EXTENSION } };
+
+        -- Reset the Filter.
+        filter {};
+
 end
 
 -----------------------------------------------------------------------------------
@@ -278,6 +272,7 @@ function m._RegisterBuildTargetsFromFolder(folder)
 
         -- Make sure that it is a valid result.
         if (m._ValidateTarget(file, target) == false) then
+            m.PrintError("Failed to validate target for file: " .. file);
             return false;
         end
 
@@ -285,10 +280,27 @@ function m._RegisterBuildTargetsFromFolder(folder)
 
         -- Save the Directory that it was found in.
         local scriptDirectory = path.getdirectory(file);
-        target.Directory = scriptDirectory  .. "/" .. target.Name .. "/";
+        target.BuildDirectory = scriptDirectory;
+        if (target.ProjectDir == nil) then
+            target.ProjectDir = target.BuildDirectory .. "\\" .. target.Name .. "\\"
+        end
         target.BuildScript = file;
         target.UUID = nil;
-        target.Group = groupName;
+
+        -- Add a Report Build Error function that sets the error string in the DependencyInjector
+        target.ReportBuildError = function (errorMsg)
+            if (type(errorMsg) == "string") then
+                m._errorString = errorMsg;
+            end
+
+            m._errorString = target.Name .. " reported an error, but the message was invalid.";
+        end
+
+        -- If the group isn't set, use the folder name.
+        if (target.Group == nil) then
+            target.Group = groupName;
+        end
+
         target.IsUsed = false;
 
         -- Dependencies can be set as optional. If this isn't defined, 
@@ -311,6 +323,50 @@ function m._RegisterBuildTargetsFromFolder(folder)
 
     return true;
 end
+
+-- -----------------------------------------------------------------------------------
+-- ---Add a custom build target, which is assumed to be a table.
+-- ---@param target table The build result of the script. Must be a table with a Name.
+-- ---@param buildScriptFile string The Lua file responsible for building this target.
+-- -----------------------------------------------------------------------------------
+-- function m._AddCustomTarget(target, buildScriptFile)
+
+--     -- Make sure that it is a valid result.
+--     if (m._ValidateTarget(buildScriptFile, target) == false) then
+--         return false;
+--     end
+
+--     m.PrintMessage("Registering Custom Target: " .. target.Name);
+--     -- Save the Directory that it was found in.
+--     local scriptDirectory = path.getdirectory(buildScriptFile);
+--     target.BuildDirectory = scriptDirectory;
+--     if (target.ProjectDir == nil) then
+--             target.ProjectDir = target.BuildDirectory .. "\\" .. target.Name .. "\\"
+--     end
+--     target.BuildScript = buildScriptFile;
+--     target.UUID = nil;
+--     target.IsUsed = false;
+
+--     -- Dependencies can be set as optional. If this isn't defined, 
+--     -- it is assumed to be required.
+--     if (target.IsOptional == nil) then
+--         target.IsOptional = false;
+--     end
+
+--     -- If this target defined a ConfigureProject function, try to get an existing UUID.
+--     if (os.isdir(projectCore.ProjectFilesLocation) and target.ConfigureProject ~= nil and type(target.ConfigureProject) == "function") then
+--         -- Check for an existing project that was created previously, and save the UUID.
+--         local projectFilepath = projectCore.ProjectFilesLocation .. target.Name .. ".vcxproj";
+--         if (os.isfile(projectFilepath)) then
+--             target.UUID = projectCore.GetVSProjectUUID(projectFilepath);
+--         end
+--     end
+
+--     -- Add the Target to table
+--     m._targets[target.Name] = target;
+
+--     return true;
+-- end
 
 -- [Note]: I opted to not deal with the Git Submodules for now. I'd have to be able to save some kind of 
 -- versioning for the dependencies, whether I want to update them, etc. For now, it is not a issue I want to 

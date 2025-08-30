@@ -1,8 +1,8 @@
 // EigenValueSymmetric.h
 #pragma once
-#include "Debug/Assert.h"
-#include "Math/FPException.h"
-#include "Math/Generic.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/FPException.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {
@@ -34,7 +34,8 @@ namespace nes
         
         static_assert(MatrixType::N == VectorType::N, "Matrix and Vector types must have the same order of N!");
         static constexpr int kMaxNumSweeps = 50;
-        
+
+        // Get the matrix in a so we can mess with it
         MatrixType matCopy = matrix;
         VectorType b;
         VectorType z;
@@ -67,7 +68,19 @@ namespace nes
             // Normal return, convergence to machine underflow
             if (averageSum < FLT_MIN) // Original code: sum == 0.0f, when the average is denormal, we also consider it machine underflow
             {
-                // [TODO]: Sanity checks:
+                // Sanity checks:
+                #if NES_ASSERTS_ENABLED
+                    for (size_t c = 0; c < MatrixType::N; ++c)
+                    {
+                        // Check if the eigenvector is normalized
+                        NES_ASSERT(outEigenVectors[c].IsNormalized());
+
+                        // Check if matrix * eigenvector = eigenvalue * eigenvector
+                        VectorType matEigenVec = matrix * outEigenVectors[c];
+                        VectorType eigenValEigenVec = outEigenValues[c] * outEigenVectors[c];
+                        NES_ASSERT(matEigenVec.IsClose(eigenValEigenVec, math::Max(matEigenVec.LengthSqr(), eigenValEigenVec.LengthSqr()) * 1.0e-6f));
+                    }
+                #endif
                 
                 // Success
                 return true;
@@ -108,11 +121,11 @@ namespace nes
                         }
                         else
                         {
-                            // Warning: Can become infinite if copy[column, row] is very small which may trigger an invalid
+                            // Warning: Can become infinite if copy[column][row] is very small which may trigger an invalid
                             // float exception.
                             const float theta = 0.5f * h / copyPQ;
 
-                            // If theta becomes inf, t will be 0 so the infinite is not a problem for the algorithm. 
+                            // If theta becomes inf, t will be 0, so the infinite is not a problem for the algorithm. 
                             t = 1.f / (math::Abs(theta) + std::sqrt(1.f + theta * theta));
 
                             if (theta < 0.f)
@@ -132,10 +145,6 @@ namespace nes
                         eigenValP -= h;
                         eigenValQ += h;
 
-                        //matCopy[column].SetComponent(row, copyPQ);
-                        //outEigenValues.SetComponent(row, eigenValP);
-                        //outEigenValues.SetComponent(column, eigenValQ);
-
                         #define NES_EVS_ROTATE(mat, row1, column1, row2, column2)   \
                             g = mat[column1][row1],							        \
                             h = mat[column2][row2],							        \
@@ -148,7 +157,7 @@ namespace nes
                             NES_EVS_ROTATE(matCopy, j, row, j, column);
                         }
                         
-                        for (j = row + 1; j < row; ++j)
+                        for (j = row + 1; j < column; ++j)
                         {
                             NES_EVS_ROTATE(matCopy, row, j, j, column);
                         }

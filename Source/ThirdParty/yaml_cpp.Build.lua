@@ -3,22 +3,20 @@
 local d = {};
 d.Name = "yaml_cpp";
 
-function d.Include(rootDir)
-    includedirs { rootDir .. "include\\" }
+function d.Include()
+    includedirs { d.ProjectDir .. "include\\" }
+    defines { "YAML_CPP_STATIC_DEFINE" }
 end
 
-function d.Link(rootDir)
+function d.Link()
     filter {"configurations:Debug"}
         links { "yaml-cppd.lib"}
-        libdirs { rootDir .. "lib\\Debug" }
+        libdirs { d.ProjectDir .. "lib\\Debug" }
+        postbuildcommands { "{COPYFILE} \"" .. d.ProjectDir .. "\\lib\\Debug\\yaml-cppd.pdb\" \"%{cfg.buildtarget.directory}\""};
 
     filter {"configurations:Release"}
         links {"yaml-cpp.lib"}
-        libdirs { rootDir .. "lib\\Release\\"}
-
-    filter {"configurations:Test"}
-        links {"yaml-cpp.lib"}
-        libdirs { rootDir .. "lib\\Release\\"}
+        libdirs { d.ProjectDir .. "lib\\Release\\"}
 
     -- Reset the filter.
     filter{};

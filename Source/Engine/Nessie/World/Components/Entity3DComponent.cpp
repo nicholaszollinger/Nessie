@@ -1,8 +1,8 @@
 ﻿// Entity3DComponent.cpp
 #include "Entity3DComponent.h"
 
-#include "Scene/TickGroup.h"
-#include "World/Entity3D.h"
+#include "Nessie/Scene/TickGroup.h"
+#include "Nessie/World/Entity3D.h"
 
 namespace nes
 {

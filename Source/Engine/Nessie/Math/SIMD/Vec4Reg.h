@@ -1,9 +1,9 @@
 ﻿// Vec4Reg.h
 #pragma once
-#include "Math/MathTypes.h"
-#include "Math/Scalar3.h"
-#include "Math/Scalar4.h"
-#include "Math/Detail/Swizzle.h"
+#include "Nessie/Math/MathTypes.h"
+#include "Nessie/Math/Scalar3.h"
+#include "Nessie/Math/Scalar4.h"
+#include "Nessie/Math/Detail/Swizzle.h"
 
 namespace nes
 {

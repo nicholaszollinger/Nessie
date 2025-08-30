@@ -1,6 +1,6 @@
 // FlagFormatter.h
 #pragma once
-#include "Debug/Logger/Details/LogFormatHelpers.h"
+#include "Nessie/Debug/Logger/Details/LogFormatHelpers.h"
 #include "LogFormatter.h"
 
 namespace nes::internal

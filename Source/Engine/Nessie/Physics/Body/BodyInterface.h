@@ -4,9 +4,9 @@
 #include "BodyActivationMode.h"
 #include "MotionQuality.h"
 #include "MotionType.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Physics/Collision/CollisionLayer.h"
-#include "Physics/Collision/BroadPhase/BroadPhase.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Physics/Collision/CollisionLayer.h"
+#include "Nessie/Physics/Collision/BroadPhase/BroadPhase.h"
 
 namespace nes
 {

@@ -91,8 +91,21 @@ function m.CleanSolution()
     return true;
 end
 
+---------------------------------------------------------------------------------------------------------
+--- Deinitializes and deletes downloaded Git Submodules.
+---@return boolean Success False if something went wrong in the removal.
+---------------------------------------------------------------------------------------------------------
+function m.CleanSubmodules()
+    m.PrintInfo("Removing Local Data for Submodules...");
+
+    -- Deinitialize.
+    local result, exit, exitCode = os.execute("git submodule deinit --all -f");
+
+    return result == nil or (result ~= nil and result == true);
+end
+
 newaction {
-	trigger = "clean_all",
+	trigger = "clean_solution",
 	description = "Deletes the Build, Intermediate Saved, and .vs folders, as well as the Solution and Projects.",
 
 	execute = function()
@@ -106,13 +119,13 @@ newaction {
             return;
         end
 
-        m.PrintSuccessOrFail("Clean All", true);
+        m.PrintSuccessOrFail("Clean Solution", true);
 	end
 }
 
 newaction {
 	trigger = "clean_projects",
-	description = "Deletes the Build, Intermediate and Saved folders, but does not delete the Solution.",
+	description = "Deletes the Build, Intermediate and Saved folders, but does not delete the Solution file.",
 
 	execute = function()
         if (m.CleanTempFiles() == false) then
@@ -121,6 +134,30 @@ newaction {
         end
 
         m.PrintSuccessOrFail("Clean Projects", true);
+	end
+}
+
+newaction {
+    trigger = "clean_all",
+    description = "Cleans the solution, and deinitializes the git submodules.",
+
+    execute = function()
+        if (m.CleanTempFiles() == false) then
+            m.PrintSuccessOrFail("Clean Intermediate Files", false);
+            return;
+        end
+
+        if (m.CleanSolution() == false) then
+            m.PrintSuccessOrFail("Clean Solution", false);
+            return;
+        end
+
+        if (m.CleanSubmodules() == false) then
+            m.PrintSuccessOrFail("Clean Submodules", false);
+            return;
+        end
+
+        m.PrintSuccessOrFail("Clean All", true);
 	end
 }
 

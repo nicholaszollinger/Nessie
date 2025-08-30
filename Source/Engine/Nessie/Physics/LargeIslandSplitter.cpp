@@ -6,7 +6,7 @@
 #include "Constraints/ContactConstraintManager.h"
 #include "Body/BodyManager.h"
 #include "Constraints/Constraint.h"
-#include "Core/Memory/StackAllocator.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
 
 namespace nes
 {
@@ -547,12 +547,6 @@ namespace nes
         NES_ASSERT(splitIslandIndex < m_nextSplitIslandIndex.load(std::memory_order_relaxed));
         Splits& splits = m_splitIslands[splitIslandIndex];
         splits.MarkBatchProcessed(numItemsProcessed, outLastIteration, outFinalBatch);
-    }
-
-    uint32 LargeIslandSplitter::GetIslandIndex(const uint splitIslandIndex) const
-    {
-        NES_ASSERT(splitIslandIndex < m_numSplitIslands);
-        return m_splitIslands[splitIslandIndex].m_IslandIndex;
     }
 
     void LargeIslandSplitter::PrepareForSolverPositions()

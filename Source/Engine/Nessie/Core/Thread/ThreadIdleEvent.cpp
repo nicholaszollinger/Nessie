@@ -1,6 +1,5 @@
 // ThreadIdleEvent.cpp
-
-#include "ThreadIdleEvent.h"
+#include "Nessie/Core/Thread/ThreadIdleEvent.h"
 
 namespace nes
 {
@@ -28,5 +27,11 @@ namespace nes
             return;
 
         m_condition.wait(lock, [this]() -> bool { return m_isIdle; });
+    }
+
+    bool ThreadIdleEvent::IsIdle()
+    {
+        std::unique_lock lock(m_mutex);
+        return m_isIdle;
     }
 }

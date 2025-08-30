@@ -1,5 +1,5 @@
+// Timer.h
 #pragma once
-// HighPrecisionTimer.h
 #include <chrono>
 
 namespace nes

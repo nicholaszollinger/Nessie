@@ -33,7 +33,7 @@ namespace nes
         NES_INLINE bool           operator<=(const Vec2 other) const      { return x <= other.x && y <= other.y; }
         NES_INLINE bool           operator>=(const Vec2 other) const      { return x >= other.x && y >= other.y; }
         NES_INLINE float          operator[](const size_t index) const    { NES_ASSERT(index < 2); return *(&x + index); }
-        NES_INLINE float&                   operator[](const size_t index)          { NES_ASSERT(index < 2); return *(&x + index); }
+        NES_INLINE float&         operator[](const size_t index)          { NES_ASSERT(index < 2); return *(&x + index); }
         NES_INLINE Vec2           operator-() const                       { return Vec2(-x, -y); }
         NES_INLINE Vec2           operator+(const Vec2 other) const;
         NES_INLINE Vec2           operator*(const Vec2 other) const;
@@ -162,22 +162,22 @@ namespace nes
         NES_INLINE void         StoreFloat2(Float2* pOutFloats) const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Return the minimum value of X, Y, Z, W.  
+        /// @brief : Return the minimum value of X, Y.  
         //----------------------------------------------------------------------------------------------------
         NES_INLINE float        MinComponent() const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Return the maximum value of X, Y, Z, W.  
+        /// @brief : Return the maximum value of X, Y.  
         //----------------------------------------------------------------------------------------------------
         NES_INLINE float        MaxComponent() const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Return the index of the minimum value between X, Y, Z.  
+        /// @brief : Return the index of the minimum value between X, Y.  
         //----------------------------------------------------------------------------------------------------
         NES_INLINE int          MinComponentIndex() const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Return the index of the maximum value between X, Y, Z.  
+        /// @brief : Return the index of the maximum value between X, Y.  
         //----------------------------------------------------------------------------------------------------
         NES_INLINE int          MaxComponentIndex() const;
 

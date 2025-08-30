@@ -2,7 +2,7 @@
 #pragma once
 #include <unordered_map>
 #include "Logger.h"
-#include "Core/Thread/Mutex.h"
+#include "Nessie/Core/Thread/StdMutex.h"
 
 namespace nes
 {
@@ -58,7 +58,13 @@ namespace nes
         ///     the end of the main loop.
         //----------------------------------------------------------------------------------------------------
         void                            Internal_Shutdown();
-        
+
+    private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : You should not call this directly. Creates a default Log Target for the platform.
+        //----------------------------------------------------------------------------------------------------
+        static LogTargetPtr             CreateDefaultLogTarget();
+
     private:
         using LoggerMap = std::unordered_map<std::string, std::shared_ptr<Logger>>;
         

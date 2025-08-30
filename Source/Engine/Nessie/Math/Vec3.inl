@@ -1,9 +1,9 @@
 ﻿// Vec3.inl
 #pragma once
-#include "Math/Generic.h"
-#include "Math/Vec2.h"
-#include "Math/Vec4.h"
-#include "Math/SIMD/Vec4Reg.h"
+#include "Nessie/Math/Generic.h"
+#include "Nessie/Math/Vec2.h"
+#include "Nessie/Math/Vec4.h"
+#include "SIMD/UVec4Reg.h"
 
 namespace nes
 {

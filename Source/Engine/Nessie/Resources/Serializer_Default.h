@@ -1,6 +1,5 @@
-#pragma once
 // DefaultSerializer.h
-
+#pragma once
 #include "Serializer.h"
 
 //----------------------------------------------------------------------------------------------------

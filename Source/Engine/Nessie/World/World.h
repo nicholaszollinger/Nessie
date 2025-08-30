@@ -1,21 +1,47 @@
 ﻿// World.h
 #pragma once
+
+//-------------------------------------------------------------------------------------------------
+// Under development. The World object was previously "hacked in" for assignments last semester.
+// I am currently trying to abstract the Vulkan API, as well as ImGui. Once that is back up and
+// running, I am going to return to fix up this file.
+//-------------------------------------------------------------------------------------------------
+    
+
 #include "Entity3D.h"
 #include "PhysicsLayers.h"
 #include "Components/MeshComponent.h"
-#include "Core/Generic/Color.h"
-#include "Core/Jobs/JobSystemThreadPool.h"
-#include "Physics/PhysicsScene.h"
-#include "Scene/EntityLayer.h"
-#include "Scene/EntityPool.h"
-#include "Scene/TickGroup.h"
-#include "Graphics/Renderer.h"
+#include "Nessie/Core/Color.h"
+#include "Nessie/Jobs/JobSystemThreadPool.h"
+#include "Nessie/Physics/PhysicsScene.h"
+#include "Nessie/Scene/EntityLayer.h"
+#include "Nessie/Scene/EntityPool.h"
+#include "Nessie/Scene/TickGroup.h"
+#include "Nessie/Graphics/Renderer.h"
+
+// [TEMP]: 
+#include "Nessie/Physics/Body/BodyActivationListener.h"
+#include <imgui.h>
 
 namespace nes
 {
-    struct Material;
+    class Material;
 
     NES_DEFINE_LOG_TAG(kWorldLogTag, "World", Info);
+
+    class BodyActivateListenerTest final : public BodyActivationListener
+    {
+    public:
+        virtual void OnBodyActivated([[maybe_unused]] const BodyID& bodyID, [[maybe_unused]] uint64_t bodyUserData) override
+        {
+            NES_LOG("Body {} activated: ", bodyID.GetIndex());
+        }
+
+        virtual void OnBodyDeactivated([[maybe_unused]] const BodyID& bodyID, [[maybe_unused]] uint64_t bodyUserData) override
+        {
+            NES_LOG("Body {} deactivated: ", bodyID.GetIndex());
+        }
+    };
 
     enum class EWorldRenderMode : uint8_t
     {
@@ -76,7 +102,7 @@ namespace nes
 
         void                RegisterEventHandler(const EventHandler& handler);
         void                RegisterMesh(MeshComponent* pMesh);
-        GraphicsPipelinePtr GetDefaultMeshRenderPipeline() const;
+        //GraphicsPipelinePtr GetDefaultMeshRenderPipeline() const;
         
     private:
         virtual bool        InitializeLayer() override;
@@ -125,28 +151,29 @@ namespace nes
         BroadPhaseLayerInterfaceTest            m_broadPhaseLayerInterface{};
         CollisionVsBroadPhaseLayerFilterTest    m_layerVsBroadPhaseFilter{};
         CollisionLayerPairFilterTest            m_layerPairFilter{};
+        BodyActivateListenerTest                m_bodyActivationListener{};
 
         // [TEMP]: 
         BodyID                                  m_testID;
 
-        // Render Resources:
-        std::vector<MeshComponent*>             m_transparentMeshes;
-        std::vector<MeshComponent*>             m_opaqueMeshes;
-        std::vector<GraphicsPipelinePtr>        m_defaultMeshPipelines{};
-        GraphicsPipelinePtr                     m_gridPipeline = nullptr;
-        GraphicsPipelinePtr                     m_skyboxPipeline = nullptr;
-        std::vector<std::shared_ptr<Mesh>>      m_meshAssets;
-        std::vector<std::shared_ptr<Material>>  m_materialAssets;
-        
-        RendererContext::ShaderUniform          m_cameraUniforms;
-        vk::Buffer                              m_cameraUniformBuffer;
-        
-        RendererContext::ShaderUniform          m_skyboxUniforms;
-        vk::Image                               m_skyboxCubeImage;
-        vk::ImageView                           m_skyboxCubeImageView;
-        vk::Sampler                             m_skyboxCubeSampler;
-        
-        EWorldRenderMode                        m_currentRenderMode = EWorldRenderMode::Fill;
+        // // Render Resources:
+        // std::vector<MeshComponent*>             m_transparentMeshes;
+        // std::vector<MeshComponent*>             m_opaqueMeshes;
+        // //std::vector<GraphicsPipelinePtr>        m_defaultMeshPipelines{};
+        // //GraphicsPipelinePtr                     m_gridPipeline = nullptr;
+        // //GraphicsPipelinePtr                     m_skyboxPipeline = nullptr;
+        // std::vector<std::shared_ptr<Mesh>>      m_meshAssets;
+        // std::vector<std::shared_ptr<Material>>  m_materialAssets;
+        //
+        // //RendererContext::ShaderUniform          m_cameraUniforms;
+        // vk::Buffer                              m_cameraUniformBuffer;
+        //
+        // //RendererContext::ShaderUniform          m_skyboxUniforms;
+        // vk::Image                               m_skyboxCubeImage;
+        // vk::ImageView                           m_skyboxCubeImageView;
+        // vk::Sampler                             m_skyboxCubeSampler;
+        //
+        // EWorldRenderMode                        m_currentRenderMode = EWorldRenderMode::Fill;
 
         // TEMP Editor Data:
         Entity3D*                               m_pSelectedEntity = nullptr;

@@ -2,9 +2,9 @@
 #pragma once
 #include <vector>
 #include "Component.h"
-#include "Core/Generic/GenerationalID.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Core/String/StringID.h"
+#include "Nessie/Core/GenerationalID.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Core/String/StringID.h"
 
 namespace nes
 {

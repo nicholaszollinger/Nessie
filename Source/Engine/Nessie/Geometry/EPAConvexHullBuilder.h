@@ -1,8 +1,8 @@
 // EPAConvexHullBuilder.h
 #pragma once
 #include <vector>
-#include "Core/StaticArray.h"
-#include "Math/Vec3.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Math/Math.h"
 
 namespace nes
 {
@@ -85,7 +85,7 @@ namespace nes
             union alignas(Triangle) Block
             {
                 uint8_t m_triangle[sizeof(Triangle)];
-                Block*  m_pNextFreeBlock;
+                Block*  m_pNextFree;
             };
 
             Block   m_triangles[kMaxTriangles]; /// Storage for triangles.

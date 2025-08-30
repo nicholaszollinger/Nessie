@@ -3,7 +3,7 @@
 
 #include <algorithm>
 #include "TickManager.h"
-#include "Debug/Assert.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

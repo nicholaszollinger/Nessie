@@ -2,9 +2,9 @@
 #include "IslandBuilder.h"
 
 #include "Body/Body.h"
-#include "Core/Memory/Memory.h"
-#include "Core/Memory/StackAllocator.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Core/Memory/StackAllocator.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {
@@ -135,7 +135,7 @@ namespace nes
         m_contactLinks[contactIndex] = math::Min(first, second); // Use the fact that invalid index is 0xfffffff; we want the active body between the two.
     }
 
-    void IslandBuilder::Finalize(const BodyID* pActiveBodies, uint32 numActiveBodies, uint32 numContacts, StackAllocator* pAllocator)
+    void IslandBuilder::Finalize(const BodyID* pActiveBodies, const uint32 numActiveBodies, const uint32 numContacts, StackAllocator* pAllocator)
     {
         m_numContacts = numContacts;
 
@@ -295,7 +295,8 @@ namespace nes
                 // Links to another body, take island index from other body (This must have been filled in already since we're looping from
                 // low to high.
                 NES_ASSERT(linkTo < i);
-                uint32 islandIndex = m_bodyLinks[linkTo].m_islandIndex;
+                const uint32 islandIndex = m_bodyLinks[linkTo].m_islandIndex;
+                link.m_islandIndex = islandIndex;
 
                 // Increment the start of the next island.
                 bodyIslandStarts[islandIndex + 1]++; 
@@ -307,7 +308,7 @@ namespace nes
                 ++m_numIslands;
 
                 // Set the start of the next island to 1.
-                bodyIslandStarts[m_numIslands] = i;
+                bodyIslandStarts[m_numIslands] = 1;
             }
         }
 

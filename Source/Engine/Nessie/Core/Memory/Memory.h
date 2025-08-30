@@ -1,8 +1,7 @@
 ﻿// Memory.h
 #pragma once
-#include <cstdint>
 #include <vcruntime_new.h>
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Macro to toggle recording allocations as they happen to print out each missed allocation
@@ -16,12 +15,14 @@ namespace nes::memory::internal
     /// Allocation Functions
     /// - You should be using NES_ALLOC, NES_FREE, etc.
     void*   Allocate(size_t size);
+    void*   Reallocate(void* pMemory, const size_t newSize);
     void    Free(void* pMemory);
     void*   AlignedAllocate(size_t size, size_t alignment);
+    void*   AlignedReallocate(void* pMemory, const size_t size, const size_t alignment);
     void    AlignedFree(void* pMemory);
 }
 
-#define NES_STACK_ALLOCATE(size) alloca(size)
+#define NES_STACK_ALLOCATE(size) _malloca(size)
 
 #if !defined(NES_DISABLE_CUSTOM_ALLOCATOR) && defined(NES_DEBUG)
 
@@ -33,8 +34,10 @@ namespace nes::memory::internal
     
     /// Debug Allocation Functions
     void*   DebugAllocate(size_t size, const char* filename, int lineNum);
+    void*   DebugReallocate(void* pMemory, size_t newSize, const char* filename, int lineNum);
     void    DebugFree(void* pMemory);
     void*   DebugAlignedAllocate(size_t size, size_t alignment, const char* filename, int lineNum);
+    void*   DebugAlignedReallocate(void* pMemory, size_t size, size_t alignment, const char* filename, int lineNum);
     void    DebugAlignedFree(void* pMemory);
 }
 
@@ -73,9 +76,12 @@ void        operator delete[](void* pMemory, const char*, int);
 #define NES_SAFE_DELETE_ARRAY(ptr) delete[] ptr; ptr = nullptr
 
 #define NES_ALLOC(size) nes::memory::internal::DebugAllocate(size, __FILE__, __LINE__)
+#define NES_REALLOC(ptr, size) nes::memory::internal::DebugReallocate(ptr, size, __FILE__, __LINE__)
 #define NES_FREE(ptr) nes::memory::internal::DebugFree(ptr)
 #define NES_ALIGNED_ALLOC(size, alignment) nes::memory::internal::DebugAlignedAllocate(size, alignment, __FILE__, __LINE__)
+#define NES_ALIGNED_REALLOC(ptr, size, alignment) nes::memory::internal::DebugAlignedReallocate(ptr, size, alignment, __FILE__, __LINE__)
 #define NES_ALIGNED_FREE(ptr) nes::memory::internal::DebugAlignedFree(ptr)
+
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Macro to override new and delete functions for a type.  
@@ -107,8 +113,10 @@ void        operator delete[](void* pMemory, const char*, int);
 #define NES_SAFE_DELETE_ARRAY(ptr) delete[] ptr; ptr = nullptr
 
 #define NES_ALLOC(size) nes::memory::internal::Allocate(size)
+#define NES_REALLOC(pMemory, size) nes::memory::internal::Reallocate(pMemory, size)
 #define NES_FREE(ptr) nes::memory::internal::Free(ptr)
 #define NES_ALIGNED_ALLOC(size, alignment) nes::memory::internal::AlignedAllocate(size, alignment)
+#define NES_ALIGNED_REALLOC(pMemory, size, alignment) nes::memory::internal::AlignedReallocate(pMemory, size, alignment)
 #define NES_ALIGNED_FREE(ptr) nes::memory::internal::AlignedFree(ptr)
 
 #define NES_OVERRIDE_NEW_DELETE

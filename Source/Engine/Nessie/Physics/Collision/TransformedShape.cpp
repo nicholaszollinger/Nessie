@@ -6,11 +6,11 @@
 #include "CastResult.h"
 #include "Shapes/SubShapeID.h"
 #include "CollisionSolver.h"
-#include "Geometry/OrientedBox.h"
+#include "Nessie/Geometry/OrientedBox.h"
 
 namespace nes
 {
-    bool TransformedShape::CastRay(const RayCast& ray, RayCastResult& hit) const
+    bool TransformedShape::CastRay(const RRayCast& ray, RayCastResult& hit) const
     {
         if (m_pShape != nullptr)
         {
@@ -35,7 +35,7 @@ namespace nes
         return false;
     }
 
-    void TransformedShape::CastRay(const RayCast& ray, const RayCastSettings& rayCastSettings, CastRayCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CastRay(const RRayCast& ray, const RayCastSettings& rayCastSettings, CastRayCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {
@@ -57,7 +57,7 @@ namespace nes
         }
     }
 
-    void TransformedShape::CollidePoint(const Vec3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CollidePoint(const RVec3& point, CollidePointCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {
@@ -74,7 +74,7 @@ namespace nes
         }
     }
 
-    void TransformedShape::CollideShape(const Shape* pShape, const Vec3& shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const Vec3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CollideShape(const Shape* pShape, const Vec3& shapeScale, const Mat44& centerOfMassTransform, const CollideShapeSettings& collideShapeSettings, const RVec3& baseOffset, CollideShapeCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {
@@ -91,7 +91,7 @@ namespace nes
         }
     }
 
-    void TransformedShape::CastShape(const ShapeCast& shapeCast, const ShapeCastSettings& settings, const Vec3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter) const
+    void TransformedShape::CastShape(const RShapeCast& shapeCast, const ShapeCastSettings& settings, const RVec3& baseOffset, CastShapeCollector& collector, const ShapeFilter& shapeFilter) const
     {
         if (m_pShape != nullptr)
         {

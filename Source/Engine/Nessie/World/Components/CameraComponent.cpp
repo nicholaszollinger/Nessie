@@ -1,8 +1,8 @@
 ﻿// Camera.cpp
 #include "CameraComponent.h"
-#include "Application/Application.h"
-#include "Scene/Scene.h"
-#include "World/Entity3D.h"
+#include "Nessie/Application/Application.h"
+#include "Nessie/Scene/Scene.h"
+#include "Nessie/World/Entity3D.h"
 
 namespace nes
 {
@@ -13,8 +13,9 @@ namespace nes
             return false;
         }
 
-        const auto windowExtent = Application::Get().GetWindow().GetExtent();
-        m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
+        // [TODO]: 
+        //const auto windowExtent = Application::Get().GetWindow().GetResolution();
+        //m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
         
         // [TODO]: Subscribe to WindowResize events...
         return true;

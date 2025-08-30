@@ -1,6 +1,6 @@
-#pragma once
 // Bit.h
-#include "Core/Generic/Concepts.h"
+#pragma once
+#include "Nessie/Core/Concepts.h"
 
 namespace nes::math
 {

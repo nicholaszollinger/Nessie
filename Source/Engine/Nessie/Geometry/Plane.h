@@ -1,6 +1,6 @@
 ﻿// Plane.h
 #pragma once
-#include "Math/Vec4.h"
+#include "Nessie/Math/Vec4.h"
 
 namespace nes
 {

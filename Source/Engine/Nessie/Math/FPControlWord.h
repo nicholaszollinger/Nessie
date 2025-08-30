@@ -1,6 +1,6 @@
 // FPControlWord.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 
 namespace nes
 {

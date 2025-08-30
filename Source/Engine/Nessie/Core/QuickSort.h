@@ -1,7 +1,7 @@
 ﻿// QuickSort.h
 #pragma once
-#include "InsertionSort.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/InsertionSort.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {

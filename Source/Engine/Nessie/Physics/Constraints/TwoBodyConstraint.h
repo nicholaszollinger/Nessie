@@ -1,7 +1,7 @@
 ﻿// TwoBodyConstraint.h
 #pragma once
 #include "Constraint.h"
-#include "Physics/Body/Body.h"
+#include "Nessie/Physics/Body/Body.h"
 
 namespace nes
 {

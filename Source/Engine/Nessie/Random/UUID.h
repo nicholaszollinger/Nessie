@@ -7,6 +7,8 @@ namespace nes
     class UUID
     {
     public:
+        using ValueType = uint64;
+        
         /// Constructors
         constexpr           UUID() = default;
         constexpr           UUID(const uint64 value) : m_value(value) {}
@@ -15,19 +17,19 @@ namespace nes
         constexpr bool      operator==(const UUID& other) const { return m_value == other.m_value; }
         constexpr bool      operator!=(const UUID& other) const { return m_value != other.m_value; }
 
-        constexpr uint64    GetValue() const                    { return m_value; }
+        constexpr ValueType GetValue() const                    { return m_value; }
         constexpr bool      IsValid() const                     { return m_value != kInvalidValue; }
 
     private:
-        static constexpr size_t kInvalidValue = 0;
-        uint64_t m_value = kInvalidValue;
+        static constexpr ValueType kInvalidValue = 0;
+        ValueType           m_value = kInvalidValue;
     };
 
     class UUIDGenerator
     {
     public:
         UUIDGenerator() : m_rng() {}
-        UUIDGenerator(const uint64_t seed) : m_rng(seed) {}
+        UUIDGenerator(const uint64 seed) : m_rng(seed) {}
         UUIDGenerator(const UUIDGenerator&) = delete;
         UUIDGenerator& operator=(const UUIDGenerator&) = delete;
         UUIDGenerator(UUIDGenerator&& other) noexcept = default;
@@ -41,7 +43,7 @@ namespace nes
 
     struct UUIDHasher
     {
-        uint64_t operator()(const UUID id) const
+        uint64 operator()(const UUID id) const
         {
             return id.GetValue();
         }

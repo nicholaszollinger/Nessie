@@ -1,8 +1,7 @@
 // StringID.cpp
-
-#include "StringID.h"
+#include "Nessie/Core/String/StringID.h"
 #include <mutex>
-#include "Core/Generic/Hash.h"
+#include "Nessie/Core/Hash.h"
 
 static std::mutex& GetStringMutex()
 {

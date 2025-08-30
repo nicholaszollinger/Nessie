@@ -1,7 +1,7 @@
 // Result.h
 #pragma once
-#include "Core/Generic/Concepts.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {
@@ -13,7 +13,7 @@ namespace nes
             && std::is_move_constructible_v<Type>
             , "Result Type must be default, copy, & move constructible!");
         
-        enum class EState : uint8_t
+        enum class EState : uint8
         {
             Invalid,    /// The result is uninitialized
             Valid,      /// The result is valid.
@@ -21,13 +21,13 @@ namespace nes
         };
 
     public:
-        Result(){}
-        Result(const Result& other);
-        Result(Result&& other) noexcept;
-        ~Result()                           { Clear(); }
+        /*Constructor*/     Result() = default;
+        /*Copy Ctor*/       Result(const Result& other);
+        /*Move Ctor*/       Result(Result&& other) noexcept;
+        /*Destructor*/      ~Result()                    { Clear(); }
 
-        inline Result& operator=(const Result& other);
-        inline Result& operator=(Result&& other) noexcept;
+        inline Result&      operator=(const Result& other);
+        inline Result&      operator=(Result&& other) noexcept;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Destructs either the result or error message. IsEmpty() will return true after this.  
@@ -87,8 +87,8 @@ namespace nes
     private:
         union
         {
-            Type        m_result{};      /// The actual resulting object.
-            std::string m_error;  /// The error description on failure.
+            Type        m_result{}; // The actual resulting object.
+            std::string m_error;    // The error description on failure.
         };
 
         EState          m_state = EState::Invalid;

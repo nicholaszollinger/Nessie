@@ -1,6 +1,5 @@
 // GetTrianglesContext.cpp
 #include "GetTrianglesContext.h"
-
 #include "ScaleHelpers.h"
 
 namespace nes

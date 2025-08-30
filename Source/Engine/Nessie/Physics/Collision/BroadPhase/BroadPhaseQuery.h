@@ -2,13 +2,13 @@
 #pragma once
 
 #include "BroadPhaseLayer.h"
-#include "Geometry/AABox.h"
-#include "Physics/Body/BodyID.h"
-#include "Physics/Collision/CollisionCollector.h"
+#include "Nessie/Geometry/AABox.h"
+#include "Nessie/Physics/Body/BodyID.h"
+#include "Nessie/Physics/Collision/CollisionCollector.h"
 
 namespace nes
 {
-    class  BroadPhaseCastResult;
+    struct BroadPhaseCastResult;
     struct RayCast;
     struct OrientedBox;
     struct AABoxCast;

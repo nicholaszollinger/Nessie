@@ -1,9 +1,9 @@
 ﻿// BodyManager.h
 #pragma once
-#include <shared_mutex>
 #include "Body.h"
 #include "BodyActivationMode.h"
-#include "Core/Thread/MutexArray.h"
+#include "Nessie/Core/Thread/Mutex.h"
+#include "Nessie/Core/Thread/MutexArray.h"
 
 namespace nes
 {
@@ -19,7 +19,7 @@ namespace nes
     class BodyManager
     {
         friend class PhysicsScene;
-        using BodyMutexes = MutexArray<std::shared_mutex>;
+        using BodyMutexes = MutexArray<SharedMutex>;
     
     public:
         /// Bodies are protected using an array of mutexes (so a fixed number, not 1 per body). Each set bit in this mask
@@ -36,87 +36,7 @@ namespace nes
             uint32_t m_numKinematicBodies       = 0;
             uint32_t m_numActiveKinematicBodies = 0;
         };
-
-        // [TODO]: 
-        // //----------------------------------------------------------------------------------------------------
-        // /// @brief : Per Thread override of the locked state, to be used by PhysicsSystem only!!! 
-        // //----------------------------------------------------------------------------------------------------
-        // struct Internal_GrantActiveBodiesAccess
-        // {
-        //     // inline Internal_GrantActiveBodiesAccess(bool allowActivation, bool allowDeactivation)
-        //     // {
-        //     //     NES_ASSERT(!GetOverrideAllowActivation());
-        //     //     SetOverrideAllowActivation(allowActivation);
-        //     //
-        //     //     NES_ASSERT(!GetOverrideAllowDeactivation());
-        //     //     SetOverrideAllowDeactivation(allowDeactivation);
-        //     // }
-        //     //
-        //     // inline ~Internal_GrantActiveBodiesAccess()
-        //     // {
-        //     //     SetOverrideAllowActivation(false);
-        //     //     SetOverrideAllowDeactivation(false);
-        //     // }
-        // };
-        
-    private:
-        
-        /// Value that indicates that there are no more freed body IDs.
-        static constexpr uintptr_t          kBodyIDFreeListEnd = ~static_cast<uintptr_t>(0);
-        
-        /// Bit that indicates a pointer in m_bodies is actually the index of the next freed body. We use the
-        /// lowest bit because we know that bodies are 16 byte aligned so that addresses will never end in 1 bit.
-        static constexpr uintptr_t          kIsFreedBody = static_cast<uintptr_t>(1);
-
-        /// Amount of bits to shift to get an index to the next freed body.
-        static constexpr unsigned           kFreedBodyIndexShift = 1;
-        
-        /// List of all pointers to all bodies. Contains invalid pointers for deleted bodies, check with
-        /// kIsValidBodyPointer. Note that this array is reserved to hold the max num bodies that is passed
-        /// in to the Init() function so that adding bodies will not reallocate the array.
-        BodyVector                          m_bodies;
-
-        /// Current number of allocated bodies.
-        uint32_t                            m_numBodies = 0;
-
-        /// Index of the first entry in m_bodies that is unused.
-        uintptr_t                           m_bodyIDFreeListStart = kBodyIDFreeListEnd;
-
-        /// Protects m_bodies array (bot not the bodies it points to), m_numBodies and m_bodyIDFreeListStart.
-        mutable std::mutex                  m_bodiesMutex;
-        
-        /// Array of mutexes protecting the individual bodies in the m_bodies array. 
-        mutable BodyMutexes                 m_bodyMutexes;
-        
-        /// List of the next sequence number for a body ID.
-        std::vector<uint8_t>                m_bodySequenceNumbers;   
-
-        /// Mutex that protects the m_pActiveBodies array.
-        mutable std::mutex                  m_activeBodiesMutex;
-
-        /// List of all active dynamic bodies (size is equal to max amount of bodies).
-        // [TODO]: Body* m_pActiveBodies[kBodyTypeCount] = {} // <- Array for solid vs soft bodies.
-        BodyID*                             m_pActiveBodies = nullptr;
-
-        /// How many bodies are in the list of active bodies.
-        // [TODO]: m_numActiveBodies[kBodyTypeCount] = {}; // <- Value for solid vs soft bodies.
-        std::atomic<uint32_t>               m_numActiveBodies = 0;
-
-        /// How many of the active bodies have continuous collision detected enabled.
-        uint32_t                            m_numActiveCCDBodies = 0;
-
-        /// Mutex that protects the m_bodiesCacheInvalid array.
-        mutable std::mutex                  m_bodiesCacheInvalidMutex;
-
-        /// List of all bodies that should have their cache invalidated.
-        std::vector<BodyID>                 m_bodiesCacheInvalid;
-
-        /// Listener that is notified whenever a body is activated/deactivated.
-        BodyActivationListener*             m_pActivationListener = nullptr;
-
-        /// Cached broadphase layer interface
-        const BroadPhaseLayerInterface*     m_pBroadPhaseLayer = nullptr;
-        
+    
     public:
         BodyManager() = default;
         ~BodyManager();
@@ -273,7 +193,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the mutex for a single body.
         //----------------------------------------------------------------------------------------------------
-        std::shared_mutex&                  GetMutexForBody(const BodyID& id) const { return m_bodyMutexes.GetMutexByObjectIndex(id.GetIndex()); }
+        SharedMutex&                        GetMutexForBody(const BodyID& id) const { return m_bodyMutexes.GetMutexByObjectIndex(id.GetIndex()); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Lock all bodies. This should only be done in PhysicsSystem::Update(). 
@@ -331,7 +251,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Helper function to remove a Body from the manager.
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE Body*                    Internal_RemoveBody(const BodyID& id);
+        NES_INLINE Body*                    RemoveBody(const BodyID& id);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Helper function to delete a body (which could actually be a BodyWithMotionProperties). 
@@ -344,5 +264,108 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                                ValidateFreeList() const;
 #endif
+    private:
+        /// Value that indicates that there are no more freed body IDs.
+        static constexpr uintptr_t          kBodyIDFreeListEnd = ~static_cast<uintptr_t>(0);
+        
+        /// Bit that indicates a pointer in m_bodies is actually the index of the next freed body. We use the
+        /// lowest bit because we know that bodies are 16 byte aligned so that addresses will never end in 1 bit.
+        static constexpr uintptr_t          kIsFreedBody = static_cast<uintptr_t>(1);
+
+        /// Amount of bits to shift to get an index to the next freed body.
+        static constexpr unsigned           kFreedBodyIndexShift = 1;
+        
+        /// List of all pointers to all bodies. Contains invalid pointers for deleted bodies, check with
+        /// kIsValidBodyPointer. Note that this array is reserved to hold the max num bodies that is passed
+        /// in to the Init() function so that adding bodies will not reallocate the array.
+        BodyVector                          m_bodies;
+
+        /// Current number of allocated bodies.
+        uint32_t                            m_numBodies = 0;
+
+        /// Index of the first entry in m_bodies that is unused.
+        uintptr_t                           m_bodyIDFreeListStart = kBodyIDFreeListEnd;
+
+        /// Protects m_bodies array (bot not the bodies it points to), m_numBodies and m_bodyIDFreeListStart.
+        mutable Mutex                       m_bodiesMutex;
+        
+        /// Array of mutexes protecting the individual bodies in the m_bodies array. 
+        mutable BodyMutexes                 m_bodyMutexes;
+        
+        /// List of the next sequence number for a body ID.
+        std::vector<uint8_t>                m_bodySequenceNumbers;   
+
+        /// Mutex that protects the m_pActiveBodies array.
+        mutable Mutex                       m_activeBodiesMutex;
+
+        /// List of all active dynamic bodies (size is equal to max number of bodies).
+        // [TODO]: Body* m_pActiveBodies[kBodyTypeCount] = {} // <- Array for solid vs. soft bodies.
+        BodyID*                             m_pActiveBodies = nullptr;
+
+        /// Number of bodies that are in the list of active bodies.
+        // [TODO]: m_numActiveBodies[kBodyTypeCount] = {}; // <- Value for solid vs. soft bodies.
+        std::atomic<uint32_t>               m_numActiveBodies = 0;
+
+        /// Number of the active bodies that have continuous collision detected enabled.
+        uint32_t                            m_numActiveCCDBodies = 0;
+
+        /// Mutex that protects the m_bodiesCacheInvalid array.
+        mutable Mutex                       m_bodiesCacheInvalidMutex;
+
+        /// List of all bodies that should have their cache invalidated.
+        std::vector<BodyID>                 m_bodiesCacheInvalid;
+
+        /// Listener that is notified whenever a body is activated/deactivated.
+        BodyActivationListener*             m_pActivationListener = nullptr;
+
+        /// Cached broadphase layer interface
+        const BroadPhaseLayerInterface*     m_pBroadPhaseLayer = nullptr;
+
+    #if NES_ASSERTS_ENABLED
+    public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Per Thread override of the locked state, to be used by PhysicsSystem only!!! 
+        //----------------------------------------------------------------------------------------------------
+        struct Internal_GrantActiveBodiesAccess
+        {
+            inline Internal_GrantActiveBodiesAccess(bool allowActivation, bool allowDeactivation)
+            {
+                NES_ASSERT(!GetOverrideAllowActivation());
+                SetOverrideAllowActivation(allowActivation);
+            
+                NES_ASSERT(!GetOverrideAllowDeactivation());
+                SetOverrideAllowDeactivation(allowDeactivation);
+            }
+            
+            inline ~Internal_GrantActiveBodiesAccess()
+            {
+                SetOverrideAllowActivation(false);
+                SetOverrideAllowDeactivation(false);
+            }
+        };
+
+        //---------------------------------------------------------------------------------------------------
+        /// @brief : Lock the active bodies array; asserts when Activate/Deactivate Body is called.
+        //----------------------------------------------------------------------------------------------------
+        void                                Internal_SetActiveBodiesLocked(const bool locked) { m_activeBodiesLocked = locked;}
+
+    private:
+        static bool                         GetOverrideAllowActivation();
+        static void                         SetOverrideAllowActivation(const bool allowActivation);
+        static bool                         GetOverrideAllowDeactivation(); 
+        static void                         SetOverrideAllowDeactivation(const bool allowDeactivation); 
+
+    private:
+        /// Debug system that tries to limit changes to the active bodies during the PhysicsScene::Update().
+        bool                                m_activeBodiesLocked = false;
+    #endif
+
+    #ifdef NES_DEBUG
+    public:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Validate if the cached bounding boxes are correct for all active bodies. 
+        //----------------------------------------------------------------------------------------------------
+        void                                Internal_ValidateActiveBodyBounds();
+    #endif
     };
 }

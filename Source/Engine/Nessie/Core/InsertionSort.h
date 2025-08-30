@@ -27,6 +27,9 @@ namespace nes
                         previous = j - 1;
                         *j = *previous;
                     }
+
+                    // Move x to the first place
+                    *begin = std::move(temp);
                 }
                 else
                 {

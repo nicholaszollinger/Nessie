@@ -1,7 +1,8 @@
 ﻿// Scalar2.h
 #pragma once
-#include "Core/Generic/Concepts.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Math/Generic.h"
+
 namespace nes
 {
     //----------------------------------------------------------------------------------------------------

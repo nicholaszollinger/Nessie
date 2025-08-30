@@ -32,7 +32,7 @@ namespace nes
             elem_t& currentElem = *(begin + current);
 
             // Get the parent element
-            diff_t parent = (current - 1) >> 2;
+            diff_t parent = (current - 1) >> 1;
             elem_t& parentElem = *(begin + parent);
 
             // Sort them so that the parent is larger than the child
@@ -78,7 +78,7 @@ namespace nes
             // Get the first child
             diff_t child = (largest << 1) + 1;
 
-            // Check if we're beyond the end of the heap, if so the 2nd child will also be beyond the end.
+            // Check if we're beyond the end of the heap. If so, the 2nd child will also be beyond the end.
             if (child >= count)
                 break;
 
@@ -89,11 +89,11 @@ namespace nes
             if (predicate(*(begin + largest), *(begin + child)))
                 largest = child;
 
-            // Move to next child.
+            // Move to the next child.
             ++child;
 
-            // Check if second child is bigger, if so select it
-            if (predicate(*(begin + largest), *(begin + child)))
+            // Check if the second child is bigger, if so select it
+            if (child < count && predicate(*(begin + largest), *(begin + child)))
                 largest = child;
 
             // If there was no change, we're done.

@@ -1,12 +1,16 @@
 ﻿// ConstraintManager.h
 #pragma once
 #include "Constraint.h"
-#include "Core/Memory/StrongPtr.h"
+#include "Nessie/Physics/PhysicsLock.h"
+#include "Nessie/Core/Thread/Mutex.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 
 namespace nes
 {
     class IslandBuilder;
     class BodyManager;
+
+    using Constraints = std::vector<StrongPtr<Constraint>>;
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : A ConstraintManager manages all Single Body Constraints.  
@@ -14,10 +18,11 @@ namespace nes
     class ConstraintManager
     {
     public:
-        using ConstraintsArray = std::vector<StrongPtr<Constraint>>;
-
-    public:
+#if NES_ASSERTS_ENABLED
+        ConstraintManager(PhysicsLockContext context) : m_lockContext(context) {}
+#else
         ConstraintManager() = default;
+#endif
         ConstraintManager(const ConstraintManager&) = delete;
         ConstraintManager& operator=(const ConstraintManager&) = delete;
         ConstraintManager(ConstraintManager&&) noexcept = delete;
@@ -36,7 +41,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a list of all constraints. This returns a copy of the constraints array.
         //----------------------------------------------------------------------------------------------------
-        ConstraintsArray    GetConstraints() const;
+        Constraints         GetConstraints() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the total number of constraints. 
@@ -80,20 +85,22 @@ namespace nes
         /// @brief : This function is called multiple times to iteratively come to a solution that meets all position constraints
         //----------------------------------------------------------------------------------------------------
         static bool         SolvePositionConstraints(Constraint** activeConstraints, const uint32_t* pIndexBegin, const uint32_t* pIndexEnd, const float deltaTime, const float baumgarte);
-
-        // [TODO]: Physics Lock operations, which are more for debugging than anything else.
-        // //----------------------------------------------------------------------------------------------------
-        // /// @brief : Lock all constraints. This should only be done during PhysicsSystem::Update(). 
-        // //----------------------------------------------------------------------------------------------------
-        // void                Internal_LockAllConstraints();
-        //
-        // //----------------------------------------------------------------------------------------------------
-        // /// @brief : Unlock all constraints. This should only be done during PhysicsSystem::Update().
-        // //----------------------------------------------------------------------------------------------------
-        // void                Internal_UnlockAllConstraints();
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Lock all constraints. This should only be done during PhysicsSystem::Update(). 
+        //----------------------------------------------------------------------------------------------------
+        void                Internal_LockAllConstraints()           { PhysicsLock::Lock(m_mutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::ConstraintsArray)); }
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Unlock all constraints. This should only be done during PhysicsSystem::Update().
+        //----------------------------------------------------------------------------------------------------
+        void                Internal_UnlockAllConstraints()         { PhysicsLock::Unlock(m_mutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::ConstraintsArray)); }
 
     private:
-        ConstraintsArray    m_constraints{};
-        mutable std::mutex  m_mutex{};
+    #if NES_ASSERTS_ENABLED
+        PhysicsLockContext  m_lockContext;
+    #endif
+        Constraints         m_constraints{};
+        mutable Mutex       m_mutex{};
     };
 }

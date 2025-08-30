@@ -7,7 +7,8 @@ local solutionDirectory = _ARGS[1];
 -- Add a searcher for our Modules and Actions.
 package.path = solutionDirectory.. 'Source/Tools/ProjectGenerator/Modules/?.lua;' .. package.path;
 
--- Require the Actions
+-- Require the Actions from Git and Cleaner.
+require("Git");
 require("Cleaner");
 
 local projectCore = require("ProjectCore");
@@ -34,3 +35,5 @@ if (_ACTION == "vs2022") then
         error("Failed to create Nessie Project!");
     end
 end
+
+-- Note: Executes the _ACTION on exit.

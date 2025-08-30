@@ -2,9 +2,9 @@
 #pragma once
 #include <cstdint>
 
-#include "Core/QuickSort.h"
-#include "Debug/Assert.h"
-#include "Math/Generic.h"
+#include "Nessie/Core/QuickSort.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Math/Generic.h"
 
 namespace nes
 {
@@ -86,7 +86,7 @@ namespace nes
         virtual ~CollisionCollector() = default;
 
         template <typename ResultTypeArg2>
-        explicit CollisionCollector(const CollisionCollector<ResultTypeArg2, TraitsType>& other) : m_earlyOutFraction(other.m_earlyOutFraction), m_pContext(other.m_pContext) {}
+        explicit CollisionCollector(const CollisionCollector<ResultTypeArg2, TraitsType>& other) : m_earlyOutFraction(other.GetEarlyOutFraction()), m_pContext(other.GetContext()) {}
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : If you want to reuse this Collector, call Reset before performing another Query.

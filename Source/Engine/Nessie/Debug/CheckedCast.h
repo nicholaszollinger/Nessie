@@ -1,7 +1,7 @@
 // CheckedCast.h
 #pragma once
 #include "Assert.h"
-#include "Core/Generic/Concepts.h"
+#include "Nessie/Core/Concepts.h"
 
 //-----------------------------------------------------------------------------------------------------------------------------
 ///	@brief : If logs are enabled, this will perform a dynamic_cast. Otherwise, this will perform a static_cast.

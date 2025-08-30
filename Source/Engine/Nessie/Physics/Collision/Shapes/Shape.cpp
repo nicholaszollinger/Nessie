@@ -3,10 +3,10 @@
 //#include "ScaledShape.h"
 //#include "StaticCompoundShape.h"
 #include "ScaleHelpers.h"
-#include "Physics/Collision/RayCast.h"
-#include "Physics/Collision/CastResult.h"
-#include "Physics/Collision/TransformedShape.h"
-#include "Physics/Collision/CollidePointResult.h"
+#include "Nessie/Physics/Collision/RayCast.h"
+#include "Nessie/Physics/Collision/CastResult.h"
+#include "Nessie/Physics/Collision/TransformedShape.h"
+#include "Nessie/Physics/Collision/CollidePointResult.h"
 
 namespace nes
 {

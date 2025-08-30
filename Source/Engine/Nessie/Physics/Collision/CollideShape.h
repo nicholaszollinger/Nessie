@@ -3,10 +3,10 @@
 #include "BackFaceMode.h"
 #include "ActiveEdgeMode.h"
 #include "CollectFacesMode.h"
-#include "Core/StaticArray.h"
-#include "Math/Vec3.h"
-#include "Physics/PhysicsSettings.h"
-#include "Physics/Body/BodyID.h"
+#include "Nessie/Core/StaticArray.h"
+#include "Nessie/Math/Math.h"
+#include "Nessie/Physics/PhysicsSettings.h"
+#include "Nessie/Physics/Body/BodyID.h"
 #include "Shapes/SubShapeID.h"
 
 namespace nes

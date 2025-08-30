@@ -1,10 +1,10 @@
 // Component.h
 #pragma once
-#include "Core/Generic/Concepts.h"
-#include "Core/Generic/TypeInfo.h"
-#include "Core/Memory/StrongPtr.h"
-#include "Core/String/StringID.h"
-#include "Debug/Assert.h"
+#include "Nessie/Core/Concepts.h"
+#include "Nessie/Core/TypeInfo.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Core/String/StringID.h"
+#include "Nessie/Debug/Assert.h"
 
 //----------------------------------------------------------------------------------------------------
 //		NOTES:

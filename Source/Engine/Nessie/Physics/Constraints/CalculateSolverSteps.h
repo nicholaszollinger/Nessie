@@ -1,6 +1,6 @@
 // CalculateSolverSteps.h
 #pragma once
-#include "Physics/PhysicsSettings.h"
+#include "Nessie/Physics/PhysicsSettings.h"
 
 namespace nes
 {
@@ -9,12 +9,6 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class CalculateSolverSteps
     {
-        const PhysicsSettings& m_settings;
-        unsigned int           m_numVelocitySteps = 0;
-        unsigned int           m_numPositionSteps = 0;
-        bool                   m_applyDefaultVelocity = false; 
-        bool                   m_applyDefaultPosition = false;
-
     public:
         NES_INLINE explicit CalculateSolverSteps(const PhysicsSettings& settings) : m_settings(settings) {}
 
@@ -48,6 +42,13 @@ namespace nes
 
         NES_INLINE unsigned int GetNumVelocitySteps() const { return m_numVelocitySteps; }
         NES_INLINE unsigned int GetNumPositionSteps() const { return m_numPositionSteps; }
+
+    private:
+        const PhysicsSettings& m_settings;
+        unsigned int           m_numVelocitySteps = 0;
+        unsigned int           m_numPositionSteps = 0;
+        bool                   m_applyDefaultVelocity = false; 
+        bool                   m_applyDefaultPosition = false;
     };
 
     //----------------------------------------------------------------------------------------------------

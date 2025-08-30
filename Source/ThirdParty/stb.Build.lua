@@ -4,16 +4,16 @@ local d = {};
 d.Name = "stb";
 d.ConfgureProject = nil;
 
-function d.AddFilesToProject(directory)
+function d.AddFilesToProject()
     files
     {
-        directory .. "stb_image.h",
-        directory .. "*.cpp",
+        d.ProjectDir .. "stb_image.h",
+        d.ProjectDir .. "*.cpp",
     }
 end
 
-function d.Include(directory)
-    includedirs { directory }
+function d.Include()
+    includedirs { d.ProjectDir }
 end
 
 return d;

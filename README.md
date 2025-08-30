@@ -6,42 +6,44 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 
 **Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
-**Vulkan**: *The engine requires Vulkan to be installed. Use the following link to install a compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.304.0/windows/VulkanSDK-1.4.304.0-Installer.exe)
-* Leave everything default when installing.
+**Vulkan**: *The engine requires Vulkan to be installed. Use the following link and to install the compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.321.1/windows/vulkansdk-windows-X64-1.4.321.1.exe)
+* Make sure to select the `Shader Toolchain Debug Symbols` component when installing.
 
 **HardWare**: *Currently, I am only testing on my machine, which uses an NVIDIA 3090 GPU and AMD Ryzen 9 5950X CPU. I am working on checking for 
 hardware limitations with certain features, but until then, I can't guarantee it will be compatible on other machines.*
 
-# How to Build
-Double click `GenerateSolution.bat` to generate the Visual Studio Projects and Solution!
-
-`CleanProjectFolder.bat` is used to delete the `.sln` file, and the `Build`, `Intermediate`, `Saved`, `.vs` folders. Basically a convenience
-utitlity for me if I have to zip up the project for someone else. 
+# How to Build:
+Download the git repository and use the following build scripts:
+- `1_Deploy.bat`: Initializes and/or updates the git submodules.
+- `2_Build.bat`: Generates the solution files. From here you are good to go!
+- `3_CleanBuild.bat`: Cleans up the Build and Intermediate folders and solution files. *You don't have to re-deploy; use `2_Build.bat` to regenerate the solution*.
+- `4_CleanAll.bat`: Cleans the build just as above, but also deinitializes all git submodules. *You will have to re-deploy (`1_Deploy.bat`) before building*.
 
 # What I am Working On:
 ### Immediate:
-Over the summer, I am going to be doing some project-wide refactors, updating syntax/naming rules and splitting the code-base into smaller projects so that I can more easily maintain the system.
+Over the summer, I am going to be doing some project-wide refactors, with the aim of getting a Physics Test scene up and running!
 - New Syntax Rules ✅
-- Refactor Math classes with SIMD operations ✅
+- Refactor Math classes with SIMD operations. ✅
 - Refactor Logging & Profiling code to be more robust. ✅
-- Finish basic Physics System, with demo of different types of collisions
+- Port Asset System Work from last semester. ✅
+- Finish basic Physics System. ✅
+- Asset System overhaul with a multithreaded architecture. ✅
+- Renderer Refactor, Render Thread, Debug Rendering API. ⌛
+- Create a Physics Test with boxes falling on each other.
 
 ### Fall Goals:
-- Port Asset System and Graphics work from my Graphics class assignments.
-- Render Thread
-- Asset Thread
-- Polish ECS
-- Engine vs Game Applications
+Overall, I plan on having the basic structure to make small demos using my engine. Being able to load a project, edit and run all in the editor.
+- ECS refactor.
+- Editor UI.
+- Engine vs Game Applications.
 
 ### Next Year (Unless I can get to these sooner):
 - Proper Serialization - utilizing a binary format.
-- UI
-- Sound
+- UI.
+- Sound.
 - Scripting, in python (lower priority, as I will be the solo dev for this engine).
 
 # Branches
-### Core
-I am going to use this branch to perform the syntax and project structure refactors.
 
 ### Physics Branch
 **This branch should not be used yet! This is currently under-development!*

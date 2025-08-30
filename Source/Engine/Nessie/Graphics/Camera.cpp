@@ -8,7 +8,7 @@ namespace nes
         m_viewMatrix = Mat44::LookAt(eyePosition, targetPosition, up);
     }
     
-    void Camera::UpdateViewport(const uint32_t width, const uint32_t height, const bool flipYAxis)
+    void Camera::UpdateViewport(const uint32 width, const uint32 height, const bool flipYAxis)
     {
         switch (m_projectionType)
         {
@@ -50,13 +50,13 @@ namespace nes
         return inverse.GetColumn3(3);
     }
     
-    void Camera::SetPerspective(const float fovRadians, const uint32_t viewWidth, const uint32_t viewHeight, const float nearPlane,
+    void Camera::SetPerspective(const float fovRadians, const uint32 viewWidth, const uint32 viewHeight, const float nearPlane,
         const float farPlane, const bool flipYAxis)
     {
         SetPerspective(fovRadians, static_cast<float>(viewWidth) / static_cast<float>(viewHeight), nearPlane, farPlane, flipYAxis);
     }
     
-    void Camera::SetOrthographic(const uint32_t viewWidth, const uint32_t viewHeight, const float orthographicSize,
+    void Camera::SetOrthographic(const uint32 viewWidth, const uint32 viewHeight, const float orthographicSize,
         const float near, const float far, const bool flipYAxis)
     {
         m_projectionType = EProjectionType::Orthographic;

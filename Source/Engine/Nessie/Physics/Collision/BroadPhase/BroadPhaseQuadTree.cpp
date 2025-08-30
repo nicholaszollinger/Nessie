@@ -2,8 +2,8 @@
 #include "BroadPhaseQuadTree.h"
 
 #include <shared_mutex>
-#include "Core/QuickSort.h"
-#include "Physics/Body/BodyManager.h"
+#include "Nessie/Core/QuickSort.h"
+#include "Nessie/Physics/Body/BodyManager.h"
 
 namespace nes
 {
@@ -21,9 +21,8 @@ namespace nes
         m_numLayers = layerInterface.GetNumBroadPhaseLayers();
         NES_ASSERT(m_numLayers < static_cast<BroadPhaseLayer::Type>(kInvalidBroadPhaseLayer));
 
-#if NES_IF_ASSERTS_ENABLED
-        // TODO later: "PhysicsLockContext"
-        //m_lockContext = pBodyManager;
+#if NES_ASSERTS_ENABLED
+        m_lockContext = pBodyManager;
 #endif
 
         m_maxBodies = m_pBodyManager->GetMaxNumBodies();
@@ -32,14 +31,14 @@ namespace nes
         m_trackers.resize(m_maxBodies);
 
         // Initialize the Node Allocator
-        uint32_t numLeaves = static_cast<uint32_t>(m_maxBodies + 1) / 2; // Assume 50% fill.
-        uint32_t numLeavesPlusInternalNodes = numLeaves + (numLeaves + 2) / 3; // Sum(numLeaves * 4^-i) with i = [0, inf]
+        uint32 numLeaves = static_cast<uint32>(m_maxBodies + 1) / 2; // Assume 50% fill.
+        uint32 numLeavesPlusInternalNodes = numLeaves + (numLeaves + 2) / 3; // Sum(numLeaves * 4^-i) with i = [0, inf]
         m_allocator.Init(2 * numLeavesPlusInternalNodes, 256); // We use double the amount o f odes while rebuilding the tree during Update().
 
         // Initialize Sub-Trees
         m_layers = NES_NEW_ARRAY(QuadTree, m_numLayers);
 
-        for (uint32_t i = 0; i < m_numLayers; ++i)
+        for (uint32 i = 0; i < m_numLayers; ++i)
         {
             m_layers[i].Init(m_allocator);
 
@@ -52,7 +51,7 @@ namespace nes
         FrameSync();
         LockModifications();
 
-        for (uint32_t i = 0; i < m_numLayers; ++i)
+        for (uint32 i = 0; i < m_numLayers; ++i)
         {
             QuadTree& tree = m_layers[i];
             if (tree.HasBodies())
@@ -73,7 +72,7 @@ namespace nes
         // Note that nothing should be locked at this point ot avoid risking a lock inversion deadlock.
         // Note that in other places where we lock this mutex we don't use shared lock ot detect lock inversions. As long
         // as nothing else is locked this is safe. This is why the BroadphaseQuery should be the highest priority lock.
-        std::unique_lock rootLock(m_queryLocks[m_queryLockIndex ^ 1]);
+        UniqueLock rootLock(m_queryLocks[m_queryLockIndex ^ 1] NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseQuery));
 
         for (BroadPhaseLayer::Type i = 0; i < static_cast<BroadPhaseLayer::Type>(m_numLayers); ++i)
         {
@@ -83,33 +82,32 @@ namespace nes
 
     void BroadPhaseQuadTree::LockModifications()
     {
-        // [TODO]: Use Physics Lock interface when completed.
-        m_updateMutex.lock();
+        // From this point on, prevent modifications to the tree.
+        PhysicsLock::Lock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
     }
 
     void BroadPhaseQuadTree::UnlockModifications()
     {
-        // [TODO]: Use Physics Lock interface when completed.
-        m_updateMutex.unlock();
+        // From this point on, we allow modifications to the tree again.
+        PhysicsLock::Unlock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
     }
 
     BroadPhase::UpdateState BroadPhaseQuadTree::UpdatePrepare()
     {
-        // [TODO]:
-        //NES_ASSERT(m_updateMutex.is_locked());
+        NES_ASSERT(m_updateMutex.is_locked());
 
         // Create the update state
         UpdateState updateState;
         UpdateStateImpl* pUpdateStateImpl = reinterpret_cast<UpdateStateImpl*>(&updateState);
 
         // Loop until we've seen all layers
-        for (uint32_t i = 0; i < m_numLayers; ++i)
+        for (uint32 i = 0; i < m_numLayers; ++i)
         {
             QuadTree& tree = m_layers[m_nextLayerToUpdate];
             m_nextLayerToUpdate = (m_nextLayerToUpdate + 1) % m_numLayers;
 
-            // If it is dirty then we update it and return.
-            if (tree.HasBodies() || tree.IsDirty() || tree.CanBeUpdated())
+            // If it is dirty, then we update it and return.
+            if (tree.HasBodies() && tree.IsDirty() && tree.CanBeUpdated())
             {
                 pUpdateStateImpl->m_pTree = &tree;
                 tree.UpdatePrepare(m_pBodyManager->GetBodies(), m_trackers, pUpdateStateImpl->m_updateState, false);
@@ -124,8 +122,7 @@ namespace nes
 
     void BroadPhaseQuadTree::UpdateFinalize(const UpdateState& updateState)
     {
-        // [TODO]:
-        //NES_ASSERT(m_updateMutex.is_locked());
+        NES_ASSERT(m_updateMutex.is_locked());
 
         // Check if a tree has been updated.
         const UpdateStateImpl* pUpdateStateImpl = reinterpret_cast<const UpdateStateImpl*>(&updateState);
@@ -147,7 +144,6 @@ namespace nes
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
         // 'New' is overriden in layer state.
-        // - TODO: I don't have the debug operations set up when overriding...
         LayerState* pLayerStates = new LayerState[m_numLayers];
 
         // Sort the bodies by BroadPhaseLayer.
@@ -183,7 +179,7 @@ namespace nes
             // Keep track in which tree we placed the object:
             for (const BodyID* pBodyID = pStart; pBodyID < pMid; ++pBodyID)
             {
-                const uint32_t index = pBodyID->GetIndex();
+                const uint32 index = pBodyID->GetIndex();
                 NES_ASSERT(bodies[index]->GetID() == *pBodyID);
                 NES_ASSERT(!bodies[index]->IsInBroadPhase());
 
@@ -212,7 +208,7 @@ namespace nes
         }
 
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
-        std::shared_lock lock(m_updateMutex);
+        SharedLock lock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
 
         BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -231,7 +227,7 @@ namespace nes
                 // Mark Added to the Broadphase
                 for (const BodyID* pBodyID = layerState.m_pBodyStart; pBodyID < layerState.m_pBodyEnd; ++pBodyID)
                 {
-                    const uint32_t index = pBodyID->GetIndex();
+                    const uint32 index = pBodyID->GetIndex();
                     NES_ASSERT(bodies[index]->GetID() == *pBodyID);
                     NES_ASSERT(m_trackers[index].m_broadPhaseLayer == broadPhaseLayer);
                     NES_ASSERT(m_trackers[index].m_collisionLayer == bodies[index]->GetCollisionLayer());
@@ -270,7 +266,7 @@ namespace nes
                 // Reset the tracking info for each Body:
                 for (const BodyID* pBodyID = layerState.m_pBodyStart; pBodyID < layerState.m_pBodyEnd; ++pBodyID)
                 {
-                    const uint32_t index = pBodyID->GetIndex();
+                    const uint32 index = pBodyID->GetIndex();
                     NES_ASSERT(bodies[index]->GetID() == *pBodyID);
                     NES_ASSERT(!bodies[index]->IsInBroadPhase()); // They shouldn't have this flag set yet.
 
@@ -293,7 +289,7 @@ namespace nes
             return;
 
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
-        std::shared_lock lock(m_updateMutex);
+        SharedLock lock(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
 
         const BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -325,7 +321,7 @@ namespace nes
             // Reset our tracking information
             for (const BodyID* pBodyID = pStart; pBodyID < pMid; ++pBodyID)
             {
-                const uint32_t index = pBodyID->GetIndex();
+                const uint32 index = pBodyID->GetIndex();
 
                 // Reset the tracker info:
                 Tracker& tracker = m_trackers[index];
@@ -349,11 +345,9 @@ namespace nes
 
         // This cannot run concurrently with UpdatePrepare()/UpdateFinalize().
         if (takeLock)
-            //PhysicsLock::LockShared(m_updateMutex);
-                m_updateMutex.lock_shared();
-        // [TODO]: 
-        //else
-            //NES_ASSERT(m_updateMutex.is_locked());
+            PhysicsLock::LockShared(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
+        else
+            NES_ASSERT(m_updateMutex.is_locked());
 
         const BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -386,7 +380,7 @@ namespace nes
 
         // Unlock if necessary:
         if (takeLock)
-            m_updateMutex.unlock_shared();
+            PhysicsLock::UnlockShared(m_updateMutex NES_IF_ASSERTS_ENABLED(, m_lockContext, EPhysicsLockTypes::BroadPhaseUpdate));
     }
 
     void BroadPhaseQuadTree::NotifyBodiesLayerChanged(BodyID* pBodies, int number)
@@ -400,7 +394,7 @@ namespace nes
 
         for (BodyID* pBodyID = pBodies + number - 1; pBodyID >= pBodies; --pBodyID)
         {
-            const uint32_t index = pBodyID->GetIndex();
+            const uint32 index = pBodyID->GetIndex();
             NES_ASSERT(bodies[index]->GetID() == *pBodyID);
             
             const Body* pBody = bodies[index];
@@ -430,8 +424,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CastRay(const RayCast& ray, RayCastBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CastRay(const RayCast& ray, RayCastBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -451,8 +444,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CastAABox(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         // Prevent this from running in parallel with node deletion in FrameSync() - see notes there.
         std::shared_lock lock(m_queryLocks[m_queryLockIndex]);
@@ -460,8 +452,7 @@ namespace nes
         CastAABoxNoLock(box, collector, broadPhaseLayerFilter, collisionLayerFilter);
     }
 
-    void BroadPhaseQuadTree::CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CastAABoxNoLock(const AABoxCast& box, CastShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
         
@@ -478,8 +469,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector,
-                                          const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollideAABox(const AABox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -499,9 +489,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideSphere(const Vec3& center, const float radius,
-        CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter,
-        const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollideSphere(const Vec3& center, const float radius, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -521,8 +509,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollidePoint(const Vec3& point, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -542,8 +529,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector,
-        const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
+    void BroadPhaseQuadTree::CollideOrientedBox(const OrientedBox& box, CollideShapeBodyCollector& collector, const BroadPhaseLayerFilter& broadPhaseLayerFilter, const CollisionLayerFilter& collisionLayerFilter) const
     {
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
 
@@ -563,9 +549,7 @@ namespace nes
         }
     }
 
-    void BroadPhaseQuadTree::FindCollidingPairs(BodyID* pActiveBodies, const int numActiveBodies,
-        float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter,
-        const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const
+    void BroadPhaseQuadTree::FindCollidingPairs(BodyID* pActiveBodies, const int numActiveBodies, const float speculativeContactDistance, const CollisionVsBroadPhaseLayerFilter& collisionVsBroadPhaseLayerFilter, const CollisionLayerPairFilter& collisionLayerPairFilter, BodyPairCollector& pairCollector) const
     {
         const BodyVector& bodies = m_pBodyManager->GetBodies();
         NES_ASSERT(m_maxBodies == m_pBodyManager->GetMaxNumBodies());
@@ -589,9 +573,9 @@ namespace nes
             NES_ASSERT(collisionLayer != kInvalidCollisionLayer);
 
             // Find the first Body with a different layer:
-            BodyID* pMid = std::upper_bound(pStart, pEnd, collisionLayer, [pTrackers](CollisionLayer layer, BodyID bodyID)
+            BodyID* pMid = std::upper_bound(pStart, pEnd, collisionLayer, [pTrackers](const CollisionLayer layer, const BodyID bodyID)
             {
-                return layer < static_cast<BroadPhaseLayer::Type>(pTrackers[bodyID.GetIndex()].m_collisionLayer);
+                return layer < pTrackers[bodyID.GetIndex()].m_collisionLayer;
             });
 
             // Loop over all broadphase layers and test the ones that we could hit:

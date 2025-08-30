@@ -1,5 +1,6 @@
 ﻿// LogSource.h
 #pragma once
+#include "Nessie/Core/Config.h"
 
 namespace nes::internal
 {
@@ -9,7 +10,7 @@ namespace nes::internal
     struct LogSource
     {
         constexpr LogSource() = default;
-        constexpr LogSource(const char* fileName, int line, const char* functionName)
+        constexpr LogSource(const char* fileName, const uint32 line, const char* functionName)
             : m_fileName(fileName)
             , m_functionName(functionName)
             , m_line(line)
@@ -19,7 +20,7 @@ namespace nes::internal
 
         const char*     m_fileName      = nullptr;
         const char*     m_functionName  = nullptr;
-        int             m_line          = 0;
+        uint32          m_line          = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true the location has been set. 

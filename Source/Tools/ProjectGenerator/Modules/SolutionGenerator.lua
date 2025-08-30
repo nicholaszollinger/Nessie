@@ -30,7 +30,12 @@ function m.GenerateSolution()
     -- Create the new Solution
     m.PrintInfo("Creating Solution...")
     m.CreateSolution();
-    dependencyInjector.AddProjectsToWorkspace();
+
+    -- Add Registerd projects to the solution:
+    if (dependencyInjector.AddProjectsToWorkspace() == false) then
+        m.PrintSuccessOrFail("Solution Generation", false);
+        return false;
+    end
 
     m.PrintSuccessOrFail("Solution Generation", true);
     return true;
@@ -60,9 +65,10 @@ function m.CreateSolution()
 
     defines
     {
-        "YAML_CPP_STATIC_DEFINE"
-        , "NES_CONFIG_DIR=R\"($(SolutionDir)Config\\)\""
-        , "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\""
+        --"YAML_CPP_STATIC_DEFINE"
+        "NES_CONFIG_DIR=R\"($(SolutionDir)Config\\)\"",
+        "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\"",
+        "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\"",
     }
 end
 
@@ -70,6 +76,11 @@ function m.EnableInstructionSets()
     filter "platforms:x64"
         defines
         {
+            "WIN32",
+            "_WINDOWS",
+            "WIN32_LEAN_AND_MEAN",
+            "NOMINMAX",
+
             "NES_USE_SSE",
             "NES_USE_SSE4_1",
             "NES_USE_SSE4_2",

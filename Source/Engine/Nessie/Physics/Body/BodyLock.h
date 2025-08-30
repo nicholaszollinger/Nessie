@@ -10,10 +10,6 @@ namespace nes
     template <bool Write, class BodyType>
     class BodyLockBase
     {
-        const BodyLockInterface&    m_bodyLockInterface;
-        std::shared_mutex*          m_pBodyMutex;
-        BodyType*                   m_pBody;  
-        
     public:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Attempts to acquire a lock on the bodies on construction. 
@@ -84,6 +80,11 @@ namespace nes
             NES_ASSERT(m_pBody != nullptr);
             return *m_pBody;
         }
+
+    private:
+        const BodyLockInterface&    m_bodyLockInterface;
+        SharedMutex*                m_pBodyMutex;
+        BodyType*                   m_pBody;  
     };
 
     template <bool Write, class BodyType>
@@ -91,12 +92,6 @@ namespace nes
     {
     public:
         using MutexMask = BodyLockInterface::MutexMask;
-        
-    private:
-        const BodyLockInterface&    m_bodyLockInterface;
-        MutexMask                   m_mutexMask;
-        const BodyID*               m_pBodies;
-        int                         m_numBodies;
 
     public:
         //----------------------------------------------------------------------------------------------------
@@ -147,6 +142,12 @@ namespace nes
             
             return m_bodyLockInterface.TryGetBody(bodyID);
         }
+
+    private:
+        const BodyLockInterface&    m_bodyLockInterface;
+        MutexMask                   m_mutexMask;
+        const BodyID*               m_pBodies;
+        int                         m_numBodies;
     };
 
     //----------------------------------------------------------------------------------------------------

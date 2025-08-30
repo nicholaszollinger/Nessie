@@ -1,6 +1,6 @@
 ﻿// MSVCTarget.h
 #pragma once
-#include "Core/Config.h"
+#include "Nessie/Core/Config.h"
 #ifdef NES_PLATFORM_WINDOWS
 #include "LogTargetBase.h"
 

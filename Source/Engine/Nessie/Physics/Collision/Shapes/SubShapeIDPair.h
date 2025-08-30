@@ -1,8 +1,9 @@
 // SubShapeIDPair.h
 #pragma once
 #include "SubShapeID.h"
-#include "Math/SIMD/UVec4Reg.h"
-#include "Physics/Body/BodyID.h"
+#include "Nessie/Core/Hash.h"
+#include "Nessie/Math/Math.h"
+#include "Nessie/Physics/Body/BodyID.h"
 
 namespace nes
 {
@@ -14,6 +15,7 @@ namespace nes
     {
     public:
         SubShapeIDPair() = default;
+        ~SubShapeIDPair() = default;
 
         SubShapeIDPair(const BodyID& body1ID, const SubShapeID& subShapeID1, const BodyID& body2ID, const SubShapeID& subShapeID2)
             : m_body1ID(body1ID)
@@ -26,7 +28,7 @@ namespace nes
 
         inline bool         operator==(const SubShapeIDPair& other) const
         {
-            return UVec4Reg::Load(reinterpret_cast<const uint32_t*>(this)) == UVec4Reg::Load(reinterpret_cast<const uint32_t*>(&other));
+            return UVec4Reg::LoadInt4(reinterpret_cast<const uint32_t*>(this)) == UVec4Reg::LoadInt4(reinterpret_cast<const uint32_t*>(&other));
         }
 
         /// Less than operator is used to consistently order contact points for a deterministic simulation.
@@ -48,17 +50,15 @@ namespace nes
         const BodyID&       GetBody2ID() const          { return m_body2ID; }
         const SubShapeID&   GetSubShape1ID() const      { return m_subShape1ID; }
         const SubShapeID&   GetSubShape2ID() const      { return m_subShape1ID; }
-
-        // [TODO]: 
-        uint64_t            GetHash() const;
+        uint64_t            GetHash() const             { return HashBytes(reinterpret_cast<const std::byte*>(this), sizeof(SubShapeIDPair)); }            
 
     private:
-        BodyID      m_body1ID;
-        SubShapeID  m_subShape1ID;
-        BodyID      m_body2ID;
-        SubShapeID  m_subShape2ID;
+        BodyID              m_body1ID;
+        SubShapeID          m_subShape1ID;
+        BodyID              m_body2ID;
+        SubShapeID          m_subShape2ID;
     };
-
+    
     static_assert(sizeof(SubShapeIDPair) == 16, "Unexpected size");
     static_assert(alignof(SubShapeIDPair) == 4, "Assuming 4 byte aligned");
 }

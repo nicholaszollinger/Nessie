@@ -1,11 +1,10 @@
 ﻿// Math.h
 #pragma once
+#include "Nessie/Math/Generic.h"
+#include "Nessie/Math/Vec4.h"
+#include "Nessie/Math/Mat22.h"
+#include "Nessie/Math/Mat33.h"
+#include "Nessie/Math/Mat44.h"
+#include "Nessie/Math/Real.h"
+#include "Nessie/Math/IVec4.h"
 
-#include "Generic.h"
-#include "Vec2.h"
-#include "Vec3.h"
-#include "Vec4.h"
-
-#include "Mat33.h"
-#include "Mat4.h"
-#include "Real.h"

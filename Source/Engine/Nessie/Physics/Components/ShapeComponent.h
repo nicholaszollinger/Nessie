@@ -1,8 +1,8 @@
 ﻿// ShapeComponent.h
 #pragma once
-#include "World/Components/Entity3DComponent.h"
-#include "Geometry/AABox.h"
-#include "Physics/Collision/Shapes/Shape.h"
+#include "Nessie/World/Components/Entity3DComponent.h"
+#include "Nessie/Geometry/AABox.h"
+#include "Nessie/Physics/Collision/Shapes/Shape.h"
 
 namespace nes
 {

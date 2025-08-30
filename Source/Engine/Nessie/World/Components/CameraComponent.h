@@ -1,7 +1,7 @@
 ﻿// CameraComponent.h
 #pragma once
 #include "Entity3DComponent.h"
-#include "Graphics/Camera.h"
+#include "Nessie/Graphics/Camera.h"
 
 namespace nes
 {

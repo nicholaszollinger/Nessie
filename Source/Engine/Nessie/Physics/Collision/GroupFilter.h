@@ -1,8 +1,8 @@
 // GroupFilter.h
 #pragma once
-#include "Core/Result.h"
-#include "Core/Memory/RefCounter.h"
-#include "Core/Memory/StrongPtr.h"
+#include "Nessie/Core/Result.h"
+#include "Nessie/Core/Memory/RefCounter.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 
 namespace nes
 {

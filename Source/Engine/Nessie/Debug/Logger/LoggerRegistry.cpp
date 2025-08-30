@@ -1,7 +1,6 @@
 ﻿// LoggerRegistry.cpp
 #include "LoggerRegistry.h"
 #include "LogFormatters/PatternFormatter.h"
-#include "Platform/Platform.h"
 
 namespace nes
 {
@@ -13,7 +12,7 @@ namespace nes
         m_pDefaultLogger = std::make_shared<Logger>(kDefaultLoggerName);
         m_loggers[kDefaultLoggerName] = m_pDefaultLogger;
         
-        auto pDefaultTarget = Platform::CreateDefaultLogTarget();
+        LogTargetPtr pDefaultTarget = CreateDefaultLogTarget();
         pDefaultTarget->SetLevel(m_globalLogLevel);
         
         // Initialize logger would add these targets 

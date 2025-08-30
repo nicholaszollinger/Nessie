@@ -1,7 +1,7 @@
 ﻿// BroadPhaseLayer.h
 #pragma once
 #include <cstdint>
-#include "Physics/Collision/CollisionLayer.h"
+#include "Nessie/Physics/Collision/CollisionLayer.h"
 
 namespace nes
 {
@@ -101,5 +101,49 @@ namespace nes
         ///     testing against Bodies with this Layer.
         //----------------------------------------------------------------------------------------------------
         virtual bool ShouldCollide([[maybe_unused]] const BroadPhaseLayer& inLayer) const { return true; }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Default filter class that uses the pair filter in combination with a specified layer to
+    ///     filter layers.
+    //----------------------------------------------------------------------------------------------------
+    class DefaultBroadPhaseLayerFilter : public BroadPhaseLayerFilter
+    {
+    public:
+        DefaultBroadPhaseLayerFilter(const CollisionVsBroadPhaseLayerFilter& collisionVsBroadFilter, const CollisionLayer layer)
+            : m_collisionVsBroadFilter(collisionVsBroadFilter)
+            , m_layer(layer)
+        {
+            //
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : See BroadPhaseLayerFilter::ShouldCollide()
+        //----------------------------------------------------------------------------------------------------
+        virtual bool ShouldCollide(const BroadPhaseLayer& layer) const override
+        {
+            return m_collisionVsBroadFilter.ShouldCollide(m_layer, layer);
+        }
+
+    private:
+        const CollisionVsBroadPhaseLayerFilter& m_collisionVsBroadFilter;
+        CollisionLayer m_layer;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Filter class that allows objects from a specified broadphase layer only.  
+    //----------------------------------------------------------------------------------------------------
+    class SpecifiedBroadPhaseLayerFilter : public BroadPhaseLayerFilter
+    {
+    public:
+        explicit SpecifiedBroadPhaseLayerFilter(const BroadPhaseLayer& layer) : m_layer(layer) {}
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : See BroadPhaseLayerFilter::ShouldCollide()
+        //----------------------------------------------------------------------------------------------------
+        virtual bool ShouldCollide(const BroadPhaseLayer& layer) const override { return m_layer == layer; }
+
+    private:
+        BroadPhaseLayer m_layer;
     };
 }

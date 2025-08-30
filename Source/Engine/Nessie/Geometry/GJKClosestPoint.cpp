@@ -2,7 +2,7 @@
 #include "GJKClosestPoint.h"
 
 #include "ClosestPoint.h"
-#include "Math/Bit.h"
+#include "Nessie/Math/Bit.h"
 
 namespace nes
 {

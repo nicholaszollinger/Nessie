@@ -1,17 +1,13 @@
 // RefCounter.h
 #pragma once
-#include <cstdint>
-#include "Memory.h"
-#include "Debug/CheckedCast.h"
+#include "Nessie/Core/Memory/Memory.h"
+#include "Nessie/Debug/CheckedCast.h"
+#undef GetObject
 
 namespace nes::internal
 {
     class RefCounterBase
     {
-        /// A Large value that is added to the ref count, so that it remains in memory when the number of
-        /// external references becomes zero.
-        static constexpr uint32_t kEmbedded = 0x0ebedded;
-        
     public:
         virtual ~RefCounterBase();
 
@@ -40,7 +36,7 @@ namespace nes::internal
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current number of references to the object. 
         //----------------------------------------------------------------------------------------------------
-        uint32_t            GetRefCount() const        { return m_refCount.load(std::memory_order_relaxed); }
+        uint32              GetRefCount() const        { return m_refCount.load(std::memory_order_relaxed); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Setting an object as embedded means to keep the object in memory even if the ref count
@@ -56,6 +52,10 @@ namespace nes::internal
         virtual void        ReleaseObject() const = 0;
 
     private:
+        /// A Large value that is added to the ref count, so that it remains in memory when the number of
+        /// external references becomes zero.
+        static constexpr uint32 kEmbedded = 0x0ebedded;
+        
         /// The current ref count to the underlying object. When this reaches zero, the object will be destroyed.
         mutable std::atomic<uint32> m_refCount = 0;
     };

@@ -1,11 +1,10 @@
-#pragma once
 // WorkerThread.h
-
+#pragma once
 #include <functional>
 #include <queue>
 #include "Thread.h"
 #include "ThreadIdleEvent.h"
-#include "Core/Generic/Concepts.h"
+#include "Nessie/Core/Concepts.h"
 
 namespace nes
 {
@@ -49,9 +48,10 @@ namespace nes
         //-----------------------------------------------------------------------------------------------------------------------------
         ///	@brief : Begins the thread's execution.
         ///	@param handlerFunc : Function to handle incoming instructions sent to this thread.
+        /// @param threadName : Debug name to give the thread.
         /// @note : This will fail if called on a non-terminated thread!
         //-----------------------------------------------------------------------------------------------------------------------------
-        void                        Start(ThreadInstructionHandler&& handlerFunc);
+        void                        Start(ThreadInstructionHandler&& handlerFunc, const char* threadName = "");
         
         //-----------------------------------------------------------------------------------------------------------------------------
         ///	@brief : Tells the thread to shut down and join back up with the main thread.
@@ -89,9 +89,14 @@ namespace nes
         bool                        IsTerminated() const        { return m_isTerminated; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get this thread's ID.
+        /// @brief : Check if this thread is currently idle. 
         //----------------------------------------------------------------------------------------------------
-        std::thread::id             GetThreadId() const         { return m_thread.get_id(); }
+        bool                        IsIdle()                    { return m_idleEvent.IsIdle(); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get this thread's ID. If the thread is terminated, it will return an invalid id.
+        //----------------------------------------------------------------------------------------------------
+        std::thread::id             GetThreadId() const         { return m_isTerminated? std::thread::id() : m_thread.get_id(); }
 
     private:
         //-----------------------------------------------------------------------------------------------------------------------------
@@ -106,6 +111,7 @@ namespace nes
 
     private:
         std::thread                 m_thread;
+        std::string                 m_threadName;           /// Debug name for the thread.
         ThreadIdleEvent             m_idleEvent;            /// Interface for handling when this thread is put to sleep or not.
         std::mutex                  m_instructionMutex;     /// Mutex that will guard access to the instruction queue.
         std::condition_variable     m_wakeCondition;        /// Condition variable for waking up the thread.
@@ -124,7 +130,7 @@ namespace nes
     }
     
     template <EnumType InstructionType>
-    void WorkerThread<InstructionType>::Start(ThreadInstructionHandler&& handlerFunc)
+    void WorkerThread<InstructionType>::Start(ThreadInstructionHandler&& handlerFunc, const char* threadName)
     {
         if (m_thread.joinable())
         {
@@ -134,10 +140,15 @@ namespace nes
 
         m_isTerminated = false;
         m_instructionHandler = std::forward<ThreadInstructionHandler>(handlerFunc);
+        m_threadName = threadName;
 
-        // TODO: Consider adding a way to track the thread name, so you can see it
-        // in visual studio, or use it for debugging purposes.
-        m_thread = std::thread([this]() -> void { return ProcessInstructions();});
+        m_thread = std::thread([this]() -> void
+        {
+            if (!m_threadName.empty())
+                thread::SetThreadName(m_threadName.c_str());
+            
+            return ProcessInstructions();
+        });
     }
     
     template <EnumType InstructionType>
@@ -189,6 +200,9 @@ namespace nes
     template <EnumType InstructionType>
     void WorkerThread<InstructionType>::WaitUntilDone()
     {
+        if (m_isTerminated)
+            return;
+        
         m_idleEvent.WaitForIdle();
     }
     
@@ -228,6 +242,9 @@ namespace nes
                 lock.lock();
             }
         }
+
+        // Release any waiting threads when terminated.
+        m_idleEvent.SignalIdle();
     }
 
     template <EnumType InstructionType>

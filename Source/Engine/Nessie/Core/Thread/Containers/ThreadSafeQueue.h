@@ -3,7 +3,7 @@
 #include <atomic>
 #include <mutex>
 #include <queue>
-#include "Debug/Assert.h"
+#include "Nessie/Debug/Assert.h"
 
 namespace nes
 {
@@ -85,12 +85,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Thread-safe check if the queue is empty.
         //----------------------------------------------------------------------------------------------------
-        bool                IsEmptyLocked() const;
+        bool                IsEmptyLocked();
         
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Thread-safe check the size of the queue.
         //----------------------------------------------------------------------------------------------------
-        size_t              SizeLocked() const;
+        size_t              SizeLocked();
         
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Non-thread-safe push of a value into the queue.
@@ -346,7 +346,7 @@ namespace nes
     }
     
     template<typename Type>
-    bool ThreadSafeQueue<Type>::IsEmptyLocked() const
+    bool ThreadSafeQueue<Type>::IsEmptyLocked()
     {
         Lock();
         const bool result = IsEmpty();
@@ -361,7 +361,7 @@ namespace nes
     }
 
     template<typename Type>
-    size_t ThreadSafeQueue<Type>::SizeLocked() const
+    size_t ThreadSafeQueue<Type>::SizeLocked()
     {
         Lock();
         const size_t result = Size();

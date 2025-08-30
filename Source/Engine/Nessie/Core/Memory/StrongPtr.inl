@@ -91,10 +91,10 @@ namespace nes
         {
             if constexpr (!IsRefTargetType<Type>)
             {
-                // We only delete in the case of an external RefCounter object.
+                // We only call delete in the case of an external RefCounter object.
                 // Removing the last reference of a RefTarget will delete the object
                 // itself already.
-                delete m_pRefCounter;
+                NES_DELETE(m_pRefCounter);
             }
 
             m_pRefCounter = nullptr;

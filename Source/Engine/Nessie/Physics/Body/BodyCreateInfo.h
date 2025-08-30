@@ -1,12 +1,12 @@
 // BodyCreateInfo.h
 #pragma once
-#include "Core/Memory/StrongPtr.h"
-#include "Physics/Body/DOF.h"
-#include "Physics/Body/MotionQuality.h"
-#include "Physics/Body/MotionType.h"
-#include "Physics/Collision/CollisionGroup.h"
-#include "Physics/Collision/CollisionLayer.h"
-#include "Physics/Collision/Shapes/Shape.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
+#include "Nessie/Physics/Body/DOF.h"
+#include "Nessie/Physics/Body/MotionQuality.h"
+#include "Nessie/Physics/Body/MotionType.h"
+#include "Nessie/Physics/Collision/CollisionGroup.h"
+#include "Nessie/Physics/Collision/CollisionLayer.h"
+#include "Nessie/Physics/Collision/Shapes/Shape.h"
 
 namespace nes
 {

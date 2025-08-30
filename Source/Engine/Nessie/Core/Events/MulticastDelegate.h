@@ -1,7 +1,7 @@
 ﻿// MulticastDelegate.h
 #pragma once
 #include <functional>
-#include "Debug/Log.h"
+#include "Nessie/Debug/Log.h"
 
 // [TODO]: This is very unsafe at the minute with the dangling pointers.
 // I would prefer a StrongPtr to a base object class, similar to Unreal. 

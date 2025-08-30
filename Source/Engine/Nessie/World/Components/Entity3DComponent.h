@@ -1,7 +1,7 @@
 ﻿// ActorComponent.h
 #pragma once
-#include "Scene/Component.h"
-#include "Scene/TickFunction.h"
+#include "Nessie/Scene/Component.h"
+#include "Nessie/Scene/TickFunction.h"
 
 namespace nes
 {

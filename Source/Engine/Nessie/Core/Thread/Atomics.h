@@ -1,7 +1,7 @@
 ﻿// Atomics.h
 #pragma once
 #include <atomic>
-#include "Core/Generic/Concepts.h"
+#include "Nessie/Core/Concepts.h"
 
 namespace nes
 {

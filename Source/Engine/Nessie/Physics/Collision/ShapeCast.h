@@ -1,21 +1,21 @@
 // ShapeCast.h
 #pragma once
-
-#include "Geometry/AABox.h"
+#include "Nessie/Geometry/AABox.h"
 #include "CollideShape.h"
 #include "Shapes/Shape.h"
 
 namespace nes
 {
-    struct ShapeCast
+    template <typename VecType, typename MatType, typename ShapeCastType>
+    struct TShapeCast
     {
         const Shape*    m_pShape;               /// Shape that's being cast (cannot be a mesh shape). Note that this structure does not assume ownership over the shape for performance reasons.
         const Vec3      m_scale;                /// Scale in local space of the shape being cast (scales relative to its center of mass).
-        const Mat44     m_centerOfMassStart;    /// Start position and orientation of the center of mass of the shape (construct using FromWorldTransform() if you have a world transform for your shape).
+        const MatType   m_centerOfMassStart;    /// Start position and orientation of the center of mass of the shape (construct using FromWorldTransform() if you have a world transform for your shape).
         const Vec3      m_direction;            /// Direction and length of the cast (anything beyond this length will not be reported as a hit).
         const AABox     m_shapeWorldBounds;     /// Cached shape's world bounds, calculated in constructor.
 
-        ShapeCast(const Shape* pShape, const Vec3& scale, const Mat44& centerOfMassStart, const Vec3& direction, const AABox& shapeWorldBounds)
+        TShapeCast(const Shape* pShape, const Vec3& scale, const MatType& centerOfMassStart, const Vec3& direction, const AABox& shapeWorldBounds)
             : m_pShape(pShape)
             , m_scale(scale)
             , m_centerOfMassStart(centerOfMassStart)
@@ -25,8 +25,8 @@ namespace nes
             //
         }
 
-        ShapeCast(const Shape* pShape, const Vec3& scale, const Mat44& centerOfMassStart, const Vec3& direction)
-            : ShapeCast(pShape, scale, centerOfMassStart, direction, pShape->GetWorldBounds(centerOfMassStart, scale))
+        TShapeCast(const Shape* pShape, const Vec3& scale, const MatType& centerOfMassStart, const Vec3& direction)
+            : TShapeCast(pShape, scale, centerOfMassStart, direction, pShape->GetWorldBounds(centerOfMassStart, scale))
         {
             //
         }
@@ -34,26 +34,26 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Construct a shape cast using a world transform for a shape instead of the center of mass transform. 
         //----------------------------------------------------------------------------------------------------
-        static inline ShapeCast FromWorldTransform(const Shape* pShape, const Vec3& scale, const Mat44& worldTransform, const Vec3& direction)
+        static inline ShapeCastType FromWorldTransform(const Shape* pShape, const Vec3& scale, const MatType& worldTransform, const Vec3& direction)
         {
-            return ShapeCast(pShape, scale, worldTransform.PreTranslated(pShape->GetCenterOfMass()), direction);
+            return ShapeCastType(pShape, scale, worldTransform.PreTranslated(pShape->GetCenterOfMass()), direction);
         }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a transformed copy of this shape cast using 'transform'. Multiply transform on the
-        ///     left hand side.
+        ///     left-hand side.
         //----------------------------------------------------------------------------------------------------
-        ShapeCast               PostTransformed(const Mat44& transform) const
+        ShapeCastType               PostTransformed(const MatType& transform) const
         {
             Mat44 start = transform * m_centerOfMassStart;
-            Vec3 direction = transform.TransformVector(m_direction);
+            Vec3 direction = transform.Multiply3x3(m_direction);
             return { m_pShape, m_scale, start, direction };
         }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a translated copy of this shape cast by 'translation'. 
         //----------------------------------------------------------------------------------------------------
-        ShapeCast               PostTranslated(const Vec3& translation) const
+        ShapeCastType               PostTranslated(const Vec3& translation) const
         {
             return { m_pShape, m_scale, m_centerOfMassStart.PostTranslated(translation), m_direction };
         }
@@ -62,9 +62,42 @@ namespace nes
         /// @brief : Get a point that is 'distance' along the ray form m_centerOfMassStart to m_centerOfMassStart + m_direction * fraction
         ///     where 0 = start of the ray and 1 = end of the ray.
         //----------------------------------------------------------------------------------------------------
-        Vec3                 GetPointAlongRay(const float fraction) const
+        inline VecType              GetPointAlongRay(const float fraction) const
         {
-            return m_centerOfMassStart.GetColumn3(3) + (fraction * m_direction); 
+            return m_centerOfMassStart.GetTranslation() + (fraction * m_direction); 
+        }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Single precision ShapeCast type. 
+    //----------------------------------------------------------------------------------------------------
+    struct ShapeCast : public TShapeCast<Vec3, Mat44, ShapeCast>
+    {
+        using TShapeCast<Vec3, Mat44, ShapeCast>::TShapeCast;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : ShapeCast type whose precision is based on Real. 
+    //----------------------------------------------------------------------------------------------------
+    struct RShapeCast : public TShapeCast<RVec3, Mat44, RShapeCast>
+    {
+        using TShapeCast<RVec3, Mat44, RShapeCast>::TShapeCast;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Explicit cast form ShapeCast. Converts from single to double precision. 
+        //----------------------------------------------------------------------------------------------------
+        explicit RShapeCast(const ShapeCast& cast)
+            : RShapeCast(cast.m_pShape, cast.m_scale, Mat44(cast.m_centerOfMassStart), cast.m_direction, cast.m_shapeWorldBounds)
+        {
+            //
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Convert to ShapeCast, which implies casting from double precision to single precision. 
+        //----------------------------------------------------------------------------------------------------
+        explicit operator ShapeCast() const
+        {
+            return ShapeCast(m_pShape, m_scale, m_centerOfMassStart, m_direction, m_shapeWorldBounds);
         }
     };
 

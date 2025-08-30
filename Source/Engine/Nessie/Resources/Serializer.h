@@ -1,8 +1,8 @@
 #pragma once
 // Serializer.h
 #include <yaml-cpp/yaml.h>
-#include "Debug/Assert.h"
-#include "Core/Generic/Concepts.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Core/Concepts.h"
 
 namespace nes
 {

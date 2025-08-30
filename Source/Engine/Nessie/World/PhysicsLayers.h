@@ -1,8 +1,8 @@
 // PhysicsLayers.h
 #pragma once
-#include "Debug/Assert.h"
-#include "Physics/Collision/CollisionLayer.h"
-#include "Physics/Collision/BroadPhase/BroadPhaseLayer.h"
+#include "Nessie/Debug/Assert.h"
+#include "Nessie/Physics/Collision/CollisionLayer.h"
+#include "Nessie/Physics/Collision/BroadPhase/BroadPhaseLayer.h"
 
 // This is here mostly for testing purposes. I want to refactor how the layers are set up, with
 // a more data driven approach when I have time. These values were taken from Jolt's Test Project.

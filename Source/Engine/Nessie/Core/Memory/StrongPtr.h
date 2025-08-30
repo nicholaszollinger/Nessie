@@ -1,5 +1,5 @@
 #pragma once
-#include "RefCounter.h"
+#include "Nessie/Core/Memory/RefCounter.h"
 
 namespace nes
 {
@@ -45,7 +45,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the number of references to this object.
         //----------------------------------------------------------------------------------------------------
-        inline uint32_t                     GetRefCount() const                         { return m_pRefCounter->GetRefCount(); }
+        inline uint32                       GetRefCount() const                         { return m_pRefCounter->GetRefCount(); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Embedding means that when the ref count reaches zero, the object will *not* be destroyed.
@@ -74,7 +74,7 @@ namespace nes
         void                                RemoveRef();
 
     private:
-    internal::RefCounterBase*           m_pRefCounter = nullptr;
+        internal::RefCounterBase*           m_pRefCounter = nullptr;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -128,7 +128,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the number of references to this object.
         //----------------------------------------------------------------------------------------------------
-        [[nodiscard]] inline uint32_t       GetRefCount() const                             { return m_pRefCounter->GetRefCount(); }
+        [[nodiscard]] inline uint32         GetRefCount() const                             { return m_pRefCounter->GetRefCount(); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Embedding means that when the ref count reaches zero, the object will *not* be destroyed.

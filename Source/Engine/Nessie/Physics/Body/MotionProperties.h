@@ -4,15 +4,15 @@
 #include "DOF.h"
 #include "MotionQuality.h"
 #include "MotionType.h"
-#include "Math/Quat.h"
-#include "Math/Mat4.h"
-#include "Geometry/Sphere.h"
+#include "Nessie/Math/Quat.h"
+#include "Nessie/Math/Mat44.h"
+#include "Nessie/Geometry/Sphere.h"
 
 namespace nes
 {
     struct MassProperties;
 
-    enum class EAllowedSleep : uint8_t
+    enum class ECanSleep : uint8_t
     {
         CannotSleep = 0,    /// Object cannot go to sleep
         CanSleep = 1,       // Object can go to sleep
@@ -32,43 +32,7 @@ namespace nes
         static constexpr uint32_t kInactiveIndex = std::numeric_limits<uint32_t>::max();
 
         MotionProperties() = default;
-
-    private:
-        // 1st Cache line.
-        Vec3                m_linearVelocity        = Vec3::Zero();          /// World space linear velocity of the center of mass (m/s)
-        Vec3                m_angularVelocity       = Vec3::Zero();          /// World space angular velocity (rad/s)
-        Vec3                m_inverseInertiaDiagonal = Vec3::Zero();         /// Diagonal of inverse inertia matrix: (D)
-        Quat                m_inertiaRotation       = Quat::Identity();         /// Rotation (R) that takes inverse inertia diagonal to local space: IBody^-1 = R * D * R^-1
-
-        // 2nd Cache line
-        Vec3                m_force                 = Vec3::Zero();          /// Accumulated world space force (N). Note loaded through intrinsics so ensure that the 4 bytes after this are readable!
-        Vec3                m_torque                = Vec3::Zero();          /// Accumulated world space torgue (N m). Note loaded through intrinsics so ensure that the 4 bytes after this are readable!
-        float               m_inverseMass           = 0.f;                      /// Inverse mass of the object (1/kg).
-        float               m_linearDamping         = 0.f;                      /// Linear damping: dv/dt = -c * v. c must be between [0, 1] but is usually close to 0.
-        float               m_angularDamping        = 0.f;                      /// Angular damping: dw/dt = -c * w. c must be between [0, 1] but is usually close to 0.
-        float               m_maxLinearVelocity     = 0.f;                      /// Maximum linear velocity that this body can reach (m/s).
-        float               m_maxAngularVelocity    = 0.f;                      /// Maximum angular velocity that this body can reach (rad/s).
-        float               m_gravityScale          = 1.f;                       /// Factor to multiply gravity with.
-        uint32_t            m_indexInActiveBodies   = kInactiveIndex;           /// If the body is active, this is the index in the active body list or kInactiveIndex if it is not active.
-        uint32_t            m_islandIndex           = kInactiveIndex;           /// Index of the Island that this body is a part of. When the body has not yet been updated or is not active, this equals kInactiveIndex.
-
-        EBodyMotionQuality   m_motionQuality        = EBodyMotionQuality::Discrete;  /// Motion quality, or how well it detects collisions at high velocity.
-        bool                m_canSleep              = true;                          /// If this body can go to sleep.
-        EAllowedDOFs         m_allowedDoFs          = EAllowedDOFs::All;             /// Allowed degrees of freedom for this body.
-        uint8_t             m_numVelocityStepsOverride = 0;                          /// Used only when this Body is dynamic and colliding. Override for the number of solver velocity iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
-        uint8_t             m_numPositionStepsOverride = 0;                          /// Used only when this Body is dynamic and colliding. Override for the number of solver position iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
-
-        // 3rd Cache line - Not used often.
-        Sphere              m_sleepTestSpheres[3]{};                             /// Measure motion for 3 points on the body to see if it is resting: COM, COM + largest bounding box axis, COM + second largest bounding box axis.
-        float               m_sleepTestTimer = 0.f;                              /// How long this body has been within the movement tolerance.
-
-#if NES_LOGGING_ENABLED
-        EBodyMotionType  m_cachedMotionType = EBodyMotionType::Static;
-        // [TODO]:  RigidBody vs SoftBody, I am going to assume rigidbody for now.
-        //BodyType        m_cachedBodyType;
-#endif
-
-    public:
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Motion quality, or how well it detects collisions at high velocity.
         //----------------------------------------------------------------------------------------------------
@@ -82,7 +46,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : If this body can go to sleep.
         //----------------------------------------------------------------------------------------------------
-        inline bool                 GetCanSleep() const                                     { return m_canSleep; }
+        inline bool                 GetCanSleep() const                                     { return m_allowSleeping; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get world space linear velocity of the center of mass (m/s)  
@@ -358,7 +322,42 @@ namespace nes
         
         inline void                 Internal_ResetSleepTestSpheres(const Vec3* pPoints);
         inline void                 Internal_ResetSleepTestTimer()                          { m_sleepTestTimer = 0.f; }
-        inline EAllowedSleep        Internal_AccumulateSleepTime(float deltaTime, float timeBeforeSleep);
+        inline ECanSleep            Internal_AccumulateSleepTime(float deltaTime, float timeBeforeSleep);
+    
+    private:
+        // 1st Cache line.
+        Vec3                m_linearVelocity        = Vec3::Zero();          /// World space linear velocity of the center of mass (m/s)
+        Vec3                m_angularVelocity       = Vec3::Zero();          /// World space angular velocity (rad/s)
+        Vec3                m_inverseInertiaDiagonal = Vec3::Zero();         /// Diagonal of inverse inertia matrix: (D)
+        Quat                m_inertiaRotation       = Quat::Identity();         /// Rotation (R) that takes inverse inertia diagonal to local space: IBody^-1 = R * D * R^-1
+
+        // 2nd Cache line
+        Vec3                m_force                 = Vec3::Zero();          /// Accumulated world space force (N). Note loaded through intrinsics so ensure that the 4 bytes after this are readable!
+        Vec3                m_torque                = Vec3::Zero();          /// Accumulated world space torgue (N m). Note loaded through intrinsics so ensure that the 4 bytes after this are readable!
+        float               m_inverseMass           = 0.f;                      /// Inverse mass of the object (1/kg).
+        float               m_linearDamping         = 0.f;                      /// Linear damping: dv/dt = -c * v. c must be between [0, 1] but is usually close to 0.
+        float               m_angularDamping        = 0.f;                      /// Angular damping: dw/dt = -c * w. c must be between [0, 1] but is usually close to 0.
+        float               m_maxLinearVelocity     = 0.f;                      /// Maximum linear velocity that this body can reach (m/s).
+        float               m_maxAngularVelocity    = 0.f;                      /// Maximum angular velocity that this body can reach (rad/s).
+        float               m_gravityScale          = 1.f;                       /// Factor to multiply gravity with.
+        uint32_t            m_indexInActiveBodies   = kInactiveIndex;           /// If the body is active, this is the index in the active body list or kInactiveIndex if it is not active.
+        uint32_t            m_islandIndex           = kInactiveIndex;           /// Index of the Island that this body is a part of. When the body has not yet been updated or is not active, this equals kInactiveIndex.
+
+        EBodyMotionQuality   m_motionQuality        = EBodyMotionQuality::Discrete;  /// Motion quality, or how well it detects collisions at high velocity.
+        bool                m_allowSleeping              = true;                          /// If this body can go to sleep.
+        EAllowedDOFs         m_allowedDoFs          = EAllowedDOFs::All;             /// Allowed degrees of freedom for this body.
+        uint8_t             m_numVelocityStepsOverride = 0;                          /// Used only when this Body is dynamic and colliding. Override for the number of solver velocity iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
+        uint8_t             m_numPositionStepsOverride = 0;                          /// Used only when this Body is dynamic and colliding. Override for the number of solver position iterations to run, 0 means use the default in PhysicsSettings::mNumVelocitySteps. The number of iterations to use is the max of all contacts and constraints in the island.
+
+        // 3rd Cache line - Not used often.
+        Sphere              m_sleepTestSpheres[3];                             /// Measure motion for 3 points on the body to see if it is resting: COM, COM + largest bounding box axis, COM + second largest bounding box axis.
+        float               m_sleepTestTimer = 0.f;                              /// How long this body has been within the movement tolerance.
+
+#if NES_LOGGING_ENABLED
+        EBodyMotionType  m_cachedMotionType = EBodyMotionType::Static;
+        // [TODO]:  RigidBody vs SoftBody, I am going to assume rigidbody for now.
+        //BodyType        m_cachedBodyType;
+#endif
         
     };
 }

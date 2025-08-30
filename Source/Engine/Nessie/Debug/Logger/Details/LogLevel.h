@@ -19,15 +19,15 @@ namespace nes
 
     namespace internal
     {
-        static const std::string_view s_logLevelNames[]
+        static constexpr const char* s_logLevelNames[]
         {
-            std::string_view("Trace", 5),
-            std::string_view("Debug", 5),
-            std::string_view("Info", 4),
-            std::string_view("Warning", 7),
-            std::string_view("Error", 5),
-            std::string_view("Fatal", 5),
-            std::string_view("Off", 3),
+            "Trace",
+            "Debug",
+            "Info",
+            "Warning",
+            "Error",
+            "Fatal",
+            "Off",
         };
 
         static constexpr size_t kLogLevelCount = std::size(s_logLevelNames);
@@ -35,7 +35,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a string representation of a ELogLevel.
         //----------------------------------------------------------------------------------------------------
-        inline const std::string_view& GetLogLevelName(const ELogLevel level)
+        inline const char* GetLogLevelName(const ELogLevel level)
         {
             const size_t levelIndex = std::min(static_cast<size_t>(level), std::size(s_logLevelNames));
             return s_logLevelNames[levelIndex];

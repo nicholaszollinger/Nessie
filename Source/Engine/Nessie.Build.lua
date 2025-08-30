@@ -2,25 +2,22 @@
 -- Premake Documentation: https://premake.github.io/docs/
 
 local projectCore = require ("ProjectCore");
-
-local libFolder = projectCore.ProjectIntermediateLibsLocation .. "Nessie\\";
+local dependencyInjector = require ("DependencyInjector");
 
 local p = {};
 p.Name = "Nessie";
 
-function p.ConfigureProject(projectDir, dependencyInjector)
+function p.ConfigureProject(dependencyInjector)
     projectCore.SetProjectDefaults();
 
-    targetdir(libFolder)
+	targetdir(projectCore.DefaultLibOutDir);
     kind "StaticLib"
     language "C++"
     cppdialect "C++20"
-
-    filter {}
     
     includedirs
     {
-		projectDir
+        p.BuildDirectory;
 	}
 
     defines 
@@ -31,9 +28,6 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 		, "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\""
     }
 
-    -- Set the Render API based on the Project Settings:
-    p.SetRenderAPI(projectDir, dependencyInjector);
-
     disablewarnings
     {
         "4324", -- "'X' : structure was padded due to alignment specifier"
@@ -41,85 +35,60 @@ function p.ConfigureProject(projectDir, dependencyInjector)
 
     files
     {
-        projectDir .. "**.h",
-        projectDir .. "**.hpp",
-        projectDir .. "**.cpp",
-        projectDir .. "**.ixx",
-        projectDir .. "**.inl",
-        projectDir .. "**.natvis",
-
-        -- Add the Shader files:
-        projectCore.SolutionDir .. "Shaders\\**.glsl",
+        p.ProjectDir .. "**.h",
+        p.ProjectDir .. "**.hpp",
+        p.ProjectDir .. "**.cpp",
+        p.ProjectDir .. "**.ixx",
+        p.ProjectDir .. "**.inl",
+        p.ProjectDir .. "**.natvis",
     }
+    vpaths { ["Source/*"] = { p.BuildDirectory .. "/Nessie/**.*"} }
 
+    -- I have to convert the solution dir's path parentheses for the vpaths to work...
+    local absoluteSolutionDir = path.getabsolute(projectCore.SolutionDir);
+
+    -- Add the Shader files:
+    files 
+    { 
+        projectCore.SolutionDir .. "Shaders\\**.glsl",
+        projectCore.SolutionDir .. "Shaders\\**.hlsl",
+        projectCore.SolutionDir .. "Shaders\\**.slang",
+    }
+    vpaths { ["Shaders/*"] = { absoluteSolutionDir .. "/Shaders/**.glsl", absoluteSolutionDir .. "/Shaders/**.slang"} }
+
+    -- Add ThirdParty files and link
     dependencyInjector.AddFilesToProject("imgui");
     dependencyInjector.AddFilesToProject("stb");
     dependencyInjector.AddFilesToProject("fmt");
-    dependencyInjector.Link("yaml_cpp");
+    dependencyInjector.AddFilesToProject("Vulkan");
     dependencyInjector.Include("Assimp");
+    dependencyInjector.Link("glfw");
+    dependencyInjector.Link("yaml_cpp");
+    vpaths { ["ThirdParty/*"] = { path.getabsolute(projectCore.ThirdPartyDir) .. "/**.*" } }
 
     prebuildcommands { "{MKDIR} %[" .. projectCore.DefaultOutDir .. "]"}
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}
-end
-
------------------------------------------------------------------------------------------
--- Load the RenderAPI based on the Project.json settings file.
----@param projectDir string Path to the project's Directory.
----@param dependencyInjector table Dependency Injector module.
----@return boolean Success If false, then we have no valid Render API set.
------------------------------------------------------------------------------------------
-function p.SetRenderAPI(projectDir, dependencyInjector)
-    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
     
-    if (renderAPI == nil) then
-        projectCore.PrintError("Failed to load RenderAPI! No RenderAPI value set in the Project File!");
-        return false;
-    end
-
-    -- Ensure that the RenderAPI is valid on the Platform.
-    if (renderAPI == "SDL") then
-        -- Only available on Windows for now.
-        if (_TARGET_OS == "windows") then
-            defines
-            {
-                "_RENDER_API_SDL"
-            }
-            dependencyInjector.Link("SDL");
-            return true;
-        end
-    elseif (renderAPI == "Vulkan") then
-        -- Only available on Windows for now.
-        if (_TARGET_OS == "windows") then
-            defines
-            {
-                "_RENDER_API_VULKAN"
-            }
-
-            dependencyInjector.Link("glfw");
-            dependencyInjector.Include("Vulkan");
-            return true;
-        end
-    end
-
-    projectCore.PrintError("Failed to set RenderAPI! Se1ected RenderAPI, " .. renderAPI .. ", is not valid for this platform!");
-    return false;
+    filter{}
 end
 
-function p.Link(projectDir)
+function p.Link()
     links { "Nessie" }
-    libdirs { libFolder }
-
-    local renderAPI = projectCore.ProjectSettings["RenderAPI"];
-    if (renderAPI == "Vulkan") then
-        defines { "_RENDER_API_VULKAN" }
-    elseif (renderAPI == "SDL") then
-        defines { "_RENDER_API_SDL" }
-    end
+    libdirs { projectCore.DefaultLibOutDirPath .. "Nessie/" }
 end
 
-function p.Include(projectDir)
-    includedirs { projectDir }
+function p.SetIncludeThirdPartyDirs()
+    -- Include directories for third party files.
+    dependencyInjector.Include("imgui");
+    dependencyInjector.Include("yaml_cpp");
+    dependencyInjector.Include("fmt");
+    dependencyInjector.Include("glfw");
+    dependencyInjector.Include("Vulkan");
+end
 
+function p.Include()
+    includedirs { p.BuildDirectory }
+    p.SetIncludeThirdPartyDirs();
 end
 
 return p;

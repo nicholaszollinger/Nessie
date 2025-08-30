@@ -5,7 +5,9 @@ local d = {};
 d.Name = "fmt";
 d.ConfgureProject = nil;
 
-function d.AddFilesToProject(directory)
+function d.AddFilesToProject()
+    local directory = d.ProjectDir;
+
     files
     {
         directory .. "include/**.h",
@@ -13,7 +15,9 @@ function d.AddFilesToProject(directory)
     }
 end
 
-function d.Include(directory)
+function d.Include()
+    local directory = d.ProjectDir;
+    
     includedirs { directory .. "include/" }
     
     buildoptions

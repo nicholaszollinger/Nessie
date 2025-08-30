@@ -1,6 +1,7 @@
 // StackAllocator.cpp
 #include "StackAllocator.h"
 #include "Memory.h"
+#include "Nessie/Math/Real.h"
 
 namespace nes
 {
@@ -29,107 +30,61 @@ namespace nes
     }
 
     StackAllocator::StackAllocator(const size_t stackSizeInBytes)
-        : m_pBuffer(NES_NEW_ARRAY(std::byte, stackSizeInBytes))
-        , m_pEnd(nullptr)
-        , m_pCapacity(nullptr)
+        : m_pBase(static_cast<std::byte*>(NES_ALIGNED_ALLOC(stackSizeInBytes, NES_RVECTOR_ALIGNMENT)))
+        , m_capacity(stackSizeInBytes)
     {
-        m_pEnd = m_pBuffer;
-        m_pCapacity = m_pBuffer + stackSizeInBytes;
-    }
-
-    StackAllocator::StackAllocator(StackAllocator&& right) noexcept
-        : m_pBuffer(right.m_pBuffer)
-        , m_pEnd(right.m_pEnd)
-        , m_pCapacity(right.m_pCapacity)
-    {
-        right.m_pBuffer = nullptr;
-        right.m_pEnd = nullptr;
-        right.m_pCapacity = nullptr;
-    }
-
-    StackAllocator& StackAllocator::operator=(StackAllocator&& right) noexcept
-    {
-        if (this != &right)
-        {
-            m_pBuffer = right.m_pBuffer;
-            m_pEnd = right.m_pEnd;
-            m_pCapacity = right.m_pCapacity;
-
-            right.m_pBuffer = nullptr;
-            right.m_pEnd = nullptr;
-            right.m_pCapacity = nullptr;
-        }
-
-        return *this;
+        //
     }
 
     StackAllocator::~StackAllocator()
     {
-        NES_DELETE_ARRAY(m_pBuffer);
-        m_pBuffer = nullptr;
-        m_pEnd = nullptr;
-        m_pCapacity = nullptr;
+        NES_ASSERT(m_top == 0);
+        NES_ALIGNED_FREE(m_pBase);
     }
 
-    void* StackAllocator::Allocate(const size_t size, const size_t alignment)
+    void* StackAllocator::Allocate(const size_t size)
     {
-        NES_ASSERT(size > 0, "Size must be greater than zero!");
+        if (size == 0)
+            return nullptr;
 
-        // Get the aligned address.
-        std::byte* pAlignedAddress = GetAlignedPtr(m_pEnd, alignment);
-
-        // Calculate the size of the padding.
-        std::byte* pNewEnd = pAlignedAddress + size;
-
-        // Check if we have enough space.
-        if (pNewEnd > m_pCapacity)
+        const size_t newTop = m_top + math::AlignUp(size, NES_RVECTOR_ALIGNMENT);
+        if (newTop > m_capacity)
         {
-            NES_FATAL("Attempted to Allocate memory, but the StackAllocator is full!");
+            NES_FATAL("StackAllocator: Out of memory trying to allocate {} bytes!", size);
         }
 
-        // Set our new end:
-        m_pEnd = pNewEnd;
-
-        // Return the pointer to the allocated memory.
-        return pAlignedAddress;
-    }
-    
-    void StackAllocator::Free(std::byte* pPtr, const size_t count)
-    {
-        NES_ASSERT(count > Size(), "Attempting to free more memory than what is currently allocated!");
-        if (m_pEnd - count != pPtr)
-        {
-            NES_FATAL("Freeing memory in the incorrect order!");
-        }
-        m_pEnd -= count;
+        void* pAddress = m_pBase + m_top;
+        m_top = newTop;
+        return pAddress;
     }
 
-    void StackAllocator::Free(void* pPtr, const size_t count)
+    void StackAllocator::Free(void* pAddress, const size_t size)
     {
-        NES_ASSERT(count > Size(), "Attempting to free more memory than what is currently allocated!");
-        if (m_pEnd - count != pPtr)
+        if (pAddress == nullptr)
         {
-            NES_FATAL("Freeing memory in the incorrect order!");
+            NES_ASSERT(size == 0);
         }
-        m_pEnd -= count;
+        
+        else
+        {
+            m_top -= math::AlignUp(size, NES_RVECTOR_ALIGNMENT);
+            if (m_pBase + m_top != pAddress)
+            {
+                NES_FATAL("StackAllocator: Freeing memory in the wrong order!");
+            }
+        }
     }
     
     StackAllocator::Marker StackAllocator::PlaceMarker() const
     {
-        return m_pEnd - m_pBuffer;
+        return m_top;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //		
-    ///		@brief : Free memory off the stack to a specific marker.
-    ///		@param marker : Marker to free memory to.
-    //----------------------------------------------------------------------------------------------------
+    
     void StackAllocator::FreeToMarker(const Marker marker)
     {
         NES_ASSERT(!IsEmpty() && marker > Size(), "Failed to free to Marker! Either we attempted to free memory that "
                                                    "wasn't allocated, or the allocator is empty!");
-        m_pEnd = m_pBuffer + marker;
+        m_top = marker;
     }
 
     ScopedStackAllocator::ScopedStackAllocator(StackAllocator& allocator)
