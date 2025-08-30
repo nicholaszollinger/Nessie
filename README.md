@@ -7,7 +7,6 @@ This is a C++20 Game Engine that I am developing to learn and experiment with!
 **Supported IDEs**: *The build system was made to work with Microsoft Visual Studio 2022.*
 
 **Vulkan**: *The engine requires Vulkan to be installed. Use the following link and to install the compatible version:* [Link](https://sdk.lunarg.com/sdk/download/1.4.321.1/windows/vulkansdk-windows-X64-1.4.321.1.exe)
-* Make sure to select the `Shader Toolchain Debug Symbols` component when installing.
 
 **HardWare**: *Currently, I am only testing on my machine, which uses an NVIDIA 3090 GPU and AMD Ryzen 9 5950X CPU. I am working on checking for 
 hardware limitations with certain features, but until then, I can't guarantee it will be compatible on other machines.*
@@ -42,14 +41,3 @@ Overall, I plan on having the basic structure to make small demos using my engin
 - UI.
 - Sound.
 - Scripting, in python (lower priority, as I will be the solo dev for this engine).
-
-# Branches
-
-### Physics Branch
-**This branch should not be used yet! This is currently under-development!*
-
-I am working toward implementing essentially "Jolt Physics Lite" - a multithreaded, 3D physics simulation. I am trying to streamline the 
-implementation as much as I can and use my own core systems to support, it (Debugging, Memory allocation, Math classes, etc). I am trying to recreate the library line by line as a learning exercise - I want to be working on fun 3D platforming games, so I want to get into the nitty-gritty of physics problems and solutions.
-- [Jolt Physics Github](https://github.com/jrouwe/JoltPhysics)
-
-*(Side note: It is cool to see that we reference the same textbook that I have been using this semester)*
