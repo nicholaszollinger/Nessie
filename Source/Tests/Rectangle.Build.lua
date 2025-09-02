@@ -1,13 +1,13 @@
--- SimpleTriangle Project Configuration.
+-- Rectangle Project Configuration.
 -- Premake Documentation: https://premake.github.io/docs/
 
 local projectCore = require("ProjectCore");
 
 local p = {};
-p.Name = "SimpleTriangle";
+p.Name = "Rectangle";
 
 function p.ConfigureProject(dependencyInjector)
-    local projectDir = p.BuildDirectory .. "/SimpleTriangle/";
+    local projectDir = p.BuildDirectory .. "/Rectangle/";
 
     projectCore.SetProjectDefaults();
     kind "ConsoleApp"
@@ -34,7 +34,7 @@ function p.ConfigureProject(dependencyInjector)
 
     vpaths
     {
-        ["Source/*"] = { p.BuildDirectory .. "/SimpleTriangle/**.*"}
+        ["Source/*"] = { p.BuildDirectory .. "/Rectangle/**.*"}
     }
 end
 

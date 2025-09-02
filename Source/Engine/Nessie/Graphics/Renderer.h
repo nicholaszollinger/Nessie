@@ -54,7 +54,7 @@ namespace nes
     private:
         const DeviceImage*          m_swapchainImage = nullptr;
         const Descriptor*           m_swapchainImageDescriptor = nullptr;
-        vk::Extent2D                m_swapchainExtent{};      
+        vk::Extent2D                m_swapchainExtent{};
     };
     
     //----------------------------------------------------------------------------------------------------
@@ -64,6 +64,8 @@ namespace nes
     class Renderer
     {
     public:
+        using RecordCommandsFunc = std::function<void(RenderDevice& device, CommandBuffer& /*buffer*/)>;
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Enqueue a command to free a render resource.
         //----------------------------------------------------------------------------------------------------
@@ -75,6 +77,23 @@ namespace nes
         ///     and Allocator utilities.
         //----------------------------------------------------------------------------------------------------
         static RenderDevice&        GetDevice();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates a temporary command buffer, records the given commands and submits them to the
+        ///     graphics queue. This will block until complete.
+        //----------------------------------------------------------------------------------------------------
+        static void                 ExecuteImmediateCommands(const RecordCommandsFunc& func);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates and begins a temporary command buffer for recording commands.
+        //----------------------------------------------------------------------------------------------------
+        static CommandBuffer        BeginTempCommands();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Submits a temporary command buffer created with BeginTempCommands(). This will block until
+        /// complete.
+        //----------------------------------------------------------------------------------------------------
+        static void                 SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the RenderCommandQueue of a specific frame used to release render resources. 
@@ -233,6 +252,7 @@ namespace nes
         std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       // Command queues specific for freeing resources.
 
         DeviceQueue*                            m_pRenderQueue = nullptr;                   // Device Queue that render commands are submitted to.
+        CommandPool                             m_transientCommandPool = nullptr;           // Command Pool for creating temporary-usage command buffers, like staging resources.
         Swapchain                               m_swapchain = nullptr;                      // Object that manages the target framebuffer to render to.
         std::vector<FrameData>                  m_frames{};                                 // Collection of per-frame resources to support multiple frames in flight.
         vk::raii::Semaphore                     m_frameTimelineSemaphore = nullptr;         // Timeline semaphore used to synchronize CPU submission and GPU completion.

@@ -92,20 +92,4 @@ namespace nes
     {
         return location > EMemoryLocation::DeviceUpload;
     }
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Pack DeviceMemoryTypeInfo into the DeviceMemoryType. (It's a Reinterpret Cast).
-    //----------------------------------------------------------------------------------------------------
-    inline DeviceMemoryType Pack(const DeviceMemoryTypeInfo& memoryTypeInfo)
-    {
-        return *(reinterpret_cast<const DeviceMemoryType*>(&memoryTypeInfo));
-    }
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Unpack DeviceMemoryType into the DeviceMemoryTypeInfo. (It's a Reinterpret Cast).
-    //----------------------------------------------------------------------------------------------------
-    inline DeviceMemoryTypeInfo Unpack(const DeviceMemoryType& memoryType)
-    {
-        return *(reinterpret_cast<const DeviceMemoryTypeInfo*>(&memoryType));
-    }
 }

@@ -1,0 +1,105 @@
+﻿// DataUploader.h
+#pragma once
+#include "DeviceBuffer.h"
+#include "DeviceSemaphore.h"
+
+namespace nes
+{
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters for uploading data to a Device Buffer.  
+    //----------------------------------------------------------------------------------------------------
+    struct UploadBufferDesc
+    {
+        DeviceBuffer*       m_pBuffer = nullptr;                    // Device Buffer that we are uploading to.
+        const void*         m_pData = nullptr;                      // Pointer to the data to upload.
+        uint64              m_uploadSize = graphics::kWholeSize;    // Size, in bytes, of the data to upload. If left to kWholeSize, then the entire buffer is used.
+        uint64              m_uploadOffset = 0;                     // Byte offset into the destination buffer to begin uploading to.
+        // Access after?
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Move to Device Buffer, and protect the buffer access.
+    //		
+    /// @brief : Describes a range of bytes within a Device Buffer.
+    //----------------------------------------------------------------------------------------------------
+    struct DeviceBufferRange
+    {
+        DeviceBuffer*       m_buffer = nullptr;     // Buffer Resource.
+        uint64              m_offset = 0;           // Byte offset in the buffer.
+        uint64              m_range = 0;            // Number of bytes in the range.
+        uint64              m_deviceAddress = 0;    // Must contain the offset already.
+        uint8*              m_pMapping = nullptr;   // Must contain the offset already.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Right now, I am allocating a single staging buffer per appended buffer copy. I should instead
+    //  queue up all upload operations at once, then create a single staging buffer, save the ranges that I
+    //  need to copy from and perform the copy commands using that single source buffer.
+    //
+    /// @brief : Helper class that manages allocating Staging Buffers for uploading data to buffers and images.
+    //----------------------------------------------------------------------------------------------------
+    class DataUploader
+    {
+    public:
+        DataUploader(RenderDevice& device);
+        ~DataUploader();
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : If the Device Buffer is mappable (CPU can write to it directly), then the associated data
+        ///     will be immediately copied to the buffer. Otherwise, this will create a staging buffer and
+        ///     append a copy command on "RecordCommands".
+        //----------------------------------------------------------------------------------------------------
+        void                                AppendUploadBuffer(const UploadBufferDesc& desc, const SemaphoreValue& semaphoreState = {});
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Records all pending upload operations into the command buffer,
+        ///     then clears the appending state.
+        //----------------------------------------------------------------------------------------------------
+        void                                RecordCommands(CommandBuffer& buffer);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if there are any pending upload operations.
+        //----------------------------------------------------------------------------------------------------
+        bool                                IsEmpty() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Clears all pending operations, and frees all staging buffers immediately. Make sure that
+        ///     when this is called, the device is idle.
+        //----------------------------------------------------------------------------------------------------
+        void                                Destroy();
+        
+    private:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Create a staging buffer that will be used to copy data into the buffer/image.
+        //----------------------------------------------------------------------------------------------------
+        void                                AcquireStagingBuffer(const void* pData, uint64 dataSize, const SemaphoreValue& semaphoreState, DeviceBufferRange& outRange);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Clears all appended commands. 
+        //----------------------------------------------------------------------------------------------------
+        void                                ClearPending();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : All temporary staging resources are associated with a provided Semaphore State.
+        ///     This will release all staging buffers that have been signaled (or are invalid).
+        ///	@param forceAll : If true, then it is assumed that all buffers can be freed, which typically requires
+        ///     that the device is idle.
+        //----------------------------------------------------------------------------------------------------
+        void                                ReleaseStagingBuffers(const bool forceAll = false);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Contains the staging buffer that will copy to the destination resource, and the
+        ///     synchronization semaphore. 
+        //----------------------------------------------------------------------------------------------------
+        struct StagingResource
+        {
+            DeviceBuffer                    m_buffer = nullptr;             // Staging Buffer.
+            SemaphoreValue                  m_semaphoreState = nullptr;     // Synchronization semaphore.
+        };
+
+        std::vector<CopyBufferDesc>         m_copyBufferDescs{};
+        std::vector<StagingResource>        m_stagingResources{};
+        RenderDevice*                       m_pDevice = nullptr;
+        size_t                              m_stagingResourcesSize = 0;     // Total size of all staging buffers.
+    };
+}

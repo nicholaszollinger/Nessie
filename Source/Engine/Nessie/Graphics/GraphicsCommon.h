@@ -18,15 +18,20 @@ struct VmaAllocation_T;
 
 namespace nes
 {
-    namespace graphics
-    {
-        /// Special value that marks that the remaining amount of some span (number of mips, number of image layers, etc.) should be used. 
-        static constexpr uint16 kUseRemaining = std::numeric_limits<uint16>::max();
-    }
+    
 //============================================================================================================================================================================================
 #pragma region [ Common ]
 //============================================================================================================================================================================================
 
+    namespace graphics
+    {
+        /// Special value that marks that the remaining amount of some span (number of mips, number of image layers, etc.) should be used. 
+        static constexpr uint16 kUseRemaining = std::numeric_limits<uint16>::max();
+
+        /// Special value to use if you want to use the entire device buffer's range.
+        static constexpr uint64 kWholeSize = std::numeric_limits<uint64>::max();
+    }
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Describes a region of the framebuffer that the output will be rendered to.
     ///
@@ -320,17 +325,9 @@ namespace nes
         ClearValue          m_clearValue{};
 
         //----------------------------------------------------------------------------------------------------
-        // [TODO]: Move implementation to another file.
         /// @brief : Ensures that ranges are valid. 
         //----------------------------------------------------------------------------------------------------
-        void                Validate()
-        {
-            m_height = math::Max(m_height, 1U);
-            m_depth = math::Max(m_depth, 1U);
-            m_mipCount = math::Max(m_mipCount, 1U);
-            m_layerCount = math::Max(m_layerCount, 1U);
-            m_sampleCount = math::Max(m_sampleCount, 1U);
-        }
+        void                Validate();
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -360,9 +357,11 @@ namespace nes
     {
         // Video Memory. Fast access from the GPU.
         // - No direct access for the CPU; mapping is not possible.
-        // - Good for any resources that you frequently write and read on GPU, e.g. textures used as color attachments
+        // - Good for any resources that you frequently write and read on GPU, e.g. images used as color attachments
         //   (aka "render targets"), depth-stencil attachments, images/buffers used as storage image/buffer
-        //   (aka "Unordered Access View (UAV)"). 
+        //   (aka "Unordered Access View (UAV)").
+        // - For vertex buffers, index buffers, and images, use this location, and have the Staging uploader handle the
+        //   transfer.
         Device,
         
         // Special pool of Video Memory. Exposed on AMD only. 256MiB. Soft fall back to HostUpload.
@@ -376,13 +375,22 @@ namespace nes
         // - Data written by the CPU, read once by the GPU (constant/uniform buffers)).
         HostUpload,
         
-        // System Memory. CPU reads and writes cached.
+        // System Memory. CPU reads and writes are cached.
         // - Good for resources written by the GPU, read by the CPU - results of computations.
         // - The memory is directly accessed by both the CPU and GPU - you don't need to do an explicit transfer.
         // - Use for any resources read or randomly accessed on the CPU.
         HostReadback,
         
         MaxNum
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Allowable types for an index buffer. 
+    //----------------------------------------------------------------------------------------------------
+    enum class EIndexType : uint8
+    {
+        U16,
+        U32,
     };
 
     using DeviceMemoryTypeIndex = uint16;
@@ -396,6 +404,22 @@ namespace nes
         DeviceMemoryTypeIndex   m_index = 0;
         EMemoryLocation         m_location = EMemoryLocation::Device;
         bool                    m_mustBeDedicated = false; // Memory must be put into a dedicated memory object, containing only 1 object with offset = 0.
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Pack DeviceMemoryTypeInfo into the DeviceMemoryType. (It's a Reinterpret Cast).
+        //----------------------------------------------------------------------------------------------------
+        inline static DeviceMemoryType Pack(const DeviceMemoryTypeInfo& memoryTypeInfo)
+        {
+            return *(reinterpret_cast<const DeviceMemoryType*>(&memoryTypeInfo));
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Unpack DeviceMemoryType into the DeviceMemoryTypeInfo. (It's a Reinterpret Cast).
+        //----------------------------------------------------------------------------------------------------
+        inline static DeviceMemoryTypeInfo Unpack(const DeviceMemoryType& memoryType)
+        {
+            return *(reinterpret_cast<const DeviceMemoryTypeInfo*>(&memoryType));
+        }
     };
     static_assert(sizeof(DeviceMemoryType) == sizeof(DeviceMemoryTypeInfo));
 
@@ -407,39 +431,66 @@ namespace nes
         bool                m_mustBeDedicated; // Must be put into a dedicated memory object, containing only 1 object with offset = 0
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters for allocating a DeviceBuffer object. Also contains some static helper functions for
+    ///     common use cases.
+    //----------------------------------------------------------------------------------------------------
     struct AllocateBufferDesc
     {
-        BufferDesc          m_desc{};
-        EMemoryLocation     m_location      = EMemoryLocation::Device;
-        float               m_priority      = 0.f;
+        // Size of the buffer, in bytes.
+        uint64                      m_size = 0;
+
+        // Defines how the buffer will be used.
+        EBufferUsageBits            m_usage = EBufferUsageBits::ShaderResource;
+
+        // Defines where the buffer will be allocated, which changes its access for the CPU.
+        // See EMemoryLocation for more info.
+        EMemoryLocation             m_location = EMemoryLocation::Device;
+
+        // If empty, the buffer resource will have exclusive access. Otherwise, specified queue will 
+        std::span<uint32>           m_queueFamilyIndices = {};
         
         // Set this to true if the allocation should have its own memory block.
         // Use it for special, big resources, like fullscreen images used as attachments.
-        bool                m_isDedicated   = false;
+        bool                        m_isDedicated   = false;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Default description for a Vertex Buffer. The buffer will be allocated on Device, and is expected
+        ///     to be used with the StagingUploader to set its data.
+        ///	@param vertexCount : Number of vertices for the buffer. 
+        ///	@param vertexSize : Size a single vertex, in bytes; "sizeof(VertexType". 
+        //----------------------------------------------------------------------------------------------------
+        static AllocateBufferDesc   VertexBuffer(const uint64 vertexCount, const uint32 vertexSize);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Default description for an Index Buffer. The buffer will be allocated on Device, and is expected
+        ///     to be used with the StagingUploader to set its data.
+        ///	@param indexCount : Number of indices in the buffer. 
+        ///	@param type : Type of index to use. Default is uint32.
+        //----------------------------------------------------------------------------------------------------
+        static AllocateBufferDesc   IndexBuffer(const uint64 indexCount, const EIndexType type = EIndexType::U32);
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters for allocating a DeviceImage object.
+    //----------------------------------------------------------------------------------------------------
     struct AllocateImageDesc
     {
+        // Image Description, including usage and dimensions.
         ImageDesc           m_desc{};
+        
+        // Defines where the image will be allocated, which changes its access for the CPU.
+        // See EMemoryLocation for more info.
         EMemoryLocation     m_memoryLocation = EMemoryLocation::Device;
-        float               m_priority = 0.f;
+        
+        // If empty, the buffer resource will have exclusive access. Otherwise, specified queue will 
+        std::span<uint32>   m_queueFamilyIndices = {};
+
+        // Set this to true if the allocation should have its own memory block.
+        // Use it for special, big resources, like fullscreen images used as attachments.
         bool                m_isDedicated = false;
     };
-
-    struct BufferMemoryBindingDesc
-    {
-        DeviceBuffer*       m_pBuffer = nullptr;
-        VmaAllocation       m_pMemory = nullptr;
-        uint64              m_offset = 0;
-    };
-
-    struct ImageMemoryBindingDesc
-    {
-        Texture*            m_pTexture = nullptr;
-        VmaAllocation       m_pMemory = nullptr;
-        uint64              m_offset = 0;
-    };
-
+    
 #pragma endregion
 
 //============================================================================================================================================================================================
@@ -839,16 +890,7 @@ namespace nes
 //============================================================================================================================================================================================
 #pragma region [ Graphics Pipeline: Input Assembly ]
 //============================================================================================================================================================================================
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Allowable types for an index buffer. 
-    //----------------------------------------------------------------------------------------------------
-    enum class EIndexType : uint8
-    {
-        U16,
-        U32,
-    };
-
+    
     enum class EPrimitiveRestart : uint8
     {
         Disabled,   
@@ -994,6 +1036,9 @@ namespace nes
         VertexBufferDesc() = default;
         VertexBufferDesc(const DeviceBuffer* pBuffer, const uint32 stride, const uint64 offset = 0);
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the buffer resource that contains the vertices.
+        //----------------------------------------------------------------------------------------------------
         VertexBufferDesc&       SetBuffer(const DeviceBuffer* pBuffer);
 
         //----------------------------------------------------------------------------------------------------
@@ -1020,6 +1065,30 @@ namespace nes
         const DeviceBuffer*     m_pBuffer = nullptr;
         uint64                  m_offset = 0;
         uint32                  m_stride = 0;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Perhaps make a VertexBuffer object that owns the DeviceBuffer. 
+    /// @brief : Information about an Index Buffer that can be bound for a draw call. 
+    //----------------------------------------------------------------------------------------------------
+    struct IndexBufferDesc
+    {
+        IndexBufferDesc() = default;
+        IndexBufferDesc(const DeviceBuffer* pBuffer, const EIndexType type = EIndexType::U16, const uint64 offset = 0);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the buffer resource that contains the indices.
+        //----------------------------------------------------------------------------------------------------
+        IndexBufferDesc&       SetBuffer(const DeviceBuffer* pBuffer);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the index type and the first index to use. The offset will be calculated based on the index.
+        //----------------------------------------------------------------------------------------------------
+        IndexBufferDesc&       SetFirstIndex(const EIndexType type, const uint64 firstIndex = 0);
+        
+        const DeviceBuffer*     m_pBuffer = nullptr;
+        EIndexType              m_indexType = EIndexType::U16;
+        uint64                  m_offset = 0; // Offset in Bytes.
     };
 
 #pragma endregion
@@ -1629,6 +1698,18 @@ namespace nes
         uint32  x = 0;
         uint32  y = 0;
         uint32  z = 0;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters to copy a buffer's data into another. 
+    //----------------------------------------------------------------------------------------------------
+    struct CopyBufferDesc
+    {
+        DeviceBuffer*       m_dstBuffer = nullptr;
+        uint64              m_dstOffset = 0;
+        const DeviceBuffer* m_srcBuffer = nullptr;
+        uint64              m_srcOffset = 0;
+        uint64              m_size = graphics::kWholeSize;
     };
 
 #pragma endregion

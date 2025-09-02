@@ -75,30 +75,58 @@ namespace nes
         m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
-    void DeviceImage::AllocateResource(const RenderDevice& device, const AllocateImageDesc& desc)
+    void DeviceImage::AllocateResource(const RenderDevice& device, const AllocateImageDesc& allocDesc)
     {
         // Fill out the ImageCreateInfo object. 
-        vk::ImageCreateInfo imageInfo{};
-        device.FillCreateInfo(desc.m_desc, imageInfo);
+        const auto& imageDesc = allocDesc.m_desc;
+        
+        vk::ImageCreateFlags flags = vk::ImageCreateFlagBits::eMutableFormat | vk::ImageCreateFlagBits::eExtendedUsage;
+        
+        const FormatProps& formatProps = GetFormatProps(imageDesc.m_format);
+        if (formatProps.m_blockWidth > 1 && (imageDesc.m_usage & EImageUsageBits::ShaderResourceStorage))
+            flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible; // Format can be used to create a view with an uncompressed format (1 texel covers 1 block)
+        if (imageDesc.m_layerCount >= 6 && imageDesc.m_width == imageDesc.m_height)
+            flags |= vk::ImageCreateFlagBits::eCubeCompatible; // Allow cube maps
+        if (imageDesc.m_type == EImageType::Image3D)
+            flags |= vk::ImageCreateFlagBits::e2DArrayCompatible; // allow 3D demotion to a set of layers
+
+        // [TODO]: 
+        //if (m_desc.m_tieredFeatures.m_sampleLocations && formatProps.m_isDepth)
+        // flags |= vk::ImageCreateFlagBits::eSampleLocationsCompatibleDepthEXT;
+        
+        vk::ImageCreateInfo createInfo = vk::ImageCreateInfo()
+            .setFlags(flags)
+            .setImageType(GetVkImageType(imageDesc.m_type))
+            .setFormat(GetVkFormat(imageDesc.m_format))
+            .setExtent({imageDesc.m_width, math::Max(imageDesc.m_height, 1U), math::Max(imageDesc.m_depth, 1U)})
+            .setMipLevels(math::Max(imageDesc.m_mipCount, 1U))
+            .setArrayLayers(math::Max(imageDesc.m_layerCount, 1U))
+            .setTiling(vk::ImageTiling::eOptimal)
+            .setSamples(static_cast<vk::SampleCountFlagBits>(math::Max(imageDesc.m_sampleCount, 1U)))
+            .setUsage(GetVkImageUsageFlags(imageDesc.m_usage))
+            .setSharingMode(allocDesc.m_queueFamilyIndices.empty()? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
+            .setQueueFamilyIndexCount(static_cast<uint32>(allocDesc.m_queueFamilyIndices.size()))
+            .setPQueueFamilyIndices(allocDesc.m_queueFamilyIndices.data())
+            .setInitialLayout(vk::ImageLayout::eUndefined);
 
         // Allocation Info:
         VmaAllocationCreateInfo allocCreateInfo = {};
         allocCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
-        allocCreateInfo.priority = desc.m_priority * 0.5f + 0.5f;
-        allocCreateInfo.usage = IsHostMemory(desc.m_memoryLocation) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
+        //allocCreateInfo.priority = desc.m_priority * 0.5f + 0.5f;
+        allocCreateInfo.usage = IsHostMemory(allocDesc.m_memoryLocation) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
-        if (desc.m_isDedicated)
+        if (allocDesc.m_isDedicated)
             allocCreateInfo.flags |= VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 
         // Allocate the image.
         VkImage vkImage;
-        VkImageCreateInfo& vkImageCreateInfo = imageInfo;
+        VkImageCreateInfo& vkImageCreateInfo = createInfo;
         NES_VK_MUST_PASS(device, vmaCreateImage(device, &vkImageCreateInfo, &allocCreateInfo, &vkImage, &m_allocation, nullptr));
 
         // We own this image.
         m_ownsNativeObjects = true;
         m_image = vkImage;
-        m_desc = desc.m_desc;
+        m_desc = allocDesc.m_desc;
         m_desc.Validate();
     }
 

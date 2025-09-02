@@ -55,32 +55,9 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         NativeVkObject          GetNativeVkObject() const;
 
-        // [TODO]: Remove these! They need to be a command!
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Copy a block of data to the allocated buffer memory. Only valid for mappable memory.
-        ///     This performs the Map(), memcpy(), UnMap() and Flush() functions all in one operation.
-        /// @param data : Address of the data.
-        /// @param offset : Offset in the buffer to begin copying into. By default, this is 0.
-        /// @param size : Size of the data, in bytes. By default, it is a special value to denote the remaining size
-        ///     from the offset.
-        //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     CopyToBuffer(const void* data, const size_t offset = 0, const size_t size = graphics::kUseRemaining);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Copy data from the buffer into pOutData.
-        ///     This performs the Invalidate(), Map(), memcpy(), UnMap() functions automatically.
-        ///	@param pOutData : Pointer that we are going to copy the data into.
-        ///	@param srcOffset : Byte offset from the buffer to read from. By default, this is 0.
-        ///	@param size : Number of bytes to copy. By default, it is a special value to denote the remaining size
-        ///     from the source offset.
-        //----------------------------------------------------------------------------------------------------
-        EGraphicsResult     CopyFromBuffer(void* pOutData, const size_t srcOffset = 0, const size_t size = graphics::kUseRemaining);
-        
-        // [TODO]:
-        // - Map/Unmap()
-        // - Flush/Invalidate()
-
     private:
+        friend class DataUploader;
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allocates the Buffer. 
         //----------------------------------------------------------------------------------------------------

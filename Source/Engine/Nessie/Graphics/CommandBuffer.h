@@ -56,6 +56,11 @@ namespace nes
         void                    TransitionImageLayout(vk::Image image, ImageMemoryBarrierDesc& barrierDesc) const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Copy the data from one device buffer to another.
+        //----------------------------------------------------------------------------------------------------
+        void                    CopyBuffer(const CopyBufferDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Begin rendering to a set of render targets. Must be followed with EndRendering().
         //----------------------------------------------------------------------------------------------------
         void                    BeginRendering(const RenderTargetsDesc& targetsDesc);
@@ -96,6 +101,11 @@ namespace nes
         ///     To allow the full image to be rendered to, set the offset = (0, 0) and the extent = (imageWith, imageHeight). 
         //----------------------------------------------------------------------------------------------------
         void                    SetScissors(const vk::ArrayProxy<Scissor>& scissors);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the index buffer to use for the next DrawIndexed() call.
+        //----------------------------------------------------------------------------------------------------
+        void                    BindIndexBuffer(const IndexBufferDesc& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Bind the vertex buffers used for the next draw call. 

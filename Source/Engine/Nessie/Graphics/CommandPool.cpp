@@ -40,18 +40,18 @@ namespace nes
         return *this;
     }
 
-    CommandPool::CommandPool(RenderDevice& device, const DeviceQueue& queue)
+    CommandPool::CommandPool(RenderDevice& device, const DeviceQueue& queue, const bool isTransient)
         : m_pDevice(&device)
     {
         // Default to the Reset Command Buffer Bit.
         vk::CommandPoolCreateInfo poolInfo = vk::CommandPoolCreateInfo()
-            .setFlags(vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
+            .setFlags(isTransient? vk::CommandPoolCreateFlagBits::eTransient : vk::CommandPoolCreateFlagBits::eResetCommandBuffer)
             .setQueueFamilyIndex(queue.GetFamilyIndex());
 
         m_pool = vk::raii::CommandPool(device, poolInfo);
         m_queueType = queue.GetQueueType();
     }
-
+    
     CommandPool::~CommandPool()
     {
         FreePool();

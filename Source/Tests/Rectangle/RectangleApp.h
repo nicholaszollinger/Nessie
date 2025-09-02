@@ -8,12 +8,12 @@
 #include "Nessie/Graphics/PipelineLayout.h"
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : This example application renders a Triangle to the screen.
+/// @brief : This example application renders a Rectangle to the screen.
 //----------------------------------------------------------------------------------------------------
-class SimpleTriangle final : public nes::Application
+class RectangleApp final : public nes::Application
 {
 public:
-    explicit SimpleTriangle(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
+    explicit RectangleApp(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
 
     virtual bool Internal_AppInit() override;
     virtual void Internal_AppUpdate([[maybe_unused]] const float timeStep) override;
@@ -23,14 +23,15 @@ public:
 private:
     struct Vertex
     {
-        nes::Vec2 m_position{};
-        nes::Vec3 m_color{};
+        nes::Float2 m_position{};
+        alignas (16) nes::Float3 m_color{};
     };
     
     nes::AssetID            m_shaderID = nes::kInvalidAssetID;
     nes::PipelineLayout     m_pipelineLayout = nullptr;
     nes::Pipeline           m_pipeline = nullptr;
-    nes::DeviceBuffer       m_vertexBuffer = nullptr;
+    nes::DeviceBuffer       m_geometryBuffer = nullptr;
+    nes::IndexBufferDesc    m_indexBufferDesc = {};
     nes::VertexBufferDesc   m_vertexBufferDesc = {};
     nes::DeviceQueue*       m_pTransferQueue = nullptr;
 };

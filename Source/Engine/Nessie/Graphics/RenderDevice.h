@@ -14,6 +14,9 @@ namespace nes
 {
     //----------------------------------------------------------------------------------------------------
     /// @brief : A RenderDevice is the intermediary between the program and the hardware device (GPU).
+    /// - It contains the Instance, Physical Device, Logical Device, VMA Allocator, and a debug messenger.
+    /// - All data is readonly for the duration of the application, so its data can be accessed from
+    ///   multiple threads.
     //----------------------------------------------------------------------------------------------------
     class RenderDevice
     {
@@ -108,15 +111,10 @@ namespace nes
         bool                        IsHostCoherentMemory(DeviceMemoryTypeIndex memoryTypeIndex) const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Fill out a vulkan buffer CreateInfo object, based on the given buffer description.
+        /// @brief : Advanced use. Find a suitable memory type based on the location and typeMask.
         //----------------------------------------------------------------------------------------------------
-        void                        FillCreateInfo(const BufferDesc& bufferDesc, vk::BufferCreateInfo& outInfo) const;
+        bool                        FindSuitableMemoryType(const EMemoryLocation location, uint32 memoryTypeMask, DeviceMemoryTypeInfo& outInfo) const;
 
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Fill out a vulkan image CreateInfo object, based on the given texture description.
-        //----------------------------------------------------------------------------------------------------
-        void                        FillCreateInfo(const ImageDesc& textureDesc, vk::ImageCreateInfo& outInfo) const;
-        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_VK_CHECK() rather than calling this directly.
         ///     If the result is a failure, this will report the message, assert, and exit. Treats errors as
@@ -150,7 +148,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the debug name for a Vulkan Object.
         //----------------------------------------------------------------------------------------------------
-        void                        SetDebugNameVkObject(const NativeVkObject& object, const std::string& name);
+        void                        SetDebugNameVkObject(const NativeVkObject& object, const std::string& name) const;
     
     private:
         static constexpr uint32     kInvalidQueueIndex = std::numeric_limits<uint16>::max();
@@ -226,9 +224,6 @@ namespace nes
         QueueFamilyArray            m_queueFamilies{};      /// Contains an array of Queues for each EQueueType. 
         DeviceDesc                  m_desc{};
         vk::PhysicalDeviceMemoryProperties m_memoryProperties{};
-        QueueIndicesArray           m_activeQueueFamilyIndices{};
-        Mutex                       m_activeQueueIndicesMutex{};
-        uint32                      m_numActiveFamilyIndices = 0;
         VmaAllocator                m_vmaAllocator = nullptr;
     };
 }

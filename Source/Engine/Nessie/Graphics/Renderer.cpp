@@ -37,6 +37,53 @@ namespace nes
         return g_pRenderer->m_device;
     }
 
+    void Renderer::ExecuteImmediateCommands(const RecordCommandsFunc& func)
+    {
+        NES_ASSERT(g_pRenderer != nullptr);
+        
+        CommandBuffer buffer = BeginTempCommands();
+        func(g_pRenderer->m_device, buffer);
+        SubmitAndWaitTempCommands(buffer);
+    }
+
+    CommandBuffer Renderer::BeginTempCommands()
+    {
+        NES_ASSERT(g_pRenderer != nullptr);
+        NES_ASSERT(g_pRenderer->m_transientCommandPool != nullptr);
+
+        CommandBuffer tempBuffer = g_pRenderer->m_transientCommandPool.CreateCommandBuffer();
+        tempBuffer.Begin();
+        
+        return tempBuffer;
+    }
+
+    void Renderer::SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer)
+    {
+        cmdBuffer.End();
+
+        // Submit to the Render Queue.
+        auto& vkDevice = g_pRenderer->m_device.GetVkDevice();
+
+        // Create fence for synchronization:
+        constexpr vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo();
+        vk::Fence fence = (*vkDevice).createFence(fenceInfo, g_pRenderer->m_device.GetVkAllocationCallbacks());
+
+        // Submit
+        const vk::CommandBufferSubmitInfo cmdBufferInfo = vk::CommandBufferSubmitInfo()
+            .setCommandBuffer(cmdBuffer.GetVkCommandBuffer());
+
+        const vk::SubmitInfo2 submitInfo = vk::SubmitInfo2()
+            .setCommandBufferInfos(cmdBufferInfo);
+        
+        g_pRenderer->m_pRenderQueue->GetVkQueue().submit2(submitInfo, fence);
+
+        // Block until complete:
+        NES_VK_FAIL_RETURN_VOID(g_pRenderer->m_device, vkDevice.waitForFences(fence, true, UINT64_MAX));
+        
+        // Clean up.
+        (*vkDevice).destroyFence(fence, g_pRenderer->m_device.GetVkAllocationCallbacks());
+    }
+
     RenderCommandQueue& Renderer::GetRenderResourceReleaseQueue(const uint32 index)
     {
         NES_ASSERT(index < Get()->m_resourceFreeQueues.size());
@@ -53,6 +100,9 @@ namespace nes
         //         - Instead of giving the swapchain a DeviceQueue, you could give it a QueueType and index.
         EGraphicsResult result = m_device.GetQueue(EQueueType::Graphics, 0, m_pRenderQueue);
         NES_GRAPHICS_RETURN_FAIL(m_device, result == EGraphicsResult::Success, false, "Failed to get a queue to present to!");
+
+        // Create the transient command pool
+        m_transientCommandPool = CommandPool(m_device, *m_pRenderQueue, true);
         
         // Create the Swapchain if we have a window to present to:
         if (m_pWindow != nullptr)
@@ -95,6 +145,7 @@ namespace nes
 
         // Destroy the swapchain and command pool.
         m_swapchain = nullptr;
+        m_transientCommandPool = nullptr;
     }
 
     bool Renderer::BeginFrame()
