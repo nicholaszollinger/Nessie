@@ -134,6 +134,25 @@ namespace nes
         m_buffer.pipelineBarrier2(dependencyInfo);
     }
 
+    void CommandBuffer::CopyBuffer(const CopyBufferDesc& desc)
+    {
+        // Ensure valid buffers.
+        NES_ASSERT(desc.m_dstBuffer != nullptr && desc.m_dstBuffer->GetVkBuffer());
+        NES_ASSERT(desc.m_srcBuffer != nullptr && desc.m_srcBuffer->GetVkBuffer());
+        
+        vk::BufferCopy2 region = vk::BufferCopy2()
+            .setDstOffset(desc.m_dstOffset)
+            .setSrcOffset(desc.m_srcOffset)
+            .setSize(desc.m_size == graphics::kWholeSize ? desc.m_srcBuffer->GetSize() : desc.m_size);
+
+        vk::CopyBufferInfo2 info = vk::CopyBufferInfo2()
+            .setDstBuffer(desc.m_dstBuffer->GetVkBuffer())
+            .setSrcBuffer(desc.m_srcBuffer->GetVkBuffer())
+            .setRegions(region);
+
+        m_buffer.copyBuffer2(info);
+    }
+
     void CommandBuffer::BeginRendering(const RenderTargetsDesc& targetsDesc)
     {
         NES_ASSERT(targetsDesc.HasTargets());
@@ -320,6 +339,11 @@ namespace nes
         }
         
         m_buffer.setScissor(0, vkScissors);
+    }
+
+    void CommandBuffer::BindIndexBuffer(const IndexBufferDesc& desc)
+    {
+        m_buffer.bindIndexBuffer(desc.m_pBuffer->GetVkBuffer(), desc.m_offset, GetVkIndexType(desc.m_indexType));
     }
 
     void CommandBuffer::BindVertexBuffers(const vk::ArrayProxy<nes::VertexBufferDesc>& buffers, const uint32 firstBinding)

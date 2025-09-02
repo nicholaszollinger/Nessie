@@ -44,6 +44,45 @@ namespace nes
         m_extent = UVec2(static_cast<uint32>(viewport.m_extent.x), static_cast<uint32>(viewport.m_extent.y));
         return *this;
     }
+    
+#pragma endregion
+
+//============================================================================================================================================================================================
+#pragma region [ Resources: creation ]
+//============================================================================================================================================================================================
+
+    void ImageDesc::Validate()
+    {
+        m_height = math::Max(m_height, 1U);
+        m_depth = math::Max(m_depth, 1U);
+        m_mipCount = math::Max(m_mipCount, 1U);
+        m_layerCount = math::Max(m_layerCount, 1U);
+        m_sampleCount = math::Max(m_sampleCount, 1U);
+    }
+    
+#pragma endregion
+
+//============================================================================================================================================================================================
+#pragma region [ Resources: binding to memory ]
+//============================================================================================================================================================================================
+    
+    AllocateBufferDesc AllocateBufferDesc::VertexBuffer(const uint64 vertexCount, const uint32 vertexSize)
+    {
+        AllocateBufferDesc desc;
+        desc.m_size = vertexCount * vertexSize;
+        desc.m_usage = EBufferUsageBits::VertexBuffer;
+        desc.m_location = EMemoryLocation::Device;
+        return desc;
+    }
+
+    AllocateBufferDesc AllocateBufferDesc::IndexBuffer(const uint64 indexCount, const EIndexType type)
+    {
+        AllocateBufferDesc desc;
+        desc.m_size = indexCount * (type == EIndexType::U32? sizeof(uint32) : sizeof(uint16));
+        desc.m_usage = EBufferUsageBits::IndexBuffer;
+        desc.m_location = EMemoryLocation::Device;
+        return desc;
+    }
 
 #pragma endregion
 
@@ -104,6 +143,27 @@ namespace nes
     VertexBufferDesc& VertexBufferDesc::SetStride(const uint32 stride)
     {
         m_stride = stride;
+        return *this;
+    }
+
+    IndexBufferDesc::IndexBufferDesc(const DeviceBuffer* pBuffer, const EIndexType type, const uint64 offset)
+        : m_pBuffer(pBuffer)
+        , m_indexType(type)
+        , m_offset(offset)
+    {
+        //
+    }
+
+    IndexBufferDesc& IndexBufferDesc::SetBuffer(const DeviceBuffer* pBuffer)
+    {
+        m_pBuffer = pBuffer;
+        return *this;
+    }
+
+    IndexBufferDesc& IndexBufferDesc::SetFirstIndex(const EIndexType type, const uint64 firstIndex)
+    {
+        m_indexType = type;
+        m_offset = firstIndex * (m_indexType == EIndexType::U32? sizeof(uint32) : sizeof(uint16));
         return *this;
     }
 

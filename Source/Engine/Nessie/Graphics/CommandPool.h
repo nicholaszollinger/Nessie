@@ -27,7 +27,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the Command Pool object for the given queue.
         //----------------------------------------------------------------------------------------------------
-        CommandPool(RenderDevice& device, const DeviceQueue& queue);
+        CommandPool(RenderDevice& device, const DeviceQueue& queue, const bool isTransient = false);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set a debug name for this command pool. 

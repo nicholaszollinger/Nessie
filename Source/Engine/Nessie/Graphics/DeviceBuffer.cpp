@@ -2,7 +2,6 @@
 #include "DeviceBuffer.h"
 #include "RenderDevice.h"
 #include "Renderer.h"
-
 #include "Vulkan/VmaUsage.h"
 
 namespace nes
@@ -79,15 +78,24 @@ namespace nes
     void DeviceBuffer::AllocateBuffer(const RenderDevice& device, const AllocateBufferDesc& allocDesc)
     {
         NES_ASSERT(m_buffer == nullptr);
+
+        // Set the description parameters:
+        m_desc.m_size = allocDesc.m_size;
+        m_desc.m_usage = allocDesc.m_usage;
+        m_desc.m_structuredStride = 0; // [TODO]: Get rid?
         
         // Fill out the BufferCreateInfo object. 
-        vk::BufferCreateInfo bufferInfo{};
-        m_pDevice->FillCreateInfo(allocDesc.m_desc, bufferInfo);
+        vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()
+            .setSize(m_desc.m_size)
+            .setUsage(GetVkBufferUsageFlags(m_desc.m_usage, m_desc.m_structuredStride, true)) // Device Address is required!
+            .setSharingMode(allocDesc.m_queueFamilyIndices.empty()? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent)
+            .setQueueFamilyIndexCount(static_cast<uint32>(allocDesc.m_queueFamilyIndices.size()))
+            .setPQueueFamilyIndices(allocDesc.m_queueFamilyIndices.data());
 
         // Allocation CreateInfo:
         VmaAllocationCreateInfo allocCreateInfo = {};
         allocCreateInfo.flags = VMA_ALLOCATION_CREATE_CAN_ALIAS_BIT | VMA_ALLOCATION_CREATE_STRATEGY_MIN_MEMORY_BIT;
-        allocCreateInfo.priority = allocDesc.m_priority * 0.5f + 0.5f;
+        //allocCreateInfo.priority = allocDesc.m_priority * 0.5f + 0.5f;
         allocCreateInfo.usage = IsHostMemory(allocDesc.m_location) ? VMA_MEMORY_USAGE_AUTO_PREFER_HOST : VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE;
 
         if (allocDesc.m_isDedicated)
@@ -114,17 +122,17 @@ namespace nes
         // Calculate Memory Alignment based on usage: 
         const DeviceDesc& deviceDesc = device.GetDesc();
         uint32 alignment = 1;
-        if (allocDesc.m_desc.m_usage & (EBufferUsageBits::ShaderResource | EBufferUsageBits::ShaderResourceStorage))
+        if (m_desc.m_usage & (EBufferUsageBits::ShaderResource | EBufferUsageBits::ShaderResourceStorage))
             alignment = math::Max(alignment, deviceDesc.m_memoryAlignment.m_bufferShaderResourceOffset);
-        if (allocDesc.m_desc.m_usage & EBufferUsageBits::UniformBuffer)
+        if (m_desc.m_usage & EBufferUsageBits::UniformBuffer)
             alignment = math::Max(alignment, deviceDesc.m_memoryAlignment.m_constantBufferOffset);
-        if (allocDesc.m_desc.m_usage & EBufferUsageBits::ShaderBindingTable)
+        if (m_desc.m_usage & EBufferUsageBits::ShaderBindingTable)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_shaderBindingTable);
-        if (allocDesc.m_desc.m_usage & EBufferUsageBits::ScratchBuffer)
+        if (m_desc.m_usage & EBufferUsageBits::ScratchBuffer)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_scratchBufferOffset);
-        if (allocDesc.m_desc.m_usage & EBufferUsageBits::AccelerationStructureStorage)
+        if (m_desc.m_usage & EBufferUsageBits::AccelerationStructureStorage)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_accelerationStructureOffset);
-        if (allocDesc.m_desc.m_usage & EBufferUsageBits::MicromapStorage)
+        if (m_desc.m_usage & EBufferUsageBits::MicromapStorage)
             alignment = std::max(alignment, deviceDesc.m_memoryAlignment.m_micromapOffset);
 
         // Create the buffer:
@@ -137,7 +145,7 @@ namespace nes
         // Mapped Memory, only necessary if host visible.
         if (IsHostVisibleMemory(allocDesc.m_location))
         {
-             m_pMappedMemory = static_cast<uint8*>(vmaAllocInfo.pMappedData) - vmaAllocInfo.offset;
+            m_pMappedMemory = static_cast<uint8*>(vmaAllocInfo.pMappedData);// - vmaAllocInfo.offset;
         }
 
         // Device Address
@@ -145,39 +153,6 @@ namespace nes
         {
             m_deviceAddress = device.GetVkDevice().getBufferAddress(m_buffer);
         }
-        
-        // Set the Description:
-        m_desc = allocDesc.m_desc;
-    }
-
-    EGraphicsResult DeviceBuffer::CopyToBuffer(const void* data, const size_t offset, const size_t size)
-    {
-        if (!m_allocation)
-            return EGraphicsResult::Failure;
-
-        size_t actualSize = size;
-        if (size == graphics::kUseRemaining)
-            actualSize = m_desc.m_size - offset;
-
-        NES_ASSERT(offset + actualSize <= m_desc.m_size);
-        NES_VK_FAIL_RETURN(*m_pDevice, vmaCopyMemoryToAllocation(*m_pDevice, data, m_allocation, offset, actualSize));
-
-        return EGraphicsResult::Success;
-    }
-
-    EGraphicsResult DeviceBuffer::CopyFromBuffer(void* pOutData, const size_t srcOffset, const size_t size)
-    {
-        if (!m_allocation)
-            return EGraphicsResult::Failure;
-
-        size_t actualSize = size;
-        if (size == graphics::kUseRemaining)
-            actualSize = m_desc.m_size - srcOffset;
-
-        NES_ASSERT(srcOffset + actualSize <= m_desc.m_size);
-        NES_VK_FAIL_RETURN(*m_pDevice, vmaCopyAllocationToMemory(*m_pDevice, m_allocation, srcOffset, pOutData, actualSize));
-
-        return EGraphicsResult::Success;
     }
 
     void DeviceBuffer::FreeBuffer()

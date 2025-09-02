@@ -33,7 +33,7 @@ namespace nes
     struct  DeviceDesc;
     struct  PhysicalDeviceDesc;
     class   DeviceQueue;
-    class   SemaphoreState;
+    class   SemaphoreValue;
     class   CommandPool;
     class   CommandBuffer;
     class   Swapchain;

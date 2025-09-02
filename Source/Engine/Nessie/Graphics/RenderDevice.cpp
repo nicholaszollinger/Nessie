@@ -182,21 +182,6 @@ namespace nes
             DeviceQueue* pQueue = &queueFamily[queueIndex];
             outQueue = pQueue;
         
-            // Update the active family indices:
-            {
-                std::lock_guard lock(m_activeQueueIndicesMutex);
-        
-                uint32 i = 0;
-                for (; i < m_numActiveFamilyIndices; ++i)
-                {
-                    if (m_activeQueueFamilyIndices[i] == pQueue->GetFamilyIndex())
-                        break;
-                }
-        
-                if (i == m_numActiveFamilyIndices)
-                    m_activeQueueFamilyIndices[m_numActiveFamilyIndices++] = pQueue->GetFamilyIndex();
-            }
-        
             return EGraphicsResult::Success;
         }
         
@@ -277,7 +262,7 @@ namespace nes
         }
     }
 
-    void RenderDevice::SetDebugNameVkObject(const NativeVkObject& object, const std::string& name)
+    void RenderDevice::SetDebugNameVkObject(const NativeVkObject& object, const std::string& name) const
     {
         if (object.IsValid() && m_vkDevice != nullptr && m_vkDevice.getDispatcher()->vkSetDebugUtilsObjectNameEXT != nullptr)
         {
@@ -1005,91 +990,6 @@ namespace nes
         // // [TODO]: Robustness = OFF.
         // features.features.robustBufferAccess = 0;
         // features13.robustImageAccess = 0;
-        //
-        // // Device Create info:
-        // std::array<VkDeviceQueueCreateInfo, static_cast<size_t>(EQueueType::MaxNum)> queueCreateInfos{};
-        // VkDeviceCreateInfo deviceCreateInfo =
-        // {
-        //     .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        //     .pNext = &features,
-        //     .queueCreateInfoCount = 0,
-        //     .pQueueCreateInfos = queueCreateInfos.data(),
-        //     .enabledExtensionCount = static_cast<uint32_t>(enabledExtensions.size()),
-        //     .ppEnabledExtensionNames = enabledExtensions.data(),
-        // };
-        //
-        // // Create required QueueCreateInfo:
-        // // Default Zero queue priorities. I can make this an option in the future.
-        // std::array<float, 256> zeroPriorities = {};
-        //
-        // const auto& queueFamilyIndices = m_desc.m_physicalDeviceDesc.m_queueFamilyIndices;
-        // const auto& queueFamilyQueueCounts = m_desc.m_physicalDeviceDesc.m_queueCountByType;
-        //
-        // for (uint32 i = 0; i < static_cast<size_t>(EQueueType::MaxNum); ++i)
-        // {
-        //     const uint32 queueFamilyIndex = queueFamilyIndices[i];
-        //     const uint32 queueFamilyQueueCount = queueFamilyQueueCounts[i];
-        //
-        //     if (queueFamilyQueueCount && queueFamilyIndex != kInvalidQueueIndex)
-        //     {
-        //         // Get the next queue create info and increment the count.
-        //         VkDeviceQueueCreateInfo& queueCreateInfo = queueCreateInfos[deviceCreateInfo.queueCreateInfoCount++];
-        //
-        //         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-        //         queueCreateInfo.queueCount = queueFamilyQueueCount;
-        //         queueCreateInfo.queueFamilyIndex = queueFamilyIndex;
-        //         queueCreateInfo.pQueuePriorities = zeroPriorities.data();
-        //     }
-        // }
-        //
-        // const VkResult result = vkCreateDevice(m_vkPhysicalDevice, &deviceCreateInfo, m_vkAllocationCallbacksPtr, &m_vkDevice);
-        // if (result != VK_SUCCESS)
-        // {
-        //     NES_GRAPHICS_ERROR(*this, "Failed to create logical device! Vulkan Error: {}", string_VkResult(result));
-        //     return EGraphicsResult::Failure;
-        // }
-        // volkLoadDevice(m_vkDevice);
-        //
-        // NES_ASSERT(vkCreateSwapchainKHR != nullptr);
-        //
-        // // Create the Device Queues:
-        // // [TODO]: This should be the requested number of queue families.
-        // for (uint32 i = 0; i < static_cast<uint32>(EQueueType::MaxNum); ++i)
-        // {
-        //     const uint32 queueFamilyTypeIndex = i;
-        //     const EQueueType queueFamilyType = static_cast<EQueueType>(i);
-        //     const uint32 queueFamilyQueueCount = rendererDesc.m_requiredQueueCountsByFamily[queueFamilyTypeIndex];
-        //     
-        //     auto& queueFamily = m_queueFamilies[queueFamilyTypeIndex]; 
-        //     const uint32 queueFamilyIndex = queueFamilyIndices[queueFamilyTypeIndex];
-        //
-        //     if (queueFamilyIndex != kInvalidQueueIndex)
-        //     {
-        //         for (uint32 j = 0; j < queueFamilyQueueCount; ++j)
-        //         {
-        //             vk::DeviceQueueInfo2 queueInfo{};
-        //             queueInfo.queueFamilyIndex = queueFamilyIndex;
-        //             queueInfo.queueIndex = j;
-        //
-        //             // [TODO]: 
-        //             vk::raii::Queue queue = m_vkDevice.getQueue2(queueInfo);
-        //             
-        //             // Create the Queue:
-        //             DeviceQueue* pQueue;
-        //             const EGraphicsResult queueResult = CreateResource<DeviceQueue>(pQueue, queueFamilyType, queueFamilyIndex, handle);
-        //             if (queueResult == EGraphicsResult::Success)
-        //                 queueFamily.push_back(pQueue);
-        //         }
-        //
-        //         // Update the number of queues available for this type to match the requested amount.
-        //         m_desc.m_physicalDeviceDesc.m_queueCountByType[queueFamilyTypeIndex] = queueFamilyQueueCount;
-        //     }
-        //     else
-        //     {
-        //         // No Queues are available of this type.
-        //         m_desc.m_physicalDeviceDesc.m_queueCountByType[queueFamilyTypeIndex] = 0;
-        //     }
-        // }
 
         FillOutDeviceDesc();
 
@@ -1108,7 +1008,7 @@ namespace nes
         allocatorInfo.pAllocationCallbacks = &callbacks;
 
         VmaAllocatorCreateFlags flags = {};
-        if (m_desc.m_features.m_deviceAddress)
+        //if (m_desc.m_features.m_deviceAddress)
             flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
         if (m_desc.m_features.m_memoryBudget)
             flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
@@ -1496,43 +1396,92 @@ namespace nes
         return (m_memoryProperties.memoryTypes[memoryTypeIndex].propertyFlags & vk::MemoryPropertyFlagBits::eHostCoherent) != vk::MemoryPropertyFlags{};
     }
 
-    void RenderDevice::FillCreateInfo(const BufferDesc& bufferDesc, vk::BufferCreateInfo& outInfo) const
+    bool RenderDevice::FindSuitableMemoryType(const EMemoryLocation location, uint32 memoryTypeMask, DeviceMemoryTypeInfo& outInfo) const
     {
-        outInfo.size = bufferDesc.m_size;
-        outInfo.usage = GetVkBufferUsageFlags(bufferDesc.m_usage, bufferDesc.m_structuredStride, m_desc.m_features.m_deviceAddress);
-        outInfo.sharingMode = m_numActiveFamilyIndices <= 1 ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
-        outInfo.queueFamilyIndexCount = m_numActiveFamilyIndices;
-        outInfo.pQueueFamilyIndices = m_activeQueueFamilyIndices.data();
-    }
+        constexpr vk::MemoryPropertyFlags kNoFlags = {}; 
+        vk::MemoryPropertyFlags neededFlags = {};       // Must have
+        vk::MemoryPropertyFlags undesiredFlags = {};    // Have higher priority than desired.
+        vk::MemoryPropertyFlags desiredFlags = {};      // Nice to have.
 
-    void RenderDevice::FillCreateInfo(const ImageDesc& textureDesc, vk::ImageCreateInfo& outInfo) const
-    {
-        vk::ImageCreateFlags flags = vk::ImageCreateFlagBits::eMutableFormat | vk::ImageCreateFlagBits::eExtendedUsage;
-        
-        const FormatProps& formatProps = GetFormatProps(textureDesc.m_format);
-        if (formatProps.m_blockWidth > 1 && (textureDesc.m_usage & EImageUsageBits::ShaderResourceStorage))
-            flags |= vk::ImageCreateFlagBits::eBlockTexelViewCompatible; // Format can be used to create a view with an uncompressed format (1 texel covers 1 block)
-        if (textureDesc.m_layerCount >= 6 && textureDesc.m_width == textureDesc.m_height)
-            flags |= vk::ImageCreateFlagBits::eCubeCompatible; // Allow cube maps
-        if (textureDesc.m_type == EImageType::Image3D)
-            flags |= vk::ImageCreateFlagBits::e2DArrayCompatible; // allow 3D demotion to a set of layers
-        if (m_desc.m_tieredFeatures.m_sampleLocations && formatProps.m_isDepth)
-            flags |= vk::ImageCreateFlagBits::eSampleLocationsCompatibleDepthEXT;
-        
-        outInfo.flags = flags;
-        outInfo.imageType = GetVkImageType(textureDesc.m_type);
-        outInfo.format = GetVkFormat(textureDesc.m_format);
-        outInfo.extent.width = textureDesc.m_width;
-        outInfo.extent.height = math::Max(textureDesc.m_height, 1U);
-        outInfo.extent.depth = math::Max(textureDesc.m_depth, 1U);
-        outInfo.mipLevels = math::Max(textureDesc.m_mipCount, 1U);
-        outInfo.arrayLayers = math::Max(textureDesc.m_layerCount, 1U);
-        outInfo.samples = static_cast<vk::SampleCountFlagBits>(math::Max(textureDesc.m_sampleCount, 1U));
-        outInfo.tiling = vk::ImageTiling::eOptimal;
-        outInfo.usage = GetVkImageUsageFlags(textureDesc.m_usage);
-        outInfo.sharingMode = (m_numActiveFamilyIndices <= 1 || textureDesc.m_sharingMode == ESharingMode::Exclusive) ? vk::SharingMode::eExclusive : vk::SharingMode::eConcurrent;
-        outInfo.queueFamilyIndexCount = m_numActiveFamilyIndices;
-        outInfo.pQueueFamilyIndices = m_activeQueueFamilyIndices.data();
-        outInfo.initialLayout = vk::ImageLayout::eUndefined;
+        if (location == EMemoryLocation::Device)
+        {
+            neededFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+            undesiredFlags = vk::MemoryPropertyFlagBits::eHostVisible;
+        }
+        else if (location == EMemoryLocation::DeviceUpload)
+        {
+            neededFlags = vk::MemoryPropertyFlagBits::eHostVisible;
+            undesiredFlags = vk::MemoryPropertyFlagBits::eHostCached;
+            desiredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal | vk::MemoryPropertyFlagBits::eHostCoherent;
+        }
+        else
+        {
+            neededFlags = vk::MemoryPropertyFlagBits::eHostVisible;
+            undesiredFlags = vk::MemoryPropertyFlagBits::eDeviceLocal;
+            desiredFlags = (location == EMemoryLocation::HostReadback ? vk::MemoryPropertyFlagBits::eHostCached : kNoFlags) | vk::MemoryPropertyFlagBits::eHostCoherent;
+        }
+
+        // Phase 1: needed, undesired and desired
+        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+        {
+            const bool isSupported = memoryTypeMask & (1 << i);
+            const bool hasNeeded = (m_memoryProperties.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+            const bool hasUndesired = undesiredFlags == kNoFlags ? false : (m_memoryProperties.memoryTypes[i].propertyFlags & undesiredFlags) == undesiredFlags;
+            const bool hasDesired = (m_memoryProperties.memoryTypes[i].propertyFlags & desiredFlags) == desiredFlags;
+
+            if (isSupported && hasNeeded && !hasUndesired && hasDesired)
+            {
+                outInfo.m_index = static_cast<DeviceMemoryTypeIndex>(i);
+                outInfo.m_location = location;
+                return true;
+            }
+        }
+
+        // Phase 2: needed and undesired
+        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+        {
+            const bool isSupported = memoryTypeMask & (1 << i);
+            const bool hasNeeded = (m_memoryProperties.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+            const bool hasUndesired = undesiredFlags == kNoFlags ? false : (m_memoryProperties.memoryTypes[i].propertyFlags & undesiredFlags) == undesiredFlags;
+
+            if (isSupported && hasNeeded && !hasUndesired)
+            {
+                outInfo.m_index = static_cast<DeviceMemoryTypeIndex>(i);
+                outInfo.m_location = location;
+                return true;
+            }
+        }
+
+        // Phase 3: needed and desired
+        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+        {
+            const bool isSupported = memoryTypeMask & (1 << i);
+            const bool hasNeeded = (m_memoryProperties.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+            const bool hasDesired = (m_memoryProperties.memoryTypes[i].propertyFlags & desiredFlags) == desiredFlags;
+            
+            if (isSupported && hasNeeded && hasDesired)
+            {
+                outInfo.m_index = static_cast<DeviceMemoryTypeIndex>(i);
+                outInfo.m_location = location;
+                return true;
+            }
+        }
+
+        // Phase 4: only needed.
+        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+        {
+            const bool isSupported = memoryTypeMask & (1 << i);
+            const bool hasNeeded = (m_memoryProperties.memoryTypes[i].propertyFlags & neededFlags) == neededFlags;
+            
+            if (isSupported && hasNeeded)
+            {
+                outInfo.m_index = static_cast<DeviceMemoryTypeIndex>(i);
+                outInfo.m_location = location;
+                return true;
+            }
+        }
+
+        NES_ASSERT(false, "Failed to find a suitable memory Type!");
+        return false;
     }
 }

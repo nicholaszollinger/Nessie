@@ -65,7 +65,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allocates the Image. 
         //----------------------------------------------------------------------------------------------------
-        void                AllocateResource(const RenderDevice& device, const AllocateImageDesc& desc);
+        void                AllocateResource(const RenderDevice& device, const AllocateImageDesc& allocDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Submits the resource to the Renderer to be freed.

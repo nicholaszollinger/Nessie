@@ -713,6 +713,14 @@ namespace nes
         return static_cast<vk::PrimitiveTopology>(topology);
     }
 
+    constexpr vk::IndexType GetVkIndexType(const EIndexType type)
+    {
+        if (type == EIndexType::U32)
+            return vk::IndexType::eUint32;
+            
+        return vk::IndexType::eUint16;   
+    }
+
     constexpr vk::ShaderStageFlags GetVkShaderStageFlags(const EPipelineStageBits stage)
     {
         if (stage == EPipelineStageBits::All)

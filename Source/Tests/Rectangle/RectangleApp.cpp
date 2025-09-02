@@ -1,19 +1,20 @@
-// SimpleTriangle.cpp
-#include "SimpleTriangle.h"
+// Rectangle.cpp
+#include "RectangleApp.h"
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Asset/AssetManager.h"
 #include "Nessie/Graphics/CommandBuffer.h"
+#include "Nessie/Graphics/DataUploader.h"
 #include "Nessie/Graphics/RenderDevice.h"
 #include "Nessie/Graphics/Renderer.h"
 #include "Nessie/Graphics/Shader.h"
 
-bool SimpleTriangle::Internal_AppInit()
+bool RectangleApp::Internal_AppInit()
 {
-    // Load the Simple Triangle Shader
+    // Load the Simple Shader
     {
         std::filesystem::path shaderPath = NES_SHADER_DIR;
-        shaderPath /= "SimpleTriangle.spv";
+        shaderPath /= "Rectangle.spv";
 
         const auto result = nes::AssetManager::LoadSync<nes::Shader>(m_shaderID, shaderPath);
         if (result != nes::ELoadResult::Success)
@@ -38,12 +39,20 @@ bool SimpleTriangle::Internal_AppInit()
     
     // Create a Graphics Pipeline:
     {
-        static const std::array<Vertex, 3> vertices =
+        const std::vector<Vertex> vertices =
         {
-            Vertex{{0.0f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            Vertex{{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-            Vertex{{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}} 
+            {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
         };
+        const uint64 vertexBufferSize = (sizeof(Vertex) * vertices.size());
+        
+        const std::vector<uint16> indices =
+        {
+            0, 1, 2, 2, 3, 0
+        };
+        const uint64 indexBufferSize = (sizeof(uint16) * indices.size());
         
         // Attributes of the Vertex struct
         std::array<nes::VertexAttributeDesc, 2> attributes =
@@ -59,20 +68,47 @@ bool SimpleTriangle::Internal_AppInit()
         nes::VertexInputDesc vertexInputDesc = nes::VertexInputDesc()
             .SetAttributes(attributes)
             .SetStreams(vertexStreamDesc);
+        
+        // Allocate the Geometry Buffer:
+        // - This single device buffer will contain both the vertices and the indices. The indices are stored after the vertices.
+        {
+            nes::AllocateBufferDesc desc;
+            desc.m_size = vertexBufferSize + indexBufferSize;
+            desc.m_location = nes::EMemoryLocation::Device;
+            desc.m_usage = nes::EBufferUsageBits::IndexBuffer | nes::EBufferUsageBits::VertexBuffer;
+            m_geometryBuffer = nes::DeviceBuffer(device, desc);
+            
+            m_vertexBufferDesc = nes::VertexBufferDesc(&m_geometryBuffer, sizeof(Vertex), 0);
+            m_indexBufferDesc = nes::IndexBufferDesc(&m_geometryBuffer, nes::EIndexType::U16, vertexBufferSize);
+        }
 
-        // Create the Vertex Buffer:
-        nes::BufferDesc vertexBufferDesc{};
-        vertexBufferDesc.m_usage = nes::EBufferUsageBits::VertexBuffer;
-        vertexBufferDesc.m_size = sizeof(Vertex) * vertices.size();
+        // Upload the vertex and index data to the buffer.
+        {
+            nes::CommandBuffer buffer = nes::Renderer::BeginTempCommands();
+            nes::DataUploader uploader(device);
         
-        nes::AllocateBufferDesc desc{};
-        desc.m_desc = vertexBufferDesc;
-        desc.m_location = nes::EMemoryLocation::HostUpload; // We are setting the vertex data from the GPU.
-        m_vertexBuffer = nes::DeviceBuffer(device, desc);
-        
-        // [TODO]: Change this.
-        m_vertexBuffer.CopyToBuffer(vertices.data());
-        m_vertexBufferDesc = nes::VertexBufferDesc(&m_vertexBuffer, sizeof(Vertex), 0);
+            // Vertex Buffer data
+            nes::UploadBufferDesc vertexUpload;
+            vertexUpload.m_pBuffer = &m_geometryBuffer;
+            vertexUpload.m_pData = vertices.data();
+            vertexUpload.m_uploadOffset = 0;
+            vertexUpload.m_uploadSize = vertexBufferSize;
+            uploader.AppendUploadBuffer(vertexUpload);
+
+            // Index Buffer data
+            nes::UploadBufferDesc indexUpload;
+            indexUpload.m_pBuffer = &m_geometryBuffer;
+            indexUpload.m_pData = indices.data();
+            indexUpload.m_uploadOffset = vertexBufferSize;
+            indexUpload.m_uploadSize = indexBufferSize;
+            uploader.AppendUploadBuffer(indexUpload);
+            
+            uploader.RecordCommands(buffer);
+            nes::Renderer::SubmitAndWaitTempCommands(buffer);
+
+            // Release staging buffer resources.
+            uploader.Destroy();
+        }
         
         // Create the Pipeline Layout:
         nes::PipelineLayoutDesc layoutDesc{};
@@ -114,14 +150,14 @@ bool SimpleTriangle::Internal_AppInit()
     return true;
 }
 
-void SimpleTriangle::Internal_AppUpdate([[maybe_unused]] const float timeStep)
+void RectangleApp::Internal_AppUpdate([[maybe_unused]] const float timeStep)
 {
-    // [TODO]: 
+    // nothing to do.
 }
 
-void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
-    // Transition the swapchain image to color attachment optimal:
+    // Transition the swapchain image to color attachment optimal layout, so we can render to it:
     {
         nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
             .SetLayoutTransition(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)
@@ -131,7 +167,7 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
         commandBuffer.TransitionImageLayout(context.GetSwapchainImage().GetVkImage(), transitionBarrierDesc);
     }
     
-    // Set up the attachment for rendering:
+    // Set the swapchain image as our color render target:
     nes::RenderTargetsDesc renderTargetsDesc = nes::RenderTargetsDesc()
         .SetColorTargets(&context.GetSwapchainImageDescriptor());
 
@@ -139,27 +175,30 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
     const nes::Viewport viewport = context.GetSwapchainViewport();
     const nes::Scissor scissor(viewport);
 
-    // Render a triangle using the pipeline.
+    // Render a rectangle using the pipeline.
     commandBuffer.BeginRendering(renderTargetsDesc);
     {
+        // Clear the screen to a dark grey color:
         nes::ClearDesc clearDesc = nes::ClearDesc()
             .SetColorValue({ 0.01f, 0.01f, 0.01f, 1.0f });
         commandBuffer.ClearRenderTargets(clearDesc);
-        
+
+        // Set our pipeline and render area:
         commandBuffer.BindPipeline(m_pipeline);
         commandBuffer.BindPipelineLayout(m_pipelineLayout);
-        
         commandBuffer.SetViewports(viewport);
         commandBuffer.SetScissors(scissor);
-        commandBuffer.BindVertexBuffers(m_vertexBufferDesc);
-
-        // Draw 3 vertices:
-        commandBuffer.Draw(3);
         
+        // Draw the rectangle:
+        commandBuffer.BindIndexBuffer(m_indexBufferDesc);
+        commandBuffer.BindVertexBuffers(m_vertexBufferDesc);
+        commandBuffer.DrawIndexed(6);
+
+        // Finish.
         commandBuffer.EndRendering();
     }
 
-    // Transition the image to present layout:
+    // Transition the swapchain image to present layout:
     {
         nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
             .SetLayoutTransition(vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR)
@@ -170,20 +209,20 @@ void SimpleTriangle::Internal_AppRender(nes::CommandBuffer& commandBuffer, const
     }
 }
 
-void SimpleTriangle::Internal_AppShutdown()
+void RectangleApp::Internal_AppShutdown()
 {
-    m_vertexBuffer = nullptr;
+    m_geometryBuffer = nullptr;
     m_pipeline = nullptr;
     m_pipelineLayout = nullptr;
 }
 
 std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outAppDesc, WindowDesc& outWindowDesc, RendererDesc& outRendererDesc)
 {
-    outAppDesc.SetApplicationName("Triangle")
+    outAppDesc.SetApplicationName("Rectangle")
         .SetIsHeadless(false);
        
     outWindowDesc.SetResolution(720, 720)
-        .SetLabel("Triangle")
+        .SetLabel("Rectangle")
         .SetWindowMode(EWindowMode::Windowed)
         .EnableResize(true)
         .EnableVsync(false);
@@ -192,7 +231,7 @@ std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outApp
         .RequireQueueType(EQueueType::Graphics)
         .RequireQueueType(EQueueType::Transfer);
 
-    return std::make_unique<SimpleTriangle>(outAppDesc);
+    return std::make_unique<RectangleApp>(outAppDesc);
 }
 
 NES_MAIN()
