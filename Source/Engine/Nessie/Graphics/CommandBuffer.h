@@ -105,12 +105,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the index buffer to use for the next DrawIndexed() call.
         //----------------------------------------------------------------------------------------------------
-        void                    BindIndexBuffer(const IndexBufferDesc& desc);
+        void                    BindIndexBuffer(const IndexBufferRange& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Bind the vertex buffers used for the next draw call. 
         //----------------------------------------------------------------------------------------------------
-        void                    BindVertexBuffers(const vk::ArrayProxy<nes::VertexBufferDesc>& buffers, const uint32 firstBinding = 0);  
+        void                    BindVertexBuffers(const vk::ArrayProxy<VertexBufferRange>& buffers, const uint32 firstBinding = 0);  
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Submit a set of vertices to be drawn - the vertices are either directly in the shader for

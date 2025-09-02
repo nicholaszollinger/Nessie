@@ -1,5 +1,6 @@
 ﻿// GraphicsCommon.cpp
 #include "GraphicsCommon.h"
+#include "DeviceBuffer.h"
 
 namespace nes
 {
@@ -120,51 +121,50 @@ namespace nes
         return *this;
     }
 
-    VertexBufferDesc::VertexBufferDesc(const DeviceBuffer* pBuffer, const uint32 stride, const uint64 offset)
+    DeviceBufferRange::DeviceBufferRange(DeviceBuffer* pBuffer, const uint64 offset, const uint64 size)
         : m_pBuffer(pBuffer)
         , m_offset(offset)
-        , m_stride(stride)
+        , m_size(size)
     {
-        //
+        NES_ASSERT(pBuffer != nullptr);
+
+        // Use the remaining size of the buffer from the offset.
+        if (size == graphics::kWholeSize)
+        {
+            m_size = pBuffer->GetSize() - offset;
+        }
+    }
+    
+    uint8* DeviceBufferRange::GetMappedMemory() const
+    {
+        NES_ASSERT(m_pBuffer != nullptr);
+        
+        if (!m_pBuffer->m_pMappedMemory)
+            return nullptr;
+        
+        return m_pBuffer->m_pMappedMemory + m_offset;
     }
 
-    VertexBufferDesc& VertexBufferDesc::SetBuffer(const DeviceBuffer* pBuffer)
+    uint64 DeviceBufferRange::GetDeviceAddress() const
     {
-        m_pBuffer = pBuffer;
-        return *this;
+        NES_ASSERT(m_pBuffer != nullptr);
+        return m_pBuffer->m_deviceAddress;
     }
 
-    VertexBufferDesc& VertexBufferDesc::SetOffset(const uint64 offset)
+    VertexBufferRange::VertexBufferRange(DeviceBuffer* pBuffer, const uint64 stride, const uint64 vertexCount, const uint64 bufferOffset)
+        : DeviceBufferRange(pBuffer, bufferOffset, stride * vertexCount)
+        , m_stride(static_cast<uint32>(stride))
+        , m_vertexCount(vertexCount)
     {
-        m_offset = offset;
-        return *this;
+        NES_ASSERT(stride > 0);
     }
 
-    VertexBufferDesc& VertexBufferDesc::SetStride(const uint32 stride)
-    {
-        m_stride = stride;
-        return *this;
-    }
-
-    IndexBufferDesc::IndexBufferDesc(const DeviceBuffer* pBuffer, const EIndexType type, const uint64 offset)
-        : m_pBuffer(pBuffer)
+    IndexBufferRange::IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type, const uint64 bufferOffset)
+        : DeviceBufferRange(pBuffer, bufferOffset, indexCount * (type == EIndexType::U16 ? sizeof(uint16) : sizeof(uint32)))
+        , m_indexCount(indexCount)
         , m_indexType(type)
-        , m_offset(offset)
     {
         //
-    }
-
-    IndexBufferDesc& IndexBufferDesc::SetBuffer(const DeviceBuffer* pBuffer)
-    {
-        m_pBuffer = pBuffer;
-        return *this;
-    }
-
-    IndexBufferDesc& IndexBufferDesc::SetFirstIndex(const EIndexType type, const uint64 firstIndex)
-    {
-        m_indexType = type;
-        m_offset = firstIndex * (m_indexType == EIndexType::U32? sizeof(uint32) : sizeof(uint16));
-        return *this;
     }
 
 #pragma endregion

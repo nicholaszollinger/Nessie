@@ -69,6 +69,8 @@ namespace nes
         void                    FreeBuffer();
 
     private:
+        friend class DeviceBufferRange;
+        
         RenderDevice*           m_pDevice = nullptr;
         BufferDesc              m_desc{};                   // Buffer properties.
         vk::Buffer              m_buffer = nullptr;         // Vulkan handle.
@@ -76,6 +78,6 @@ namespace nes
         uint8*                  m_pMappedMemory = nullptr;  // CPU mapped memory. 
         VmaAllocation           m_allocation = nullptr;     // Memory associated with the buffer.
     };
-
+    
     static_assert(DeviceObjectType<DeviceBuffer>);
 }

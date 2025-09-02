@@ -78,8 +78,8 @@ bool RectangleApp::Internal_AppInit()
             desc.m_usage = nes::EBufferUsageBits::IndexBuffer | nes::EBufferUsageBits::VertexBuffer;
             m_geometryBuffer = nes::DeviceBuffer(device, desc);
             
-            m_vertexBufferDesc = nes::VertexBufferDesc(&m_geometryBuffer, sizeof(Vertex), 0);
-            m_indexBufferDesc = nes::IndexBufferDesc(&m_geometryBuffer, nes::EIndexType::U16, vertexBufferSize);
+            m_vertexBufferDesc = nes::VertexBufferRange(&m_geometryBuffer, sizeof(Vertex), vertices.size());
+            m_indexBufferDesc = nes::IndexBufferRange(&m_geometryBuffer, indices.size(), nes::EIndexType::U16, vertexBufferSize);
         }
 
         // Upload the vertex and index data to the buffer.
@@ -192,7 +192,7 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
         // Draw the rectangle:
         commandBuffer.BindIndexBuffer(m_indexBufferDesc);
         commandBuffer.BindVertexBuffers(m_vertexBufferDesc);
-        commandBuffer.DrawIndexed(6);
+        commandBuffer.DrawIndexed(m_indexBufferDesc.GetNumIndices());
 
         // Finish.
         commandBuffer.EndRendering();
