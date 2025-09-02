@@ -341,12 +341,12 @@ namespace nes
         m_buffer.setScissor(0, vkScissors);
     }
 
-    void CommandBuffer::BindIndexBuffer(const IndexBufferDesc& desc)
+    void CommandBuffer::BindIndexBuffer(const IndexBufferRange& desc)
     {
-        m_buffer.bindIndexBuffer(desc.m_pBuffer->GetVkBuffer(), desc.m_offset, GetVkIndexType(desc.m_indexType));
+        m_buffer.bindIndexBuffer(desc.GetBuffer()->GetVkBuffer(), desc.GetOffset(), GetVkIndexType(desc.GetIndexType()));
     }
 
-    void CommandBuffer::BindVertexBuffers(const vk::ArrayProxy<nes::VertexBufferDesc>& buffers, const uint32 firstBinding)
+    void CommandBuffer::BindVertexBuffers(const vk::ArrayProxy<VertexBufferRange>& buffers, const uint32 firstBinding)
     {
         // [TODO]: Stack allocate each array.
         const uint32 bufferCount = buffers.size();
@@ -357,15 +357,15 @@ namespace nes
 
         for (uint32 i = 0; i < bufferCount; ++i)
         {
-            const VertexBufferDesc& vertexBufferDesc = *(buffers.begin() + i);
-            const DeviceBuffer* pBuffer = vertexBufferDesc.m_pBuffer;
+            const VertexBufferRange& vertexBufferDesc = *(buffers.begin() + i);
+            const DeviceBuffer* pBuffer = vertexBufferDesc.GetBuffer();
 
             if (pBuffer)
             {
                 vkBuffers[i] = pBuffer->GetVkBuffer();
-                vkOffsets[i] = vertexBufferDesc.m_offset;
-                vkSizes[i] = pBuffer->GetDesc().m_size - vertexBufferDesc.m_offset;
-                vkStrides[i] = vertexBufferDesc.m_stride;
+                vkOffsets[i] = vertexBufferDesc.GetOffset();
+                vkSizes[i] = vertexBufferDesc.GetSize();
+                vkStrides[i] = vertexBufferDesc.GetStride();
             }
             else
             {

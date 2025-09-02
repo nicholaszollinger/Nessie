@@ -48,8 +48,8 @@ namespace nes
         CopyBufferDesc copyDesc;
         copyDesc.m_dstBuffer = &buffer;
         copyDesc.m_dstOffset = desc.m_uploadOffset;
-        copyDesc.m_srcBuffer = stagingRange.m_buffer;
-        copyDesc.m_srcOffset = stagingRange.m_offset;
+        copyDesc.m_srcBuffer = stagingRange.GetBuffer();
+        copyDesc.m_srcOffset = stagingRange.GetOffset();
         copyDesc.m_size = size;
         m_copyBufferDescs.emplace_back(copyDesc);
     }
@@ -100,17 +100,13 @@ namespace nes
         {
             std::memcpy(stagingBuffer.m_pMappedMemory, pData, dataSize);
         }
-
-        // Set Range Info:
-        outRange.m_offset = 0;
-        outRange.m_range = dataSize;
-        outRange.m_deviceAddress = stagingBuffer.m_deviceAddress;
-        outRange.m_pMapping = stagingBuffer.m_pMappedMemory;
-
+        
         // Add the staging resource to the array:
         m_stagingResourcesSize += dataSize;
         m_stagingResources.emplace_back(std::move(stagingBuffer), semaphoreState);
-        outRange.m_buffer = &(m_stagingResources.back().m_buffer);
+        
+        // Set the Range:
+        outRange = DeviceBufferRange(&(m_stagingResources.back().m_buffer), 0, dataSize);
     }
 
     void DataUploader::ClearPending()

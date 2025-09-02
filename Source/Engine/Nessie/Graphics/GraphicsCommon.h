@@ -1028,67 +1028,126 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Perhaps make a VertexBuffer object that owns the DeviceBuffer. 
-    /// @brief : Information about a Vertex buffer that can be bound for a draw call. 
+    /// @brief : Describes a contiguous section of a DeviceBuffer resource.
     //----------------------------------------------------------------------------------------------------
-    struct VertexBufferDesc
+    class DeviceBufferRange
     {
-        VertexBufferDesc() = default;
-        VertexBufferDesc(const DeviceBuffer* pBuffer, const uint32 stride, const uint64 offset = 0);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the buffer resource that contains the vertices.
-        //----------------------------------------------------------------------------------------------------
-        VertexBufferDesc&       SetBuffer(const DeviceBuffer* pBuffer);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the offset, in bytes, that this vertex buffer should start from in the DeviceBuffer. 
-        //----------------------------------------------------------------------------------------------------
-        VertexBufferDesc&       SetOffset(const uint64 offset);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the stride, in bytes, to move to the next element in the buffer.
-        //----------------------------------------------------------------------------------------------------
-        VertexBufferDesc&       SetStride(const uint32 stride);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Useful function for vertex buffers of a single element type. Sets the stride equal to the
-        ///     sizeof the element type, and the offset equal to 'sizeof(ElementType) * firstElement'. 
-        //----------------------------------------------------------------------------------------------------
-        template <typename ElementType>
-        VertexBufferDesc&       SetFirstElement(const uint32 firstElement)
-        {
-            SetStride(sizeof(ElementType));
-            return SetOffset(sizeof(ElementType) * firstElement);
-        }
+    public:
+        DeviceBufferRange() = default;
         
-        const DeviceBuffer*     m_pBuffer = nullptr;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Construct the range based on the offset and size.
+        ///	@param pBuffer : Buffer resource that this range is for. Must not be null.
+        ///	@param offset : Byte offset from the beginning of the DeviceBuffer. Default is 0; the start of the buffer.
+        ///	@param size : Size, in bytes of the entire range. By default, it is set to graphics::kWholeSize which
+        ///     will get the size from the offset to the end of the buffer. If offset + size is greater than
+        ///     the buffer's size, the range will be clamped to the buffer's size.
+        //----------------------------------------------------------------------------------------------------
+        DeviceBufferRange(DeviceBuffer* pBuffer, const uint64 offset = 0, const uint64 size = graphics::kWholeSize);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Device Buffer that this range is in.
+        //----------------------------------------------------------------------------------------------------
+        DeviceBuffer*           GetBuffer() const           { return m_pBuffer; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the size of the range, in bytes.
+        //----------------------------------------------------------------------------------------------------
+        uint64                  GetSize() const             { return m_size; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the byte offset of the buffer.
+        //----------------------------------------------------------------------------------------------------
+        uint64                  GetOffset() const           { return m_offset; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the CPU-addressable memory pointer to the beginning of the range. Only valid if the
+        ///     DeviceBuffer is mappable.
+        //----------------------------------------------------------------------------------------------------
+        uint8*                  GetMappedMemory() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the address of the range on the device.
+        //----------------------------------------------------------------------------------------------------
+        uint64                  GetDeviceAddress() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check that the range is associated with a valid buffer and that its size is non-zero.
+        //----------------------------------------------------------------------------------------------------
+        bool                    IsValid() const             { return m_pBuffer != nullptr && m_size > 0; }
+
+    private:
+        DeviceBuffer*           m_pBuffer = nullptr;
         uint64                  m_offset = 0;
-        uint32                  m_stride = 0;
+        uint64                  m_size = 0;
     };
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Perhaps make a VertexBuffer object that owns the DeviceBuffer. 
-    /// @brief : Information about an Index Buffer that can be bound for a draw call. 
+    /// @brief : Describes a range of vertices within a DeviceBuffer. This can be used for draw calls. 
     //----------------------------------------------------------------------------------------------------
-    struct IndexBufferDesc
+    class VertexBufferRange final : public DeviceBufferRange
     {
-        IndexBufferDesc() = default;
-        IndexBufferDesc(const DeviceBuffer* pBuffer, const EIndexType type = EIndexType::U16, const uint64 offset = 0);
+    public:
+        VertexBufferRange() = default;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Construct the description of vertices within the Device Buffer.
+        ///	@param pBuffer : Buffer resource that contains the vertices. Must not be null. 
+        ///	@param stride : The number of bytes needed to move to get to the next vertex. Commonly, this is
+        ///     the size of the Vertex object.
+        ///	@param vertexCount : Number of vertices in the range.
+        ///	@param bufferOffset : Byte offset from the beginning of the DeviceBuffer to get to the first vertex.
+        ///     Default is 0; the start of the buffer.
+        //----------------------------------------------------------------------------------------------------
+        VertexBufferRange(DeviceBuffer* pBuffer, const uint64 stride, const uint64 vertexCount, const uint64 bufferOffset = 0);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the buffer resource that contains the indices.
+        /// @brief : Returns the number of bytes needed to move to get to the next vertex.
+        ///     Commonly, this is the size of the Vertex object.
         //----------------------------------------------------------------------------------------------------
-        IndexBufferDesc&       SetBuffer(const DeviceBuffer* pBuffer);
+        uint32              GetStride() const       { return m_stride; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the number of vertices in the range.
+        //----------------------------------------------------------------------------------------------------
+        uint32              GetNumVertices() const  { return m_vertexCount; }
+
+    private:
+        uint32              m_stride = 0; 
+        uint32              m_vertexCount = 0;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes a range of indices within a DeviceBuffer. This can be used for indexed draw calls. 
+    //----------------------------------------------------------------------------------------------------
+    class IndexBufferRange final : public DeviceBufferRange
+    {
+    public:
+        IndexBufferRange() = default;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Construct the description of indices within the Device Buffer.
+        ///	@param pBuffer : Buffer resource that contains the indices. Must not be null. 
+        ///	@param indexCount : Number of indices in the range.
+        ///	@param type : Type of index that is stored. Default is uint32.
+        ///	@param bufferOffset : Byte offset from the beginning of the DeviceBuffer to get to first index.
+        ///     Default is 0; the start of the buffer.
+        //----------------------------------------------------------------------------------------------------
+        IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type = EIndexType::U32, const uint64 bufferOffset = 0);
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the index type and the first index to use. The offset will be calculated based on the index.
+        /// @brief : Get the type of indices that this index buffer contains.
         //----------------------------------------------------------------------------------------------------
-        IndexBufferDesc&       SetFirstIndex(const EIndexType type, const uint64 firstIndex = 0);
-        
-        const DeviceBuffer*     m_pBuffer = nullptr;
-        EIndexType              m_indexType = EIndexType::U16;
-        uint64                  m_offset = 0; // Offset in Bytes.
+        EIndexType          GetIndexType() const       { return m_indexType; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the number of indices in the range.
+        //----------------------------------------------------------------------------------------------------
+        uint32              GetNumIndices() const    { return m_indexCount; }
+    
+    private:
+        uint32              m_indexCount = 0;
+        EIndexType          m_indexType  = EIndexType::U16;
     };
 
 #pragma endregion

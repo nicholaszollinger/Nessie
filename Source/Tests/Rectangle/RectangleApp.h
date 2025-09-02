@@ -31,7 +31,7 @@ private:
     nes::PipelineLayout     m_pipelineLayout = nullptr;
     nes::Pipeline           m_pipeline = nullptr;
     nes::DeviceBuffer       m_geometryBuffer = nullptr;
-    nes::IndexBufferDesc    m_indexBufferDesc = {};
-    nes::VertexBufferDesc   m_vertexBufferDesc = {};
+    nes::IndexBufferRange   m_indexBufferDesc = {};
+    nes::VertexBufferRange  m_vertexBufferDesc = {};
     nes::DeviceQueue*       m_pTransferQueue = nullptr;
 };

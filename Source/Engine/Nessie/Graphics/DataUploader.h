@@ -18,20 +18,6 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Move to Device Buffer, and protect the buffer access.
-    //		
-    /// @brief : Describes a range of bytes within a Device Buffer.
-    //----------------------------------------------------------------------------------------------------
-    struct DeviceBufferRange
-    {
-        DeviceBuffer*       m_buffer = nullptr;     // Buffer Resource.
-        uint64              m_offset = 0;           // Byte offset in the buffer.
-        uint64              m_range = 0;            // Number of bytes in the range.
-        uint64              m_deviceAddress = 0;    // Must contain the offset already.
-        uint8*              m_pMapping = nullptr;   // Must contain the offset already.
-    };
-
-    //----------------------------------------------------------------------------------------------------
     // [TODO]: Right now, I am allocating a single staging buffer per appended buffer copy. I should instead
     //  queue up all upload operations at once, then create a single staging buffer, save the ranges that I
     //  need to copy from and perform the copy commands using that single source buffer.
