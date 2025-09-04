@@ -20,24 +20,16 @@ Download the git repository and use the following build scripts:
 
 # What I am Working On:
 ### Immediate:
-Over the summer, I am going to be doing some project-wide refactors, with the aim of getting a Physics Test scene up and running!
-- New Syntax Rules ✅
-- Refactor Math classes with SIMD operations. ✅
-- Refactor Logging & Profiling code to be more robust. ✅
-- Port Asset System Work from last semester. ✅
-- Finish basic Physics System. ✅
-- Asset System overhaul with a multithreaded architecture. ✅
-- Renderer Refactor, Render Thread, Debug Rendering API. ⌛
-- Create a Physics Test with boxes falling on each other.
-
-### Fall Goals:
-Overall, I plan on having the basic structure to make small demos using my engine. Being able to load a project, edit and run all in the editor.
-- ECS refactor.
-- Editor UI.
-- Engine vs Game Applications.
+This Fall, the aim is to create a demo with basic 3D Physics interactions and an Editor UI.
+- Renderer Refactor - Vulkan Abstraction ⌛
+- Debug Renderer - interface for drawing basic primitives in 3D space.
+- ECS refactor - wrapping Entt.
+- Create the Physics Test Demo.
+- Editor UI - using ImGui.
 
 ### Next Year (Unless I can get to these sooner):
+- Exporting a final executable.
 - Proper Serialization - utilizing a binary format.
-- UI.
-- Sound.
+- UI System.
+- Audio System.
 - Scripting, in python (lower priority, as I will be the solo dev for this engine).
