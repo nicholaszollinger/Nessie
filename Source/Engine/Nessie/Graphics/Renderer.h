@@ -50,11 +50,17 @@ namespace nes
         ///     as a render target for a series of render calls.
         //----------------------------------------------------------------------------------------------------
         const Descriptor&           GetSwapchainImageDescriptor() const { return *m_swapchainImageDescriptor; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current frame index. This will be a value between [0, Renderer::MaxFramesInFlight()].
+        //----------------------------------------------------------------------------------------------------
+        uint32                      GetFrameIndex() const               { return m_frameIndex; }
         
     private:
         const DeviceImage*          m_swapchainImage = nullptr;
         const Descriptor*           m_swapchainImageDescriptor = nullptr;
         vk::Extent2D                m_swapchainExtent{};
+        uint32                      m_frameIndex = 0;
     };
     
     //----------------------------------------------------------------------------------------------------
@@ -77,6 +83,11 @@ namespace nes
         ///     and Allocator utilities.
         //----------------------------------------------------------------------------------------------------
         static RenderDevice&        GetDevice();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the maximum number of frames in flight.
+        //----------------------------------------------------------------------------------------------------
+        static uint32               GetMaxFramesInFlight();    
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a temporary command buffer, records the given commands and submits them to the

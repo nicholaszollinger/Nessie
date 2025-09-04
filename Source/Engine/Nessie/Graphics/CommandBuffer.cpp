@@ -4,9 +4,11 @@
 #include "RenderDevice.h"
 #include "CommandPool.h"
 #include "Descriptor.h"
+#include "DescriptorSet.h"
 #include "DeviceBuffer.h"
 #include "DeviceImage.h"
 #include "Pipeline.h"
+#include "PipelineLayout.h"
 #include "Nessie/Core/Memory/StackAllocator.h"
 
 namespace nes
@@ -317,6 +319,35 @@ namespace nes
     void CommandBuffer::BindPipelineLayout(const PipelineLayout& pipelineLayout)
     {
         m_pPipelineLayout = &pipelineLayout;
+    }
+
+    void CommandBuffer::BindDescriptorSet(const uint32 setIndex, const DescriptorSet& set /*, const uint32* pDynamicOffsets*/)
+    {
+        NES_ASSERT(m_pPipelineLayout != nullptr);
+        NES_ASSERT(setIndex < m_pPipelineLayout->GetBindingInfo().m_setDescs.size());
+
+        const auto& vkSet = set.GetVkDescriptorSet();
+        vk::PipelineLayout vkLayout = *m_pPipelineLayout->GetVkPipelineLayout();
+        vk::PipelineBindPoint bindPoint = m_pPipelineLayout->GetBindPoint();
+        
+        m_buffer.bindDescriptorSets(bindPoint, vkLayout, setIndex, *vkSet, nullptr);
+    }
+
+    void CommandBuffer::SetPushConstant(const uint32 pushConstantIndex, const void* pData, const uint32 size)
+    {
+        NES_ASSERT(m_pPipelineLayout != nullptr);
+        
+        const auto& bindingInfo = m_pPipelineLayout->GetBindingInfo();
+        const auto& pushConstantBindingDesc = bindingInfo.m_pushConstantBindings[pushConstantIndex];
+        
+        vk::PushConstantsInfo info = vk::PushConstantsInfo()
+            .setLayout(*m_pPipelineLayout->GetVkPipelineLayout())
+            .setOffset(pushConstantBindingDesc.m_offset)
+            .setStageFlags(pushConstantBindingDesc.m_stages)
+            .setPValues(pData)
+            .setSize(size);
+        
+        m_buffer.pushConstants2(info);
     }
 
     void CommandBuffer::SetViewports(const vk::ArrayProxy<Viewport>& viewports)

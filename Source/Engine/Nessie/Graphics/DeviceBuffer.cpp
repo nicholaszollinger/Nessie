@@ -1,5 +1,6 @@
 ﻿// DeviceBuffer.cpp
 #include "DeviceBuffer.h"
+
 #include "RenderDevice.h"
 #include "Renderer.h"
 #include "Vulkan/VmaUsage.h"
@@ -73,6 +74,19 @@ namespace nes
             .m_pHandle = m_buffer,
             .m_type = vk::ObjectType::eBuffer
         };
+    }
+
+    void DeviceBuffer::CopyToMappedMemory(void* pData, const uint64 offset, const uint64 size)
+    {
+        // Return if invalid or non-mappable.
+        if (pData == nullptr || m_pMappedMemory == nullptr)
+            return;
+
+        const uint64 realSize = size == graphics::kWholeSize ? m_desc.m_size - offset : size;
+        NES_ASSERT(offset + realSize <= m_desc.m_size);
+
+        // Copy the data into the buffer.
+        std::memcpy(m_pMappedMemory + offset, pData, realSize);
     }
 
     void DeviceBuffer::AllocateBuffer(const RenderDevice& device, const AllocateBufferDesc& allocDesc)

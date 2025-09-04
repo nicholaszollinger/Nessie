@@ -8,7 +8,7 @@ namespace nes
         switch (type)
         {
             case EDescriptorType::Buffer:
-            case EDescriptorType::ConstantBuffer:
+            case EDescriptorType::UniformBuffer:
             case EDescriptorType::StorageBuffer:
                 return true;
 
@@ -20,8 +20,8 @@ namespace nes
     {
         switch (type)
         {
-            case EDescriptorType::Texture:
-            case EDescriptorType::StorageTexture:
+            case EDescriptorType::Image:
+            case EDescriptorType::StorageImage:
                 return true;
 
             default: return false;
@@ -34,9 +34,9 @@ namespace nes
         {
             case EImage1DViewType::ShaderResourceStorage1D:
             case EImage1DViewType::ShaderResourceStorage1DArray:
-                return EDescriptorType::StorageTexture;
+                return EDescriptorType::StorageImage;
                 
-            default: return EDescriptorType::Texture;
+            default: return EDescriptorType::Image;
         }
     }
 
@@ -46,9 +46,9 @@ namespace nes
         {
             case EImage2DViewType::ShaderResourceStorage2D:
             case EImage2DViewType::ShaderResourceStorage2DArray:
-                return EDescriptorType::StorageTexture;
+                return EDescriptorType::StorageImage;
                 
-            default: return EDescriptorType::Texture;
+            default: return EDescriptorType::Image;
         }
     }
 
@@ -57,9 +57,9 @@ namespace nes
         switch (type)
         {
             case EImage3DViewType::ShaderResourceStorage3D:
-                return EDescriptorType::StorageTexture;
+                return EDescriptorType::StorageImage;
             
-            default: return EDescriptorType::Texture;
+            default: return EDescriptorType::Image;
         }
     }
 
@@ -67,8 +67,8 @@ namespace nes
     {
         switch (type)
         {
-            case EBufferViewType::Constant:
-                return EDescriptorType::ConstantBuffer;
+            case EBufferViewType::Uniform:
+                return EDescriptorType::UniformBuffer;
 
             case EBufferViewType::ShaderResourceStorage:
                 return EDescriptorType::StorageBuffer;

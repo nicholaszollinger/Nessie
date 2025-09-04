@@ -329,6 +329,18 @@ namespace nes
         return *m_bufferView;
     }
 
+    vk::DescriptorBufferInfo Descriptor::GetVkBufferInfo() const
+    {
+        NES_ASSERT(IsBufferType());
+
+        vk::DescriptorBufferInfo info = vk::DescriptorBufferInfo()
+            .setBuffer(m_bufferDesc.m_pBuffer->GetVkBuffer())
+            .setOffset(m_bufferDesc.m_offset)
+            .setRange(m_bufferDesc.m_size);
+
+        return info;
+    }
+
     bool Descriptor::IsDepthWritable() const
     {
         NES_ASSERT(IsImageType());

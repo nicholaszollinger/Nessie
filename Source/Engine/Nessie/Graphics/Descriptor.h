@@ -123,6 +123,11 @@ namespace nes
         vk::BufferView              GetVkBufferView() const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the descriptor info for a Buffer.
+        //----------------------------------------------------------------------------------------------------
+        vk::DescriptorBufferInfo    GetVkBufferInfo() const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the texture allows depth write operations.
         /// @note : Only valid if the Descriptor is a texture type. 
         //----------------------------------------------------------------------------------------------------
