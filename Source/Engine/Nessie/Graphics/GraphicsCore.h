@@ -50,8 +50,11 @@ namespace nes
     struct  AllocateBufferDesc;
     struct  BufferDesc;
     class   Descriptor;
+    class   DescriptorSet;
+    class   DescriptorPool;
     class   Pipeline;
     class   PipelineLayout;
+    
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 

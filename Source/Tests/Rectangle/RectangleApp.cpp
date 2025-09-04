@@ -26,126 +26,13 @@ bool RectangleApp::Internal_AppInit()
     }
 
     auto& device = nes::DeviceManager::GetRenderDevice();
+    m_frames.resize(nes::Renderer::GetMaxFramesInFlight());
 
-    // Get a Transfer Queue
-    {
-        const auto result = device.GetQueue(nes::EQueueType::Transfer, 0, m_pTransferQueue);
-        if (result != nes::EGraphicsResult::Success)
-        {
-            NES_ERROR("Failed to get transfer queue!");
-            return false;
-        }
-    }
-    
-    // Create a Graphics Pipeline:
-    {
-        const std::vector<Vertex> vertices =
-        {
-            {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-            {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-            {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-            {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
-        };
-        const uint64 vertexBufferSize = (sizeof(Vertex) * vertices.size());
-        
-        const std::vector<uint16> indices =
-        {
-            0, 1, 2, 2, 3, 0
-        };
-        const uint64 indexBufferSize = (sizeof(uint16) * indices.size());
-        
-        // Attributes of the Vertex struct
-        std::array<nes::VertexAttributeDesc, 2> attributes =
-        {
-            nes::VertexAttributeDesc(0, offsetof(Vertex, m_position), nes::EFormat::RG32_SFLOAT, 0),
-            nes::VertexAttributeDesc(1, offsetof(Vertex, m_color), nes::EFormat::RGB32_SFLOAT, 0),
-        };
-
-        // A single stream of Vertex elements:
-        nes::VertexStreamDesc vertexStreamDesc = nes::VertexStreamDesc()
-            .SetStride(sizeof(Vertex));
-
-        nes::VertexInputDesc vertexInputDesc = nes::VertexInputDesc()
-            .SetAttributes(attributes)
-            .SetStreams(vertexStreamDesc);
-        
-        // Allocate the Geometry Buffer:
-        // - This single device buffer will contain both the vertices and the indices. The indices are stored after the vertices.
-        {
-            nes::AllocateBufferDesc desc;
-            desc.m_size = vertexBufferSize + indexBufferSize;
-            desc.m_location = nes::EMemoryLocation::Device;
-            desc.m_usage = nes::EBufferUsageBits::IndexBuffer | nes::EBufferUsageBits::VertexBuffer;
-            m_geometryBuffer = nes::DeviceBuffer(device, desc);
-            
-            m_vertexBufferDesc = nes::VertexBufferRange(&m_geometryBuffer, sizeof(Vertex), vertices.size());
-            m_indexBufferDesc = nes::IndexBufferRange(&m_geometryBuffer, indices.size(), nes::EIndexType::U16, vertexBufferSize);
-        }
-
-        // Upload the vertex and index data to the buffer.
-        {
-            nes::CommandBuffer buffer = nes::Renderer::BeginTempCommands();
-            nes::DataUploader uploader(device);
-        
-            // Vertex Buffer data
-            nes::UploadBufferDesc vertexUpload;
-            vertexUpload.m_pBuffer = &m_geometryBuffer;
-            vertexUpload.m_pData = vertices.data();
-            vertexUpload.m_uploadOffset = 0;
-            vertexUpload.m_uploadSize = vertexBufferSize;
-            uploader.AppendUploadBuffer(vertexUpload);
-
-            // Index Buffer data
-            nes::UploadBufferDesc indexUpload;
-            indexUpload.m_pBuffer = &m_geometryBuffer;
-            indexUpload.m_pData = indices.data();
-            indexUpload.m_uploadOffset = vertexBufferSize;
-            indexUpload.m_uploadSize = indexBufferSize;
-            uploader.AppendUploadBuffer(indexUpload);
-            
-            uploader.RecordCommands(buffer);
-            nes::Renderer::SubmitAndWaitTempCommands(buffer);
-
-            // Release staging buffer resources.
-            uploader.Destroy();
-        }
-        
-        // Create the Pipeline Layout:
-        nes::PipelineLayoutDesc layoutDesc{};
-        m_pipelineLayout = nes::PipelineLayout(device, layoutDesc);
-
-        // Vertex Shader Stages:
-        nes::AssetPtr<nes::Shader> triangleShader = nes::AssetManager::GetAsset<nes::Shader>(m_shaderID);
-        if (!triangleShader)
-        {
-            NES_ERROR("Failed to create Pipeline! Shader not present!");
-            return false;
-        }
-
-        const auto& byteCode = triangleShader->GetByteCode();
-        nes::ShaderDesc vertStage
-        {
-            .m_stage = nes::EPipelineStageBits::VertexShader,
-            .m_pByteCode = byteCode.data(),
-            .m_size = byteCode.size(),
-            .m_entryPointName = "vertMain",
-        };
-        nes::ShaderDesc fragStage
-        {
-            .m_stage = nes::EPipelineStageBits::FragmentShader,
-            .m_pByteCode = byteCode.data(),
-            .m_size = byteCode.size(),
-            .m_entryPointName = "fragMain",
-        };
-
-        // Create the Pipeline:
-        nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
-            .SetShaderStages({ vertStage, fragStage })
-            .SetVertexInput(vertexInputDesc);
-
-        NES_ASSERT(m_pipelineLayout != nullptr);
-        m_pipeline = nes::Pipeline(device, m_pipelineLayout, pipelineDesc);
-    }
+    CreateGeometryBuffer(device);
+    CreateUniformBuffer(device);
+    CreatePipeline(device);
+    CreateDescriptorPool(device);
+    CreateDescriptorSets(device);
 
     return true;
 }
@@ -157,6 +44,9 @@ void RectangleApp::Internal_AppUpdate([[maybe_unused]] const float timeStep)
 
 void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
+    // Update our uniform buffer:
+    UpdateUniformBuffer(context);
+    
     // Transition the swapchain image to color attachment optimal layout, so we can render to it:
     {
         nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
@@ -190,6 +80,7 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
         commandBuffer.SetScissors(scissor);
         
         // Draw the rectangle:
+        commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_descriptorSet);
         commandBuffer.BindIndexBuffer(m_indexBufferDesc);
         commandBuffer.BindVertexBuffers(m_vertexBufferDesc);
         commandBuffer.DrawIndexed(m_indexBufferDesc.GetNumIndices());
@@ -214,6 +105,213 @@ void RectangleApp::Internal_AppShutdown()
     m_geometryBuffer = nullptr;
     m_pipeline = nullptr;
     m_pipelineLayout = nullptr;
+}
+
+void RectangleApp::CreateGeometryBuffer(nes::RenderDevice& device)
+{
+    const std::vector<Vertex> vertices =
+    {
+        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+    };
+    const uint64 vertexBufferSize = (sizeof(Vertex) * vertices.size());
+        
+    const std::vector<uint16> indices =
+    {
+        0, 1, 2, 2, 3, 0
+    };
+    const uint64 indexBufferSize = (sizeof(uint16) * indices.size());
+
+    // Allocate the Geometry Buffer:
+    // - This single device buffer will contain both the vertices and the indices. The indices are stored after the vertices.
+    {
+        nes::AllocateBufferDesc desc;
+        desc.m_size = vertexBufferSize + indexBufferSize;
+        desc.m_location = nes::EMemoryLocation::Device;
+        desc.m_usage = nes::EBufferUsageBits::IndexBuffer | nes::EBufferUsageBits::VertexBuffer;
+        m_geometryBuffer = nes::DeviceBuffer(device, desc);
+            
+        m_vertexBufferDesc = nes::VertexBufferRange(&m_geometryBuffer, sizeof(Vertex), vertices.size());
+        m_indexBufferDesc = nes::IndexBufferRange(&m_geometryBuffer, indices.size(), nes::EIndexType::U16, vertexBufferSize);
+    }
+
+    // Upload the vertex and index data to the buffer.
+    {
+        nes::CommandBuffer buffer = nes::Renderer::BeginTempCommands();
+        nes::DataUploader uploader(device);
+        
+        // Vertex Buffer data
+        nes::UploadBufferDesc vertexUpload;
+        vertexUpload.m_pBuffer = &m_geometryBuffer;
+        vertexUpload.m_pData = vertices.data();
+        vertexUpload.m_uploadOffset = 0;
+        vertexUpload.m_uploadSize = vertexBufferSize;
+        uploader.AppendUploadBuffer(vertexUpload);
+
+        // Index Buffer data
+        nes::UploadBufferDesc indexUpload;
+        indexUpload.m_pBuffer = &m_geometryBuffer;
+        indexUpload.m_pData = indices.data();
+        indexUpload.m_uploadOffset = vertexBufferSize;
+        indexUpload.m_uploadSize = indexBufferSize;
+        uploader.AppendUploadBuffer(indexUpload);
+            
+        uploader.RecordCommands(buffer);
+        nes::Renderer::SubmitAndWaitTempCommands(buffer);
+
+        // Release staging buffer resources.
+        uploader.Destroy();
+    }
+}
+
+void RectangleApp::CreateUniformBuffer(nes::RenderDevice& device)
+{
+    // A single constant buffer that different frames will use. The Descriptors will
+    // have access to a section of the buffer.
+    nes::AllocateBufferDesc desc;
+    desc.m_size = sizeof(UniformBufferObject) * nes::Renderer::GetMaxFramesInFlight();
+    desc.m_usage = nes::EBufferUsageBits::UniformBuffer;
+    desc.m_location = nes::EMemoryLocation::HostUpload; // We are updating the data each frame, so we need to write to it.
+    m_uniformBuffer = nes::DeviceBuffer(device, desc);
+}
+
+void RectangleApp::CreatePipeline(nes::RenderDevice& device)
+{
+    // Create the Pipeline Layout:
+    {
+        // Binding for the UBO object.
+        nes::DescriptorBindingDesc uboLayoutBinding = nes::DescriptorBindingDesc()
+            .SetBindingIndex(0)
+            .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader);
+
+        // Our set of bindings contains the single one.
+        nes::DescriptorSetDesc descriptorSetDesc = nes::DescriptorSetDesc()
+            .SetBindings(&uboLayoutBinding, 1);
+        
+        // Add this set to the Pipeline Layout.
+        nes::PipelineLayoutDesc layoutDesc = nes::PipelineLayoutDesc()
+            .SetDescriptorSets(descriptorSetDesc)
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader);
+            
+        m_pipelineLayout = nes::PipelineLayout(device, layoutDesc);
+    }
+    
+    // Attributes of the Vertex struct
+    std::array<nes::VertexAttributeDesc, 2> attributes =
+    {
+        nes::VertexAttributeDesc(0, offsetof(Vertex, m_position), nes::EFormat::RG32_SFLOAT, 0),
+        nes::VertexAttributeDesc(1, offsetof(Vertex, m_color), nes::EFormat::RGB32_SFLOAT, 0),
+    };
+
+    // A single stream of Vertex elements:
+    nes::VertexStreamDesc vertexStreamDesc = nes::VertexStreamDesc()
+        .SetStride(sizeof(Vertex));
+
+    nes::VertexInputDesc vertexInputDesc = nes::VertexInputDesc()
+        .SetAttributes(attributes)
+        .SetStreams(vertexStreamDesc);
+
+    // Shader Stages:
+    nes::AssetPtr<nes::Shader> triangleShader = nes::AssetManager::GetAsset<nes::Shader>(m_shaderID);
+    NES_ASSERT(triangleShader, "Failed to create Pipeline! Shader not present!");
+
+    const auto& byteCode = triangleShader->GetByteCode();
+    nes::ShaderDesc vertStage
+    {
+        .m_stage = nes::EPipelineStageBits::VertexShader,
+        .m_pByteCode = byteCode.data(),
+        .m_size = byteCode.size(),
+        .m_entryPointName = "vertMain",
+    };
+    nes::ShaderDesc fragStage
+    {
+        .m_stage = nes::EPipelineStageBits::FragmentShader,
+        .m_pByteCode = byteCode.data(),
+        .m_size = byteCode.size(),
+        .m_entryPointName = "fragMain",
+    };
+
+    vk::PipelineRasterizationStateCreateInfo rasterizer({}, vk::False, vk::False, vk::PolygonMode::eFill,
+       vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise, vk::False, 0.0f, 0.0f, 1.0f, 1.0f);
+
+    // Rasterizer:
+    nes::RasterizationDesc rasterDesc = {};
+    rasterDesc.m_cullMode = nes::ECullMode::Back;
+    rasterDesc.m_enableDepthClamp = false;
+    rasterDesc.m_fillMode = nes::EFillMode::Solid;
+    rasterDesc.m_frontFace = nes::EFrontFaceWinding::CounterClockwise;
+
+    // Create the Pipeline:
+    nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
+        .SetShaderStages({ vertStage, fragStage })
+        .SetVertexInput(vertexInputDesc)
+        .SetRasterizationDesc(rasterDesc);
+
+    NES_ASSERT(m_pipelineLayout != nullptr);
+    m_pipeline = nes::Pipeline(device, m_pipelineLayout, pipelineDesc);
+}
+
+void RectangleApp::CreateDescriptorPool(nes::RenderDevice& device)
+{
+    // Create a descriptor pool that will only be able to allocate the
+    // exact number of constant buffer descriptors that we need (1 per frame).
+    const uint32 numDescriptors = static_cast<uint32>(m_frames.size());
+    nes::DescriptorPoolDesc poolDesc{};
+    poolDesc.m_descriptorSetMaxNum = numDescriptors;
+    poolDesc.m_uniformBufferMaxNum = numDescriptors;
+    m_descriptorPool = nes::DescriptorPool(device, poolDesc);
+}
+
+void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
+{
+    // View into the single uniform buffer:
+    nes::BufferViewDesc bufferViewDesc{};
+    bufferViewDesc.m_pBuffer = &m_uniformBuffer;
+    bufferViewDesc.m_viewType = nes::EBufferViewType::Uniform;
+    bufferViewDesc.m_size = sizeof(UniformBufferObject);
+    
+    // Create the Buffer View Descriptors:
+    for (size_t i = 0; i < m_frames.size(); ++i)
+    {
+        // Set the offset for this view:
+        bufferViewDesc.m_offset = i * sizeof(UniformBufferObject);
+        m_frames[i].m_uniformBufferView = nes::Descriptor(device, bufferViewDesc);
+        m_frames[i].m_uniformBufferViewOffset = bufferViewDesc.m_offset;
+
+        // Allocate the Descriptor Set:
+        m_descriptorPool.AllocateDescriptorSets(m_pipelineLayout, 0, &m_frames[i].m_descriptorSet);
+
+        nes::DescriptorBindingUpdateDesc updateDesc{};
+        updateDesc.m_pDescriptors = &m_frames[i].m_uniformBufferView;
+        updateDesc.m_descriptorCount = 1;
+        m_frames[i].m_descriptorSet.UpdateBindings(&updateDesc, 0, 1);
+    }
+}
+
+void RectangleApp::UpdateUniformBuffer(const nes::RenderFrameContext& context)
+{
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    const float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    UniformBufferObject ubo;
+
+    // The Rectangle will be at the origin and rotate around the Z-Axis based on time.
+    ubo.m_model = nes::Mat44::MakeRotation(nes::Quat::FromAxisAngle(nes::Vec3::AxisZ(), time * nes::math::ToRadians(90.f)));
+
+    // Look at the geometry from above at a 45-degree angle:
+    const auto viewport = context.GetSwapchainViewport();
+    ubo.m_view = nes::Mat44::LookAt(nes::Vec3(2.f, 2.f, 2.f), nes::Vec3::Zero(), nes::Vec3::Forward());
+    ubo.m_proj = nes::Mat44::Perspective(nes::math::ToRadians(45.f), viewport.m_extent.x / viewport.m_extent.y, 0.1f, 10.f);
+
+    // Flip the Y coordinate.
+    ubo.m_proj[1][1] *= -1.f;
+
+    // Set the new data:
+    m_uniformBuffer.CopyToMappedMemory(&ubo, m_frames[context.GetFrameIndex()].m_uniformBufferViewOffset, sizeof(UniformBufferObject));
 }
 
 std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outAppDesc, WindowDesc& outWindowDesc, RendererDesc& outRendererDesc)

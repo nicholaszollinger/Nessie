@@ -33,8 +33,13 @@ namespace nes
 
     RenderDevice& Renderer::GetDevice()
     {
-        NES_ASSERT(g_pRenderer != nullptr);
-        return g_pRenderer->m_device;
+        return Get()->m_device;
+    }
+
+    uint32 Renderer::GetMaxFramesInFlight()
+    {
+        auto* pRenderer = Get();
+        return static_cast<uint32>(pRenderer->m_frames.size());
     }
 
     void Renderer::ExecuteImmediateCommands(const RecordCommandsFunc& func)
@@ -256,6 +261,7 @@ namespace nes
         renderFrameContext.m_swapchainImage = &m_swapchain.GetImage();
         renderFrameContext.m_swapchainImageDescriptor = &m_swapchain.GetImageDescriptor();
         renderFrameContext.m_swapchainExtent = m_swapchain.GetExtent();
+        renderFrameContext.m_frameIndex = m_currentFrameIndex;
 
         return renderFrameContext;
     }

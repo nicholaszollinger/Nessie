@@ -6,6 +6,8 @@
 #include "Nessie/Graphics/DeviceImage.h"
 #include "Nessie/Graphics/Pipeline.h"
 #include "Nessie/Graphics/PipelineLayout.h"
+#include "Nessie/Graphics/Descriptor.h"
+#include "Nessie/Graphics/DescriptorPool.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : This example application renders a Rectangle to the screen.
@@ -15,23 +17,73 @@ class RectangleApp final : public nes::Application
 public:
     explicit RectangleApp(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
 
-    virtual bool Internal_AppInit() override;
-    virtual void Internal_AppUpdate([[maybe_unused]] const float timeStep) override;
-    virtual void Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
-    virtual void Internal_AppShutdown() override;
+    // Application Interface: 
+    virtual bool                    Internal_AppInit() override;
+    virtual void                    Internal_AppUpdate([[maybe_unused]] const float timeStep) override;
+    virtual void                    Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
+    virtual void                    Internal_AppShutdown() override;
 
 private:
     struct Vertex
     {
-        nes::Float2 m_position{};
-        alignas (16) nes::Float3 m_color{};
+        nes::Float2                 m_position{};
+        alignas (16) nes::Float3    m_color{};
     };
-    
-    nes::AssetID            m_shaderID = nes::kInvalidAssetID;
-    nes::PipelineLayout     m_pipelineLayout = nullptr;
-    nes::Pipeline           m_pipeline = nullptr;
-    nes::DeviceBuffer       m_geometryBuffer = nullptr;
-    nes::IndexBufferRange   m_indexBufferDesc = {};
-    nes::VertexBufferRange  m_vertexBufferDesc = {};
-    nes::DeviceQueue*       m_pTransferQueue = nullptr;
+
+    struct UniformBufferObject
+    {
+        nes::Mat44                  m_model{};
+        nes::Mat44                  m_view{};
+        nes::Mat44                  m_proj{};
+    };
+
+    struct FrameData
+    {
+        nes::Descriptor             m_uniformBufferView = nullptr;
+        nes::DescriptorSet          m_descriptorSet = nullptr;
+        uint64                      m_uniformBufferViewOffset = 0;
+    };
+
+private:
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Creates the device buffer that will contain the vertices and indices.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateGeometryBuffer(nes::RenderDevice& device);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the uniform buffers that will have their data updated each frame.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateUniformBuffer(nes::RenderDevice& device);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the pipeline object use to render the Rectangle.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreatePipeline(nes::RenderDevice& device);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the Descriptor Pool that will allow us to allocate DescriptorSets.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateDescriptorPool(nes::RenderDevice& device);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Allocate the DescriptorSets that will be used to store the current uniform buffer value to
+    ///     send to the shader.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateDescriptorSets(nes::RenderDevice& device);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Update this frame's uniform buffer data.
+    //----------------------------------------------------------------------------------------------------
+    void                            UpdateUniformBuffer(const nes::RenderFrameContext& context);
+
+private:
+    nes::AssetID                    m_shaderID = nes::kInvalidAssetID;
+    nes::PipelineLayout             m_pipelineLayout = nullptr;
+    nes::Pipeline                   m_pipeline = nullptr;
+    nes::DeviceBuffer               m_geometryBuffer = nullptr;
+    nes::IndexBufferRange           m_indexBufferDesc = {};
+    nes::VertexBufferRange          m_vertexBufferDesc = {};
+    nes::DeviceBuffer               m_uniformBuffer = nullptr; 
+    nes::DescriptorPool             m_descriptorPool = nullptr;
+    std::vector<FrameData>          m_frames{};
 };

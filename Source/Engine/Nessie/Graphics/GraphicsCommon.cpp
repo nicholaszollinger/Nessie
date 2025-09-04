@@ -67,22 +67,80 @@ namespace nes
 #pragma region [ Resources: binding to memory ]
 //============================================================================================================================================================================================
     
-    AllocateBufferDesc AllocateBufferDesc::VertexBuffer(const uint64 vertexCount, const uint32 vertexSize)
+    // AllocateBufferDesc AllocateBufferDesc::VertexBuffer(const uint64 vertexCount, const uint32 vertexSize)
+    // {
+    //     AllocateBufferDesc desc;
+    //     desc.m_size = vertexCount * vertexSize;
+    //     desc.m_usage = EBufferUsageBits::VertexBuffer;
+    //     desc.m_location = EMemoryLocation::Device;
+    //     return desc;
+    // }
+    //
+    // AllocateBufferDesc AllocateBufferDesc::IndexBuffer(const uint64 indexCount, const EIndexType type)
+    // {
+    //     AllocateBufferDesc desc;
+    //     desc.m_size = indexCount * (type == EIndexType::U32? sizeof(uint32) : sizeof(uint16));
+    //     desc.m_usage = EBufferUsageBits::IndexBuffer;
+    //     desc.m_location = EMemoryLocation::Device;
+    //     return desc;
+    // }
+
+#pragma endregion
+
+//============================================================================================================================================================================================
+#pragma region [ Pipeline Layout and Descriptors Management ]
+//============================================================================================================================================================================================
+
+    DescriptorBindingDesc& DescriptorBindingDesc::SetBindingIndex(const uint32 index)
     {
-        AllocateBufferDesc desc;
-        desc.m_size = vertexCount * vertexSize;
-        desc.m_usage = EBufferUsageBits::VertexBuffer;
-        desc.m_location = EMemoryLocation::Device;
-        return desc;
+        m_bindingIndex = index;
+        return *this;
     }
 
-    AllocateBufferDesc AllocateBufferDesc::IndexBuffer(const uint64 indexCount, const EIndexType type)
+    DescriptorBindingDesc& DescriptorBindingDesc::SetDescriptorType(const EDescriptorType type, const uint32 count)
     {
-        AllocateBufferDesc desc;
-        desc.m_size = indexCount * (type == EIndexType::U32? sizeof(uint32) : sizeof(uint16));
-        desc.m_usage = EBufferUsageBits::IndexBuffer;
-        desc.m_location = EMemoryLocation::Device;
-        return desc;
+        m_descriptorType = type;
+        m_descriptorCount = count;
+        return *this;
+    }
+
+    DescriptorBindingDesc& DescriptorBindingDesc::SetShaderStages(const EPipelineStageBits stages)
+    {
+        // [TODO]: Validate that they are valid shader stages?
+        // - When I convert to the vulkan value, they are validated. Perhaps have a debug warning here. 
+        m_shaderStages = stages;
+        return *this;
+    }
+
+    DescriptorBindingDesc& DescriptorBindingDesc::SetFlags(const EDescriptorBindingBits flags)
+    {
+        m_flags = flags;
+        return *this;
+    }
+
+    DescriptorSetDesc& DescriptorSetDesc::SetBindings(const DescriptorBindingDesc* pBindings, const uint32 count)
+    {
+        m_pBindings = pBindings;
+        m_numBindings = count;
+        return *this;
+    }
+
+    PipelineLayoutDesc& PipelineLayoutDesc::SetDescriptorSets(const vk::ArrayProxy<DescriptorSetDesc>& sets)
+    {
+        m_descriptorSets = sets;
+        return *this;
+    }
+
+    PipelineLayoutDesc& PipelineLayoutDesc::SetPushConstants(const vk::ArrayProxy<PushConstantDesc>& pushConstants)
+    {
+        m_pushConstants = pushConstants;
+        return *this;
+    }
+
+    PipelineLayoutDesc& PipelineLayoutDesc::SetShaderStages(const EPipelineStageBits stages)
+    {
+        m_shaderStages = stages;
+        return *this;
     }
 
 #pragma endregion
@@ -154,14 +212,14 @@ namespace nes
     VertexBufferRange::VertexBufferRange(DeviceBuffer* pBuffer, const uint64 stride, const uint64 vertexCount, const uint64 bufferOffset)
         : DeviceBufferRange(pBuffer, bufferOffset, stride * vertexCount)
         , m_stride(static_cast<uint32>(stride))
-        , m_vertexCount(vertexCount)
+        , m_vertexCount(static_cast<uint32>(vertexCount))
     {
         NES_ASSERT(stride > 0);
     }
 
     IndexBufferRange::IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type, const uint64 bufferOffset)
         : DeviceBufferRange(pBuffer, bufferOffset, indexCount * (type == EIndexType::U16 ? sizeof(uint16) : sizeof(uint32)))
-        , m_indexCount(indexCount)
+        , m_indexCount(static_cast<uint32>(indexCount))
         , m_indexType(type)
     {
         //

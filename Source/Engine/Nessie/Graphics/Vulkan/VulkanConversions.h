@@ -821,6 +821,26 @@ namespace nes
         return vk::ShaderStageFlagBits::eVertex;
     }
 
+    constexpr vk::DescriptorType GetVkDescriptorType(const EDescriptorType type)
+    {
+        switch (type)
+        {
+            case EDescriptorType::Image:                    return vk::DescriptorType::eSampledImage;
+            case EDescriptorType::StorageImage:             return vk::DescriptorType::eStorageImage;
+            case EDescriptorType::Buffer:                   return vk::DescriptorType::eUniformTexelBuffer;
+            case EDescriptorType::StorageBuffer:            return vk::DescriptorType::eStorageBuffer;
+            case EDescriptorType::UniformBuffer:           return vk::DescriptorType::eUniformBuffer;
+            case EDescriptorType::Sampler:                  return vk::DescriptorType::eSampler;
+            case EDescriptorType::AccelerationStructure:    return vk::DescriptorType::eAccelerationStructureKHR;
+
+            case EDescriptorType::None:
+                break;
+        }
+
+        NES_ASSERT(false, "Unknown descriptor type!");
+        return vk::DescriptorType{};
+    }
+
     // [TODO]: 
     // constexpr vk::BufferUsageFlags ConvertToVkBufferUsage(const EBufferUsageBits bufferUsageBits, const uint32_t structureStride, const bool isDeviceAddressSupported)
     // {

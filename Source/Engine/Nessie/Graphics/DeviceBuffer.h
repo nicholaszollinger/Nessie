@@ -21,7 +21,7 @@ namespace nes
         ~DeviceBuffer();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Allocates a new buffer resource, and maps the memory if it is host visible.
+        /// @brief : Allocates a new buffer resource.
         //----------------------------------------------------------------------------------------------------
         DeviceBuffer(RenderDevice& device, const AllocateBufferDesc& desc);
 
@@ -54,6 +54,22 @@ namespace nes
         /// @brief : Advanced use. Get the native vulkan object handle, and the type.
         //----------------------------------------------------------------------------------------------------
         NativeVkObject          GetNativeVkObject() const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns whether you can copy data into the buffer directly from the CPU side. The buffer
+        ///     would have to be allocated with the Memory Location = EMemoryLocation::HostUpload.
+        //----------------------------------------------------------------------------------------------------
+        bool                    IsHostMappable() const          { return m_pMappedMemory != nullptr; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : If this buffer is 'Host Mappable', this will copy the data into the CPU addressable pointer.
+        /// @param pData : Pointer to the data that will be copied into the Device Buffer.
+        /// @param offset : Byte offset in the device buffer. By default, this is 0.
+        /// @param size : Size of the source data. If set to nes::graphics::kWholeSize, the remaining size from
+        ///     the offset will be used.
+        /// @see : DeviceBuffer::IsHostMappable() and nes::EMemoryLocation.
+        //----------------------------------------------------------------------------------------------------
+        void                    CopyToMappedMemory(void* pData, const uint64 offset = 0, const uint64 size = graphics::kWholeSize);
 
     private:
         friend class DataUploader;

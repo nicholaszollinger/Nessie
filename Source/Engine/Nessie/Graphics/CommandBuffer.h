@@ -87,6 +87,20 @@ namespace nes
         void                    BindPipelineLayout(const PipelineLayout& pipelineLayout);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Bind a descriptor set value using the currently bound Pipeline Layout. A Descriptor Set
+        ///     defines a set of values that are passed into the shader. This can be textures, buffers, and more.
+        ///     The Descriptor Set must be valid with the bound Pipeline Layout.
+        /// @note : BindPipelineLayout() must be called before this function!
+        //----------------------------------------------------------------------------------------------------
+        void                    BindDescriptorSet(const uint32 setIndex, const DescriptorSet& set);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set a push constant's data.
+        /// @note : BindPipelineLayout() must be called before this function!
+        //----------------------------------------------------------------------------------------------------
+        void                    SetPushConstant(const uint32 pushConstantIndex, const void* pData, const uint32 size);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Set one or more viewports for the current pipeline. A Viewport determines what region
         ///     of the framebuffer to render to. An offset = (0, 0) and an extent = (imageWidth, imageHeight)
         ///     will render to the entire framebuffer. 

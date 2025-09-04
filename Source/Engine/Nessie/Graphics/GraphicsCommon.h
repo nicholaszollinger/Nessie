@@ -187,7 +187,7 @@ namespace nes
         // Buffer
         IndexBuffer                 = NES_BIT(0),   // Read         IndexInput
         VertexBuffer                = NES_BIT(1),   // Read         VertexShader
-        ConstantBuffer              = NES_BIT(2),   // Read         GraphicsShaders, ComputeShader, RayTracingShaders
+        UniformBuffer               = NES_BIT(2),   // Read         GraphicsShaders, ComputeShader, RayTracingShaders
         ArgumentBuffer              = NES_BIT(3),   // Read         Indirect
         ScratchBuffer               = NES_BIT(4),   // Read/Write   AccelerationStructure, Micromap
     
@@ -453,22 +453,6 @@ namespace nes
         // Set this to true if the allocation should have its own memory block.
         // Use it for special, big resources, like fullscreen images used as attachments.
         bool                        m_isDedicated   = false;
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Default description for a Vertex Buffer. The buffer will be allocated on Device, and is expected
-        ///     to be used with the StagingUploader to set its data.
-        ///	@param vertexCount : Number of vertices for the buffer. 
-        ///	@param vertexSize : Size a single vertex, in bytes; "sizeof(VertexType". 
-        //----------------------------------------------------------------------------------------------------
-        static AllocateBufferDesc   VertexBuffer(const uint64 vertexCount, const uint32 vertexSize);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Default description for an Index Buffer. The buffer will be allocated on Device, and is expected
-        ///     to be used with the StagingUploader to set its data.
-        ///	@param indexCount : Number of indices in the buffer. 
-        ///	@param type : Type of index to use. Default is uint32.
-        //----------------------------------------------------------------------------------------------------
-        static AllocateBufferDesc   IndexBuffer(const uint64 indexCount, const EIndexType type = EIndexType::U32);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -555,7 +539,7 @@ namespace nes
     {
         ShaderResource,
         ShaderResourceStorage,
-        Constant
+        Uniform
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -724,165 +708,210 @@ namespace nes
 #pragma region [ Pipeline Layout and Descriptors Management ]
 //============================================================================================================================================================================================
 
-    // [TODO]: 
-    enum class EPipelineLayoutBits : uint8
-    {
-        None                                = 0,
-        IgnoreGlobalSPIRVOffsets            = NES_BIT(0), // VK: ignore "DeviceCreationDesc::vkBindingOffsets"
-        EnableD3D12DrawParametersEmulation  = NES_BIT(1)  // D3D12: enable draw parameters emulation, not needed if all vertex shaders for this layout compiled with SM 6.8 (native support)
-    };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPipelineLayoutBits);
+    //----------------------------------------------------------------------------------------------------
+    // Pipeline Layout Overview:
+    //  - A Pipeline Layout defines the resources that can be bound across the different shaders in a pipeline.
+    //    This comes in the form of Descriptor Sets and Push Constants.
+    //  - A Descriptor Set specifies the actual buffer or image resources that will be bound to the Shader at a given set index.
+    //  - A Descriptor Binding is one or more resources at a specific binding index in the Shader.
+    //  - A Push Constant is a small, single block of data that can have values set to it without the need of descriptors.
+    //
+    //  Example:
+    //
+    //  Descriptor Set (0)                  // "SetIndex = 0". A Descriptor Set index in the Pipeline Layout, provided as an argument or bound to the pipeline.
+    //      * DescriptorBinding (0)         // "BindingIndex = 0". GLSL: "layout(set = 0, binding = 0)". This is a fixed array of Descriptors.   
+    //          - Descriptor (0)            // - Descriptor value at index 0 in the array.
+    //          - Descriptor (1)            // - Descriptor value at index 1 in the array.
+    //      * DescriptorBinding (1)         // "BindingIndex = 1". GLSL: "layout(set = 0, binding = 1)"
+    //          - Descriptor (0)            // - Descriptor value.
+    //
+    //  Descriptor Set (1)
+    //      * DescriptorBinding (0)         // GLSL: "layout(set = 1, binding = 0)"
+    //          - Descriptor (0)
+    //
+    //  Push Constant Block
+    //      * Offset (0), Size (16)         // 16 bytes of the block can be used to push data to.
+    //
+    //  Resources:
+    //  - Mapping Data to Shaders : https://docs.vulkan.org/guide/latest/mapping_data_to_shaders.html
+    //  - Descriptor Arrays : https://docs.vulkan.org/guide/latest/descriptor_arrays.html
+    //  - Push Constants : https://docs.vulkan.org/guide/latest/push_constants.html
+    //----------------------------------------------------------------------------------------------------
 
-    // [TODO]: 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Contains an optional flag that allows allocated descriptor sets to be updated after being bound. 
+    //----------------------------------------------------------------------------------------------------
     enum class EDescriptorPoolBits : uint8
     {
         None                                = 0,
-        AllowUpdateAfterSet                 = NES_BIT(0)  // Allows "DescriptorSetBits::AllowUpdateAfterSet"
+        AllowUpdateAfterBound               = NES_BIT(0)  // Allows DescriptorSets allocated with this pool to be updated after being bound.
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EDescriptorPoolBits);
 
-    // [TODO]: 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Contains an optional flag that allows a descriptor set to be updated after being bound. 
+    //----------------------------------------------------------------------------------------------------
     enum class EDescriptorSetBits : uint8
     {
         None                                = 0,
-        AllowUpdateAfterSet                 = NES_BIT(0)  // Allows "DescriptorRangeBits::AllowUpdateAfterSet".
+        AllowUpdateAfterBound               = NES_BIT(0)  
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EDescriptorSetBits);
 
     //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorBindingFlagBits.html
+    /// @brief : Flags that describe a bound descriptor, including whether descriptors at this binding
+    ///     are organized into an array or not.
+    /// @see : https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorBindingFlagBits.html
     //----------------------------------------------------------------------------------------------------
-    enum class EDescriptorRangeBits : uint8
+    enum class EDescriptorBindingBits : uint8
     {
         None                                = 0,
-        PartiallyBound                      = NES_BIT(0),   // Descriptors in range may not contain valid descriptors at the time the descriptors are consumed (but referenced descriptors must be valid).
-        Array                               = NES_BIT(1),   // Descriptors in range are organized into an array.
-        VariableSizedArray                  = NES_BIT(2),   // Descriptors in range are organized into a variable-sized array, which size is specified via "variableDescriptorNum" argument of "AllocateDescriptorSets" function.
+        PartiallyBound                      = NES_BIT(0),   // Descriptors at this binding may not contain valid descriptors at the time the descriptors are consumed (but referenced descriptors must be valid).
+        Array                               = NES_BIT(1),   // Descriptors at this binding are organized into an array.
+        VariableSizedArray                  = NES_BIT(2),   // Descriptors at this binding are organized into a variable-sized array; The size is specified via "numVariableDescriptors" argument of "DescriptorPool::AllocateDescriptorSets()" function.
 
         // https://docs.vulkan.org/samples/latest/samples/extensions/descriptor_indexing/README.html#_update_after_bind_streaming_descriptors_concurrently
-        AllowUpdateAfterSet                 = NES_BIT(4),   // Descriptors in range can be updated after "CmdSetDescriptorSet" but before "QueueSubmit", also works as "DataVolatile"
+        AllowUpdateAfterSet                 = NES_BIT(3),   // Descriptors at this binding can be updated after being bound, but before its submitted to the queue.
     };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EDescriptorRangeBits);
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EDescriptorBindingBits);
 
     //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorType.html
+    /// @brief : The type of resource that a Descriptor points to.
+    /// @see : https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorType.html
     //----------------------------------------------------------------------------------------------------
     enum class EDescriptorType
     {
-        None,
+        None = -1,
         Sampler                 = vk::DescriptorType::eSampler,            
-        ConstantBuffer          = vk::DescriptorType::eUniformBuffer,
-        Texture                 = vk::DescriptorType::eSampledImage,
-        StorageTexture          = vk::DescriptorType::eStorageImage,     
+        UniformBuffer           = vk::DescriptorType::eUniformBuffer, // Also known as a "Constant" Buffer.
+        Image                   = vk::DescriptorType::eSampledImage,
+        StorageImage            = vk::DescriptorType::eStorageImage,     
         Buffer                  = vk::DescriptorType::eUniformTexelBuffer,
         StorageBuffer           = vk::DescriptorType::eStorageTexelBuffer,
         AccelerationStructure   = vk::DescriptorType::eAccelerationStructureKHR,
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : A Descriptor Range consists of "Descriptor" entities. 
+    /// @brief : Describes one or more resources of a single type that are bound to a binding index in the shader.
     //----------------------------------------------------------------------------------------------------
-    struct DescriptorRangeDesc
+    struct DescriptorBindingDesc
     {
-        uint32                      m_baseRegisterIndex;
-        uint32                      m_descriptorNum;        /// Treated as max size if "VariableSizedArray" flag is set
-        EDescriptorType             m_descriptorType;
-        EPipelineStageBits          m_shaderStages;
-        EDescriptorRangeBits        m_flags;
-    };
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the binding index within the DescriptorSet.
+        //----------------------------------------------------------------------------------------------------
+        DescriptorBindingDesc&      SetBindingIndex(const uint32 index);
 
-    struct DynamicConstantBufferDesc
-    {
-        uint32                      m_registerIndex;
-        EPipelineStageBits          m_shaderStages;
-    };
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the type of descriptor and the number of descriptor values of that type that will be
+        /// bound. By default, the count is one.
+        ///
+        /// If the count is greater than 1, either the EDescriptorBindingBits::Array or EDescriptorBindingBits::VariableSizedArray
+        /// flags must be set. Otherwise, the count will be ignored and it will act as a single element.
+        ///
+        /// If the EDescriptorBindingBits::VariableSizedArray flag is set, then the count will be the maximum
+        /// number of elements in that array.
+        //----------------------------------------------------------------------------------------------------
+        DescriptorBindingDesc&      SetDescriptorType(const EDescriptorType type, const uint32 count = 1);
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the shader stages that will reference this descriptor.
+        //----------------------------------------------------------------------------------------------------
+        DescriptorBindingDesc&      SetShaderStages(const EPipelineStageBits stages);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set any flags for this binding. See EDescriptorBindingBits for more details.
+        //----------------------------------------------------------------------------------------------------
+        DescriptorBindingDesc&      SetFlags(const EDescriptorBindingBits flags);
+
+        uint32                      m_bindingIndex = 0;
+        uint32                      m_descriptorCount = 1;
+        EDescriptorType             m_descriptorType = EDescriptorType::None;
+        EPipelineStageBits          m_shaderStages = EPipelineStageBits::GraphicsShaders;
+        EDescriptorBindingBits      m_flags = EDescriptorBindingBits::None;
+    };
+    
     //----------------------------------------------------------------------------------------------------
-    /// @brief : "DescriptorSet" consists of "DescriptorRange" entities. 
+    // [TODO]: Dynamic Constant Buffers, which allow dynamic offsets in the buffer to be set.
+    //      - https://docs.vulkan.org/guide/latest/descriptor_dynamic_offset.html
+    //
+    /// @brief : Describes a set of shader variables used in a pipeline.
     //----------------------------------------------------------------------------------------------------
     struct DescriptorSetDesc
     {
-        uint32                      m_registerSpace; // Must be unique; avoid big gaps.
-        const DescriptorRangeDesc*  m_pRanges;
-        uint32                      m_rangeNum;
-        const DynamicConstantBufferDesc* m_pDynamicConstantBuffers; // A dynamic constant buffer allows you to dynamically specify an offset in the buffer via "CmdSetDescriptorSet" call.
-        uint32                      m_dynamicConstantBufferNum;
-        EDescriptorSetBits          m_flags;
+        DescriptorSetDesc& SetBindings(const DescriptorBindingDesc* pBindings, const uint32 count);
+        
+        const DescriptorBindingDesc*    m_pBindings = nullptr;   // Pointer to the array of bindings.
+        uint32                          m_numBindings = 0;      // Number of bindings in the set.
+        EDescriptorSetBits              m_flags = EDescriptorSetBits::None;
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : "PipelineLayout" consists of "DescriptorSet" descriptions and root parameters.
-    ///     This is also known as a "push constants block".
+    /// @brief : A Push Constants are a small bank of values writable and accessible in shaders.
+    ///     Push constants allow the application to set values used in shaders without creating buffers
+    ///     or modifying and binding descriptor sets for each update.
     //----------------------------------------------------------------------------------------------------
     struct PushConstantDesc
     {
-        uint32                      m_registerIndex;
-        uint32                      m_size;
-        EPipelineStageBits          m_shaderStages;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : "PipelineLayout" consists of "DescriptorSet" descriptions and root parameters.
-    ///     This is also known as a "push descriptor".
-    //----------------------------------------------------------------------------------------------------
-    struct PushDescriptorDesc
-    {
-        uint32                      m_registerIndex;
-        EDescriptorType             m_descriptorType; // Can be ConstantBuffer, StructuredBuffer or StorageStructuredBuffer.
-        EPipelineStageBits          m_shaderStages;
-    };
-
-    //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineLayoutCreateInfo.html
-    //----------------------------------------------------------------------------------------------------
-    struct PipelineLayoutDesc
-    {
-        // [TODO]: Descriptor Sets.
-        // [TODO]: Push Constant Ranges.
-        
-        // What stages of the pipeline should be bound?
+        uint32                      m_offset = 0;   // Byte offset in the push constant block.
+        uint32                      m_size = 0;     // Size of the type of Push Constant.
         EPipelineStageBits          m_shaderStages = EPipelineStageBits::GraphicsShaders;
     };
 
     //----------------------------------------------------------------------------------------------------
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_descriptor_heap_desc
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorPoolCreateInfo.html
+    /// @brief : Defines the resource bindings across all shaders in the pipeline.
+    /// @see : https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineLayoutCreateInfo.html
+    //----------------------------------------------------------------------------------------------------
+    struct PipelineLayoutDesc
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the descriptor sets that will be referenced for the pipeline with this layout. 
+        //----------------------------------------------------------------------------------------------------
+        PipelineLayoutDesc&         SetDescriptorSets(const vk::ArrayProxy<DescriptorSetDesc>& sets);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the push constant descriptions for the global push constant block. 
+        //----------------------------------------------------------------------------------------------------
+        PipelineLayoutDesc&         SetPushConstants(const vk::ArrayProxy<PushConstantDesc>& pushConstants);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set which shader stages the Pipeline Layout will be used.
+        //----------------------------------------------------------------------------------------------------
+        PipelineLayoutDesc&         SetShaderStages(const EPipelineStageBits stages);
+        
+        vk::ArrayProxy<DescriptorSetDesc> m_descriptorSets{};
+        vk::ArrayProxy<PushConstantDesc>  m_pushConstants{};
+        EPipelineStageBits                m_shaderStages = EPipelineStageBits::GraphicsShaders; // Which shader stages will this pipeline layout be used.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Used to create a Descriptor Pool. The values determine how many DescriptorSets can be allocated,
+    ///     and how many of each type of shader variable can be allocated.
+    /// @see: https://registry.khronos.org/vulkan/specs/latest/man/html/VkDescriptorPoolCreateInfo.html
     //----------------------------------------------------------------------------------------------------
     struct DescriptorPoolDesc
     {
-        uint32                      m_descriptorSetMaxNum;      
-        uint32                      m_samplerMaxNum;      
-        uint32                      m_constantBufferMaxNum;      
-        uint32                      m_dynamicConstantBufferMaxNum;      
-        uint32                      m_textureMaxNum;      
-        uint32                      m_storageTextureMaxNum;
-        uint32                      m_bufferMaxNum;      
-        uint32                      m_storageBufferMaxNum;      
-        uint32                      m_structuredBufferMaxNum;      
-        uint32                      m_storageStructuredBufferMaxNum;
-        uint32                      m_accelerationStructureMaxNum;
-        EDescriptorPoolBits         m_flags;
+        uint32                      m_descriptorSetMaxNum = 0;
+        uint32                      m_samplerMaxNum = 0;      
+        uint32                      m_uniformBufferMaxNum = 0;      
+        uint32                      m_dynamicUniformBufferMaxNum = 0;      
+        uint32                      m_imageMaxNum = 0;      
+        uint32                      m_storageImageMaxNum = 0;
+        uint32                      m_bufferMaxNum = 0;      
+        uint32                      m_storageBufferMaxNum = 0;      
+        uint32                      m_structuredBufferMaxNum = 0;      
+        uint32                      m_storageStructuredBufferMaxNum = 0;
+        uint32                      m_accelerationStructureMaxNum = 0;
+        EDescriptorPoolBits         m_flags = EDescriptorPoolBits::None;
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Used to update descriptors in a descriptor set, allocated from a descriptor pool. 
+    /// @brief : Used to update a single binding's Descriptor values in a Descriptor Set. 
     //----------------------------------------------------------------------------------------------------
-    struct DescriptorRangeUpdateDesc
+    struct DescriptorBindingUpdateDesc
     {
-        const Descriptor* const*    m_pDescriptors;
-        uint32                      m_descriptorNum;
-        uint32                      m_baseDescriptor;
-    };
-
-    struct DescriptorSetCopyDesc
-    {
-        //const DescriptorSet*        m_pSrcDescriptorSet;
-        uint32                      m_srcBaseRange;
-        uint32                      m_dstBaseRange;
-        uint32                      m_rangeNum;
-        uint32                      m_srcBaseDynamicConstantBuffer;
-        uint32                      m_dstBaseDynamicConstantBuffer;
-        uint32                      m_dynamicConstantBufferNum;
+        const Descriptor*           m_pDescriptors = nullptr;   // Array of descriptors that will be written to the descriptor set.
+        uint32                      m_descriptorCount = 0;      // Number of descriptors values that will be set.
+        uint32                      m_baseDescriptorIndex = 0;  // If the binding is an array, this is the first element to update in that array.
     };
 
 #pragma endregion
@@ -1372,7 +1401,7 @@ namespace nes
     // S0 - source color 0
     // S1 - source color 1
     // D - destination color
-    // C - blend constants, set by "CmdSetBlendConstants"
+    // C - blend constants
     //----------------------------------------------------------------------------------------------------
     enum class EBlendFactor : uint8
     {                           // RGB                               ALPHA
