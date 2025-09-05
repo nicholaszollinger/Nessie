@@ -15,8 +15,10 @@ hardware limitations with certain features, but until then, I can't guarantee it
 Download the git repository and use the following build scripts:
 - `1_Deploy.bat`: Initializes and/or updates the git submodules.
 - `2_Build.bat`: Generates the solution files. From here you are good to go!
-- `3_CleanBuild.bat`: Cleans up the Build and Intermediate folders and solution files. *You don't have to re-deploy; use `2_Build.bat` to regenerate the solution*.
-- `4_CleanAll.bat`: Cleans the build just as above, but also deinitializes all git submodules. *You will have to re-deploy (`1_Deploy.bat`) before building*.
+- `3_CleanBuild.bat`: Cleans up the Build and Intermediate folders and solution files. 
+    - You don't have to re-deploy after cleaning; just use `2_Build.bat` to regenerate the solution.
+- `4_CleanAll.bat`: Cleans the build just as above, but also deinitializes all git submodules. 
+    - You will have to re-deploy (`1_Deploy.bat`) before building.
 
 # What I am Working On:
 ### Immediate:
