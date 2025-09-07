@@ -1,5 +1,7 @@
 ﻿// DataUploader.cpp
 #include "DataUploader.h"
+
+#include "DeviceImage.h"
 #include "Vulkan/VmaUsage.h"
 #include "RenderDevice.h"
 
@@ -41,8 +43,7 @@ namespace nes
         }
 
         // Create the staging buffer
-        DeviceBufferRange stagingRange;
-        AcquireStagingBuffer(desc.m_pData, size, semaphoreState, stagingRange);
+        DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pData, size, semaphoreState);
 
         // Add a copy description to use when calling RecordCommands().
         CopyBufferDesc copyDesc;
@@ -53,16 +54,77 @@ namespace nes
         copyDesc.m_size = size;
         m_copyBufferDescs.emplace_back(copyDesc);
     }
-    
+
+    void DataUploader::AppendUploadImage(const ImageUploadDesc& desc, const SemaphoreValue& semaphoreState)
+    {
+        NES_ASSERT(desc.m_pImage != nullptr);
+        
+        if (desc.m_uploadSize == 0)
+            return;
+
+        DeviceImage& image = *(desc.m_pImage);
+
+        // Get the actual upload size of the image.
+        uint64 size = desc.m_uploadSize;
+        const uint64 imageSize = image.GetPixelCount();
+        if (desc.m_uploadSize == graphics::kWholeSize)
+        {
+            size = imageSize;
+        }
+        
+        NES_ASSERT(desc.m_uploadOffset + size <= imageSize);
+        NES_ASSERT(image.m_image != nullptr);
+
+        // Create the Staging Buffer
+        const DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pPixelData, size, semaphoreState);
+
+        // Transition from an unknown state to the copy destination state:
+        ImageBarrierDesc preBarrier;
+        preBarrier.m_pImage = &image;
+        preBarrier.m_before = AccessLayoutStage::UnknownState();
+        preBarrier.m_after = AccessLayoutStage::CopyDestinationState();
+        m_preBarriers.m_imageBarriers.emplace_back(preBarrier);
+
+        // Transition from the copy destination state to the final upload layout.
+        ImageBarrierDesc postBarrier;
+        postBarrier.m_pImage = &image;
+        postBarrier.m_before = AccessLayoutStage::CopyDestinationState();
+        postBarrier.m_after.m_layout = desc.m_newLayout;
+
+        // [TODO]: If we are on a separate staging queue, then we need to transition ownership to the render queue.
+        
+        m_postBarriers.m_imageBarriers.emplace_back(postBarrier);
+
+        // Add the copy description to use when recording commands.
+        CopyBufferToImageDesc copyDesc;
+        copyDesc.m_dstImage = &image;
+        copyDesc.m_dstImageLayout = EImageLayout::CopyDestination;
+        copyDesc.m_imageOffset = {0, 0, 0};
+        copyDesc.m_srcBuffer = stagingRange.GetBuffer();
+        copyDesc.m_srcOffset = stagingRange.GetOffset();
+        copyDesc.m_size = size;
+        m_copyBufferToImageDescs.emplace_back(copyDesc);
+    }
+
     void DataUploader::RecordCommands(CommandBuffer& buffer)
     {
-        // Record Buffer Copies:
+        // Apply pre barriers:
+        buffer.SetBarriers(m_preBarriers);
+        
+        // Record buffer copies:
         for (const auto& copyDesc : m_copyBufferDescs)
         {
             buffer.CopyBuffer(copyDesc);
         }
 
-        // [TODO]: Record Copy Buffer to Image
+        // Record image copies.
+        for (const auto& copyDesc : m_copyBufferToImageDescs)
+        {
+            buffer.CopyBufferToImage(copyDesc);
+        }
+
+        // Apply post barriers.
+        buffer.SetBarriers(m_postBarriers);
 
         // Clear pending operations.
         ClearPending();
@@ -70,7 +132,7 @@ namespace nes
 
     bool DataUploader::IsEmpty() const
     {
-        return m_copyBufferDescs.empty(); // && m_copyBufferImageInfos.empty();
+        return m_copyBufferDescs.empty() && m_copyBufferToImageDescs.empty();
     }
 
     void DataUploader::Destroy()
@@ -80,7 +142,7 @@ namespace nes
         NES_ASSERT(m_stagingResources.empty() && m_stagingResourcesSize == 0);
     }
 
-    void DataUploader::AcquireStagingBuffer(const void* pData, uint64 dataSize, const SemaphoreValue& semaphoreState, DeviceBufferRange& outRange)
+    DeviceBufferRange DataUploader::AcquireStagingBuffer(const void* pData, uint64 dataSize, const SemaphoreValue& semaphoreState)
     {
         AllocateBufferDesc allocDesc{};
         allocDesc.m_size = dataSize;
@@ -93,7 +155,7 @@ namespace nes
         {
             stagingBuffer = nullptr;
             NES_ASSERT(false, "Failed to setup staging buffer!");
-            return;
+            return {};
         }
         
         if (pData != nullptr)
@@ -105,13 +167,16 @@ namespace nes
         m_stagingResourcesSize += dataSize;
         m_stagingResources.emplace_back(std::move(stagingBuffer), semaphoreState);
         
-        // Set the Range:
-        outRange = DeviceBufferRange(&(m_stagingResources.back().m_buffer), 0, dataSize);
+        // Return the Range:
+        return DeviceBufferRange(&(m_stagingResources.back().m_buffer), 0, dataSize);
     }
 
     void DataUploader::ClearPending()
     {
         m_copyBufferDescs.clear();
+        m_copyBufferToImageDescs.clear();
+        m_preBarriers.m_imageBarriers.clear();
+        m_postBarriers.m_imageBarriers.clear();
     }
 
     void DataUploader::ReleaseStagingBuffers(const bool forceAll)

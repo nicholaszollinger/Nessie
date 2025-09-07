@@ -47,10 +47,10 @@ namespace nes
         : m_allocationCallbacks(AllocationCallbacks())
         , m_debugMessenger(DebugMessenger())
     {
-        // Require a single graphics queue by default.
+        // Require a single graphics and transfer queue by default.
         m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Graphics)] = 1;
         m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Compute)] = 0;
-        m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Transfer)] = 0;
+        m_requiredQueueCountsByFamily[static_cast<size_t>(EQueueType::Transfer)] = 1;
         
 #ifdef NES_RELEASE
         m_enableValidationLayer = false;

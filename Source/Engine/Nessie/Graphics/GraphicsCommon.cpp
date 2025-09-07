@@ -45,8 +45,68 @@ namespace nes
         m_extent = UVec2(static_cast<uint32>(viewport.m_extent.x), static_cast<uint32>(viewport.m_extent.y));
         return *this;
     }
-    
 #pragma endregion
+
+//============================================================================================================================================================================================
+#pragma region [ Pipline Stages and Barriers ]
+//============================================================================================================================================================================================
+
+    ImageBarrierDesc& ImageBarrierDesc::SetImage(DeviceImage* pImage)
+    {
+        NES_ASSERT(pImage != nullptr);
+        m_pImage = pImage;
+        return *this;
+    }
+
+    ImageBarrierDesc& ImageBarrierDesc::SetLayout(const EImageLayout before, const EImageLayout after)
+    {
+        m_before.m_layout = before;
+        m_after.m_layout = after;
+        return *this;
+    }
+
+    ImageBarrierDesc& ImageBarrierDesc::SetBarrierStage(const EPipelineStageBits before, const EPipelineStageBits after)
+    {
+        m_before.m_stages = before;
+        m_after.m_stages = after;
+        return *this;
+    }
+
+    ImageBarrierDesc& ImageBarrierDesc::SetAccess(const EAccessBits before, const EAccessBits after)
+    {
+        m_before.m_access = before;
+        m_after.m_access = after;
+        return *this;
+    }
+
+    ImageBarrierDesc& ImageBarrierDesc::SetRegion(const EImagePlaneBits planes, const uint32 baseMip, const uint32 numMips, const uint32 baseLayer, const uint32 numLayers)
+    {
+        m_planes = planes;
+        m_baseMip = baseMip;
+        m_baseLayer = baseLayer;
+        m_mipCount = numMips;
+        m_layerCount = numLayers;
+        return *this;
+    }
+
+    ImageBarrierDesc& ImageBarrierDesc::SetQueueAccess(DeviceQueue* pSrcQueue, DeviceQueue* pDstQueue)
+    {
+        NES_ASSERT(pSrcQueue != nullptr);
+        NES_ASSERT(pDstQueue != nullptr);
+        
+        m_pSrcQueue = pSrcQueue;
+        m_pDstQueue = pDstQueue;
+        return *this;
+    }
+
+    BarrierGroupDesc& BarrierGroupDesc::SetImageBarriers(const vk::ArrayProxy<ImageBarrierDesc>& barriers)
+    {
+        m_imageBarriers.insert(m_imageBarriers.begin(), barriers.begin(), barriers.end());
+        return *this;
+    }
+
+#pragma endregion
+
 
 //============================================================================================================================================================================================
 #pragma region [ Resources: creation ]

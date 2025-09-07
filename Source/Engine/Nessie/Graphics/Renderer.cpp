@@ -3,6 +3,7 @@
 
 #include "Nessie/Application/Application.h"
 #include "Nessie/Application/Device/DeviceManager.h"
+#include "Nessie/Asset/AssetManager.h"
 #include "Nessie/Graphics/CommandBuffer.h"
 #include "Nessie/Graphics/CommandPool.h"
 #include "Nessie/Graphics/DeviceQueue.h"
@@ -13,6 +14,11 @@ namespace nes
     static Renderer* g_pRenderer = nullptr;
 
     Renderer* Renderer::Get()
+    {
+        return g_pRenderer;
+    }
+
+    Renderer* Renderer::GetChecked()
     {
         NES_ASSERT(g_pRenderer != nullptr);
         return g_pRenderer;
@@ -33,12 +39,12 @@ namespace nes
 
     RenderDevice& Renderer::GetDevice()
     {
-        return Get()->m_device;
+        return DeviceManager::GetRenderDevice();
     }
 
     uint32 Renderer::GetMaxFramesInFlight()
     {
-        auto* pRenderer = Get();
+        auto* pRenderer = GetChecked();
         return static_cast<uint32>(pRenderer->m_frames.size());
     }
 
@@ -54,9 +60,17 @@ namespace nes
     CommandBuffer Renderer::BeginTempCommands()
     {
         NES_ASSERT(g_pRenderer != nullptr);
-        NES_ASSERT(g_pRenderer->m_transientCommandPool != nullptr);
 
-        CommandBuffer tempBuffer = g_pRenderer->m_transientCommandPool.CreateCommandBuffer();
+        // Get the Command Pool:
+        CommandPool* pPool;
+        if (AssetManager::IsAssetThread())
+            pPool = &g_pRenderer->m_stagingCommandPool;
+        else
+            pPool = &g_pRenderer->m_transientCommandPool;
+        NES_ASSERT(pPool != nullptr);
+        
+        // Create and begin the Command Buffer.
+        CommandBuffer tempBuffer = pPool->CreateCommandBuffer();
         tempBuffer.Begin();
         
         return tempBuffer;
@@ -64,9 +78,20 @@ namespace nes
 
     void Renderer::SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer)
     {
+        NES_ASSERT(g_pRenderer != nullptr);
+
+        // End the command Buffer
         cmdBuffer.End();
 
-        // Submit to the Render Queue.
+        // Get the Queue to submit to:
+        DeviceQueue* pQueue = nullptr;
+        if (AssetManager::IsAssetThread())
+            pQueue = g_pRenderer->m_pTransferQueue;
+        else
+            pQueue = g_pRenderer->m_pRenderQueue;
+        NES_ASSERT(pQueue != nullptr);
+
+        // Submit to the Queue
         auto& vkDevice = g_pRenderer->m_device.GetVkDevice();
 
         // Create fence for synchronization:
@@ -80,7 +105,7 @@ namespace nes
         const vk::SubmitInfo2 submitInfo = vk::SubmitInfo2()
             .setCommandBufferInfos(cmdBufferInfo);
         
-        g_pRenderer->m_pRenderQueue->GetVkQueue().submit2(submitInfo, fence);
+        pQueue->GetVkQueue().submit2(submitInfo, fence);
 
         // Block until complete:
         NES_VK_FAIL_RETURN_VOID(g_pRenderer->m_device, vkDevice.waitForFences(fence, true, UINT64_MAX));
@@ -91,8 +116,8 @@ namespace nes
 
     RenderCommandQueue& Renderer::GetRenderResourceReleaseQueue(const uint32 index)
     {
-        NES_ASSERT(index < Get()->m_resourceFreeQueues.size());
-        return Get()->m_resourceFreeQueues[index];
+        NES_ASSERT(index < GetChecked()->m_resourceFreeQueues.size());
+        return GetChecked()->m_resourceFreeQueues[index];
     }
     
     bool Renderer::Init(ApplicationWindow* pWindow, const RendererDesc& /*rendererDesc*/)
@@ -106,8 +131,17 @@ namespace nes
         EGraphicsResult result = m_device.GetQueue(EQueueType::Graphics, 0, m_pRenderQueue);
         NES_GRAPHICS_RETURN_FAIL(m_device, result == EGraphicsResult::Success, false, "Failed to get a queue to present to!");
 
-        // Create the transient command pool
+        // Create the transient command pool for the main thread.
         m_transientCommandPool = CommandPool(m_device, *m_pRenderQueue, true);
+
+        // Get a queue for the Asset Thread to use to submit commands to.
+        result = m_device.GetQueue(EQueueType::Transfer, 0, m_pTransferQueue);
+        if (result != EGraphicsResult::Success)
+        {
+            result = m_device.GetQueue(EQueueType::Graphics, 1, m_pTransferQueue);
+            NES_GRAPHICS_RETURN_FAIL(m_device, result == EGraphicsResult::Success, false, "Failed to get a queue to perform transfer operations on!");
+        }
+        m_stagingCommandPool = CommandPool(m_device, *m_pTransferQueue, true);
         
         // Create the Swapchain if we have a window to present to:
         if (m_pWindow != nullptr)
@@ -151,6 +185,7 @@ namespace nes
         // Destroy the swapchain and command pool.
         m_swapchain = nullptr;
         m_transientCommandPool = nullptr;
+        m_stagingCommandPool = nullptr;
     }
 
     bool Renderer::BeginFrame()
@@ -253,12 +288,12 @@ namespace nes
         frame.m_commandBuffer.Begin();
     }
 
-    RenderFrameContext Renderer::GetRenderFrameContext() const
+    RenderFrameContext Renderer::GetRenderFrameContext()
     {
         NES_ASSERT(m_swapchain != nullptr);
         
         RenderFrameContext renderFrameContext;
-        renderFrameContext.m_swapchainImage = &m_swapchain.GetImage();
+        renderFrameContext.m_swapchainImage = m_swapchain.GetImage();
         renderFrameContext.m_swapchainImageDescriptor = &m_swapchain.GetImageDescriptor();
         renderFrameContext.m_swapchainExtent = m_swapchain.GetExtent();
         renderFrameContext.m_frameIndex = m_currentFrameIndex;

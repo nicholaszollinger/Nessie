@@ -101,7 +101,7 @@ namespace nes
 
         using QueueFamilyNumArray = std::array<uint32, static_cast<size_t>(EQueueType::MaxNum)>;
 
-        Version                     m_apiVersion = {1, 3, 0};
+        Version                     m_apiVersion = {1, 4, 0};
         std::vector<const char*>    m_instanceExtensions = {};
         std::vector<ExtensionDesc>  m_deviceExtensions = {};
         AllocationCallbacks         m_allocationCallbacks{};

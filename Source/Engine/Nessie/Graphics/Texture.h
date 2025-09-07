@@ -52,6 +52,8 @@ namespace nes
         DeviceImage         m_image = nullptr;         // Device Image Asset.
         Buffer              m_imageData{};             // Raw image data.
     };
+
+    static_assert(ValidAssetType<Texture>);
 }
 
     

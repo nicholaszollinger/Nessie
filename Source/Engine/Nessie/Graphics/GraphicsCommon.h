@@ -12,10 +12,6 @@
 // changing these as I go.
 //-------------------------------------------------------------------------------------------------
 
-// Forward Declare VMA types.
-struct VmaAllocator_T;
-struct VmaAllocation_T;
-
 namespace nes
 {
     
@@ -101,6 +97,9 @@ namespace nes
 
     union ClearColor
     {
+        ClearColor() = default;
+        ClearColor(const float r, const float g, const float b, float a = 1.0f) : m_float32(r, g, b, a) {}
+        
         Vec4            m_float32{};
         UVec4           m_uint32;
         IVec4           m_int32;
@@ -175,6 +174,19 @@ namespace nes
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPipelineStageBits)
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes which planes of an image are included in a view.
+    /// @see : https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageAspectFlagBits.html
+    //----------------------------------------------------------------------------------------------------
+    enum class EImagePlaneBits : uint8
+    {
+        All = 0,                // All planes.
+        Color = NES_BIT(0),     // Color plane.
+        Depth = NES_BIT(1),     // Depth Plane.
+        Stencil = NES_BIT(2),   // Stencil plane.
+    };
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EImagePlaneBits)
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Determines how/when a resource can be accessed in the pipeline.
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkAccessFlagBits2.html
     // https://microsoft.github.io/DirectX-Specs/d3d/D3D12EnhancedBarriers.html#d3d12_barrier_access
@@ -224,7 +236,7 @@ namespace nes
     /// @brief : Image Layout types.
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageLayout.html
     //----------------------------------------------------------------------------------------------------
-    enum class ELayout : uint8
+    enum class EImageLayout : uint8
     {
         // Special
         Undefined,
@@ -243,6 +255,130 @@ namespace nes
         ResolveSource,          // ResolveSource
         ResolveDestination,     // ResolveDestination
         MaxNum,
+    };
+
+    namespace graphics
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Special value to infer pipeline access for a barrier.
+        //----------------------------------------------------------------------------------------------------
+        static constexpr EPipelineStageBits kInferPipelineStage = static_cast<EPipelineStageBits>(std::numeric_limits<std::underlying_type_t<EPipelineStageBits>>::max());
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Special value to infer resource access for a barrier.
+        //----------------------------------------------------------------------------------------------------
+        static constexpr EAccessBits kInferAccess = static_cast<EAccessBits>(std::numeric_limits<std::underlying_type_t<EAccessBits>>::max());
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : An Access level and Pipeline Stage. 
+    //----------------------------------------------------------------------------------------------------
+    struct AccessStage
+    {
+        EAccessBits         m_access = EAccessBits::None;
+        EPipelineStageBits  m_stages = EPipelineStageBits::None;
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Describes the Access, Layout and PipelineStage for an image resource.
+    //----------------------------------------------------------------------------------------------------
+    struct AccessLayoutStage
+    {
+        EAccessBits         m_access = graphics::kInferAccess;
+        EImageLayout        m_layout = EImageLayout::Undefined;
+        EPipelineStageBits  m_stages = graphics::kInferPipelineStage;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : State for an image that is a copy destination.
+        //----------------------------------------------------------------------------------------------------
+        static constexpr AccessLayoutStage CopyDestinationState()   { return { EAccessBits::CopyDestination, EImageLayout::CopyDestination, EPipelineStageBits::All}; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : State for an image in an unknown state. Common to use as a "before" state.
+        //----------------------------------------------------------------------------------------------------
+        static constexpr AccessLayoutStage UnknownState()           { return { EAccessBits::None, EImageLayout::Undefined, EPipelineStageBits::None }; }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters to transition a DeviceBuffer's access and stage from one state to another.
+    //----------------------------------------------------------------------------------------------------
+    struct BufferBarrierDesc
+    {
+        DeviceBuffer*       m_pBuffer = nullptr;            // The Device Buffer that we are changing access for.
+        AccessStage         m_before{};                     // The Access and Layout that the buffer is in before the transition.
+        AccessStage         m_after{};                      // The Access and Layout that the buffer will be after the transition.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Parameters to transition the Device Image's access and layout from one state to another.
+    ///     Can also transfer queue ownership.
+    //----------------------------------------------------------------------------------------------------
+    struct ImageBarrierDesc
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the image that will be transitioned. 
+        //----------------------------------------------------------------------------------------------------
+        ImageBarrierDesc&   SetImage(DeviceImage* pImage);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the layout that the image should be in before the barrier, and what layout the barrier should
+        ///     set it as after.
+        //----------------------------------------------------------------------------------------------------
+        ImageBarrierDesc&   SetLayout(const EImageLayout before, const EImageLayout after);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the pipeline stage that the image will be in its "before" state, and the stage that
+        ///     the barrier needs to set the image's access and layout to "after" state.
+        /// @note : By default, the pipeline stages will be inferred from the image layouts.
+        //----------------------------------------------------------------------------------------------------
+        ImageBarrierDesc&   SetBarrierStage(const EPipelineStageBits before, const EPipelineStageBits after);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the access level that the image should have before the barrier, and the access the barrier
+        ///     should set it to after.
+        /// @note : By default, the image access will be inferred from the pipeline stages.
+        //----------------------------------------------------------------------------------------------------
+        ImageBarrierDesc&   SetAccess(const EAccessBits before, const EAccessBits after);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the region of the Image planes, mips and layers that will be transitioned.
+        /// @note : Defaults to the Color plane, the first mip level and first layer. 
+        //----------------------------------------------------------------------------------------------------
+        ImageBarrierDesc&   SetRegion(const EImagePlaneBits planes, const uint32 baseMip, const uint32 numMips, const uint32 baseLayer, const uint32 numLayers);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the Queue that can currently owns the image, and the queue that will take ownership.
+        ///     This is only needed for exclusive access images.
+        // @see : https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#synchronization-queue-transfers
+        //----------------------------------------------------------------------------------------------------
+        ImageBarrierDesc&   SetQueueAccess(DeviceQueue* pSrcQueue, DeviceQueue* pDstQueue);
+        
+        DeviceImage*        m_pImage = nullptr;                 // Device Image that we are transitioning.
+        AccessLayoutStage   m_before = {};                      // The Access, Layout and PipelineStages that the image is in before the transition.
+        AccessLayoutStage   m_after = {};                       // The Access, Layout and PipelineStages that the image will be after the transition.
+        uint32              m_baseMip = 0;                      // The first mip level that we are transitioning.  
+        uint32              m_mipCount = 1;                     // The number of mip levels that we are transitioning.
+        uint32              m_baseLayer = 0;                    // The first image layer that we are transitioning.
+        uint32              m_layerCount = 1;                   // The number of image layers that we are transitioning.
+        DeviceQueue*        m_pSrcQueue = nullptr;              // If not null, the queue that currently owns the Image.
+        DeviceQueue*        m_pDstQueue = nullptr;              // If not null, the queue that will own the Image.
+        EImagePlaneBits     m_planes = EImagePlaneBits::Color;  // The planes of the image are we addressing.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Buffer barriers, memory barriers.
+    //
+    /// @brief : Group of image and buffer barriers that can be set in a command buffer. Barriers are used
+    ///     to transition data access of resources.
+    //----------------------------------------------------------------------------------------------------
+    struct BarrierGroupDesc
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the image barriers for the group.
+        //----------------------------------------------------------------------------------------------------
+        BarrierGroupDesc& SetImageBarriers(const vk::ArrayProxy<ImageBarrierDesc>& barriers); 
+        
+        std::vector<ImageBarrierDesc> m_imageBarriers{};
     };
 
 #pragma endregion
@@ -480,19 +616,6 @@ namespace nes
 //============================================================================================================================================================================================
 #pragma region [ Descriptor ]
 //============================================================================================================================================================================================
-
-    //----------------------------------------------------------------------------------------------------
-    // https://registry.khronos.org/vulkan/specs/latest/man/html/VkImageAspectFlagBits.html 
-    //----------------------------------------------------------------------------------------------------
-    enum class EPlaneBits : uint8
-    {
-        All     = 0,
-        Color   = NES_BIT(0),   // indicates "color" plane (same as "ALL" for color formats)
-        Depth   = NES_BIT(1),   // indicates "depth" plane (same as "ALL" for depth-only formats)
-        Stencil = NES_BIT(2),   // indicates "stencil" plane in depth-stencil formats
-    };
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EPlaneBits)
-    
     enum class EImage1DViewType : uint8
     {
         ShaderResource1D,
@@ -602,15 +725,15 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ImageRegionDesc
     {
-        uint32      x;
-        uint32      y;
-        uint32      z;
-        uint32      m_width;
-        uint32      m_height;
-        uint32      m_depth;
-        uint32      m_mipOffset;
-        uint32      m_layerOffset;
-        EPlaneBits  m_planes;
+        uint32              x;
+        uint32              y;
+        uint32              z;
+        uint32              m_width;
+        uint32              m_height;
+        uint32              m_depth;
+        uint32              m_mipOffset;
+        uint32              m_layerOffset;
+        EImagePlaneBits     m_planes;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1800,6 +1923,21 @@ namespace nes
         uint64              m_size = graphics::kWholeSize;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Right now, I am forcing the Color Aspect, Single layer, Buffer Row Length & Buffer image Height == 0
+    //
+    /// @brief : Parameters to copy a buffer's data to a Device Image.
+    //----------------------------------------------------------------------------------------------------
+    struct CopyBufferToImageDesc
+    {
+        DeviceImage*        m_dstImage = nullptr;                           // 
+        Int3                m_imageOffset = {0, 0, 0};                // Extent offset in the image to begin copying.
+        EImageLayout        m_dstImageLayout = EImageLayout::CopyDestination;    // The layout that the image will be in at the time of the copy.
+        const DeviceBuffer* m_srcBuffer = nullptr;
+        uint64              m_srcOffset = 0;
+        uint64              m_size = graphics::kWholeSize;
+    };
+
 #pragma endregion
     
 //============================================================================================================================================================================================
@@ -1996,6 +2134,11 @@ namespace nes
         
         
         // [TODO]: Shader Features
+
+        struct
+        {
+            float                   m_maxSamplerAnisotropy = 0.f;
+        } m_other;
         
     };
 #pragma endregion

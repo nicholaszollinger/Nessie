@@ -439,6 +439,23 @@ namespace nes
             vk::StencilOp::eIncrementAndWrap,
             vk::StencilOp::eDecrementAndWrap,
         };
+
+        constexpr std::array<vk::ImageLayout, static_cast<size_t>(EImageLayout::MaxNum)> kImageLayouts =
+        {
+            vk::ImageLayout::eUndefined,                                // Undefined
+            vk::ImageLayout::eGeneral,                                  // General
+            vk::ImageLayout::ePresentSrcKHR,                            // Present
+            vk::ImageLayout::eColorAttachmentOptimal,                   // ColorAttachment
+            vk::ImageLayout::eFragmentShadingRateAttachmentOptimalKHR,  // ShadingRateAttachment
+            vk::ImageLayout::eDepthStencilAttachmentOptimal,            // DepthStencilAttachment
+            vk::ImageLayout::eDepthStencilReadOnlyOptimal,              // DepthStencilReadOnly
+            vk::ImageLayout::eShaderReadOnlyOptimal,                    // ShaderResource
+            vk::ImageLayout::eGeneral,                                  // ShaderResourceStorage
+            vk::ImageLayout::eTransferSrcOptimal,                       // CopySource
+            vk::ImageLayout::eTransferDstOptimal,                       // CopyDestination
+            vk::ImageLayout::eTransferSrcOptimal,                       // ResolveSource
+            vk::ImageLayout::eTransferDstOptimal,                       // ResolveDestination
+        };
     }
     
     constexpr EFormat GetFormat(const uint32 vkFormat)
@@ -626,14 +643,14 @@ namespace nes
         }
     }
 
-    constexpr vk::ImageAspectFlags GetVkImageAspectFlags(const EPlaneBits planes)
+    constexpr vk::ImageAspectFlags GetVkImageAspectFlags(const EImagePlaneBits planes)
     {
         vk::ImageAspectFlags aspectFlags{};
-        if (planes & EPlaneBits::Color)
+        if (planes & EImagePlaneBits::Color)
             aspectFlags |= vk::ImageAspectFlagBits::eColor;
-        if (planes & EPlaneBits::Depth)
+        if (planes & EImagePlaneBits::Depth)
             aspectFlags |= vk::ImageAspectFlagBits::eDepth;
-        if (planes & EPlaneBits::Stencil)
+        if (planes & EImagePlaneBits::Stencil)
             aspectFlags |= vk::ImageAspectFlagBits::eStencil;
 
         return aspectFlags;
@@ -719,6 +736,67 @@ namespace nes
             return vk::IndexType::eUint32;
             
         return vk::IndexType::eUint16;   
+    }
+
+    constexpr vk::PipelineStageFlags2 GetVkPipelineStageFlags(const EPipelineStageBits stages)
+    {
+        if (stages == EPipelineStageBits::All)
+            return vk::PipelineStageFlagBits2::eAllCommands;
+
+        if (stages == EPipelineStageBits::None)
+            return vk::PipelineStageFlagBits2::eNone;
+
+        vk::PipelineStageFlags2 flags = {};
+
+        if (stages & EPipelineStageBits::IndexInput)
+            flags |= vk::PipelineStageFlagBits2::eIndexInput;
+
+        if (stages & EPipelineStageBits::VertexShader)
+            flags |= vk::PipelineStageFlagBits2::eVertexShader;
+
+        if (stages & EPipelineStageBits::TessControlShader)
+            flags |= vk::PipelineStageFlagBits2::eTessellationControlShader;
+
+        if (stages & EPipelineStageBits::TessEvaluationShader)
+            flags |= vk::PipelineStageFlagBits2::eTessellationEvaluationShader;
+
+        if (stages & EPipelineStageBits::GeometryShader)
+            flags |= vk::PipelineStageFlagBits2::eGeometryShader;
+
+        if (stages & EPipelineStageBits::MeshControlShader)
+            flags |= vk::PipelineStageFlagBits2::eTaskShaderEXT;
+
+        if (stages & EPipelineStageBits::MeshEvaluationShader)
+            flags |= vk::PipelineStageFlagBits2::eMeshShaderEXT;
+
+        if (stages & EPipelineStageBits::FragmentShader)
+            flags |= vk::PipelineStageFlagBits2::eFragmentShader;
+
+        if (stages & EPipelineStageBits::DepthStencilAttachment)
+            flags |= vk::PipelineStageFlagBits2::eEarlyFragmentTests | vk::PipelineStageFlagBits2::eLateFragmentTests;
+
+        if (stages & EPipelineStageBits::ColorAttachment)
+            flags |= vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+
+        if (stages & EPipelineStageBits::ComputeShader)
+            flags |= vk::PipelineStageFlagBits2::eComputeShader;
+
+        if (stages & EPipelineStageBits::RayTracingShaders)
+            flags |= vk::PipelineStageFlagBits2::eRayTracingShaderKHR;
+
+        if (stages & EPipelineStageBits::Indirect)
+            flags |= vk::PipelineStageFlagBits2::eDrawIndirect;
+
+        if (stages & (EPipelineStageBits::Copy | EPipelineStageBits::ClearStorage | EPipelineStageBits::Resolve))
+            flags |= vk::PipelineStageFlagBits2::eTransfer;
+
+        if (stages & EPipelineStageBits::AccelerationStructure)
+            flags |= vk::PipelineStageFlagBits2::eAccelerationStructureBuildKHR;
+
+        if (stages & EPipelineStageBits::MicroMap)
+            flags |= vk::PipelineStageFlagBits2::eMicromapBuildEXT;
+        
+        return flags;
     }
 
     constexpr vk::ShaderStageFlags GetVkShaderStageFlags(const EPipelineStageBits stage)
@@ -840,6 +918,13 @@ namespace nes
         NES_ASSERT(false, "Unknown descriptor type!");
         return vk::DescriptorType{};
     }
+
+    constexpr vk::ImageLayout GetVkImageLayout(const EImageLayout type)
+    {
+        return vulkan::kImageLayouts[static_cast<size_t>(type)];
+    }
+    
+    vk::ImageMemoryBarrier2 CreateVkImageMemoryBarrier(const ImageBarrierDesc& desc);
 
     // [TODO]: 
     // constexpr vk::BufferUsageFlags ConvertToVkBufferUsage(const EBufferUsageBits bufferUsageBits, const uint32_t structureStride, const bool isDeviceAddressSupported)

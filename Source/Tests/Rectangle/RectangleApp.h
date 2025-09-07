@@ -27,6 +27,7 @@ private:
     struct Vertex
     {
         nes::Float2                 m_position{};
+        nes::Float2                 m_texCoord{};
         alignas (16) nes::Float3    m_color{};
     };
 
@@ -78,6 +79,7 @@ private:
 
 private:
     nes::AssetID                    m_shaderID = nes::kInvalidAssetID;
+    nes::AssetID                    m_textureID = nes::kInvalidAssetID;
     nes::PipelineLayout             m_pipelineLayout = nullptr;
     nes::Pipeline                   m_pipeline = nullptr;
     nes::DeviceBuffer               m_geometryBuffer = nullptr;
@@ -86,4 +88,6 @@ private:
     nes::DeviceBuffer               m_uniformBuffer = nullptr; 
     nes::DescriptorPool             m_descriptorPool = nullptr;
     std::vector<FrameData>          m_frames{};
+    nes::Descriptor                 m_imageView = nullptr;          // View of our texture.
+    nes::Descriptor                 m_sampler = nullptr;            // Sampler for our texture.
 };

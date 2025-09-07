@@ -250,6 +250,7 @@ namespace nes
             .setAddressModeW(GetVkSamplerAddressMode(samplerDesc.m_addressModes.w))
             .setMipLodBias(samplerDesc.m_mipBias)
             .setAnisotropyEnable(static_cast<float>(samplerDesc.m_anisotropy) > 1.f)
+            .setMaxAnisotropy(samplerDesc.m_anisotropy)
             .setCompareEnable(samplerDesc.m_compareOp != ECompareOp::None)
             .setMinLod(samplerDesc.m_mipMin)
             .setMaxLod(samplerDesc.m_mipMax);

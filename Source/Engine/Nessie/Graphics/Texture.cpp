@@ -2,6 +2,8 @@
 #include "Texture.h"
 
 #include <stb_image.h>
+
+#include "DataUploader.h"
 #include "RenderDevice.h"
 #include "Renderer.h"
 #include "Nessie/Application/Application.h"
@@ -60,7 +62,7 @@ namespace nes
         textureDesc.m_sampleCount = 1;
         textureDesc.m_type = EImageType::Image2D;
         textureDesc.m_usage = EImageUsageBits::ShaderResource;
-        textureDesc.m_clearValue = ClearValue{};
+        textureDesc.m_clearValue = ClearValue{}; 
 
         // Allocation description. 
         const AllocateImageDesc allocDesc
@@ -74,7 +76,20 @@ namespace nes
         auto& device = DeviceManager::GetRenderDevice();
         m_image = DeviceImage(device, allocDesc);
         
-        // [TODO]: Upload image data:
+        // Upload image data:
+        DataUploader dataUploader(Renderer::GetDevice());
+        auto cmdBuffer = Renderer::BeginTempCommands();
+        {
+            ImageUploadDesc uploadDesc{};
+            uploadDesc.m_uploadSize = m_imageData.GetSize();
+            uploadDesc.m_pPixelData = m_imageData.Get();
+            uploadDesc.m_pImage = &m_image;
+            uploadDesc.m_newLayout = EImageLayout::ShaderResource;
+            dataUploader.AppendUploadImage(uploadDesc);
+        
+            dataUploader.RecordCommands(cmdBuffer);
+            Renderer::SubmitAndWaitTempCommands(cmdBuffer);
+        }
         
         return ELoadResult::Success;
     }

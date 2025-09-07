@@ -124,14 +124,19 @@ namespace nes
         }
     }
 
-    void CommandBuffer::TransitionImageLayout(const vk::Image image, ImageMemoryBarrierDesc& barrierDesc) const
+    void CommandBuffer::SetBarriers(const BarrierGroupDesc& barriers) const
     {
-        vk::ImageMemoryBarrier2 barrier = barrierDesc.CreateVkBarrier(image);
-
+        // Image Barriers:
+        std::vector<vk::ImageMemoryBarrier2> imageBarriers(barriers.m_imageBarriers.size());
+        for (uint32 i = 0; i < barriers.m_imageBarriers.size(); ++i)
+        {
+            const auto& desc = *(barriers.m_imageBarriers.begin() + i);
+            imageBarriers[i] = CreateVkImageMemoryBarrier(desc);
+        }
+        
         vk::DependencyInfo dependencyInfo = vk::DependencyInfo()
             .setDependencyFlags({})
-            .setImageMemoryBarrierCount(1)
-            .setPImageMemoryBarriers(&barrier);
+            .setImageMemoryBarriers(imageBarriers);
 
         m_buffer.pipelineBarrier2(dependencyInfo);
     }
@@ -153,6 +158,33 @@ namespace nes
             .setRegions(region);
 
         m_buffer.copyBuffer2(info);
+    }
+
+    void CommandBuffer::CopyBufferToImage(const CopyBufferToImageDesc& desc)
+    {
+        const vk::Offset3D imageOffset = { desc.m_imageOffset.x, desc.m_imageOffset.y, desc.m_imageOffset.z };
+
+        // [TODO]: This should be part of the copy parameters:
+        const vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
+            .setAspectMask(vk::ImageAspectFlagBits::eColor)
+            .setLayerCount(1)
+            .setMipLevel(0);
+        
+        vk::BufferImageCopy2 region = vk::BufferImageCopy2()
+            .setBufferRowLength(0)
+            .setBufferImageHeight(0)
+            .setBufferOffset(desc.m_srcOffset)
+            .setImageExtent(desc.m_dstImage->GetExtent())
+            .setImageOffset(imageOffset)
+            .setImageSubresource(subresource);
+        
+        vk::CopyBufferToImageInfo2 info = vk::CopyBufferToImageInfo2()
+            .setSrcBuffer(desc.m_srcBuffer->GetVkBuffer())
+            .setDstImageLayout(GetVkImageLayout(desc.m_dstImageLayout))
+            .setDstImage(desc.m_dstImage->GetVkImage())
+            .setRegions(region);
+
+        m_buffer.copyBufferToImage2(info);
     }
 
     void CommandBuffer::BeginRendering(const RenderTargetsDesc& targetsDesc)

@@ -663,8 +663,8 @@ namespace nes
         // Create a chain of feature structures
         vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
         {
-            vk::PhysicalDeviceFeatures2{},                                                                // vk::PhysicalDeviceFeatures2
-            VkPhysicalDeviceVulkan12Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, .timelineSemaphore = true, .bufferDeviceAddress = true},  // vk::PhysicalDeviceVulkan12Feautres
+            VkPhysicalDeviceFeatures2{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .features = { .samplerAnisotropy = true } },                              // vk::PhysicalDeviceFeatures2
+            VkPhysicalDeviceVulkan12Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, .timelineSemaphore = true, .bufferDeviceAddress = true,},  // vk::PhysicalDeviceVulkan12Feautres
             VkPhysicalDeviceVulkan13Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES, .synchronization2 = true, .dynamicRendering = true,},       // vk::PhysicalDeviceVulkan13Features
             VkPhysicalDeviceExtendedDynamicStateFeaturesEXT{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT, .extendedDynamicState = true}              // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
         };
@@ -1237,7 +1237,7 @@ namespace nes
 
         // [TODO]: Viewport
         // [TODO]: Precision
-
+        
         // Dimensions:
         m_desc.m_dimensions.m_maxDimensionAttachment = static_cast<uint16>(math::Min(limits.maxFramebufferWidth, limits.maxFramebufferHeight));
         m_desc.m_dimensions.m_maxAttachmentLayerCount = static_cast<uint16>(limits.maxFramebufferLayers);
@@ -1246,6 +1246,41 @@ namespace nes
         m_desc.m_dimensions.m_maxImageDimension3D = static_cast<uint16>(limits.maxImageDimension3D);
         m_desc.m_dimensions.m_maxImageLayerCount = static_cast<uint16>(limits.maxImageArrayLayers);
         m_desc.m_dimensions.m_maxTypedBufferDimension = static_cast<uint16>(limits.maxTexelBufferElements);
+
+        // Memory:
+        constexpr VkMemoryPropertyFlags kNeededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
+        {
+            const VkMemoryType memoryType = m_memoryProperties.memoryTypes[i];
+            if ((memoryType.propertyFlags & kNeededFlags) == kNeededFlags)
+                m_desc.m_memory.m_deviceUploadHeapSize += m_memoryProperties.memoryHeaps[memoryType.heapIndex].size;
+        }
+        
+        m_desc.m_memory.m_allocationMaxNum = limits.maxMemoryAllocationCount;
+        m_desc.m_memory.m_samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
+        m_desc.m_memory.m_constantBufferMaxRange = limits.maxUniformBufferRange;
+        m_desc.m_memory.m_storageBufferMaxRange = limits.maxStorageBufferRange;
+        m_desc.m_memory.m_bufferImageGranularity = static_cast<uint32_t>(limits.bufferImageGranularity);
+        //m_desc.m_memory.m_bufferMaxSize = minorVersion >= 3 ? props13.maxBufferSize : maintenance4Props.maxBufferSize;
+        
+        // Memory Alignment:
+        // VUID-VkCopyBufferToImageInfo2-dstImage-07975: If "dstImage" does not have either a depth/stencil format or a multi-planar format,
+        //      "bufferOffset" must be a multiple of the texel block size
+        // VUID-VkCopyBufferToImageInfo2-dstImage-07978: If "dstImage" has a depth/stencil format,
+        //      "bufferOffset" must be a multiple of 4
+        // Least Common Multiple stride across all formats: 1, 2, 4, 8, 16 // TODO: rarely used "12" fucks up the beauty of power-of-2 numbers, such formats must be avoided!
+        constexpr uint32_t kLeastCommonMultipleStrideAcrossAllFormats = 16;
+        m_desc.m_memoryAlignment.m_uploadBufferImageRow = static_cast<uint32_t>(limits.optimalBufferCopyRowPitchAlignment);
+        m_desc.m_memoryAlignment.m_uploadBufferImageSlice = std::lcm(static_cast<uint32_t>(limits.optimalBufferCopyOffsetAlignment), kLeastCommonMultipleStrideAcrossAllFormats);
+        //m_desc.m_memoryAlignment.m_shaderBindingTable = rayTracingProps.shaderGroupBaseAlignment;
+        m_desc.m_memoryAlignment.m_bufferShaderResourceOffset = std::lcm(static_cast<uint32_t>(limits.minTexelBufferOffsetAlignment), static_cast<uint32_t>(limits.minStorageBufferOffsetAlignment));
+        m_desc.m_memoryAlignment.m_constantBufferOffset = static_cast<uint32_t>(limits.minUniformBufferOffsetAlignment);
+        //m_desc.m_memoryAlignment.m_scratchBufferOffset = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
+        m_desc.m_memoryAlignment.m_accelerationStructureOffset = 256; // see the spec
+        m_desc.m_memoryAlignment.m_micromapOffset = 256;              // see the spec
+
+        // Other
+        m_desc.m_other.m_maxSamplerAnisotropy = limits.maxSamplerAnisotropy;
         
         // // Device properties
         // VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
@@ -1356,38 +1391,6 @@ namespace nes
         // // Fill Desc:
         // const VkPhysicalDeviceLimits& limits = props.properties.limits;
         //
-        // Memory:
-        constexpr VkMemoryPropertyFlags kNeededFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
-        for (uint32 i = 0; i < m_memoryProperties.memoryTypeCount; ++i)
-        {
-            const VkMemoryType memoryType = m_memoryProperties.memoryTypes[i];
-            if ((memoryType.propertyFlags & kNeededFlags) == kNeededFlags)
-                m_desc.m_memory.m_deviceUploadHeapSize += m_memoryProperties.memoryHeaps[memoryType.heapIndex].size;
-        }
-        
-        m_desc.m_memory.m_allocationMaxNum = limits.maxMemoryAllocationCount;
-        m_desc.m_memory.m_samplerAllocationMaxNum = limits.maxSamplerAllocationCount;
-        m_desc.m_memory.m_constantBufferMaxRange = limits.maxUniformBufferRange;
-        m_desc.m_memory.m_storageBufferMaxRange = limits.maxStorageBufferRange;
-        m_desc.m_memory.m_bufferImageGranularity = static_cast<uint32_t>(limits.bufferImageGranularity);
-        //m_desc.m_memory.m_bufferMaxSize = minorVersion >= 3 ? props13.maxBufferSize : maintenance4Props.maxBufferSize;
-        
-        // Memory Alignment:
-        // VUID-VkCopyBufferToImageInfo2-dstImage-07975: If "dstImage" does not have either a depth/stencil format or a multi-planar format,
-        //      "bufferOffset" must be a multiple of the texel block size
-        // VUID-VkCopyBufferToImageInfo2-dstImage-07978: If "dstImage" has a depth/stencil format,
-        //      "bufferOffset" must be a multiple of 4
-        // Least Common Multiple stride across all formats: 1, 2, 4, 8, 16 // TODO: rarely used "12" fucks up the beauty of power-of-2 numbers, such formats must be avoided!
-        constexpr uint32_t kLeastCommonMultipleStrideAcrossAllFormats = 16;
-        m_desc.m_memoryAlignment.m_uploadBufferImageRow = static_cast<uint32_t>(limits.optimalBufferCopyRowPitchAlignment);
-        m_desc.m_memoryAlignment.m_uploadBufferImageSlice = std::lcm(static_cast<uint32_t>(limits.optimalBufferCopyOffsetAlignment), kLeastCommonMultipleStrideAcrossAllFormats);
-        //m_desc.m_memoryAlignment.m_shaderBindingTable = rayTracingProps.shaderGroupBaseAlignment;
-        m_desc.m_memoryAlignment.m_bufferShaderResourceOffset = std::lcm(static_cast<uint32_t>(limits.minTexelBufferOffsetAlignment), static_cast<uint32_t>(limits.minStorageBufferOffsetAlignment));
-        m_desc.m_memoryAlignment.m_constantBufferOffset = static_cast<uint32_t>(limits.minUniformBufferOffsetAlignment);
-        //m_desc.m_memoryAlignment.m_scratchBufferOffset = accelerationStructureProps.minAccelerationStructureScratchOffsetAlignment;
-        m_desc.m_memoryAlignment.m_accelerationStructureOffset = 256; // see the spec
-        m_desc.m_memoryAlignment.m_micromapOffset = 256;              // see the spec
-        
     }
 
     bool RenderDevice::IsHostCoherentMemory(DeviceMemoryTypeIndex memoryTypeIndex) const
