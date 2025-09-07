@@ -43,7 +43,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current swapchain image.
         //----------------------------------------------------------------------------------------------------
-        const DeviceImage&          GetSwapchainImage() const           { return *m_swapchainImage; }
+        DeviceImage*                GetSwapchainImage() const           { return m_swapchainImage; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the descriptor for the swapchain image. This can be used to set the swapchain image k
@@ -57,7 +57,7 @@ namespace nes
         uint32                      GetFrameIndex() const               { return m_frameIndex; }
         
     private:
-        const DeviceImage*          m_swapchainImage = nullptr;
+        DeviceImage*                m_swapchainImage = nullptr;
         const Descriptor*           m_swapchainImageDescriptor = nullptr;
         vk::Extent2D                m_swapchainExtent{};
         uint32                      m_frameIndex = 0;
@@ -172,7 +172,7 @@ namespace nes
         /// @brief : Get the context of the current render frame. This includes information about the current
         ///     swapchain image that we are rendering to.
         //----------------------------------------------------------------------------------------------------
-        RenderFrameContext          GetRenderFrameContext() const;
+        RenderFrameContext          GetRenderFrameContext();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Blocks until the frame at the current frame index is completed. When rendering multiple frames,
@@ -200,9 +200,14 @@ namespace nes
     
     private:
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the singleton instance of the renderer. 
+        /// @brief : Get the singleton instance of the renderer. Can be nullptr. 
         //----------------------------------------------------------------------------------------------------
         static Renderer*            Get();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the singleton instance - asserts that the instance is valid.
+        //----------------------------------------------------------------------------------------------------
+        static Renderer*            GetChecked();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Execute functions in m_resourceFreeQueues[m_currentFrameIndex];   
@@ -263,12 +268,15 @@ namespace nes
         std::vector<RenderCommandQueue>         m_resourceFreeQueues;                       // Command queues specific for freeing resources.
 
         DeviceQueue*                            m_pRenderQueue = nullptr;                   // Device Queue that render commands are submitted to.
-        CommandPool                             m_transientCommandPool = nullptr;           // Command Pool for creating temporary-usage command buffers, like staging resources.
+        DeviceQueue*                            m_pTransferQueue = nullptr;                 // Device Queue that transfer commands are submitted to.
+        CommandPool                             m_transientCommandPool = nullptr;           // Main thread Command Pool for creating temporary-usage command buffers.
+        CommandPool                             m_stagingCommandPool = nullptr;             // Asset thread Command Pool for creating temporary-usage command buffers.
         Swapchain                               m_swapchain = nullptr;                      // Object that manages the target framebuffer to render to.
         std::vector<FrameData>                  m_frames{};                                 // Collection of per-frame resources to support multiple frames in flight.
         vk::raii::Semaphore                     m_frameTimelineSemaphore = nullptr;         // Timeline semaphore used to synchronize CPU submission and GPU completion.
         uint32                                  m_currentFrameIndex = 0;                    // The current frame index in the frame data array (cycles through like a ring).
-        
+
+        // [TODO]: Queue Timeline object to handle these:
         std::vector<vk::SemaphoreSubmitInfo>      m_waitSemaphores;                         // Possible extra wait semaphores.
         std::vector<vk::SemaphoreSubmitInfo>      m_signalSemaphores;                       // Possible extra frame signal semaphores.
         std::vector<vk::CommandBufferSubmitInfo>  m_commandBuffers;                         // Possible extra frame command buffers.
@@ -281,10 +289,18 @@ namespace nes
     template <typename FuncType>
     void Renderer::SubmitResourceFree(FuncType&& func)
     {
-        const uint32 frameIndex = Get()->GetCurrentFrameIndex();
+        auto* pRenderer = Get();
+        if (pRenderer == nullptr)
+        {
+            func();
+            func.~FuncType();
+            return;
+        }
+        
+        const uint32 frameIndex = pRenderer->GetCurrentFrameIndex();
         
         // If the current frame is valid, add to the free queue.
-        if (frameIndex < Get()->m_resourceFreeQueues.size())
+        if (frameIndex < pRenderer->m_resourceFreeQueues.size())
         {
             auto renderCommand = [](void* ptr)
             {

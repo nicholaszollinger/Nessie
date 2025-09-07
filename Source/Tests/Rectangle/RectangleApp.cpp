@@ -1,5 +1,6 @@
 // Rectangle.cpp
 #include "RectangleApp.h"
+
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Asset/AssetManager.h"
@@ -8,6 +9,7 @@
 #include "Nessie/Graphics/RenderDevice.h"
 #include "Nessie/Graphics/Renderer.h"
 #include "Nessie/Graphics/Shader.h"
+#include "Nessie/Graphics/Texture.h"
 
 bool RectangleApp::Internal_AppInit()
 {
@@ -24,6 +26,21 @@ bool RectangleApp::Internal_AppInit()
         }
         NES_LOG("Shader Loaded Successfully!");
     }
+
+    // Load Image
+    {
+        std::filesystem::path texturePath = NES_CONTENT_DIR;
+        texturePath /= "StatueTestImage.jpg";
+
+        const auto result = nes::AssetManager::LoadSync<nes::Texture>(m_textureID, texturePath);
+        if (result != nes::ELoadResult::Success)
+        {
+            NES_ERROR("Failed to load Texture!");
+            return false;
+        }
+        NES_LOG("Texture Loaded Successfully!");
+    }
+    
 
     auto& device = nes::DeviceManager::GetRenderDevice();
     m_frames.resize(nes::Renderer::GetMaxFramesInFlight());
@@ -49,12 +66,16 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
     
     // Transition the swapchain image to color attachment optimal layout, so we can render to it:
     {
-        nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
-            .SetLayoutTransition(vk::ImageLayout::eUndefined, vk::ImageLayout::eColorAttachmentOptimal)
-            .SetStages(vk::PipelineStageFlagBits2::eTopOfPipe, vk::PipelineStageFlagBits2::eColorAttachmentOutput)
-            .SetAccessFlags({}, vk::AccessFlagBits2::eColorAttachmentWrite);
-    
-        commandBuffer.TransitionImageLayout(context.GetSwapchainImage().GetVkImage(), transitionBarrierDesc);
+        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+            .SetImage(context.GetSwapchainImage())
+            .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ColorAttachment)
+            .SetBarrierStage(nes::EPipelineStageBits::None, nes::EPipelineStageBits::ColorAttachment)
+            .SetAccess(nes::EAccessBits::None, nes::EAccessBits::ColorAttachment);
+
+        nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+            .SetImageBarriers(imageBarrier);
+        
+        commandBuffer.SetBarriers(barrierGroup);
     }
     
     // Set the swapchain image as our color render target:
@@ -78,9 +99,11 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
         commandBuffer.BindPipelineLayout(m_pipelineLayout);
         commandBuffer.SetViewports(viewport);
         commandBuffer.SetScissors(scissor);
+
+        // Bind the descriptor set that contains our uniform buffer data:
+        commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_descriptorSet);
         
         // Draw the rectangle:
-        commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_descriptorSet);
         commandBuffer.BindIndexBuffer(m_indexBufferDesc);
         commandBuffer.BindVertexBuffers(m_vertexBufferDesc);
         commandBuffer.DrawIndexed(m_indexBufferDesc.GetNumIndices());
@@ -91,17 +114,23 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
 
     // Transition the swapchain image to present layout:
     {
-        nes::ImageMemoryBarrierDesc transitionBarrierDesc = nes::ImageMemoryBarrierDesc()
-            .SetLayoutTransition(vk::ImageLayout::eColorAttachmentOptimal, vk::ImageLayout::ePresentSrcKHR)
-            .SetStages(vk::PipelineStageFlagBits2::eColorAttachmentOutput, vk::PipelineStageFlagBits2::eBottomOfPipe)
-            .SetAccessFlags(vk::AccessFlagBits2::eColorAttachmentWrite, {});
+        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+            .SetImage(context.GetSwapchainImage())
+            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::Present)
+            .SetAccess(nes::EAccessBits::ColorAttachment, nes::EAccessBits::None);
     
-        commandBuffer.TransitionImageLayout(context.GetSwapchainImage().GetVkImage(), transitionBarrierDesc);
+        nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+            .SetImageBarriers(imageBarrier);
+        
+        commandBuffer.SetBarriers(barrierGroup);
     }
 }
 
 void RectangleApp::Internal_AppShutdown()
 {
+    m_imageView = nullptr;
+    m_sampler = nullptr;
+    m_frames.clear();
     m_geometryBuffer = nullptr;
     m_pipeline = nullptr;
     m_pipelineLayout = nullptr;
@@ -111,10 +140,10 @@ void RectangleApp::CreateGeometryBuffer(nes::RenderDevice& device)
 {
     const std::vector<Vertex> vertices =
     {
-        {{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}
+        {{-0.5f, -0.5f}, {1.f, 0.f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.f, 0.f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.f, 1.f},{0.0f, 0.0f, 1.0f}},
+        {{-0.5f, 0.5f}, {1.f, 1.f}, {1.0f, 1.0f, 1.0f}}
     };
     const uint64 vertexBufferSize = (sizeof(Vertex) * vertices.size());
         
@@ -181,15 +210,30 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
 {
     // Create the Pipeline Layout:
     {
-        // Binding for the UBO object.
-        nes::DescriptorBindingDesc uboLayoutBinding = nes::DescriptorBindingDesc()
-            .SetBindingIndex(0)
-            .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
-            .SetShaderStages(nes::EPipelineStageBits::VertexShader);
+        std::array bindings = 
+        {
+            // Binding for the UBO object.
+            nes::DescriptorBindingDesc()
+                .SetBindingIndex(0)
+                .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
+                .SetShaderStages(nes::EPipelineStageBits::VertexShader),
+
+            // Image Resource
+            nes::DescriptorBindingDesc()
+                .SetBindingIndex(1)
+                .SetDescriptorType(nes::EDescriptorType::Image)
+                .SetShaderStages(nes::EPipelineStageBits::FragmentShader),
+
+            // Sampler Resource
+            nes::DescriptorBindingDesc()
+                .SetBindingIndex(2)
+                .SetDescriptorType(nes::EDescriptorType::Sampler)
+                .SetShaderStages(nes::EPipelineStageBits::FragmentShader)
+        };
 
         // Our set of bindings contains the single one.
         nes::DescriptorSetDesc descriptorSetDesc = nes::DescriptorSetDesc()
-            .SetBindings(&uboLayoutBinding, 1);
+            .SetBindings(bindings.data(), static_cast<uint32>(bindings.size()));
         
         // Add this set to the Pipeline Layout.
         nes::PipelineLayoutDesc layoutDesc = nes::PipelineLayoutDesc()
@@ -200,10 +244,11 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
     }
     
     // Attributes of the Vertex struct
-    std::array<nes::VertexAttributeDesc, 2> attributes =
+    std::array<nes::VertexAttributeDesc, 3> attributes =
     {
         nes::VertexAttributeDesc(0, offsetof(Vertex, m_position), nes::EFormat::RG32_SFLOAT, 0),
-        nes::VertexAttributeDesc(1, offsetof(Vertex, m_color), nes::EFormat::RGB32_SFLOAT, 0),
+        nes::VertexAttributeDesc(1, offsetof(Vertex, m_texCoord), nes::EFormat::RG32_SFLOAT, 0),
+        nes::VertexAttributeDesc(2, offsetof(Vertex, m_color), nes::EFormat::RGB32_SFLOAT, 0),
     };
 
     // A single stream of Vertex elements:
@@ -234,9 +279,6 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
         .m_entryPointName = "fragMain",
     };
 
-    vk::PipelineRasterizationStateCreateInfo rasterizer({}, vk::False, vk::False, vk::PolygonMode::eFill,
-       vk::CullModeFlagBits::eBack, vk::FrontFace::eCounterClockwise, vk::False, 0.0f, 0.0f, 1.0f, 1.0f);
-
     // Rasterizer:
     nes::RasterizationDesc rasterDesc = {};
     rasterDesc.m_cullMode = nes::ECullMode::Back;
@@ -262,11 +304,45 @@ void RectangleApp::CreateDescriptorPool(nes::RenderDevice& device)
     nes::DescriptorPoolDesc poolDesc{};
     poolDesc.m_descriptorSetMaxNum = numDescriptors;
     poolDesc.m_uniformBufferMaxNum = numDescriptors;
+    poolDesc.m_samplerMaxNum = 1;
+    poolDesc.m_imageMaxNum = 1;
+    
     m_descriptorPool = nes::DescriptorPool(device, poolDesc);
 }
 
 void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
 {
+    auto pTexture = nes::AssetManager::GetAsset<nes::Texture>(m_textureID);
+    NES_ASSERT(pTexture != nullptr);
+
+    auto& image = pTexture->GetDeviceImage();
+    const auto& desc = image.GetDesc();
+
+    // Create the image view descriptor:
+    nes::Image2DViewDesc imageViewDesc;
+    imageViewDesc.m_pImage = &image;
+    imageViewDesc.m_baseLayer = 0;
+    imageViewDesc.m_layerCount = 1;
+    imageViewDesc.m_baseMipLevel = 0;
+    imageViewDesc.m_mipCount = 1;
+    imageViewDesc.m_format = desc.m_format;
+    imageViewDesc.m_viewType = nes::EImage2DViewType::ShaderResource2D;
+    m_imageView = nes::Descriptor(device, imageViewDesc);
+
+    // Create the Sampler descriptor:
+    nes::SamplerDesc samplerDesc{};
+    samplerDesc.m_filters.m_mag = nes::EFilterType::Linear;
+    samplerDesc.m_filters.m_min = nes::EFilterType::Linear;
+    samplerDesc.m_filters.m_mip = nes::EFilterType::Linear;
+    samplerDesc.m_addressModes.u = nes::EAddressMode::Repeat;
+    samplerDesc.m_addressModes.v = nes::EAddressMode::Repeat;
+    samplerDesc.m_addressModes.w = nes::EAddressMode::Repeat;
+    samplerDesc.m_mipBias = 0.f;
+    samplerDesc.m_borderColor = nes::ClearColor(0.f, 0.f, 0.f);
+    samplerDesc.m_compareOp = nes::ECompareOp::None;
+    samplerDesc.m_anisotropy = static_cast<uint8>(device.GetDesc().m_other.m_maxSamplerAnisotropy);
+    m_sampler = nes::Descriptor(device, samplerDesc);
+    
     // View into the single uniform buffer:
     nes::BufferViewDesc bufferViewDesc{};
     bufferViewDesc.m_pBuffer = &m_uniformBuffer;
@@ -284,10 +360,14 @@ void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
         // Allocate the Descriptor Set:
         m_descriptorPool.AllocateDescriptorSets(m_pipelineLayout, 0, &m_frames[i].m_descriptorSet);
 
-        nes::DescriptorBindingUpdateDesc updateDesc{};
-        updateDesc.m_pDescriptors = &m_frames[i].m_uniformBufferView;
-        updateDesc.m_descriptorCount = 1;
-        m_frames[i].m_descriptorSet.UpdateBindings(&updateDesc, 0, 1);
+        std::array updateDescs =
+        {
+            nes::DescriptorBindingUpdateDesc(&m_frames[i].m_uniformBufferView, 1),
+            nes::DescriptorBindingUpdateDesc(&m_imageView, 1),
+            nes::DescriptorBindingUpdateDesc(&m_sampler, 1),
+        };
+        
+        m_frames[i].m_descriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
     }
 }
 

@@ -1,6 +1,5 @@
 ﻿// CommandBuffer.h
 #pragma once
-#include "Barriers.h"
 #include "DeviceObject.h"
 #include "GraphicsCommon.h"
 
@@ -50,15 +49,19 @@ namespace nes
         void                    EndCommandLabel();
         
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Transition an image from one layout to another. In the pipeline, the image must be in
-        ///     the correct layout to be used.
+        /// @brief : Set a group of image, buffer and memory barriers.
         //----------------------------------------------------------------------------------------------------
-        void                    TransitionImageLayout(vk::Image image, ImageMemoryBarrierDesc& barrierDesc) const;
+        void                    SetBarriers(const BarrierGroupDesc& barriers) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Copy the data from one device buffer to another.
         //----------------------------------------------------------------------------------------------------
         void                    CopyBuffer(const CopyBufferDesc& desc);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Copy a DeviceBuffer's data to a DeviceImage.  
+        //----------------------------------------------------------------------------------------------------
+        void                    CopyBufferToImage(const CopyBufferToImageDesc& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Begin rendering to a set of render targets. Must be followed with EndRendering().

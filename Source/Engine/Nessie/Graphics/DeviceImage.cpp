@@ -170,6 +170,11 @@ namespace nes
         return size;
     }
 
+    uint64 DeviceImage::GetPixelCount() const
+    {
+        return m_desc.m_width * m_desc.m_height * m_desc.m_depth * GetFormatProps(m_desc.m_format).m_stride;
+    }
+
     NativeVkObject DeviceImage::GetNativeVkObject() const
     {
         return NativeVkObject(m_image, vk::ObjectType::eImage);

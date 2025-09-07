@@ -91,6 +91,11 @@ namespace nes
         const DeviceImage&          GetImage() const                    { return m_images[m_frameImageIndex]; }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current swapchain image.
+        //----------------------------------------------------------------------------------------------------
+        DeviceImage*                GetImage()                          { return &m_images[m_frameImageIndex]; }
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get the descriptor for the current swapchain image. This is the image view. 
         //----------------------------------------------------------------------------------------------------
         const Descriptor&           GetImageDescriptor() const          { return m_imageViews[m_frameImageIndex]; }

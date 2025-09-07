@@ -17,6 +17,15 @@ namespace nes
         // Access after?
     };
 
+    struct ImageUploadDesc
+    {
+        DeviceImage*        m_pImage = nullptr;                     // Device Image that we are uploading to.
+        const void*         m_pPixelData = nullptr;                 // Pointer to the data to upload.
+        uint64              m_uploadSize = graphics::kWholeSize;    // Size, in bytes, of the data to upload. If left to kWholeSize, then the entire image is used.
+        uint64              m_uploadOffset = 0;                     // Byte offset into the image to begin uploading to.
+        EImageLayout        m_newLayout = EImageLayout::Undefined;  // Destination Layout for the image. 
+    };
+
     //----------------------------------------------------------------------------------------------------
     // [TODO]: Right now, I am allocating a single staging buffer per appended buffer copy. I should instead
     //  queue up all upload operations at once, then create a single staging buffer, save the ranges that I
@@ -36,6 +45,11 @@ namespace nes
         ///     append a copy command on "RecordCommands".
         //----------------------------------------------------------------------------------------------------
         void                                AppendUploadBuffer(const UploadBufferDesc& desc, const SemaphoreValue& semaphoreState = {});
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates a staging buffer to copy the image data into the destination image.
+        //----------------------------------------------------------------------------------------------------
+        void                                AppendUploadImage(const ImageUploadDesc& desc, const SemaphoreValue& semaphoreState = {});
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Records all pending upload operations into the command buffer,
@@ -58,7 +72,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create a staging buffer that will be used to copy data into the buffer/image.
         //----------------------------------------------------------------------------------------------------
-        void                                AcquireStagingBuffer(const void* pData, uint64 dataSize, const SemaphoreValue& semaphoreState, DeviceBufferRange& outRange);
+        DeviceBufferRange                   AcquireStagingBuffer(const void* pData, uint64 dataSize, const SemaphoreValue& semaphoreState);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Clears all appended commands. 
@@ -83,7 +97,10 @@ namespace nes
             SemaphoreValue                  m_semaphoreState = nullptr;     // Synchronization semaphore.
         };
 
+        BarrierGroupDesc                    m_preBarriers;                  // Memory Barriers to apply before the upload commands.
+        BarrierGroupDesc                    m_postBarriers;                 // Memory Barriers to apply after the upload commands.
         std::vector<CopyBufferDesc>         m_copyBufferDescs{};
+        std::vector<CopyBufferToImageDesc>  m_copyBufferToImageDescs{};
         std::vector<StagingResource>        m_stagingResources{};
         RenderDevice*                       m_pDevice = nullptr;
         size_t                              m_stagingResourcesSize = 0;     // Total size of all staging buffers.

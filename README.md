@@ -22,14 +22,16 @@ Download the git repository and use the following build scripts:
 
 # What I am Working On:
 ### Immediate:
-This Fall, the aim is to create a demo with basic 3D Physics interactions and an Editor UI.
+This Fall, the aim is finish rendering features and create the Editor UI!
 - Renderer Refactor - Vulkan Abstraction ⌛
-- Debug Renderer - interface for drawing basic primitives in 3D space.
+    - PBR Pipeline
+    - Shadows
 - ECS refactor - wrapping Entt.
-- Create the Physics Test Demo.
 - Editor UI - using ImGui.
+- 3D Demo Scene showing off features!
 
 ### Next Year (Unless I can get to these sooner):
+- Full Jolt Physics Integration
 - Exporting a final executable.
 - Proper Serialization - utilizing a binary format.
 - UI System.
