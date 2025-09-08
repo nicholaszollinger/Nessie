@@ -217,8 +217,8 @@ namespace nes
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue({});
 
-            const uint16 width = desc.m_pImage->GetSize(0, desc.m_mipOffset);
-            const uint16 height = desc.m_pImage->GetSize(1, desc.m_mipOffset);
+            const uint16 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
+            const uint16 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
 
             m_renderLayerCount = math::Min(m_renderLayerCount, desc.m_layerCount);
             m_renderWidth = math::Min(m_renderWidth, width);
@@ -242,8 +242,8 @@ namespace nes
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue({});
 
-            const uint16 width = desc.m_pImage->GetSize(0, desc.m_mipOffset);
-            const uint16 height = desc.m_pImage->GetSize(1, desc.m_mipOffset);
+            const uint16 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
+            const uint16 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
             
             m_renderLayerCount = math::Min(m_renderLayerCount, desc.m_layerCount);
             m_renderWidth = math::Min(m_renderWidth, width);

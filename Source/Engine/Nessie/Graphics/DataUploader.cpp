@@ -66,7 +66,7 @@ namespace nes
 
         // Get the actual upload size of the image.
         uint64 size = desc.m_uploadSize;
-        const uint64 imageSize = image.GetPixelCount();
+        const uint64 imageSize = image.GetPixelCount() * image.GetPixelSize();
         if (desc.m_uploadSize == graphics::kWholeSize)
         {
             size = imageSize;
@@ -78,11 +78,12 @@ namespace nes
         // Create the Staging Buffer
         const DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pPixelData, size, semaphoreState);
 
-        // Transition from an unknown state to the copy destination state:
+        // Transition the top mip level from an unknown state to the copy destination state:
         ImageBarrierDesc preBarrier;
         preBarrier.m_pImage = &image;
         preBarrier.m_before = AccessLayoutStage::UnknownState();
         preBarrier.m_after = AccessLayoutStage::CopyDestinationState();
+        preBarrier.m_mipCount = image.m_desc.m_mipCount;
         m_preBarriers.m_imageBarriers.emplace_back(preBarrier);
 
         // Transition from the copy destination state to the final upload layout.
@@ -90,6 +91,7 @@ namespace nes
         postBarrier.m_pImage = &image;
         postBarrier.m_before = AccessLayoutStage::CopyDestinationState();
         postBarrier.m_after.m_layout = desc.m_newLayout;
+        postBarrier.m_mipCount = image.m_desc.m_mipCount;
 
         // [TODO]: If we are on a separate staging queue, then we need to transition ownership to the render queue.
         

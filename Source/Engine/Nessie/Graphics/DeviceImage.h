@@ -5,6 +5,33 @@
 
 namespace nes
 {
+    namespace graphics
+    {
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Calculate the maximum number of mip levels for a 1D image. 
+        //----------------------------------------------------------------------------------------------------
+        inline uint32 CalculateMipLevelCount(const uint32 extent)
+        {
+            return static_cast<uint32>(std::floor(std::log2(extent))) + 1; 
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Calculate the maximum number of mip levels for a 2D image. 
+        //----------------------------------------------------------------------------------------------------
+        inline uint32 CalculateMipLevelCount(const uint32 width, const uint32 height)
+        {
+            return static_cast<uint32>(std::floor(std::log2(math::Max(width, height)))) + 1; 
+        }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Calculate the maximum number of mip levels for a 3D image. 
+        //----------------------------------------------------------------------------------------------------
+        inline uint32 CalculateMipLevelCount(const uint32 width, const uint32 height, const uint32 depth)
+        {
+            return static_cast<uint32>(std::floor(std::log2(math::Max(width, height, depth)))) + 1; 
+        }
+    }
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : A Device image is the device resource for a Texture.
     ///      It represents a multidimensional array of data (1D, 2D or 3D).
@@ -49,18 +76,25 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Vulkan Image object.
         //----------------------------------------------------------------------------------------------------
-        vk::Image           GetVkImage() const      { return m_image; } 
+        vk::Image           GetVkImage() const      { return m_image; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the number of pixels for a particular mip level. Mip level 0 is used by default,
+        ///     which is the original image.
+        //----------------------------------------------------------------------------------------------------
+        uint64              GetPixelCount(const uint16 mipLevel = 0) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the number of bytes in a single pixel. 
+        //----------------------------------------------------------------------------------------------------
+        uint64              GetPixelSize() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the size of a particular dimension (width = 0, height = 1, depth = 2) for a given mip level.
+        ///     Mip level 0 is used by default, which is the original image.
         //----------------------------------------------------------------------------------------------------
-        uint16              GetSize(const uint16 dimensionIndex, const uint16 mip = 0) const;
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the number of pixels in the first mip level. 
-        //----------------------------------------------------------------------------------------------------
-        uint64              GetPixelCount() const;
-
+        uint16              GetDimensionSize(const uint16 dimensionIndex, const uint32 mipLevel = 0) const;
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the native vulkan object handle, and the type.
         //----------------------------------------------------------------------------------------------------

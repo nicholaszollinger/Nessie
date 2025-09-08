@@ -324,7 +324,7 @@ void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
     imageViewDesc.m_baseLayer = 0;
     imageViewDesc.m_layerCount = 1;
     imageViewDesc.m_baseMipLevel = 0;
-    imageViewDesc.m_mipCount = 1;
+    imageViewDesc.m_mipCount = static_cast<uint16>(desc.m_mipCount);
     imageViewDesc.m_format = desc.m_format;
     imageViewDesc.m_viewType = nes::EImage2DViewType::ShaderResource2D;
     m_imageView = nes::Descriptor(device, imageViewDesc);
