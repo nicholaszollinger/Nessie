@@ -150,7 +150,12 @@ namespace nes
         m_ownsNativeObjects = false;
     }
 
-    uint16 DeviceImage::GetSize(const uint16 dimensionIndex, const uint16 mip) const
+    uint64 DeviceImage::GetPixelCount(const uint16 mipLevel) const
+    {
+        return static_cast<uint64>(GetDimensionSize(0, mipLevel)) * GetDimensionSize(1, mipLevel) * GetDimensionSize(2, mipLevel);
+    }
+
+    uint16 DeviceImage::GetDimensionSize(const uint16 dimensionIndex, const uint32 mipLevel) const
     {
         NES_ASSERT(m_pDevice != nullptr && m_image != nullptr, "Attempted to get size of null image!");
         NES_ASSERT(dimensionIndex < 3);
@@ -162,7 +167,7 @@ namespace nes
             size = static_cast<uint16>(m_desc.m_height);
 
         // Set the size of the particular mip level:
-        size = static_cast<uint16>(math::Max(size >> mip, 1));
+        size = static_cast<uint16>(math::Max(size >> mipLevel, 1));
 
         // Align the value to the format's block width.
         size = math::AlignUp(size, dimensionIndex < 2 ? GetFormatProps(m_desc.m_format).m_blockWidth : 1);
@@ -170,13 +175,105 @@ namespace nes
         return size;
     }
 
-    uint64 DeviceImage::GetPixelCount() const
+    uint64 DeviceImage::GetPixelSize() const
     {
-        return m_desc.m_width * m_desc.m_height * m_desc.m_depth * GetFormatProps(m_desc.m_format).m_stride;
+        return GetFormatProps(m_desc.m_format).m_stride;
     }
 
     NativeVkObject DeviceImage::GetNativeVkObject() const
     {
         return NativeVkObject(m_image, vk::ObjectType::eImage);
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : DEPRECATED - Should be removed when I do the following:
+    ///
+    /// Turns out, this function that I started with isn't the best option - I should use a stb_image_resize2.h to
+    /// create the mip map levels that I need instead of relying on the blit image. Not all formats are
+    /// supported by blit image, and the command has to be submitted on a device queue with graphics capabilities.
+    /// - When importing a texture into the Engine Application, mip maps should be generated and stored in a single file, with
+    ///     a base level and count at the beginning of the binary file.
+    //----------------------------------------------------------------------------------------------------
+    [[maybe_unused]]
+    static void GenerateMipmaps(CommandBuffer& buffer, DeviceImage& image, const uint32 numMips, const uint32 numLayers, const EImageLayout currentLayout)
+    {
+        // No mips to generate:
+        if (numMips == 0)
+            return;
+        
+        // Transition the top mip level to Copy Source
+        ImageBarrierDesc imageBarrierDesc{};
+        imageBarrierDesc.m_pImage = &image;
+        imageBarrierDesc.m_before.m_layout = currentLayout;
+        imageBarrierDesc.m_after.m_layout = EImageLayout::CopySource;
+        imageBarrierDesc.m_planes = EImagePlaneBits::Color;
+        imageBarrierDesc.m_baseMip = 0;
+        imageBarrierDesc.m_mipCount = 1;
+        imageBarrierDesc.m_baseLayer = 0;
+        imageBarrierDesc.m_layerCount = numLayers;
+
+        BarrierGroupDesc groupDesc({ imageBarrierDesc });
+        buffer.SetBarriers(groupDesc);
+        
+        // Transition remaining mips to Copy Destination
+        imageBarrierDesc.m_baseMip = 1;
+        imageBarrierDesc.m_mipCount = numMips - 1;
+        imageBarrierDesc.m_after.m_layout = EImageLayout::CopyDestination;
+        groupDesc.m_imageBarriers[0] = imageBarrierDesc;
+        buffer.SetBarriers(groupDesc);
+        
+        // Blit Regions:
+        int32 srcWidth = image.GetDimensionSize(0);
+        int32 srcHeight = image.GetDimensionSize(1);
+        int32 srcDepth = image.GetDimensionSize(2);
+        
+        vk::ImageBlit2 blitRegion = vk::ImageBlit2()
+            .setSrcSubresource(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, {}, {}, numLayers))
+            .setDstSubresource(vk::ImageSubresourceLayers(vk::ImageAspectFlagBits::eColor, {}, {}, numLayers));
+        
+        vk::BlitImageInfo2 blitImageInfo = vk::BlitImageInfo2()
+            .setSrcImage(image.GetVkImage())
+            .setSrcImageLayout(vk::ImageLayout::eTransferSrcOptimal)
+            .setDstImage(image.GetVkImage())
+            .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
+            .setRegionCount(1)
+            .setPRegions(&blitRegion)
+            .setFilter(vk::Filter::eLinear);
+        
+        // Generate Mip Maps:
+        for (uint32 i = 1; i < numMips; ++i)
+        {
+            const int32 dstWidth = image.GetDimensionSize(0, i);
+            const int32 dstHeight = image.GetDimensionSize(1, i);
+            const int32 dstDepth = image.GetDimensionSize(2, i);
+            
+            // Blit from current dimension to half of it.
+            blitRegion.srcSubresource.mipLevel = i - 1;
+            blitRegion.srcOffsets[1] = vk::Offset3D{ srcWidth, srcHeight, srcDepth };
+            blitRegion.dstSubresource.mipLevel = i;
+            blitRegion.dstOffsets[1] = vk::Offset3D{ dstWidth, dstHeight, dstDepth };
+            buffer.GetVkCommandBuffer().blitImage2(blitImageInfo);
+
+            // Transition the current mip-level to copy source, to be used for the next mip level.
+            imageBarrierDesc.m_baseMip = i;
+            imageBarrierDesc.m_mipCount = 1;
+            imageBarrierDesc.m_before = { .m_access = EAccessBits::CopyDestination, .m_layout = EImageLayout::CopyDestination, .m_stages = EPipelineStageBits::Copy };
+            imageBarrierDesc.m_after = { .m_access = EAccessBits::CopySource, .m_layout = EImageLayout::CopySource, .m_stages = EPipelineStageBits::Copy };
+            groupDesc.m_imageBarriers[0] = imageBarrierDesc;
+            buffer.SetBarriers(groupDesc);
+
+            // Update our source dimensions:
+            srcWidth = dstWidth;
+            srcHeight = dstHeight;
+            srcDepth = dstDepth;
+        }
+
+        // Transition all mip-levels back to current layout.
+        imageBarrierDesc.m_baseMip = 0;
+        imageBarrierDesc.m_mipCount = numMips;
+        imageBarrierDesc.m_before = { .m_access = EAccessBits::CopySource, .m_layout = EImageLayout::CopySource, .m_stages = EPipelineStageBits::Copy };
+        imageBarrierDesc.m_after = { .m_access = graphics::kInferAccess, .m_layout = currentLayout, .m_stages = graphics::kInferPipelineStage };
+        groupDesc.m_imageBarriers[0] = imageBarrierDesc;
+        buffer.SetBarriers(groupDesc);
     }
 }

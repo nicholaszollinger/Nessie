@@ -316,7 +316,7 @@ namespace nes
     struct ImageBarrierDesc
     {
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the image that will be transitioned. 
+        /// @brief : Set the image that will be transitioned.
         //----------------------------------------------------------------------------------------------------
         ImageBarrierDesc&   SetImage(DeviceImage* pImage);
 
@@ -389,9 +389,9 @@ namespace nes
 
     enum class EImageType : uint8
     {
-        Image1D,
-        Image2D,
-        Image3D,
+        Image1D,    // Single buffer of pixel data.
+        Image2D,    // 2D buffer of pixel data, used for Textures.
+        Image3D,    // 3D buffer of pixel data.
         MaxNum
     };
 
@@ -446,19 +446,22 @@ namespace nes
     };
     NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EBufferUsageBits);
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Properites of a DeviceImage. 
+    //----------------------------------------------------------------------------------------------------
     struct ImageDesc
     {
-        EImageType          m_type = EImageType::Image2D;
-        EImageUsageBits     m_usage = EImageUsageBits::ShaderResource;
-        EFormat             m_format = EFormat::Unknown;
-        uint32              m_width = 1;
-        uint32              m_height = 1;
-        uint32              m_depth = 1;
-        uint32              m_mipCount = 1;
-        uint32              m_layerCount = 1;
-        uint32              m_sampleCount = 1;
-        ESharingMode        m_sharingMode = ESharingMode::Exclusive;
-        ClearValue          m_clearValue{};
+        EImageType          m_type = EImageType::Image2D;               // Type of image that this resource is.
+        EImageUsageBits     m_usage = EImageUsageBits::ShaderResource;  // How the image will be used.
+        EFormat             m_format = EFormat::Unknown;                // The pixel format of the image.
+        uint32              m_width = 1;                                // Width of the image, in pixels.
+        uint32              m_height = 1;                               // Height of the image, in pixels.
+        uint32              m_depth = 1;                                // Depth of the image, in pixels.
+        uint32              m_mipCount = 1;                             // Number of mip levels. Mip Level 0 is the original image, and subsequent levels are copies of the image with dimensions cut in half. They can be thought of as Level of Detail.
+        uint32              m_layerCount = 1;                           // Number of layers for the image.
+        uint32              m_sampleCount = 1;                          // Used for multisampling.
+        ESharingMode        m_sharingMode = ESharingMode::Exclusive;    // Defines if this image can be used across multiple device queues.
+        ClearValue          m_clearValue{};                             // Values to use when clearing this image.
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Ensures that ranges are valid. 
@@ -467,11 +470,7 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Used to create a buffer resource.
-    //  Available "m_structuredStride" Values:
-    //      0   = allows "typed" views.
-    //      4   = allows "types", "byte address" (raw) and "structured" views.
-    //      >4  = allows "structured" and potentially "typed" views.
+    /// @brief : Properties of a Device Buffer.
     //----------------------------------------------------------------------------------------------------
     struct BufferDesc
     {
