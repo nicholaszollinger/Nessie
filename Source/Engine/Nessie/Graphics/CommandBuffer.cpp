@@ -217,8 +217,8 @@ namespace nes
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue({});
 
-            const uint16 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
-            const uint16 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
+            const uint32 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
+            const uint32 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
 
             m_renderLayerCount = math::Min(m_renderLayerCount, desc.m_layerCount);
             m_renderWidth = math::Min(m_renderWidth, width);
@@ -242,8 +242,8 @@ namespace nes
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue({});
 
-            const uint16 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
-            const uint16 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
+            const uint32 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
+            const uint32 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
             
             m_renderLayerCount = math::Min(m_renderLayerCount, desc.m_layerCount);
             m_renderWidth = math::Min(m_renderWidth, width);
@@ -450,6 +450,74 @@ namespace nes
     void CommandBuffer::DrawIndexed(const DrawIndexedDesc& draw)
     {
         m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_firstVertex), draw.m_firstInstance);
+    }
+
+    void CommandBuffer::ResolveImage(const DeviceImage& srcImage, DeviceImage& dstImage)
+    {
+        const ImageDesc& srcDesc = srcImage.GetDesc();
+        const ImageDesc& dstDesc = dstImage.GetDesc();
+
+        // Create the image resolve info structs:
+        std::vector<vk::ImageResolve2> regions(dstDesc.m_mipCount);
+        for (uint32 i = 0; i < dstDesc.m_mipCount; ++i)
+        {
+            regions[i] = vk::ImageResolve2()
+                .setSrcSubresource({ GetVkImageAspectFlags(srcDesc.m_format), i, 0, srcDesc.m_layerCount })
+                .setSrcOffset({})
+                .setDstSubresource({ GetVkImageAspectFlags(dstDesc.m_format), i, 0, dstDesc.m_layerCount })
+                .setDstOffset({})
+                .setExtent(dstImage.GetExtent());
+        }
+
+        // Resolve the image.
+        vk::ResolveImageInfo2 info = vk::ResolveImageInfo2()
+            .setSrcImage(srcImage.GetVkImage())
+            .setDstImage(dstImage.GetVkImage())
+            .setSrcImageLayout(vk::ImageLayout::eTransferSrcOptimal)
+            .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
+            .setRegions(regions);
+
+        m_buffer.resolveImage2(info);
+    }
+
+    void CommandBuffer::ResolveImage(const DeviceImage& srcImage, const ImageRegionDesc& srcRegion, DeviceImage& dstImage, const ImageRegionDesc& dstRegion)
+    {
+        const ImageDesc& srcDesc = srcImage.GetDesc();
+        const ImageDesc& dstDesc = dstImage.GetDesc();
+        
+        // Get the image aspect 
+        vk::ImageAspectFlags srcAspectFlags = GetVkImageAspectFlags(srcRegion.m_planes);
+        if (srcRegion.m_planes == EImagePlaneBits::All)
+            srcAspectFlags = GetVkImageAspectFlags(srcDesc.m_format);
+        
+        vk::ImageAspectFlags dstAspectFlags = GetVkImageAspectFlags(dstRegion.m_planes);
+        if (dstRegion.m_planes == EImagePlaneBits::All)
+            dstAspectFlags = GetVkImageAspectFlags(dstDesc.m_format);
+
+        // Calculate extent, checking for use remaining value.
+        vk::Extent3D extent;
+        extent.width = srcRegion.m_width == graphics::kUseRemaining ? srcImage.GetDimensionSize(0, srcRegion.m_mipLevel) : srcRegion.m_width;
+        extent.height = srcRegion.m_height == graphics::kUseRemaining ? srcImage.GetDimensionSize(1, srcRegion.m_mipLevel) : srcRegion.m_height;
+        extent.depth = srcRegion.m_depth == graphics::kUseRemaining ? srcImage.GetDimensionSize(2, srcRegion.m_mipLevel) : srcRegion.m_depth;
+
+        // Set the region value:
+        vk::ImageResolve2 resolveRegion = vk::ImageResolve2()
+            .setSrcSubresource({ srcAspectFlags, srcRegion.m_mipLevel, srcRegion.m_layer, 1 })
+            .setSrcOffset({static_cast<int32>(srcRegion.m_offset.x), static_cast<int32>(srcRegion.m_offset.y), static_cast<int32>(srcRegion.m_offset.z)})
+            .setDstSubresource({ dstAspectFlags, dstRegion.m_mipLevel, dstRegion.m_layer, 1 })
+            .setDstOffset({static_cast<int32>(dstRegion.m_offset.x), static_cast<int32>(dstRegion.m_offset.y), static_cast<int32>(dstRegion.m_offset.z)})
+            .setExtent(extent);
+
+        // Resolve the image.
+        vk::ResolveImageInfo2 info = vk::ResolveImageInfo2()
+            .setSrcImage(srcImage.GetVkImage())
+            .setDstImage(dstImage.GetVkImage())
+            .setSrcImageLayout(vk::ImageLayout::eTransferSrcOptimal)
+            .setDstImageLayout(vk::ImageLayout::eTransferDstOptimal)
+            .setPRegions(&resolveRegion)
+            .setRegionCount(1);
+
+        m_buffer.resolveImage2(info);
     }
 
     NativeVkObject CommandBuffer::GetNativeVkObject() const

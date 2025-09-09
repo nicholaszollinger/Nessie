@@ -53,7 +53,7 @@ namespace nes
 
         // [TODO]: Allow custom number of mip levels from metadata.
         //const uint32 mipLevels = graphics::CalculateMipLevelCount(static_cast<uint32>(width), static_cast<uint32>(height));     
-
+        
         // Texture Description
         ImageDesc textureDesc{};
         textureDesc.m_width = math::Max(static_cast<uint32>(width), 1U);
@@ -61,8 +61,8 @@ namespace nes
         textureDesc.m_depth = 1;
         textureDesc.m_format = EFormat::RGBA8_UNORM;
         textureDesc.m_layerCount = 1;
-        textureDesc.m_mipCount = 1; // // [TODO]: mipLevels from file - not calculated.
-        textureDesc.m_sampleCount = 1; // [TODO]: Multisampling
+        textureDesc.m_mipCount = 1; // [TODO]: mipLevels from file - not calculated.
+        textureDesc.m_sampleCount = 1; // [TODO]: Load from data. Also check against allowed number of samples. 
         textureDesc.m_type = EImageType::Image2D;
         textureDesc.m_usage = EImageUsageBits::ShaderResource;
         textureDesc.m_clearValue = ClearValue{}; 

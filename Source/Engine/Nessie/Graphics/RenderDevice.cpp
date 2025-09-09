@@ -663,7 +663,7 @@ namespace nes
         // Create a chain of feature structures
         vk::StructureChain<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT> featureChain =
         {
-            VkPhysicalDeviceFeatures2{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .features = { .samplerAnisotropy = true } },                              // vk::PhysicalDeviceFeatures2
+            VkPhysicalDeviceFeatures2{ .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, .features = { .dualSrcBlend = true, .samplerAnisotropy = true, } },                              // vk::PhysicalDeviceFeatures2
             VkPhysicalDeviceVulkan12Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES, .timelineSemaphore = true, .bufferDeviceAddress = true,},  // vk::PhysicalDeviceVulkan12Feautres
             VkPhysicalDeviceVulkan13Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES, .synchronization2 = true, .dynamicRendering = true,},       // vk::PhysicalDeviceVulkan13Features
             VkPhysicalDeviceExtendedDynamicStateFeaturesEXT{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT, .extendedDynamicState = true}              // vk::PhysicalDeviceExtendedDynamicStateFeaturesEXT
@@ -1281,6 +1281,8 @@ namespace nes
 
         // Other
         m_desc.m_other.m_maxSamplerAnisotropy = limits.maxSamplerAnisotropy;
+        m_desc.m_other.m_maxColorSamples = static_cast<uint8>(GetMaxSampleCount(limits.framebufferColorSampleCounts));
+        m_desc.m_other.m_maxDepthSamples = static_cast<uint8>(GetMaxSampleCount(limits.framebufferDepthSampleCounts));
         
         // // Device properties
         // VkPhysicalDeviceProperties2 props = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
@@ -1486,5 +1488,73 @@ namespace nes
 
         NES_ASSERT(false, "Failed to find a suitable memory Type!");
         return false;
+    }
+
+    EFormatFeatureBits RenderDevice::GetFormatFeatures(const EFormat format) const
+    {
+        EFormatFeatureBits features = EFormatFeatureBits::Unsupported;
+        const vk::Format vkFormat = GetVkFormat(format);
+
+        vk::FormatProperties3 props3{};
+        vk::FormatProperties2 props2 = vk::FormatProperties2();
+        props2.pNext = &props3;
+        (*m_vkPhysicalDevice).getFormatProperties2(vkFormat, &props2);
+
+        #define UPDATE_TEXTURE_FEATURE(vkFlag, formatSupportValue)      \
+            if ((props3.optimalTilingFeatures & (vkFlag)) == (vkFlag))  \
+                features |= formatSupportValue
+        
+        #define UPDATE_BUFFER_FEATURE(vkFlag, formatSupportValue)       \
+            if ((props3.bufferFeatures & (vkFlag)) == (vkFlag))         \
+            features |= formatSupportValue
+        
+        // Texture
+        UPDATE_TEXTURE_FEATURE(vk::FormatFeatureFlagBits2::eSampledImage, EFormatFeatureBits::Image);
+        UPDATE_TEXTURE_FEATURE(vk::FormatFeatureFlagBits2::eStorageImage, EFormatFeatureBits::StorageImage);
+        UPDATE_TEXTURE_FEATURE(vk::FormatFeatureFlagBits2::eStorageImageAtomic, EFormatFeatureBits::StorageBufferAtomics);
+        UPDATE_TEXTURE_FEATURE(vk::FormatFeatureFlagBits2::eColorAttachment, EFormatFeatureBits::ColorAttachment);
+        UPDATE_TEXTURE_FEATURE(vk::FormatFeatureFlagBits2::eDepthStencilAttachment, EFormatFeatureBits::DepthStencilAttachment);
+        UPDATE_TEXTURE_FEATURE(vk::FormatFeatureFlagBits2::eColorAttachmentBlend, EFormatFeatureBits::Blend);
+        
+        // Buffer
+        UPDATE_BUFFER_FEATURE(vk::FormatFeatureFlagBits2::eUniformTexelBuffer, EFormatFeatureBits::Buffer);
+        UPDATE_BUFFER_FEATURE(vk::FormatFeatureFlagBits2::eStorageTexelBuffer, EFormatFeatureBits::StorageBuffer);
+        UPDATE_BUFFER_FEATURE(vk::FormatFeatureFlagBits2::eStorageTexelBufferAtomic, EFormatFeatureBits::StorageBufferAtomics);
+        UPDATE_BUFFER_FEATURE(vk::FormatFeatureFlagBits2::eVertexBuffer, EFormatFeatureBits::VertexBuffer);
+        
+        // Combined:
+        if ((props3.optimalTilingFeatures | props3.bufferFeatures) & vk::FormatFeatureFlagBits2::eStorageReadWithoutFormat)
+            features |= EFormatFeatureBits::StorageLoadWithoutFormat;
+        
+        #undef UPDATE_TEXTURE_FEATURE
+        #undef UPDATE_BUFFER_FEATURE
+        
+        // Multisample Features:
+        vk::PhysicalDeviceImageFormatInfo2 imageInfo = vk::PhysicalDeviceImageFormatInfo2()
+            .setFormat(vkFormat)
+            .setType(vk::ImageType::e2D)
+            .setTiling(vk::ImageTiling::eOptimal);
+        
+        imageInfo.usage = vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eTransferDst;
+        if (features & EFormatFeatureBits::Image)
+            imageInfo.usage |= vk::ImageUsageFlagBits::eSampled;
+        
+        if (features & EFormatFeatureBits::DepthStencilAttachment)
+            imageInfo.usage |= vk::ImageUsageFlagBits::eDepthStencilAttachment;
+        
+        if (features & EFormatFeatureBits::ColorAttachment)
+            imageInfo.usage |= vk::ImageUsageFlagBits::eColorAttachment;
+        
+        vk::ImageFormatProperties2 imageProps = m_vkPhysicalDevice.getImageFormatProperties2(imageInfo);
+        if (imageProps.imageFormatProperties.sampleCounts & vk::SampleCountFlagBits::e2)
+            features |= EFormatFeatureBits::Multisample2x;
+        if (imageProps.imageFormatProperties.sampleCounts & vk::SampleCountFlagBits::e4)
+            features |= EFormatFeatureBits::Multisample4x;
+        if (imageProps.imageFormatProperties.sampleCounts & vk::SampleCountFlagBits::e8)
+            features |= EFormatFeatureBits::Multisample8x;
+        if (imageProps.imageFormatProperties.sampleCounts & vk::SampleCountFlagBits::e16)
+            features |= EFormatFeatureBits::Multisample16x;
+
+        return features;
     }
 }

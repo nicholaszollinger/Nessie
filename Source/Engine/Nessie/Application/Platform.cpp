@@ -307,6 +307,8 @@ namespace nes
             // Update the Renderer:
             m_pRenderer->RequestSwapchainRebuild();
 
+            m_pApp->Internal_OnResize(width, height);
+
             // Push the resize event to the Application:
             WindowResizeEvent event(width, height);
             m_pApp->PushEvent(event);

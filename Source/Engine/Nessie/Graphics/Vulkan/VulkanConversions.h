@@ -508,9 +508,52 @@ namespace nes
         return static_cast<vk::SamplerMipmapMode>(vulkan::kMipmapModes[static_cast<size_t>(type)]);
     }
 
+    constexpr vk::LogicOp GetVkLogicOp(const ELogicOp op)
+    {
+        switch (op)
+        {
+            case ELogicOp::Clear:           return vk::LogicOp::eClear;
+            case ELogicOp::And:             return vk::LogicOp::eAnd;
+            case ELogicOp::AndReverse:      return vk::LogicOp::eAndReverse;
+            case ELogicOp::Copy:            return vk::LogicOp::eCopy;
+            case ELogicOp::AndInverted:     return vk::LogicOp::eAndInverted;
+            case ELogicOp::Xor:             return vk::LogicOp::eXor;
+            case ELogicOp::Or:              return vk::LogicOp::eOr;
+            case ELogicOp::Nor:             return vk::LogicOp::eNor;
+            case ELogicOp::Equivalent:      return vk::LogicOp::eEquivalent;
+            case ELogicOp::Invert:          return vk::LogicOp::eInvert;
+            case ELogicOp::OrReverse:       return vk::LogicOp::eOrReverse;
+            case ELogicOp::CopyInverted:    return vk::LogicOp::eCopyInverted;
+            case ELogicOp::OrInverted:      return vk::LogicOp::eOrInverted;
+            case ELogicOp::Nand:            return vk::LogicOp::eNand;
+            case ELogicOp::Set:             return vk::LogicOp::eSet;
+
+            default: return vk::LogicOp::eNoOp;
+        }
+    }
+
+    constexpr vk::BlendOp GetVkBlendOp(const EBlendOp op)
+    {
+        switch (op)
+        {
+            case EBlendOp::Subtract:            return vk::BlendOp::eSubtract;
+            case EBlendOp::ReverseSubtract:     return vk::BlendOp::eReverseSubtract;
+            case EBlendOp::Min:                 return vk::BlendOp::eMin;
+            case EBlendOp::Max:                 return vk::BlendOp::eMax;
+
+            // Default Add:
+            default: return vk::BlendOp::eAdd;
+        }
+    }
+
     constexpr vk::BlendFactor GetVkBlendFactor(const EBlendFactor blendFactor)
     {
         return static_cast<vk::BlendFactor>(vulkan::kBlendFactors[static_cast<size_t>(blendFactor)]);
+    }
+
+    constexpr vk::ColorComponentFlags GetVkColorComponentFlags(const EColorComponentBits colorMask)
+    {
+        return static_cast<vk::ColorComponentFlagBits>(colorMask & EColorComponentBits::RGBA);
     }
 
     constexpr vk::CompareOp GetVkCompareOp(const ECompareOp compareOp)
@@ -925,6 +968,43 @@ namespace nes
     }
     
     vk::ImageMemoryBarrier2 CreateVkImageMemoryBarrier(const ImageBarrierDesc& desc);
+
+    constexpr uint32 GetMaxSampleCount(const vk::SampleCountFlags sampleCount)
+    {
+        if ((sampleCount & vk::SampleCountFlagBits::e64) == vk::SampleCountFlagBits::e64)
+            return 64;
+        if ((sampleCount & vk::SampleCountFlagBits::e32) == vk::SampleCountFlagBits::e32)
+            return 32;
+        if ((sampleCount & vk::SampleCountFlagBits::e16) == vk::SampleCountFlagBits::e16)
+            return 16;
+        if ((sampleCount & vk::SampleCountFlagBits::e8) == vk::SampleCountFlagBits::e8)
+            return 8;
+        if ((sampleCount & vk::SampleCountFlagBits::e4) == vk::SampleCountFlagBits::e4)
+            return 4;
+        if ((sampleCount & vk::SampleCountFlagBits::e2) == vk::SampleCountFlagBits::e2)
+            return 2;
+        
+        return 1;
+    }
+
+    constexpr vk::SampleCountFlagBits GetVkSampleCountFlags(const uint32 numSamples)
+    {
+        if (numSamples == 64)
+            return vk::SampleCountFlagBits::e64;
+        else if (numSamples == 32)
+            return vk::SampleCountFlagBits::e32;
+        else if (numSamples == 16)
+            return vk::SampleCountFlagBits::e16;
+        else if (numSamples == 8)
+            return vk::SampleCountFlagBits::e8;
+        else if (numSamples == 4)
+            return vk::SampleCountFlagBits::e4;
+        else if (numSamples == 2)
+            return vk::SampleCountFlagBits::e2;
+
+        NES_ASSERT(numSamples == 1, "Invalid Sample Count!");
+        return vk::SampleCountFlagBits::e1;
+    }
 
     // [TODO]: 
     // constexpr vk::BufferUsageFlags ConvertToVkBufferUsage(const EBufferUsageBits bufferUsageBits, const uint32_t structureStride, const bool isDeviceAddressSupported)

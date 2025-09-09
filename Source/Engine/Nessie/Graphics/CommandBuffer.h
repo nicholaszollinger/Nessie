@@ -141,6 +141,24 @@ namespace nes
         void                    DrawIndexed(const DrawIndexedDesc& draw);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Resolve the entire destination image (including all mip levels) from the source image.
+        ///     'Resolving' means to take a multisampled image and convert it to a single sample before writing
+        ///     to the destination image.
+        /// @note : It is assumed that the srcImage is in the layout: EImageLayout::CopySource, and the dstImage is in the
+        ///     layout EImageLayout::CopyDestination.
+        //----------------------------------------------------------------------------------------------------
+        void                    ResolveImage(const DeviceImage& srcImage, DeviceImage& dstImage);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Resolve a single region of a destination image from a source image.
+        ///     'Resolving' means to take a multisampled image and convert it to a single sample before writing
+        ///     to the destination image.
+        /// @note : It is assumed that the srcImage is in the layout: EImageLayout::CopySource, and the dstImage is in the
+        ///     layout EImageLayout::CopyDestination.
+        //----------------------------------------------------------------------------------------------------
+        void                    ResolveImage(const DeviceImage& srcImage, const ImageRegionDesc& srcRegion, DeviceImage& dstImage, const ImageRegionDesc& dstRegion);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Vulkan command buffer type.
         //----------------------------------------------------------------------------------------------------
         const vk::raii::CommandBuffer& GetVkCommandBuffer() const { return m_buffer; }
@@ -180,9 +198,9 @@ namespace nes
         const Pipeline*         m_pPipeline = nullptr;          // The currently bound pipeline.
         const PipelineLayout*   m_pPipelineLayout = nullptr;    // The currently bound pipeline layout.
         const Descriptor*       m_depthStencil = nullptr;       // The current depth-stencil target for rendering commands.
-        uint16                  m_renderLayerCount = 0;         // Number of image layers that we are rendering to.
-        uint16                  m_renderWidth = 0;              // The width of the render area in pixels.
-        uint16                  m_renderHeight = 0;             // The height of the render area in pixels. 
+        uint32                  m_renderLayerCount = 0;         // Number of image layers that we are rendering to.
+        uint32                  m_renderWidth = 0;              // The width of the render area in pixels.
+        uint32                  m_renderHeight = 0;             // The height of the render area in pixels. 
     };
 
     static_assert(DeviceObjectType<CommandBuffer>);

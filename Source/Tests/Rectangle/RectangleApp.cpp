@@ -40,13 +40,14 @@ bool RectangleApp::Internal_AppInit()
         }
         NES_LOG("Texture Loaded Successfully!");
     }
-    
 
     auto& device = nes::DeviceManager::GetRenderDevice();
     m_frames.resize(nes::Renderer::GetMaxFramesInFlight());
-
+    const auto swapchainExtent = nes::Renderer::GetSwapchainExtent();
+    
     CreateGeometryBuffer(device);
     CreateUniformBuffer(device);
+    CreateMSAAImage(device, swapchainExtent.width, swapchainExtent.height);
     CreatePipeline(device);
     CreateDescriptorPool(device);
     CreateDescriptorSets(device);
@@ -59,28 +60,43 @@ void RectangleApp::Internal_AppUpdate([[maybe_unused]] const float timeStep)
     // nothing to do.
 }
 
+void RectangleApp::Internal_OnResize(const uint32 width, const uint32 height)
+{
+    // Recreate the MSAA image:
+    m_msaaImageView = nullptr;
+    m_msaaImage = nullptr;
+
+    // Create the MSAA image.
+    CreateMSAAImage(nes::Renderer::GetDevice(), width, height);
+}
+
 void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
     // Update our uniform buffer:
     UpdateUniformBuffer(context);
     
-    // Transition the swapchain image to color attachment optimal layout, so we can render to it:
+    // Transition the MSAA image to Color Attachment so that we can render to it,
+    // and the Swapchain image to Resolve Destination so that we can resolve our rendered MSAA image to it.
     {
-        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
-            .SetImage(context.GetSwapchainImage())
-            .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ColorAttachment)
+        nes::ImageBarrierDesc msaaBarrier = nes::ImageBarrierDesc()
+            .SetImage(&m_msaaImage)
+            .SetLayout(nes::EImageLayout::ResolveSource, nes::EImageLayout::ColorAttachment)
             .SetBarrierStage(nes::EPipelineStageBits::None, nes::EPipelineStageBits::ColorAttachment)
-            .SetAccess(nes::EAccessBits::None, nes::EAccessBits::ColorAttachment);
+            .SetAccess(nes::EAccessBits::ResolveSource, nes::EAccessBits::ColorAttachment);
+
+        nes::ImageBarrierDesc swapchainBarrier = nes::ImageBarrierDesc()
+            .SetImage(context.GetSwapchainImage())
+            .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ResolveDestination);
 
         nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
-            .SetImageBarriers(imageBarrier);
+            .SetImageBarriers({ msaaBarrier, swapchainBarrier } );
         
         commandBuffer.SetBarriers(barrierGroup);
     }
     
-    // Set the swapchain image as our color render target:
+    // Set the msaa image as our color render target:
     nes::RenderTargetsDesc renderTargetsDesc = nes::RenderTargetsDesc()
-        .SetColorTargets(&context.GetSwapchainImageDescriptor());
+        .SetColorTargets(&m_msaaImageView);
 
     // Get the viewport and scissor that will encompass the entire image.
     const nes::Viewport viewport = context.GetSwapchainViewport();
@@ -95,8 +111,8 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
         commandBuffer.ClearRenderTargets(clearDesc);
 
         // Set our pipeline and render area:
-        commandBuffer.BindPipeline(m_pipeline);
         commandBuffer.BindPipelineLayout(m_pipelineLayout);
+        commandBuffer.BindPipeline(m_pipeline);
         commandBuffer.SetViewports(viewport);
         commandBuffer.SetScissors(scissor);
 
@@ -112,12 +128,30 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
         commandBuffer.EndRendering();
     }
 
-    // Transition the swapchain image to present layout:
+    // Transition the MSAA Image to the Resolve Source layout:
+    {
+        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+            .SetImage(&m_msaaImage)
+            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::ResolveSource)
+            .SetAccess(nes::EAccessBits::ColorAttachment, nes::EAccessBits::ResolveSource);
+
+        nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+            .SetImageBarriers(imageBarrier);
+        
+        commandBuffer.SetBarriers(barrierGroup);
+    }
+
+    // Resolve the Swapchain image from the MSAA image:
+    {
+        commandBuffer.ResolveImage(m_msaaImage, *context.GetSwapchainImage());
+    }
+
+    // Transition the Swapchain image to Present layout to present!
     {
         nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
             .SetImage(context.GetSwapchainImage())
-            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::Present)
-            .SetAccess(nes::EAccessBits::ColorAttachment, nes::EAccessBits::None);
+            .SetLayout(nes::EImageLayout::ResolveDestination, nes::EImageLayout::Present)
+            .SetAccess(nes::EAccessBits::ResolveDestination, nes::EAccessBits::None);
     
         nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
             .SetImageBarriers(imageBarrier);
@@ -128,6 +162,8 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
 
 void RectangleApp::Internal_AppShutdown()
 {
+    m_msaaImage = nullptr;
+    m_msaaImageView = nullptr;
     m_imageView = nullptr;
     m_sampler = nullptr;
     m_frames.clear();
@@ -140,10 +176,10 @@ void RectangleApp::CreateGeometryBuffer(nes::RenderDevice& device)
 {
     const std::vector<Vertex> vertices =
     {
-        {{-0.5f, -0.5f}, {1.f, 0.f}, {1.0f, 0.0f, 0.0f}},
-        {{0.5f, -0.5f}, {0.f, 0.f}, {0.0f, 1.0f, 0.0f}},
-        {{0.5f, 0.5f}, {0.f, 1.f},{0.0f, 0.0f, 1.0f}},
-        {{-0.5f, 0.5f}, {1.f, 1.f}, {1.0f, 1.0f, 1.0f}}
+        {{-0.5f, 0.5f}, {1.f, 0.f}, {1.0f, 0.0f, 0.0f}},
+        {{0.5f, 0.5f}, {0.f, 0.f}, {0.0f, 1.0f, 0.0f}},
+        {{0.5f, -0.5f}, {0.f, 1.f},{0.0f, 0.0f, 1.0f}},
+        {{-0.5f, -0.5f}, {1.f, 1.f}, {1.0f, 1.0f, 1.0f}}
     };
     const uint64 vertexBufferSize = (sizeof(Vertex) * vertices.size());
         
@@ -204,6 +240,56 @@ void RectangleApp::CreateUniformBuffer(nes::RenderDevice& device)
     desc.m_usage = nes::EBufferUsageBits::UniformBuffer;
     desc.m_location = nes::EMemoryLocation::HostUpload; // We are updating the data each frame, so we need to write to it.
     m_uniformBuffer = nes::DeviceBuffer(device, desc);
+}
+
+void RectangleApp::CreateMSAAImage(nes::RenderDevice& device, const uint32 width, const uint32 height)
+{
+    // Get the format of the swapchain, and the number of samples that we can use for it.
+    nes::EFormat swapchainFormat = nes::Renderer::GetSwapchainFormat();
+    nes::EFormatFeatureBits features = device.GetFormatFeatures(swapchainFormat);
+    const uint32 samples = nes::GetMaxSampleCount(features);
+
+    // Create the image desc:
+    nes::ImageDesc imageDesc{};
+    imageDesc.m_mipCount = 1;
+    imageDesc.m_format = swapchainFormat;
+    imageDesc.m_layerCount = 1;
+    imageDesc.m_sampleCount = samples;
+    imageDesc.m_type = nes::EImageType::Image2D;
+    imageDesc.m_usage = nes::EImageUsageBits::ColorAttachment;
+    imageDesc.m_width = width;
+    imageDesc.m_height = height;
+    imageDesc.m_depth = 1;
+
+    // Allocate the image
+    nes::AllocateImageDesc allocDesc;
+    allocDesc.m_desc = imageDesc;
+    allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
+    m_msaaImage = nes::DeviceImage(device, allocDesc);
+
+    // Create the image descriptor (image view):
+    nes::Image2DViewDesc imageViewDesc{};
+    imageViewDesc.m_format = swapchainFormat;
+    imageViewDesc.m_pImage = &m_msaaImage;
+    imageViewDesc.m_viewType = nes::EImage2DViewType::ColorAttachment;
+    m_msaaImageView = nes::Descriptor(device, imageViewDesc);
+
+    // Convert the msaa image to the resolve source layout:
+    {
+        auto commandBuffer = nes::Renderer::BeginTempCommands();
+
+        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+            .SetImage(&m_msaaImage)
+            .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ResolveSource)
+            .SetAccess(nes::EAccessBits::None, nes::EAccessBits::ResolveSource);
+
+        nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+            .SetImageBarriers(imageBarrier);
+        
+        commandBuffer.SetBarriers(barrierGroup);
+
+        nes::Renderer::SubmitAndWaitTempCommands(commandBuffer);
+    }
 }
 
 void RectangleApp::CreatePipeline(nes::RenderDevice& device)
@@ -279,6 +365,15 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
         .m_entryPointName = "fragMain",
     };
 
+    // Get the maximum samples for the swapchain format:
+    nes::EFormat swapchainFormat = nes::Renderer::GetSwapchainFormat();
+    nes::EFormatFeatureBits features = device.GetFormatFeatures(swapchainFormat);
+    const uint32 maxSamples = nes::GetMaxSampleCount(features);
+
+    // Multisample:
+    nes::MultisampleDesc multisampleDesc;
+    multisampleDesc.m_sampleCount = maxSamples;
+
     // Rasterizer:
     nes::RasterizationDesc rasterDesc = {};
     rasterDesc.m_cullMode = nes::ECullMode::Back;
@@ -286,11 +381,23 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
     rasterDesc.m_fillMode = nes::EFillMode::Solid;
     rasterDesc.m_frontFace = nes::EFrontFaceWinding::CounterClockwise;
 
+    // Color attachment:
+    nes::ColorAttachmentDesc colorAttachment = {};
+    colorAttachment.m_format = nes::Renderer::GetSwapchainFormat();
+    colorAttachment.m_enableBlend = false;
+    
+    // OutputMerger:
+    nes::OutputMergerDesc outputMergerDesc = nes::OutputMergerDesc();
+    outputMergerDesc.m_colorCount = 1;
+    outputMergerDesc.m_pColors = &colorAttachment;
+    
     // Create the Pipeline:
     nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
         .SetShaderStages({ vertStage, fragStage })
         .SetVertexInput(vertexInputDesc)
-        .SetRasterizationDesc(rasterDesc);
+        .SetMultisampleDesc(multisampleDesc)
+        .SetRasterizationDesc(rasterDesc)
+        .SetOutputMergerDesc(outputMergerDesc);
 
     NES_ASSERT(m_pipelineLayout != nullptr);
     m_pipeline = nes::Pipeline(device, m_pipelineLayout, pipelineDesc);

@@ -106,21 +106,54 @@ namespace nes
     }
 
 #pragma endregion
-
-
+    
 //============================================================================================================================================================================================
 #pragma region [ Resources: creation ]
 //============================================================================================================================================================================================
 
     void ImageDesc::Validate()
     {
-        m_height = math::Max(m_height, 1U);
-        m_depth = math::Max(m_depth, 1U);
-        m_mipCount = math::Max(m_mipCount, 1U);
-        m_layerCount = math::Max(m_layerCount, 1U);
-        m_sampleCount = math::Max(m_sampleCount, 1U);
+        m_height = math::Max(m_height, 1u);
+        m_depth = math::Max(m_depth, 1u);
+        m_mipCount = math::Max(m_mipCount, 1u);
+        m_layerCount = math::Max(m_layerCount, 1u);
+        m_sampleCount = math::Max(m_sampleCount, 1u);
     }
-    
+
+    ImageRegionDesc& ImageRegionDesc::SetOffset(const uint32 x, const uint32 y, const uint32 z)
+    {
+        m_offset.x = x;
+        m_offset.y = y;
+        m_offset.z = z;
+        return *this;
+    }
+
+    ImageRegionDesc& ImageRegionDesc::SetSize(const uint32 width, const uint32 height, const uint32 depth)
+    {
+        m_width = math::Max(width, 1u);
+        m_height = math::Max(height, 1u);
+        m_depth = math::Max(depth, 1u);
+        return *this;
+    }
+
+    ImageRegionDesc& ImageRegionDesc::SetMipLevel(const uint32 mipLevel)
+    {
+        m_mipLevel = mipLevel;
+        return *this;
+    }
+
+    ImageRegionDesc& ImageRegionDesc::SetLayer(const uint32 layer)
+    {
+        m_layer = layer;
+        return *this;
+    }
+
+    ImageRegionDesc& ImageRegionDesc::SetImagePlanes(const EImagePlaneBits planes)
+    {
+        m_planes = planes;
+        return *this;
+    }
+
 #pragma endregion
 
 //============================================================================================================================================================================================

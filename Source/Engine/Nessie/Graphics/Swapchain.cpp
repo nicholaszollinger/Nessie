@@ -192,7 +192,8 @@ namespace nes
         std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(m_surface);
 
         // Choose the best available surface format and present mode
-        m_swapchainImageFormat = SelectSwapSurfaceFormat(availableFormats);
+        vk::Format format = SelectSwapSurfaceFormat(availableFormats);
+        m_swapchainImageFormat = GetFormat(static_cast<uint32>(format));
         const vk::PresentModeKHR presentMode = SelectSwapPresentMode(availablePresentModes, enableVsync);
         m_swapchainExtent = SelectSwapExtent(surfaceCapabilities);
 
@@ -202,7 +203,7 @@ namespace nes
         vk::SwapchainCreateInfoKHR swapChainCreateInfo = vk::SwapchainCreateInfoKHR()
             .setSurface(m_surface)
             .setMinImageCount(minImageCount)
-            .setImageFormat(m_swapchainImageFormat)
+            .setImageFormat(format)
             .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
             .setImageArrayLayers(1)
             .setImageUsage(vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst)
@@ -334,7 +335,7 @@ namespace nes
         m_imageViews.clear();
 
         Image2DViewDesc desc{};
-        desc.m_format = GetFormat(static_cast<uint32>(m_swapchainImageFormat));
+        desc.m_format = m_swapchainImageFormat;
         desc.m_viewType = EImage2DViewType::ColorAttachment;
         desc.m_baseMipLevel = 0;
         desc.m_mipCount = 1;

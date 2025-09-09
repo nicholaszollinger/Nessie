@@ -108,7 +108,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the image format used for the swapchain images.
         //----------------------------------------------------------------------------------------------------
-        vk::Format                  GetImageFormat() const              { return m_swapchainImageFormat; }
+        EFormat                     GetImageFormat() const              { return m_swapchainImageFormat; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the max number of frames that can be processed concurrently. 
@@ -195,7 +195,7 @@ namespace nes
         DeviceQueue*                m_pQueue = nullptr;                                 // The queue used to submit command buffers to the GPU
         GLFWwindow*                 m_pWindow = nullptr;                                // Window that we render to.
         vk::raii::SwapchainKHR      m_swapchain = nullptr;                              // The swapchain object.
-        vk::Format                  m_swapchainImageFormat = vk::Format::eUndefined;    // The image format for the swapchain images.
+        EFormat                     m_swapchainImageFormat = EFormat::Unknown;          // The image format for the swapchain images.
         vk::raii::SurfaceKHR        m_surface = nullptr;                                // The surface to present images to. Owned by the swapchain.
         std::vector<DeviceImage>    m_images{};                                         // Swapchain image resources.
         std::vector<Descriptor>     m_imageViews{};                                     // Swapchain image views resources. Recreated when the Swapchain is recreated.
