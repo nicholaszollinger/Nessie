@@ -53,7 +53,7 @@ namespace nes
 
         // [TODO]: Allow custom number of mip levels from metadata.
         //const uint32 mipLevels = graphics::CalculateMipLevelCount(static_cast<uint32>(width), static_cast<uint32>(height));     
-        
+
         // Texture Description
         ImageDesc textureDesc{};
         textureDesc.m_width = math::Max(static_cast<uint32>(width), 1U);
