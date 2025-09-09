@@ -100,38 +100,67 @@ namespace nes
                 .setInputRate(stream.m_stepRate == EVertexStreamStepRate::PerVertex? vk::VertexInputRate::eVertex : vk::VertexInputRate::eInstance);
         }
 
-        // Input Assembly
-        // [TODO]: Current is hacked in.
+        // Input Assembly:
         const auto& descInputAssembly = desc.m_inputAssembly;
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState = vk::PipelineInputAssemblyStateCreateInfo()
-            .setTopology(vk::PrimitiveTopology::eTriangleList);//(GetVkTopology(descInputAssembly.m_topology))
-            //.setPrimitiveRestartEnable(descInputAssembly.m_primitiveRestart != EPrimitiveRestart::Disabled);
+            .setTopology(GetVkTopology(descInputAssembly.m_topology))
+            .setPrimitiveRestartEnable(descInputAssembly.m_primitiveRestart != EPrimitiveRestart::Disabled);
 
+        // Tesselation State
         vk::PipelineTessellationStateCreateInfo tessellationState = vk::PipelineTessellationStateCreateInfo()
             .setPatchControlPoints(descInputAssembly.m_tessControlPointCount);
 
         // Multisampling
-        // [TODO]: Current is just hacked in.
+        vk::PipelineSampleLocationsStateCreateInfoEXT sampleLocationsState = {};
         vk::PipelineMultisampleStateCreateInfo multisampleState = vk::PipelineMultisampleStateCreateInfo()
-            .setRasterizationSamples(vk::SampleCountFlagBits::e1)
-            .setSampleShadingEnable(vk::False);
+            .setRasterizationSamples(vk::SampleCountFlagBits::e1);
+        
+        if (desc.m_enableMultisample)
+        {
+            multisampleState.setRasterizationSamples(GetVkSampleCountFlags(desc.m_multisample.m_sampleCount))
+                .setPSampleMask(desc.m_multisample.m_sampleMask != 0? &desc.m_multisample.m_sampleMask : nullptr)
+                .setMinSampleShading(0.f)
+                .setSampleShadingEnable(vk::False)
+                .setAlphaToCoverageEnable(desc.m_multisample.m_alphaToCoverage)
+                .setAlphaToOneEnable(false);
+        
+            if (desc.m_multisample.m_sampleLocations)
+            {
+                sampleLocationsState.sampleLocationsEnable = vk::True;
+                multisampleState.pNext = &sampleLocationsState;
+            }
+        }
 
         // Rasterization
-        // [TODO]: Conversions:
-        // [TODO]: ConservativeStateCreateInfo
-        // [TODO]: LineStateCreateInfoKHR
-        //const auto& descRasterizer = desc.m_rasterization;
+        const auto& descRasterizer = desc.m_rasterization;
         vk::PipelineRasterizationStateCreateInfo rasterizationState = vk::PipelineRasterizationStateCreateInfo()
-            .setDepthClampEnable(vk::False)//(descRasterizer.m_enableDepthClamp)
+            .setDepthClampEnable(descRasterizer.m_enableDepthClamp)
             .setRasterizerDiscardEnable(vk::False)
-            .setPolygonMode(vk::PolygonMode::eFill)//(GetVkPolygonMode(descRasterizer.m_fillMode))
-            .setCullMode(vk::CullModeFlagBits::eBack)//(GetVkCullMode(descRasterizer.m_cullMode))
-            .setFrontFace(vk::FrontFace::eClockwise)//(GetVkFrontFace(descRasterizer.m_frontFace))
-            .setDepthBiasEnable(vk::False)//(descRasterizer.m_depthBias.IsEnabled())
-            //.setDepthBiasClamp(descRasterizer.m_depthBias.m_clamp)
-            //.setDepthBiasConstantFactor(descRasterizer.m_depthBias.m_constant)
-            .setDepthBiasSlopeFactor(1.f)//(descRasterizer.m_depthBias.m_slope)
-            .setLineWidth(1.f);//(descRasterizer.m_lineWidth);
+            .setPolygonMode(GetVkPolygonMode(descRasterizer.m_fillMode))
+            .setCullMode(GetVkCullMode(descRasterizer.m_cullMode))
+            .setFrontFace(GetVkFrontFace(descRasterizer.m_frontFace))
+            .setDepthBiasEnable(descRasterizer.m_depthBias.IsEnabled())
+            .setDepthBiasClamp(descRasterizer.m_depthBias.m_clamp)
+            .setDepthBiasConstantFactor(descRasterizer.m_depthBias.m_constant)
+            .setDepthBiasSlopeFactor(descRasterizer.m_depthBias.m_slope)
+            .setLineWidth(1.f);
+
+        // [TODO]: Conservative Raster State
+        // vk::PipelineRasterizationConservativeStateCreateInfoEXT conservativeState = vk::PipelineRasterizationConservativeStateCreateInfoEXT();
+        // if (descRasterizer.m_enableConservativeRaster)
+        // {
+        //     conservativeState.conservativeRasterizationMode = vk::ConservativeRasterizationModeEXT::eOverestimate;
+        //     conservativeState.extraPrimitiveOverestimationSize = 0.0f;
+        //     APPEND the extension to the rasterization state.
+        // }
+        
+        // [TODO]: Line Smoothing State
+        // vk::PipelineRasterizationLineStateCreateInfoKHR rasterizationLineState = vk::PipelineRasterizationLineStateCreateInfo();
+        // if (descRasterizer.m_enableLineSmoothing)
+        // {
+        //     rasterizationLineState.lineRasterizationMode = vk::LineRasterizationMode::eRectangularSmoothKHR;
+        //     APPEND the extension to the rasterization state.
+        // }
         
         // Viewport State (will be dynamic).
         vk::PipelineViewportStateCreateInfo viewportState = vk::PipelineViewportStateCreateInfo()
@@ -139,69 +168,76 @@ namespace nes
             .setScissorCount(1);
 
         // Depth-Stencil
-        const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
-        const StencilAttachmentDesc& stencil = desc.m_outputMerger.m_stencil;
-
-        vk::StencilOpState front = vk::StencilOpState()
-            .setPassOp(GetVkStencilOp(stencil.m_front.m_passOp))
-            .setFailOp(GetVkStencilOp(stencil.m_front.m_failOp))
-            .setDepthFailOp(GetVkStencilOp(stencil.m_front.m_depthFailOp))
-            .setCompareMask(stencil.m_front.m_compareMask)
-            .setWriteMask(stencil.m_front.m_writeMask);
-
-        vk::StencilOpState back = vk::StencilOpState()
-            .setPassOp(GetVkStencilOp(stencil.m_back.m_passOp))
-            .setFailOp(GetVkStencilOp(stencil.m_back.m_failOp))
-            .setDepthFailOp(GetVkStencilOp(stencil.m_back.m_depthFailOp))
-            .setCompareMask(stencil.m_back.m_compareMask)
-            .setWriteMask(stencil.m_back.m_writeMask);
-        
-        vk::PipelineDepthStencilStateCreateInfo depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
-            .setDepthTestEnable(depth.m_compareOp != ECompareOp::None)
-            .setDepthWriteEnable(depth.m_enableWrite)
-            .setDepthCompareOp(GetVkCompareOp(depth.m_compareOp))
-            .setDepthBoundsTestEnable(depth.m_enableBoundsTest)
-            .setStencilTestEnable((stencil.m_front.m_compareOp == ECompareOp::None && stencil.m_back.m_compareOp != ECompareOp::None)? vk::False : vk::True)
-            .setMinDepthBounds(0.f)
-            .setMaxDepthBounds(1.f)
-            .setFront(front)
-            .setBack(back);
+        // const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
+        // const StencilAttachmentDesc& stencil = desc.m_outputMerger.m_stencil;
+        //
+        // vk::StencilOpState front = vk::StencilOpState()
+        //     .setPassOp(GetVkStencilOp(stencil.m_front.m_passOp))
+        //     .setFailOp(GetVkStencilOp(stencil.m_front.m_failOp))
+        //     .setDepthFailOp(GetVkStencilOp(stencil.m_front.m_depthFailOp))
+        //     .setCompareMask(stencil.m_front.m_compareMask)
+        //     .setWriteMask(stencil.m_front.m_writeMask);
+        //
+        // vk::StencilOpState back = vk::StencilOpState()
+        //     .setPassOp(GetVkStencilOp(stencil.m_back.m_passOp))
+        //     .setFailOp(GetVkStencilOp(stencil.m_back.m_failOp))
+        //     .setDepthFailOp(GetVkStencilOp(stencil.m_back.m_depthFailOp))
+        //     .setCompareMask(stencil.m_back.m_compareMask)
+        //     .setWriteMask(stencil.m_back.m_writeMask);
+        //
+        // vk::PipelineDepthStencilStateCreateInfo depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+        //     .setDepthTestEnable(depth.m_compareOp != ECompareOp::None)
+        //     .setDepthWriteEnable(depth.m_enableWrite)
+        //     .setDepthCompareOp(GetVkCompareOp(depth.m_compareOp))
+        //     .setDepthBoundsTestEnable(depth.m_enableBoundsTest)
+        //     .setStencilTestEnable((stencil.m_front.m_compareOp == ECompareOp::None && stencil.m_back.m_compareOp != ECompareOp::None)? vk::False : vk::True)
+        //     .setMinDepthBounds(0.f)
+        //     .setMaxDepthBounds(1.f)
+        //     .setFront(front)
+        //     .setBack(back);
 
         // Blending
-        // [TODO]: Current is just hacked in. 
-        //std::vector<vk::PipelineColorBlendAttachmentState> colors(desc.m_outputMerger.m_colorNum);
-        //const auto& descOutputMerger = desc.m_outputMerger;
-        vk::PipelineColorBlendAttachmentState colorAttachment = vk::PipelineColorBlendAttachmentState()
-            .setBlendEnable(false)
-            .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG | vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA);
-
+        const auto& descOutputMerger = desc.m_outputMerger;
+        std::vector<vk::PipelineColorBlendAttachmentState> colorAttachments(desc.m_outputMerger.m_colorCount);
+        
+        // [TODO]: Check for constant color reference for possible dynamic state.
+        for (uint32 i = 0; i < desc.m_outputMerger.m_colorCount; ++i)
+        {
+            const ColorAttachmentDesc& attachmentDesc = descOutputMerger.m_pColors[i];
+        
+            colorAttachments[i] = vk::PipelineColorBlendAttachmentState()
+                .setBlendEnable(attachmentDesc.m_enableBlend)
+                .setSrcColorBlendFactor(GetVkBlendFactor(attachmentDesc.m_colorBlend.m_srcFactor))
+                .setDstColorBlendFactor(GetVkBlendFactor(attachmentDesc.m_colorBlend.m_dstFactor))
+                .setColorBlendOp(GetVkBlendOp(attachmentDesc.m_colorBlend.m_op))
+                .setSrcAlphaBlendFactor(GetVkBlendFactor(attachmentDesc.m_alphaBlend.m_srcFactor))
+                .setDstAlphaBlendFactor(GetVkBlendFactor(attachmentDesc.m_alphaBlend.m_dstFactor))
+                .setAlphaBlendOp(GetVkBlendOp(attachmentDesc.m_colorBlend.m_op))
+                .setColorWriteMask(GetVkColorComponentFlags(attachmentDesc.m_colorWriteMask));
+        }
+        
         vk::PipelineColorBlendStateCreateInfo colorBlendState = vk::PipelineColorBlendStateCreateInfo()
-            .setLogicOpEnable(vk::False)//(desc.m_outputMerger.m_logicOp != ELogicOp::None)
-            .setLogicOp(vk::LogicOp::eCopy)//(desc.m_outputMerger.m_logicOp)
-            .setAttachmentCount(1)//(desc.m_outputMerger.m_colorNum)
-            .setPAttachments(&colorAttachment);
-
+            .setLogicOpEnable(desc.m_outputMerger.m_logicOp != ELogicOp::None)
+            .setLogicOp(GetVkLogicOp(desc.m_outputMerger.m_logicOp))
+            .setAttachments(colorAttachments);
+        
         // Formats
-        // [TODO]: Color array in output merger needs to change.
-        //const FormatProps& depthStencilFormatProps = GetFormatProps(descOutputMerger.m_depthStencilFormat);
-
-        // [TODO]: Format data for the attachments:
-        vk::Format colorFormats = vk::Format::eB8G8R8A8Srgb;
-        // std::vector<vk::Format> colorFormats(1);// (descOutputMerger.m_colorNum);
-        // for (size_t i = 0; i < colorFormats.size(); i++)
-        // {
-        //     colorFormats[i] = GetVkFormat(descOutputMerger.m_pColors[i].m_format);
-        // }
+        const FormatProps& depthStencilFormatProps = GetFormatProps(desc.m_outputMerger.m_depthStencilFormat);
+        
+        // Format data for the attachments:
+        std::vector<vk::Format> colorFormats(descOutputMerger.m_colorCount);
+        for (size_t i = 0; i < colorFormats.size(); i++)
+        {
+             colorFormats[i] = GetVkFormat(descOutputMerger.m_pColors[i].m_format);
+        }
         
         vk::PipelineRenderingCreateInfo pipelineRenderingInfo = vk::PipelineRenderingCreateInfo()
-            //.setViewMask(descOutputMerger.m_viewMask)
-            .setColorAttachmentCount(1)//(descOutputMerger.m_colorNum)
-            .setPColorAttachmentFormats(&colorFormats);//(colorFormats.data())
-            //.setDepthAttachmentFormat(GetVkFormat(descOutputMerger.m_depthStencilFormat))
-            //.setStencilAttachmentFormat(depthStencilFormatProps.m_isStencil? GetVkFormat(descOutputMerger.m_depthStencilFormat) : vk::Format::eUndefined);
+            .setColorAttachmentCount(descOutputMerger.m_colorCount)
+            .setColorAttachmentFormats(colorFormats)
+            .setDepthAttachmentFormat(GetVkFormat(descOutputMerger.m_depthStencilFormat))
+            .setStencilAttachmentFormat(depthStencilFormatProps.m_isStencil? GetVkFormat(descOutputMerger.m_depthStencilFormat) : vk::Format::eUndefined);
 
         // Dynamic State
-        // [TODO]: Other dynamic states
         uint32 dynamicStateCount = 0;
         std::array<vk::DynamicState, 16> dynamicStates;
         dynamicStates[dynamicStateCount++] = vk::DynamicState::eViewport; // [TODO]: WithCount
@@ -210,11 +246,23 @@ namespace nes
         if (vertexInputState.pVertexAttributeDescriptions)
             dynamicStates[dynamicStateCount++] = vk::DynamicState::eVertexInputBindingStride;
 
+        // [TODO]:
+        // if (rasterizationState.depthBiasEnable)
+        //     dynamicStates[dynamicStateCount++] = vk::DynamicState::eDepthBias;
+        // if (depthStencilState.depthBoundsTestEnable)
+        //     dynamicStates[dynamicStateCount++] = vk::DynamicState::eDepthBounds;
+        // if (depthStencilState.stencilTestEnable)
+        //     dynamicStates[dynamicStateCount++] = vk::DynamicState::eStencilReference;
+        // if (sampleLocationsState.sampleLocationsEnable)
+        //     dynamicStates[dynamicStateCount++] = vk::DynamicState::eSampleLocationsEXT;
+
+        // [TODO]: Optional Shading Rate Dynamic State
+        // [TODO]: Conditional Blend Constants Dynamic State
+
         vk::PipelineDynamicStateCreateInfo dynamicState = vk::PipelineDynamicStateCreateInfo()
             .setDynamicStateCount(dynamicStateCount)
             .setPDynamicStates(dynamicStates.data());
         
-
         // Create
         vk::PipelineCreateFlags flags{};
         // [TODO]: 
@@ -228,7 +276,7 @@ namespace nes
             .setPStages(stages.data())
             .setPVertexInputState(&vertexInputState)
             .setPInputAssemblyState(&inputAssemblyState)
-            //.setPTessellationState(&tessellationState)
+            .setPTessellationState(&tessellationState)
             .setPViewportState(&viewportState)
             .setPRasterizationState(&rasterizationState)
             .setPMultisampleState(&multisampleState)
@@ -237,9 +285,6 @@ namespace nes
             .setPDynamicState(&dynamicState)
             .setLayout(layout.GetVkPipelineLayout())
             .setRenderPass(nullptr);
-            //.setSubpass(0)
-            //.setBasePipelineHandle(nullptr)
-            //.setBasePipelineIndex(-1);
 
         // [TODO]: Pipeline Cache object.
         m_pipeline = vk::raii::Pipeline(device, nullptr, info, device.GetVkAllocationCallbacks());

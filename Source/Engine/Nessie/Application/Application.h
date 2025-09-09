@@ -89,7 +89,17 @@ namespace nes
         /// @note : Do not call directly! This is called by the Platform.
         //----------------------------------------------------------------------------------------------------
         virtual void                Internal_AppUpdate(const float timeStep) = 0;
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Called any time the Application window is resized. Width and height are in pixels.
+        //----------------------------------------------------------------------------------------------------
+        virtual void                Internal_OnResize(const uint32 width, const uint32 height) = 0;
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Called before the render frame has started.
+        //----------------------------------------------------------------------------------------------------
+        virtual void                Internal_PreRender() {}
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Render the current frame.
         ///	@param commandBuffer : The command buffer associated with this frame.

@@ -110,6 +110,16 @@ namespace nes
         /// @brief : Advanced use. Get the RenderCommandQueue of a specific frame used to release render resources. 
         //----------------------------------------------------------------------------------------------------
         static RenderCommandQueue&  GetRenderResourceReleaseQueue(const uint32 index);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the image format of the swapchain.
+        //----------------------------------------------------------------------------------------------------
+        static EFormat              GetSwapchainFormat();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current swapchain extent.
+        //----------------------------------------------------------------------------------------------------
+        static vk::Extent2D         GetSwapchainExtent();
     
     public:
         /* Constructor */           Renderer(RenderDevice& device);

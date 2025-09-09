@@ -116,6 +116,11 @@ namespace nes
         bool                        FindSuitableMemoryType(const EMemoryLocation location, uint32 memoryTypeMask, DeviceMemoryTypeInfo& outInfo) const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the features supported by a given format.
+        //----------------------------------------------------------------------------------------------------
+        EFormatFeatureBits          GetFormatFeatures(const EFormat format) const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Use NES_VK_CHECK() rather than calling this directly.
         ///     If the result is a failure, this will report the message, assert, and exit. Treats errors as
         ///     fatal errors. 

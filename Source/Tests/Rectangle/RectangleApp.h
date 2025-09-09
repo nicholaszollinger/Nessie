@@ -10,7 +10,7 @@
 #include "Nessie/Graphics/DescriptorPool.h"
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : This example application renders a Rectangle to the screen.
+/// @brief : This example application renders a Rectangle to the screen, and uses multisampling.
 //----------------------------------------------------------------------------------------------------
 class RectangleApp final : public nes::Application
 {
@@ -19,7 +19,8 @@ public:
 
     // Application Interface: 
     virtual bool                    Internal_AppInit() override;
-    virtual void                    Internal_AppUpdate([[maybe_unused]] const float timeStep) override;
+    virtual void                    Internal_AppUpdate(const float timeStep) override;
+    virtual void                    Internal_OnResize(const uint32 width, const uint32 height) override;
     virtual void                    Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
     virtual void                    Internal_AppShutdown() override;
 
@@ -57,6 +58,11 @@ private:
     void                            CreateUniformBuffer(nes::RenderDevice& device);
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the MSAA image and descriptor that we will be rendering to. 
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateMSAAImage(nes::RenderDevice& device, const uint32 width, const uint32 height);
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Create the pipeline object use to render the Rectangle.
     //----------------------------------------------------------------------------------------------------
     void                            CreatePipeline(nes::RenderDevice& device);
@@ -80,6 +86,7 @@ private:
 private:
     nes::AssetID                    m_shaderID = nes::kInvalidAssetID;
     nes::AssetID                    m_textureID = nes::kInvalidAssetID;
+    nes::DeviceImage                m_msaaImage = nullptr;
     nes::PipelineLayout             m_pipelineLayout = nullptr;
     nes::Pipeline                   m_pipeline = nullptr;
     nes::DeviceBuffer               m_geometryBuffer = nullptr;
@@ -88,6 +95,7 @@ private:
     nes::DeviceBuffer               m_uniformBuffer = nullptr; 
     nes::DescriptorPool             m_descriptorPool = nullptr;
     std::vector<FrameData>          m_frames{};
+    nes::Descriptor                 m_msaaImageView = nullptr;
     nes::Descriptor                 m_imageView = nullptr;          // View of our texture.
     nes::Descriptor                 m_sampler = nullptr;            // Sampler for our texture.
 };

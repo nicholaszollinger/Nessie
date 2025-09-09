@@ -136,11 +136,11 @@ namespace nes
         m_imageDesc.m_imageLayout = GetVkImageViewLayout(imageViewDesc.m_viewType);
         m_imageDesc.m_aspectFlags = GetVkImageAspectFlags(imageViewDesc.m_format);
         m_imageDesc.m_layerOffset = imageViewDesc.m_baseLayer;
-        m_imageDesc.m_layerCount = static_cast<uint16>(subresourceRange.layerCount);
+        m_imageDesc.m_layerCount = subresourceRange.layerCount;
         m_imageDesc.m_sliceOffset = 0;
         m_imageDesc.m_sliceCount = 1;
         m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
-        m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
+        m_imageDesc.m_mipCount = subresourceRange.levelCount;
     }
 
     Descriptor::Descriptor(RenderDevice& device, const Image2DViewDesc& imageViewDesc)
@@ -180,11 +180,11 @@ namespace nes
         m_imageDesc.m_imageLayout = GetVkImageViewLayout(imageViewDesc.m_viewType);
         m_imageDesc.m_aspectFlags = GetVkImageAspectFlags(imageViewDesc.m_format);
         m_imageDesc.m_layerOffset = imageViewDesc.m_baseLayer;
-        m_imageDesc.m_layerCount = static_cast<uint16>(subresourceRange.layerCount);
+        m_imageDesc.m_layerCount = subresourceRange.layerCount;
         m_imageDesc.m_sliceOffset = 0;
         m_imageDesc.m_sliceCount = 1;
         m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
-        m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
+        m_imageDesc.m_mipCount = subresourceRange.levelCount;
     }
 
     Descriptor::Descriptor(RenderDevice& device, const Image3DViewDesc& imageViewDesc)
@@ -235,7 +235,7 @@ namespace nes
         m_imageDesc.m_sliceOffset = imageViewDesc.m_baseSlice;
         m_imageDesc.m_sliceCount = imageViewDesc.m_sliceCount;
         m_imageDesc.m_mipOffset = imageViewDesc.m_baseMipLevel;
-        m_imageDesc.m_mipCount = static_cast<uint16>(subresourceRange.levelCount);
+        m_imageDesc.m_mipCount = subresourceRange.levelCount;
     }
 
     Descriptor::Descriptor(RenderDevice& device, const SamplerDesc& samplerDesc)

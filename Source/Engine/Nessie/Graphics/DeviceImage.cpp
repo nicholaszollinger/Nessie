@@ -150,24 +150,24 @@ namespace nes
         m_ownsNativeObjects = false;
     }
 
-    uint64 DeviceImage::GetPixelCount(const uint16 mipLevel) const
+    uint64 DeviceImage::GetPixelCount(const uint32 mipLevel) const
     {
         return static_cast<uint64>(GetDimensionSize(0, mipLevel)) * GetDimensionSize(1, mipLevel) * GetDimensionSize(2, mipLevel);
     }
 
-    uint16 DeviceImage::GetDimensionSize(const uint16 dimensionIndex, const uint32 mipLevel) const
+    uint32 DeviceImage::GetDimensionSize(const uint32 dimensionIndex, const uint32 mipLevel) const
     {
         NES_ASSERT(m_pDevice != nullptr && m_image != nullptr, "Attempted to get size of null image!");
         NES_ASSERT(dimensionIndex < 3);
 
-        uint16 size = static_cast<uint16>(m_desc.m_depth);
+        uint32 size = m_desc.m_depth;
         if (dimensionIndex == 0)
-            size = static_cast<uint16>(m_desc.m_width);
+            size = m_desc.m_width;
         if (dimensionIndex == 1)
-            size = static_cast<uint16>(m_desc.m_height);
+            size = m_desc.m_height;
 
         // Set the size of the particular mip level:
-        size = static_cast<uint16>(math::Max(size >> mipLevel, 1));
+        size = math::Max(size >> mipLevel, 1u);
 
         // Align the value to the format's block width.
         size = math::AlignUp(size, dimensionIndex < 2 ? GetFormatProps(m_desc.m_format).m_blockWidth : 1);

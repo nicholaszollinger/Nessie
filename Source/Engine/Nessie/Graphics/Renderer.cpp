@@ -119,7 +119,19 @@ namespace nes
         NES_ASSERT(index < GetChecked()->m_resourceFreeQueues.size());
         return GetChecked()->m_resourceFreeQueues[index];
     }
-    
+
+    EFormat Renderer::GetSwapchainFormat()
+    {
+        NES_ASSERT(GetChecked()->m_swapchain != nullptr);
+        return GetChecked()->m_swapchain.GetImageFormat();
+    }
+
+    vk::Extent2D Renderer::GetSwapchainExtent()
+    {
+        NES_ASSERT(GetChecked()->m_swapchain != nullptr);
+        return GetChecked()->m_swapchain.GetExtent();
+    }
+
     bool Renderer::Init(ApplicationWindow* pWindow, const RendererDesc& /*rendererDesc*/)
     {
         m_pWindow = pWindow;

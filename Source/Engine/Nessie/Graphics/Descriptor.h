@@ -20,12 +20,12 @@ namespace nes
         const DeviceImage*          m_pImage = nullptr;
         vk::ImageLayout             m_imageLayout;
         vk::ImageAspectFlags        m_aspectFlags = vk::ImageAspectFlagBits::eColor;
-        uint16                      m_layerOffset = 0;
-        uint16                      m_layerCount = 1;
-        uint16                      m_sliceOffset = 0;
-        uint16                      m_sliceCount = 1;
-        uint16                      m_mipOffset = 0;
-        uint16                      m_mipCount = 1;
+        uint32                      m_layerOffset = 0;
+        uint32                      m_layerCount = 1;
+        uint32                      m_sliceOffset = 0;
+        uint32                      m_sliceCount = 1;
+        uint32                      m_mipOffset = 0;
+        uint32                      m_mipCount = 1;
     };
 
     //----------------------------------------------------------------------------------------------------

@@ -22,7 +22,7 @@ namespace nes
     namespace graphics
     {
         /// Special value that marks that the remaining amount of some span (number of mips, number of image layers, etc.) should be used. 
-        static constexpr uint16 kUseRemaining = std::numeric_limits<uint16>::max();
+        static constexpr uint32 kUseRemaining = std::numeric_limits<uint32>::max();
 
         /// Special value to use if you want to use the entire device buffer's range.
         static constexpr uint64 kWholeSize = std::numeric_limits<uint64>::max();
@@ -724,15 +724,39 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ImageRegionDesc
     {
-        uint32              x;
-        uint32              y;
-        uint32              z;
-        uint32              m_width;
-        uint32              m_height;
-        uint32              m_depth;
-        uint32              m_mipOffset;
-        uint32              m_layerOffset;
-        EImagePlaneBits     m_planes;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the pixel offset of the region.
+        //----------------------------------------------------------------------------------------------------
+        ImageRegionDesc&    SetOffset(const uint32 x, const uint32 y, const uint32 z = 0);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the pixel extent of the region. By default, each dimension is set to 'graphics::kUseRemaining',
+        ///     which means that the remaining pixels from the offset will be used.
+        //----------------------------------------------------------------------------------------------------
+        ImageRegionDesc&    SetSize(const uint32 width, const uint32 height, const uint32 depth = 1);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the mip level of the image that will be used. Mip Level 0 is the default. 
+        //----------------------------------------------------------------------------------------------------
+        ImageRegionDesc&    SetMipLevel(const uint32 mipLevel);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the region's image layer. By default, the first layer (0) is used. 
+        //----------------------------------------------------------------------------------------------------
+        ImageRegionDesc&    SetLayer(const uint32 layer);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the image planes that will be accessed for this region. All planes are set by default.
+        //----------------------------------------------------------------------------------------------------
+        ImageRegionDesc&    SetImagePlanes(const EImagePlaneBits planes);
+        
+        UInt3               m_offset = UInt3::Zero();               // Pixel offset of the region. Zero by default.
+        uint32              m_width = graphics::kUseRemaining;      // Width of the region, or the number of pixels in the x-axis.
+        uint32              m_height = graphics::kUseRemaining;     // Height of the region, or the number of pixels in the y-axis.
+        uint32              m_depth = graphics::kUseRemaining;      // Depth of the region, or the number of pixels in the z-axis.
+        uint32              m_mipLevel = 0;                         // Mip Level of the image.     
+        uint32              m_layer = 0;                            // Which image layer.  
+        EImagePlaneBits     m_planes = EImagePlaneBits::All;        // Which of the image planes will be accessed. Default is color. 
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -743,10 +767,10 @@ namespace nes
         const DeviceImage*  m_pImage;
         EImage1DViewType    m_viewType;
         EFormat             m_format = EFormat::Unknown;
-        uint16              m_baseMipLevel = 0;
-        uint16              m_mipCount = graphics::kUseRemaining;
-        uint16              m_baseLayer = 0;
-        uint16              m_layerCount = graphics::kUseRemaining;
+        uint32              m_baseMipLevel = 0;
+        uint32              m_mipCount = graphics::kUseRemaining;
+        uint32              m_baseLayer = 0;
+        uint32              m_layerCount = graphics::kUseRemaining;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -757,10 +781,10 @@ namespace nes
         const DeviceImage*  m_pImage = nullptr;
         EImage2DViewType    m_viewType;
         EFormat             m_format = EFormat::Unknown;
-        uint16              m_baseMipLevel = 0;
-        uint16              m_mipCount = graphics::kUseRemaining;
-        uint16              m_baseLayer = 0;
-        uint16              m_layerCount = graphics::kUseRemaining;
+        uint32              m_baseMipLevel = 0;
+        uint32              m_mipCount = graphics::kUseRemaining;
+        uint32              m_baseLayer = 0;
+        uint32              m_layerCount = graphics::kUseRemaining;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -771,10 +795,10 @@ namespace nes
         const DeviceImage*  m_pImage = nullptr;
         EImage3DViewType    m_viewType;
         EFormat             m_format = EFormat::Unknown;
-        uint16              m_baseMipLevel = 0;
-        uint16              m_mipCount = graphics::kUseRemaining;
-        uint16              m_baseSlice = 0;
-        uint16              m_sliceCount = graphics::kUseRemaining;
+        uint32              m_baseMipLevel = 0;
+        uint32              m_mipCount = graphics::kUseRemaining;
+        uint32              m_baseSlice = 0;
+        uint32              m_sliceCount = graphics::kUseRemaining;
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -801,8 +825,8 @@ namespace nes
 
     struct Filters
     {
-        EFilterType m_min;
-        EFilterType m_mag;
+        EFilterType m_min;          // This filter is used when the object is further from the camera.
+        EFilterType m_mag;          // This filter is used when the object is close to the camera.
         EFilterType m_mip;
         EReductionMode m_reduction; // Requires features.m_textureFilterMinMax.
     };
@@ -815,9 +839,9 @@ namespace nes
     {
         Filters             m_filters;
         uint8               m_anisotropy;
-        float               m_mipBias;
-        float               m_mipMin;
-        float               m_mipMax;
+        float               m_mipBias;      // This bias allows you to use a lower level of detail that it would normally use.
+        float               m_mipMin;       // Minimum level of detail (mip level) to use.
+        float               m_mipMax;       // Maximum level of detail (mip level) to use.
         AddressModes        m_addressModes;
         ECompareOp          m_compareOp;
         ClearColor          m_borderColor;
@@ -1115,7 +1139,7 @@ namespace nes
         uint32                  m_location = 0;     // References the location directive of the input in the vertex shader.
         uint32                  m_offset = 0;       // Byte offset of the attribute in the greater Vertex object.
         EFormat                 m_format;           // Format of the data type.
-        uint16                  m_streamIndex = 0;  // Which stream index the per-vertex data comes through to the shader.
+        uint32                  m_streamIndex = 0;  // Which stream index the per-vertex data comes through to the shader.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1151,7 +1175,7 @@ namespace nes
         VertexStreamDesc&           SetStepRate(const EVertexStreamStepRate stepRate);
         
         uint32                      m_stride = 0;                                   // The number of bytes to move between consecutive elements in the buffer.
-        uint16                      m_bindingIndex = 0;                             // Specifies the index in the array of vertex bindings.
+        uint32                      m_bindingIndex = 0;                             // Specifies the index in the array of vertex bindings.
         EVertexStreamStepRate       m_stepRate = EVertexStreamStepRate::PerVertex;  // When should we move to the next data entry? After each vertex? Or after each instance?
     };
 
@@ -1388,7 +1412,7 @@ namespace nes
     {
         float           m_constant  = 0.f;
         float           m_clamp     = 0.f;
-        float           m_slope     = 1.f;
+        float           m_slope     = 0.f;
 
         bool            IsEnabled() const { return m_constant != 0.f || m_slope != 0.f; }
     };
@@ -1401,7 +1425,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct RasterizationDesc
     {
-        DepthBiasDesc       m_depthBias;
+        DepthBiasDesc       m_depthBias{};
         EFillMode           m_fillMode                  = EFillMode::Solid;
 
         // Determines the type of face culling to use. You can disable culling, cull the front faces,
@@ -1655,16 +1679,12 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct OutputMergerDesc
     {
-        const ColorAttachmentDesc*  m_pColors;
-        uint32                      m_colorNum;
-        DepthAttachmentDesc         m_depth;
-        StencilAttachmentDesc       m_stencil;
-        EFormat                     m_depthStencilFormat;
+        const ColorAttachmentDesc*  m_pColors = nullptr;
+        uint32                      m_colorCount = 0;
+        DepthAttachmentDesc         m_depth{};
+        StencilAttachmentDesc       m_stencil{};
+        EFormat                     m_depthStencilFormat = EFormat::Unknown;
         ELogicOp                    m_logicOp = ELogicOp::None;              
-    
-        // Optional
-        uint32                      m_viewMask;             /// If non-0, requires "viewMaximum > 0".
-        EMultiview                  m_multiView;            /// if "m_viewMask != 0", requires "features.(xxx)Muliview".
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -2019,7 +2039,6 @@ namespace nes
             uint16                  m_maxImageDimension2D;
             uint16                  m_maxImageDimension3D;
             uint16                  m_maxImageLayerCount;
-            
         } m_dimensions;
 
         // Tiered Feature Support: (0 = unsupported)
@@ -2136,6 +2155,8 @@ namespace nes
 
         struct
         {
+            uint8                   m_maxColorSamples = 0;          // Maximum samples allowable for the color attachment.
+            uint8                   m_maxDepthSamples = 0;          // Maximum samples allowable for the depth attachment.
             float                   m_maxSamplerAnisotropy = 0.f;
         } m_other;
         

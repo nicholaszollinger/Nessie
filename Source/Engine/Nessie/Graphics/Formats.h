@@ -252,12 +252,59 @@ namespace nes
 
     #undef _
     #undef X
-
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Get the format properties for the given format.
     //----------------------------------------------------------------------------------------------------
     constexpr const FormatProps& GetFormatProps(const EFormat& format)
     {
         return graphics::kFormatProps[static_cast<size_t>(format)];
+    }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Features supported by a format. Obtain using RenderDevice::GetFormatFeatures(EFormat format) 
+    //----------------------------------------------------------------------------------------------------
+    enum class EFormatFeatureBits : uint16
+    {
+        Unsupported = 0,
+
+        // Image features
+        Image                       = NES_BIT(0),
+        StorageImage                = NES_BIT(1),
+        StorageImageAtomics         = NES_BIT(2),
+        ColorAttachment             = NES_BIT(3),
+        DepthStencilAttachment      = NES_BIT(4),
+        Blend                       = NES_BIT(5),
+        Multisample2x               = NES_BIT(6),
+        Multisample4x               = NES_BIT(7),
+        Multisample8x               = NES_BIT(8),
+        Multisample16x              = NES_BIT(9),
+
+        // Buffer features
+        Buffer                      = NES_BIT(10),
+        StorageBuffer               = NES_BIT(11),
+        StorageBufferAtomics        = NES_BIT(12),
+        VertexBuffer                = NES_BIT(13),
+
+        // Texture or Buffer features
+        StorageLoadWithoutFormat    = NES_BIT(14),
+    };
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(EFormatFeatureBits);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Get the maximum number of samples supported based on the format features.
+    //----------------------------------------------------------------------------------------------------
+    constexpr uint32 GetMaxSampleCount(const EFormatFeatureBits featureBits)
+    {
+        if ((featureBits & EFormatFeatureBits::Multisample16x))
+            return 16;
+        if ((featureBits & EFormatFeatureBits::Multisample8x))
+            return 8;
+        if ((featureBits & EFormatFeatureBits::Multisample4x))
+            return 4;
+        if ((featureBits & EFormatFeatureBits::Multisample2x))
+            return 2;
+        
+        return 1;
     }
 }

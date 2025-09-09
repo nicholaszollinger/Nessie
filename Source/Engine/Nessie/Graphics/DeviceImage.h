@@ -82,7 +82,7 @@ namespace nes
         /// @brief : Get the number of pixels for a particular mip level. Mip level 0 is used by default,
         ///     which is the original image.
         //----------------------------------------------------------------------------------------------------
-        uint64              GetPixelCount(const uint16 mipLevel = 0) const;
+        uint64              GetPixelCount(const uint32 mipLevel = 0) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the number of bytes in a single pixel. 
@@ -93,7 +93,7 @@ namespace nes
         /// @brief : Get the size of a particular dimension (width = 0, height = 1, depth = 2) for a given mip level.
         ///     Mip level 0 is used by default, which is the original image.
         //----------------------------------------------------------------------------------------------------
-        uint16              GetDimensionSize(const uint16 dimensionIndex, const uint32 mipLevel = 0) const;
+        uint32              GetDimensionSize(const uint32 dimensionIndex, const uint32 mipLevel = 0) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the native vulkan object handle, and the type.
