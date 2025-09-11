@@ -336,33 +336,37 @@ namespace nes
         return *this;
     }
 
-    ClearDesc& ClearDesc::SetColorValue(const vk::ClearColorValue& color, const uint32 attachmentIndex)
+    ClearDesc ClearDesc::Color(const LinearColor color, const uint32 attachmentIndex)
     {
-        m_clearValue.color = color;
-        m_aspect |= vk::ImageAspectFlagBits::eColor;
-        m_colorAttachmentIndex = attachmentIndex;
-        return *this;
+        ClearDesc result;
+        result.m_clearValue = ClearColorValue(color.r, color.g, color.b, color.a);
+        result.m_colorAttachmentIndex = attachmentIndex;
+        result.m_planes = EImagePlaneBits::Color;
+        return result;
     }
 
-    ClearDesc& ClearDesc::SetDepthValue(const float depth)
+    ClearDesc ClearDesc::Depth(const float depth)
     {
-        m_clearValue.depthStencil.depth = depth;
-        m_aspect |= vk::ImageAspectFlagBits::eDepth;
-        return *this;
+        ClearDesc result{};
+        result.m_clearValue = ClearDepthStencilValue(depth);
+        result.m_planes = EImagePlaneBits::Depth;
+        return result;
     }
 
-    ClearDesc& ClearDesc::SetStencilValue(const uint32 stencil)
+    ClearDesc ClearDesc::Stencil(const uint32 stencil)
     {
-        m_clearValue.depthStencil.stencil = stencil;
-        m_aspect |= vk::ImageAspectFlagBits::eStencil;
-        return *this;
+        ClearDesc result{};
+        result.m_clearValue = ClearDepthStencilValue(1.f, stencil);
+        result.m_planes = EImagePlaneBits::Stencil;
+        return result;
     }
 
-    ClearDesc& ClearDesc::SetDepthStencilValue(const float depth, const uint32 stencil)
+    ClearDesc ClearDesc::DepthStencil(const float depth, const uint32 stencil)
     {
-        SetDepthValue(depth);
-        SetStencilValue(stencil);
-        return *this;
+        ClearDesc result{};
+        result.m_clearValue = ClearDepthStencilValue(depth, stencil);
+        result.m_planes = EImagePlaneBits::Depth | EImagePlaneBits::Stencil;
+        return result;
     }
 
 #pragma endregion

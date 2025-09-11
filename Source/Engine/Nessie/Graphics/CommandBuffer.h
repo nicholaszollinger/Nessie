@@ -133,7 +133,7 @@ namespace nes
         /// @brief : Submit a set of vertices to be drawn - the vertices are either directly in the shader for
         ///     simple cases, or map to the bound vertex buffer. 
         //----------------------------------------------------------------------------------------------------
-        void                    Draw(const DrawDesc& draw);
+        void                    DrawVertices(const DrawDesc& draw);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Submit a set of indices to draw from the bound vertex buffer. 

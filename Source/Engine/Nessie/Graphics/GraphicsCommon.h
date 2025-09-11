@@ -89,33 +89,44 @@ namespace nes
         UVec2       m_extent = UVec2::Zero();
     };
 
-    struct DepthStencil
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Values to use to clear depth and stencil channels in a depth attachment.
+    //----------------------------------------------------------------------------------------------------
+    struct ClearDepthStencilValue
     {
-        float           m_depth = 0.f;
-        uint8           m_stencil = 0;
+        ClearDepthStencilValue() = default;
+        ClearDepthStencilValue(const float depth, const uint32 stencil = 0) : m_depth(depth), m_stencil(stencil) {}
+        
+        float           m_depth = 1.f;
+        uint32          m_stencil = 0;
     };
 
-    union ClearColor
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Values to use to clear color channels in a color attachment.
+    //----------------------------------------------------------------------------------------------------
+    union ClearColorValue
     {
-        ClearColor() = default;
-        ClearColor(const float r, const float g, const float b, float a = 1.0f) : m_float32(r, g, b, a) {}
+        ClearColorValue() = default;
+        ClearColorValue(const float r, const float g, const float b, float a = 1.0f) : m_float32(r, g, b, a) {}
         
         Vec4            m_float32{};
         UVec4           m_uint32;
         IVec4           m_int32;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Value used to clear either a color or depth attachment. 
+    //----------------------------------------------------------------------------------------------------
     union ClearValue
     {
-        ClearColor      m_color;
-        DepthStencil    m_depthStencil;
+        ClearValue() : m_color(0.0f, 0.0f, 0.0f, 1.0f) {}
+        ClearValue(const ClearColorValue& color) : m_color(color) {}
+        ClearValue(const ClearDepthStencilValue depthStencil) : m_depthStencil(depthStencil) {}
+        
+        ClearColorValue         m_color;
+        ClearDepthStencilValue  m_depthStencil;
     };
-
-    struct SampleLocation
-    {
-        int8 x, y = 0;
-    };
-
+    
 #pragma endregion
 
 //============================================================================================================================================================================================
@@ -844,7 +855,7 @@ namespace nes
         float               m_mipMax;       // Maximum level of detail (mip level) to use.
         AddressModes        m_addressModes;
         ECompareOp          m_compareOp;
-        ClearColor          m_borderColor;
+        ClearColorValue          m_borderColor;
         bool                m_isInteger;
     };
 
@@ -1614,12 +1625,12 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct StencilDesc
     {
-        ECompareOp                  m_compareOp;        // How to compare depth values.
-        EStencilOp                  m_failOp;           // Value to use on fail.
-        EStencilOp                  m_passOp;           // Value to use on pass.
-        EStencilOp                  m_depthFailOp;      // Value to use on depth fail.
-        uint8                       m_writeMask;        // Which color channels to write to.
-        uint8                       m_compareMask;      // Which color channels to compare.
+        ECompareOp                  m_compareOp = ECompareOp::None;     // How to compare depth values.
+        EStencilOp                  m_failOp;                           // Value to use on fail.
+        EStencilOp                  m_passOp;                           // Value to use on pass.
+        EStencilOp                  m_depthFailOp;                      // Value to use on depth fail.
+        uint8                       m_writeMask;                        // Which channels to write to.
+        uint8                       m_compareMask;                      // Which channels to compare.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1627,15 +1638,17 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DepthAttachmentDesc
     {
-        ECompareOp                  m_compareOp = ECompareOp::Less; // How depth values should be compared. Default behavior is 'lesser' values are preferred.  
+        ECompareOp                  m_compareOp = ECompareOp::None; // How depth values should be compared. Setting to None disables depth testing.  
         bool                        m_enableWrite = true;           // If true, depth values that pass will be written to the depth buffer.
-        bool                        m_enableBoundsTest = false;     // Requires "features.m_depthBoundsTest", expects "CmdSetDepthBounds".   
+
+        // TODO: Requires a feature and dynamic state call.
+        //bool                        m_enableBoundsTest = false;
     };
 
     struct StencilAttachmentDesc
     {
-        StencilDesc                 m_front;
-        StencilDesc                 m_back;             // Requires "features.m_independentFrontAndBackStencilReferenceAndMasks" for "back.m_writeMask"
+        StencilDesc                 m_front{};
+        StencilDesc                 m_back{};             
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1651,12 +1664,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Default Blend Description for blending color channels based on alpha. 
         //----------------------------------------------------------------------------------------------------
-        static constexpr BlendDesc  ColorAlphaBlend() { return {}; }
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Default Blend Description for blending alpha channels for an 'alpha blending' color attachment. 
-        //----------------------------------------------------------------------------------------------------
-        static constexpr BlendDesc  AlphaBlend()      { return {.m_srcFactor = EBlendFactor::One, .m_dstFactor = EBlendFactor::Zero, .m_op = EBlendOp::Add }; }
+        static constexpr BlendDesc  AlphaBlend() { return {}; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1666,7 +1674,7 @@ namespace nes
     struct ColorAttachmentDesc
     {
         EFormat                     m_format            = EFormat::RGBA8_SRGB;          // The format of the color channels.
-        BlendDesc                   m_colorBlend        = BlendDesc::ColorAlphaBlend(); // Defines how the r,g,b components will be blended.
+        BlendDesc                   m_colorBlend        = BlendDesc::AlphaBlend();      // Defines how the r,g,b components will be blended.
         BlendDesc                   m_alphaBlend        = BlendDesc::AlphaBlend();      // Defines how the alpha channel will be blended.
         EColorComponentBits         m_colorWriteMask    = EColorComponentBits::RGBA;    // Defines which color channels will actually be blended.
         bool                        m_enableBlend       = true;                         // Should this blending attachment be enabled.
@@ -1716,38 +1724,36 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Defines any of color, depth and stencil values to use to clear a single render target.
+    /// @brief : Defines a color or depth stencil values to use to clear a single render target.
     ///     To be used for CommandBuffer::ClearAttachments().
+    /// @note : A single Clear Desc can be used for either color or depth, not both!
     //----------------------------------------------------------------------------------------------------
     struct ClearDesc
     {
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the color that will be used to clear an image's pixels.
-        ///     This will add the vk::ImageAspectFlags::eColor flag to the aspect.
+        /// @note : By setting the color value, this cannot be used for depth clear values as well!
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetColorValue(const vk::ClearColorValue& color, const uint32 attachmentIndex = 0);
+        static ClearDesc        Color(const LinearColor color, const uint32 attachmentIndex = 0);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the clear value for depth.
-        ///     This will add the vk::ImageAspectFlags::eDepth flag to the aspect.
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetDepthValue(const float depth);
+        static ClearDesc        Depth(const float depth);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the clear for the stencil.
-        ///     This will add the vk::ImageAspectFlags::eStencil flag to the aspect.
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetStencilValue(const uint32 stencil);
+        static ClearDesc        Stencil(const uint32 stencil);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set both the depth and stencil clear values.
-        ///     This will add both the vk::ImageAspectFlags::eDepth & eStencil flags to the aspect.
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetDepthStencilValue(const float depth, const uint32 stencil);
-        
-        vk::ClearValue          m_clearValue            = {};
-        vk::ImageAspectFlags    m_aspect                = vk::ImageAspectFlagBits::eNone;
-        uint32                  m_colorAttachmentIndex  = 0;
+        static ClearDesc        DepthStencil(const float depth, const uint32 stencil);
+
+        ClearValue              m_clearValue{};
+        EImagePlaneBits         m_planes = EImagePlaneBits::All; 
+        uint32                  m_colorAttachmentIndex = 0;
     };
 
 #pragma endregion

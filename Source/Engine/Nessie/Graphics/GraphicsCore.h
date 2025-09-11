@@ -54,6 +54,7 @@ namespace nes
     class   DescriptorPool;
     class   Pipeline;
     class   PipelineLayout;
+    class   GBuffer;
     
     
     //----------------------------------------------------------------------------------------------------

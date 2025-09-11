@@ -20,9 +20,9 @@ namespace nes
         , m_surface(std::move(other.m_surface))
         , m_images(std::move(other.m_images))
         , m_imageViews(std::move(other.m_imageViews))
-        , m_frameResources(std::move(other.m_frameResources))
+        , m_frameSyncResources(std::move(other.m_frameSyncResources))
         , m_swapchainExtent(other.m_swapchainExtent)
-        , m_frameResourceIndex(other.m_frameResourceIndex)
+        , m_frameSyncIndex(other.m_frameSyncIndex)
         , m_frameImageIndex(other.m_frameImageIndex)
         , m_needsRebuild(other.m_needsRebuild)
         , m_preferredVsyncOffMode(other.m_preferredVsyncOffMode)
@@ -53,9 +53,9 @@ namespace nes
             m_surface = std::move(other.m_surface);
             m_images = std::move(other.m_images);
             m_imageViews = std::move(other.m_imageViews);
-            m_frameResources = std::move(other.m_frameResources);
+            m_frameSyncResources = std::move(other.m_frameSyncResources);
             m_swapchainExtent = other.m_swapchainExtent;
-            m_frameResourceIndex = other.m_frameResourceIndex;
+            m_frameSyncIndex = other.m_frameSyncIndex;
             m_frameImageIndex = other.m_frameImageIndex;
             m_needsRebuild = other.m_needsRebuild;
             m_preferredVsyncOffMode = other.m_preferredVsyncOffMode;
@@ -105,7 +105,7 @@ namespace nes
         // Wait for all frames to finish rendering before recreating the swapchain
         m_pQueue->WaitUntilIdle();
 
-        m_frameResourceIndex = 0;
+        m_frameSyncIndex = 0;
         m_needsRebuild = false;
         DestroySwapchain();
         return BuildSwapchain(desiredWindowSize, enableVsync);
@@ -118,7 +118,7 @@ namespace nes
         // Get the frame resources for the current frame
         // We use m_currentFrame here because we want to ensure we don't overwrite resources
         // that are still in use by previous frames
-        auto& frame = m_frameResources[m_frameResourceIndex];
+        auto& frame = m_frameSyncResources[m_frameSyncIndex];
 
         // Acquire the next image from the swapchain
         // This will signal frame.imageAvailable when the image is ready
@@ -152,7 +152,7 @@ namespace nes
         // Get the frame resources for the current image
         // We use m_nextImageIndex here because we want to signal the semaphore
         // associated with the image we just finished rendering
-        auto& frame = m_frameResources[m_frameImageIndex];
+        auto& frame = m_frameSyncResources[m_frameImageIndex];
 
         const vk::PresentInfoKHR presentInfo = vk::PresentInfoKHR()
             .setWaitSemaphoreCount(1)
@@ -161,7 +161,7 @@ namespace nes
             .setSwapchains(*m_swapchain)
             .setPImageIndices(&m_frameImageIndex)
             .setPResults(nullptr);
-
+        
         const vk::Result result = m_pQueue->GetVkQueue().presentKHR(presentInfo);
         
         if (result == vk::Result::eErrorOutOfDateKHR)
@@ -174,7 +174,7 @@ namespace nes
         }
 
         // Advance to the next frame in the swapchain
-        m_frameResourceIndex = (m_frameResourceIndex + 1) % m_maxFramesInFlight;
+        m_frameSyncIndex = (m_frameSyncIndex + 1) % m_maxFramesInFlight;
     }
 
     void Swapchain::SetDebugName(const std::string& name)
@@ -239,7 +239,7 @@ namespace nes
         m_imageViews.clear();
         m_images.clear();
         m_swapchain = nullptr;
-        m_frameResources.clear();
+        m_frameSyncResources.clear();
     }
 
     NativeVkObject Swapchain::GetNativeVkObject() const
@@ -326,6 +326,7 @@ namespace nes
             desc.m_sampleCount = 1;
             
             m_images.emplace_back(DeviceImage(*m_pDevice, vkImages[i], desc));
+            m_images.back().SetDebugName(fmt::format("Swapchain Image ({})", i));
         }
     }
 
@@ -347,21 +348,24 @@ namespace nes
         {
             desc.m_pImage = &image;
             m_imageViews.emplace_back(Descriptor(*m_pDevice, desc));
+            m_imageViews.back().SetDebugName(fmt::format("Swapchain ImageView ({})", m_imageViews.size() - 1));
         }
     }
 
     void Swapchain::CreateFrameResources()
     {
         // raii types handle destruction.
-        m_frameResources.clear();
+        m_frameSyncResources.clear();
 
         constexpr vk::SemaphoreCreateInfo kSemaphoreInfo = vk::SemaphoreCreateInfo();
         
-        m_frameResources.resize(m_images.size());
+        m_frameSyncResources.resize(m_images.size());
         for (size_t i = 0; i < m_images.size(); ++i)
         {
-            m_frameResources[i].m_renderFinished = vk::raii::Semaphore(*m_pDevice, kSemaphoreInfo, m_pDevice->GetVkAllocationCallbacks());
-            m_frameResources[i].m_imageAvailable = vk::raii::Semaphore(*m_pDevice, kSemaphoreInfo, m_pDevice->GetVkAllocationCallbacks());
+            m_frameSyncResources[i].m_renderFinished = vk::raii::Semaphore(*m_pDevice, kSemaphoreInfo, m_pDevice->GetVkAllocationCallbacks());
+            m_pDevice->SetDebugNameVkObject(NativeVkObject(*m_frameSyncResources[i].m_renderFinished, vk::ObjectType::eSemaphore), fmt::format("Swapchain RenderFinished({})", i));
+            m_frameSyncResources[i].m_imageAvailable = vk::raii::Semaphore(*m_pDevice, kSemaphoreInfo, m_pDevice->GetVkAllocationCallbacks());
+            m_pDevice->SetDebugNameVkObject(NativeVkObject(*m_frameSyncResources[i].m_imageAvailable, vk::ObjectType::eSemaphore), fmt::format("Swapchain ImageAvailable({})", i));
         }
     }
 }

@@ -1490,6 +1490,33 @@ namespace nes
         return false;
     }
 
+    EFormat RenderDevice::GetSupportedDepthFormat(const uint32 minBits, const bool requireStencil) const
+    {
+        if (minBits <= 16 && !requireStencil)
+        {
+            if (GetFormatFeatures(EFormat::D16_UNORM) & EFormatFeatureBits::DepthStencilAttachment)
+                return EFormat::D16_UNORM;
+        }
+
+        if (minBits <= 24)
+        {
+            if (GetFormatFeatures(EFormat::D24_UNORM_S8_UINT) & EFormatFeatureBits::DepthStencilAttachment)
+                return EFormat::D24_UNORM_S8_UINT;
+        }
+
+        if (minBits <= 32 && !requireStencil)
+        {
+            if (GetFormatFeatures(EFormat::D32_SFLOAT) & EFormatFeatureBits::DepthStencilAttachment)
+                return EFormat::D32_SFLOAT;
+        }
+
+        if (GetFormatFeatures(EFormat::D32_SFLOAT_S8_UINT_X24) & EFormatFeatureBits::DepthStencilAttachment)
+            return EFormat::D32_SFLOAT_S8_UINT_X24;
+
+        NES_ASSERT(false, "No available depth format with bit and stencil requirements!");
+        return EFormat::Unknown;
+    }
+
     EFormatFeatureBits RenderDevice::GetFormatFeatures(const EFormat format) const
     {
         EFormatFeatureBits features = EFormatFeatureBits::Unsupported;

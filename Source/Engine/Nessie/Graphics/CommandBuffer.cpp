@@ -301,18 +301,30 @@ namespace nes
 
         for (auto& clearDesc : clearDescs)
         {
-            // If depth aspect set, ensure the depth-stencil attachment is writeable.
-            if (clearDesc.m_aspect & vk::ImageAspectFlagBits::eDepth && !m_depthStencil->IsDepthWritable())
-                continue;
+            vk::ImageAspectFlags aspect = {};
 
-            // If stencil aspect set, ensure the depth-stencil attachment is writeable.
-            if (clearDesc.m_aspect & vk::ImageAspectFlagBits::eStencil && !m_depthStencil->IsStencilWritable())
-                continue;
+            // Color
+            if (clearDesc.m_planes & EImagePlaneBits::Color)
+                aspect |= vk::ImageAspectFlagBits::eColor;
 
+            // or Depth/Stencil
+            else
+            {
+                // If depth aspect set, ensure the depth-stencil attachment is writeable.
+                if ((clearDesc.m_planes & EImagePlaneBits::Depth) && m_depthStencil->IsDepthWritable())
+                    aspect |= vk::ImageAspectFlagBits::eDepth;
+
+                // If stencil aspect set, ensure the depth-stencil attachment is writeable.
+                if ((clearDesc.m_planes & EImagePlaneBits::Stencil) && m_depthStencil->IsStencilWritable())
+                    aspect |= vk::ImageAspectFlagBits::eStencil;
+            }
+
+            const vk::ClearValue clearValue = *(reinterpret_cast<const vk::ClearValue*>(&clearDesc.m_clearValue));
+            
             vk::ClearAttachment& clearAttachment = attachments[attachmentCount++];
-            clearAttachment.setAspectMask(clearDesc.m_aspect)
+            clearAttachment.setAspectMask(aspect)
                 .setColorAttachment(clearDesc.m_colorAttachmentIndex)
-                .setClearValue(clearDesc.m_clearValue);
+                .setClearValue(clearValue);
         }
 
         // No valid attachments found.
@@ -442,7 +454,7 @@ namespace nes
         m_buffer.bindVertexBuffers2(firstBinding, vkBuffers, vkOffsets, vkSizes, vkStrides);
     }
 
-    void CommandBuffer::Draw(const DrawDesc& draw)
+    void CommandBuffer::DrawVertices(const DrawDesc& draw)
     {
         m_buffer.draw(draw.m_vertexCount, draw.m_instanceCount, draw.m_firstVertex, draw.m_firstInstance);
     }

@@ -116,6 +116,13 @@ namespace nes
         bool                        FindSuitableMemoryType(const EMemoryLocation location, uint32 memoryTypeMask, DeviceMemoryTypeInfo& outInfo) const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get a supported depth format that is at least 'minBits' in size and optional supports stencil.
+        ///	@param minBits : Number of bits you need for the depth format. Ex: 16, 24, 32 are common.
+        ///	@param requireStencil : Whether the format needs to have a stencil attachment. Default is true.
+        //----------------------------------------------------------------------------------------------------
+        EFormat                     GetSupportedDepthFormat(const uint32 minBits, const bool requireStencil = true) const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get the features supported by a given format.
         //----------------------------------------------------------------------------------------------------
         EFormatFeatureBits          GetFormatFeatures(const EFormat format) const;

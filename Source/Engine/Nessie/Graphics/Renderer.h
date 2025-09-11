@@ -268,8 +268,8 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         struct FrameData
         {
-            CommandPool                         m_commandPool = nullptr;                   // The Command Pool used for recording commands for this frame.
-            CommandBuffer                       m_commandBuffer = nullptr;                 // The Command Buffer that contains this frame's rendering commands.
+            CommandPool                         m_commandPool = nullptr;                    // The Command Pool used for recording commands for this frame.
+            CommandBuffer                       m_commandBuffer = nullptr;                  // The Command Buffer that contains this frame's rendering commands.
             uint64                              m_frameNumber = 0;                          // Timeline value for synchronization (increases each frame).
         };
         

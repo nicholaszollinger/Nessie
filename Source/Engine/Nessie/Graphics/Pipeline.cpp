@@ -168,33 +168,33 @@ namespace nes
             .setScissorCount(1);
 
         // Depth-Stencil
-        // const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
-        // const StencilAttachmentDesc& stencil = desc.m_outputMerger.m_stencil;
-        //
-        // vk::StencilOpState front = vk::StencilOpState()
-        //     .setPassOp(GetVkStencilOp(stencil.m_front.m_passOp))
-        //     .setFailOp(GetVkStencilOp(stencil.m_front.m_failOp))
-        //     .setDepthFailOp(GetVkStencilOp(stencil.m_front.m_depthFailOp))
-        //     .setCompareMask(stencil.m_front.m_compareMask)
-        //     .setWriteMask(stencil.m_front.m_writeMask);
-        //
-        // vk::StencilOpState back = vk::StencilOpState()
-        //     .setPassOp(GetVkStencilOp(stencil.m_back.m_passOp))
-        //     .setFailOp(GetVkStencilOp(stencil.m_back.m_failOp))
-        //     .setDepthFailOp(GetVkStencilOp(stencil.m_back.m_depthFailOp))
-        //     .setCompareMask(stencil.m_back.m_compareMask)
-        //     .setWriteMask(stencil.m_back.m_writeMask);
-        //
-        // vk::PipelineDepthStencilStateCreateInfo depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
-        //     .setDepthTestEnable(depth.m_compareOp != ECompareOp::None)
-        //     .setDepthWriteEnable(depth.m_enableWrite)
-        //     .setDepthCompareOp(GetVkCompareOp(depth.m_compareOp))
-        //     .setDepthBoundsTestEnable(depth.m_enableBoundsTest)
-        //     .setStencilTestEnable((stencil.m_front.m_compareOp == ECompareOp::None && stencil.m_back.m_compareOp != ECompareOp::None)? vk::False : vk::True)
-        //     .setMinDepthBounds(0.f)
-        //     .setMaxDepthBounds(1.f)
-        //     .setFront(front)
-        //     .setBack(back);
+        const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
+        const StencilAttachmentDesc& stencil = desc.m_outputMerger.m_stencil;
+        
+        vk::StencilOpState front = vk::StencilOpState()
+            .setPassOp(GetVkStencilOp(stencil.m_front.m_passOp))
+            .setFailOp(GetVkStencilOp(stencil.m_front.m_failOp))
+            .setDepthFailOp(GetVkStencilOp(stencil.m_front.m_depthFailOp))
+            .setCompareMask(stencil.m_front.m_compareMask)
+            .setWriteMask(stencil.m_front.m_writeMask);
+        
+        vk::StencilOpState back = vk::StencilOpState()
+            .setPassOp(GetVkStencilOp(stencil.m_back.m_passOp))
+            .setFailOp(GetVkStencilOp(stencil.m_back.m_failOp))
+            .setDepthFailOp(GetVkStencilOp(stencil.m_back.m_depthFailOp))
+            .setCompareMask(stencil.m_back.m_compareMask)
+            .setWriteMask(stencil.m_back.m_writeMask);
+        
+        vk::PipelineDepthStencilStateCreateInfo depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+            .setDepthTestEnable(depth.m_compareOp != ECompareOp::None)
+            .setDepthWriteEnable(depth.m_enableWrite)
+            .setDepthCompareOp(GetVkCompareOp(depth.m_compareOp))
+            //.setDepthBoundsTestEnable(depth.m_enableBoundsTest)
+            //.setStencilTestEnable((stencil.m_front.m_compareOp == ECompareOp::None && stencil.m_back.m_compareOp != ECompareOp::None)? vk::False : vk::True)
+            .setMinDepthBounds(0.f)
+            .setMaxDepthBounds(1.f)
+            .setFront(front)
+            .setBack(back);
 
         // Blending
         const auto& descOutputMerger = desc.m_outputMerger;
@@ -280,7 +280,7 @@ namespace nes
             .setPViewportState(&viewportState)
             .setPRasterizationState(&rasterizationState)
             .setPMultisampleState(&multisampleState)
-            //.setPDepthStencilState(&depthStencilState)
+            .setPDepthStencilState(&depthStencilState)
             .setPColorBlendState(&colorBlendState)
             .setPDynamicState(&dynamicState)
             .setLayout(layout.GetVkPipelineLayout())

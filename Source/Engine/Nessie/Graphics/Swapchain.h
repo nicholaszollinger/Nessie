@@ -118,12 +118,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current semaphore that will be signaled when the next image is ready for rendering.
         //----------------------------------------------------------------------------------------------------
-        vk::Semaphore               GetImageAvailableSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_imageAvailable; }
+        vk::Semaphore               GetImageAvailableSemaphore() const  { return m_frameSyncResources[m_frameSyncIndex].m_imageAvailable; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current semaphore that will be signaled when rendering to the image has finished.
         //----------------------------------------------------------------------------------------------------
-        vk::Semaphore               GetRenderFinishedSemaphore() const  { return m_frameResources[m_frameResourceIndex].m_renderFinished; }
+        vk::Semaphore               GetRenderFinishedSemaphore() const  { return m_frameSyncResources[m_frameImageIndex].m_renderFinished; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Sets the debug name for both the swapchain and the surface. 
@@ -139,10 +139,10 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Resources associated with each frame being processed. 
         //----------------------------------------------------------------------------------------------------
-        struct FrameResources
+        struct FrameSyncData
         {
-            vk::raii::Semaphore     m_imageAvailable = nullptr;  /// Signals when the image is ready for rendering.
-            vk::raii::Semaphore     m_renderFinished = nullptr;  /// Signals when rendering is finished.
+            vk::raii::Semaphore     m_imageAvailable = nullptr;  // Signals when the image is ready for rendering.
+            vk::raii::Semaphore     m_renderFinished = nullptr;  // Signals when rendering is finished.
         };
 
         //----------------------------------------------------------------------------------------------------
@@ -199,14 +199,14 @@ namespace nes
         vk::raii::SurfaceKHR        m_surface = nullptr;                                // The surface to present images to. Owned by the swapchain.
         std::vector<DeviceImage>    m_images{};                                         // Swapchain image resources.
         std::vector<Descriptor>     m_imageViews{};                                     // Swapchain image views resources. Recreated when the Swapchain is recreated.
-        std::vector<FrameResources> m_frameResources{};                                 // Synchronization primitives for each frame.
+        std::vector<FrameSyncData>  m_frameSyncResources{};                             // Synchronization primitives for each frame.
         vk::Extent2D                m_swapchainExtent{};                                // Current size of the swapchain.
-        uint32                      m_frameResourceIndex = 0;                           // Index of the current frame.
+        uint32                      m_frameSyncIndex = 0;                               // Index of the current frame.
         uint32                      m_frameImageIndex = 0;                              // Index of the swapchain image we are rendering to.
         bool                        m_needsRebuild = false;                             // Flag indicating that the swapchain needs to be rebuilt.
 
         vk::PresentModeKHR          m_preferredVsyncOffMode = static_cast<vk::PresentModeKHR>(VK_PRESENT_MODE_MAX_ENUM_KHR); 
-        uint32                      m_maxFramesInFlight = 3;    /// Best for most cases.
+        uint32                      m_maxFramesInFlight = 3;                            // Best for most cases.
     };
 
     static_assert(DeviceObjectType<Swapchain>);

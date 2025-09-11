@@ -106,8 +106,7 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
     commandBuffer.BeginRendering(renderTargetsDesc);
     {
         // Clear the screen to a dark grey color:
-        nes::ClearDesc clearDesc = nes::ClearDesc()
-            .SetColorValue({ 0.01f, 0.01f, 0.01f, 1.0f });
+        nes::ClearDesc clearDesc = nes::ClearDesc::Color(nes::LinearColor(0.01f, 0.01f, 0.01f, 1.0f));
         commandBuffer.ClearRenderTargets(clearDesc);
 
         // Set our pipeline and render area:
@@ -316,8 +315,7 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
                 .SetDescriptorType(nes::EDescriptorType::Sampler)
                 .SetShaderStages(nes::EPipelineStageBits::FragmentShader)
         };
-
-        // Our set of bindings contains the single one.
+        
         nes::DescriptorSetDesc descriptorSetDesc = nes::DescriptorSetDesc()
             .SetBindings(bindings.data(), static_cast<uint32>(bindings.size()));
         
@@ -445,7 +443,7 @@ void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
     samplerDesc.m_addressModes.v = nes::EAddressMode::Repeat;
     samplerDesc.m_addressModes.w = nes::EAddressMode::Repeat;
     samplerDesc.m_mipBias = 0.f;
-    samplerDesc.m_borderColor = nes::ClearColor(0.f, 0.f, 0.f);
+    samplerDesc.m_borderColor = nes::ClearColorValue(0.f, 0.f, 0.f);
     samplerDesc.m_compareOp = nes::ECompareOp::None;
     samplerDesc.m_anisotropy = static_cast<uint8>(device.GetDesc().m_other.m_maxSamplerAnisotropy);
     m_sampler = nes::Descriptor(device, samplerDesc);
