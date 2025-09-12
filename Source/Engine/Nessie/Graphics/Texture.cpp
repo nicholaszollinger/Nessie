@@ -84,8 +84,8 @@ namespace nes
             // Upload image data:
             DataUploader dataUploader(Renderer::GetDevice());
             ImageUploadDesc uploadDesc{};
-            uploadDesc.m_pSrcData = &pData;
             uploadDesc.m_pImage = &m_image;
+            uploadDesc.m_pSrcData = pData;
             uploadDesc.m_newLayout = EImageLayout::ShaderResource;
             dataUploader.AppendUploadImage(uploadDesc);
             dataUploader.RecordCommands(cmdBuffer);
