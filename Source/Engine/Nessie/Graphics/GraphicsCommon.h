@@ -767,7 +767,7 @@ namespace nes
         uint32              m_depth = graphics::kUseRemaining;      // Depth of the region, or the number of pixels in the z-axis.
         uint32              m_mipLevel = 0;                         // Mip Level of the image.     
         uint32              m_layer = 0;                            // Which image layer.  
-        EImagePlaneBits     m_planes = EImagePlaneBits::All;        // Which of the image planes will be accessed. Default is color. 
+        EImagePlaneBits     m_planes = EImagePlaneBits::All;        // Which of the image planes will be accessed. Default is All. 
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1315,11 +1315,12 @@ namespace nes
         /// @brief : Construct the description of indices within the Device Buffer.
         ///	@param pBuffer : Buffer resource that contains the indices. Must not be null. 
         ///	@param indexCount : Number of indices in the range.
+        ///	@param firstIndex : First index in the range.
         ///	@param type : Type of index that is stored. Default is uint32.
         ///	@param bufferOffset : Byte offset from the beginning of the DeviceBuffer to get to first index.
         ///     Default is 0; the start of the buffer.
         //----------------------------------------------------------------------------------------------------
-        IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type = EIndexType::U32, const uint64 bufferOffset = 0);
+        IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const uint32 firstIndex = 0, const EIndexType type = EIndexType::U32, const uint64 bufferOffset = 0);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the type of indices that this index buffer contains.
@@ -1330,8 +1331,11 @@ namespace nes
         /// @brief : Get the number of indices in the range.
         //----------------------------------------------------------------------------------------------------
         uint32              GetNumIndices() const    { return m_indexCount; }
+
+        uint32              GetFirstIndex() const    { return m_firstIndex; }
     
     private:
+        uint32              m_firstIndex = 0;
         uint32              m_indexCount = 0;
         EIndexType          m_indexType  = EIndexType::U16;
     };
@@ -1903,12 +1907,13 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DrawDesc
     {
+        DrawDesc() = default;
+        DrawDesc(const uint32 numVertices, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
+        
         uint32  m_vertexCount = 0;      // Number of vertices to submit from the attached vertex buffer.
         uint32  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                      
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
         uint32  m_firstInstance = 0;    // Used as an offset for instanced rendering.
-
-        DrawDesc(const uint32 numVertices, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1917,13 +1922,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DrawIndexedDesc
     {
-        uint32  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                   
+        DrawIndexedDesc() = default;
+        DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
+        
+        uint64  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                   
         uint32  m_indexCount = 0;       // Number of indices to submit.   
-        uint32  m_firstIndex = 0;       // Used as a byte offset into the index buffer. Must be calculated as: (sizeof(index) * index).                       
+        uint32  m_firstIndex = 0;       // First index in the index buffer.                       
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
         uint32  m_firstInstance = 0;    // Used as an offset for instanced rendering.
-        
-        DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1949,7 +1955,7 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Right now, I am forcing the Color Aspect, Single layer, Buffer Row Length & Buffer image Height == 0
+    // [TODO]: Right now, I am forcing the Color Aspect, Buffer Row Length & Buffer image Height == 0
     //
     /// @brief : Parameters to copy a buffer's data to a Device Image.
     //----------------------------------------------------------------------------------------------------
@@ -1957,7 +1963,9 @@ namespace nes
     {
         DeviceImage*        m_dstImage = nullptr;                           // 
         Int3                m_imageOffset = {0, 0, 0};                // Extent offset in the image to begin copying.
+        uint32              m_layerCount = 1;
         EImageLayout        m_dstImageLayout = EImageLayout::CopyDestination;    // The layout that the image will be in at the time of the copy.
+        EImagePlaneBits     m_planes = EImagePlaneBits::Color;
         const DeviceBuffer* m_srcBuffer = nullptr;
         uint64              m_srcOffset = 0;
         uint64              m_size = graphics::kWholeSize;

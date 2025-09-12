@@ -45,8 +45,9 @@ private:
     struct FrameData
     {
         nes::Descriptor             m_globalBufferView = nullptr;      // View into the World uniform buffer.
-        nes::DescriptorSet          m_descriptorSet = nullptr;
-        uint64                      m_globalBufferOffset = 0;           // Offset to the GlobalConstants struct for this frame.
+        nes::DescriptorSet          m_gridDescriptorSet = nullptr;
+        nes::DescriptorSet          m_skyboxDescriptorSet = nullptr;
+        uint64                      m_globalBufferOffset = 0;          // Offset to the GlobalConstants struct for this frame.
     };
 
 private:
@@ -54,18 +55,12 @@ private:
     /// @brief : Load the Shaders, Textures and Meshes for the App.  
     //----------------------------------------------------------------------------------------------------
     bool                            LoadAssets();
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the global constants buffer and the vertex/index buffers for all geometry.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateBuffers(nes::RenderDevice& device);
     
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Create the uniform buffers that will have their data updated each frame.
-    //----------------------------------------------------------------------------------------------------
-    void                            CreateUniformBuffers(nes::RenderDevice& device);
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Create the MSAA and Depth images and descriptors that we will be rendering to before resolve to the
-    ///     swapchain's image.
-    //----------------------------------------------------------------------------------------------------
-    void                            UpdateGBuffer(nes::RenderDevice& device, const uint32 width, const uint32 height);
-
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the pipeline to render the grid plane.
     //----------------------------------------------------------------------------------------------------
@@ -93,9 +88,20 @@ private:
     void                            CreateDescriptorSets(nes::RenderDevice& device);
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the MSAA and Depth images and descriptors that we will be rendering to before resolve to the
+    ///     swapchain's image.
+    //----------------------------------------------------------------------------------------------------
+    void                            UpdateGBuffer(nes::RenderDevice& device, const uint32 width, const uint32 height);
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Update this frame's uniform buffers.
     //----------------------------------------------------------------------------------------------------
     void                            UpdateUniformBuffers(const nes::RenderFrameContext& context);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Render the skybox.
+    //----------------------------------------------------------------------------------------------------
+    void                            RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) const;
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render the 3D grid.
@@ -113,23 +119,44 @@ private:
     void                            ProcessInput();
 
 private:
+    // Assets:
     nes::AssetID                    m_gridVertShader = nes::kInvalidAssetID;
     nes::AssetID                    m_gridFragShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_skyboxTexture = nes::kInvalidAssetID;
+    nes::AssetID                    m_skyboxVertShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_skyboxFragShader = nes::kInvalidAssetID;
     nes::GBuffer                    m_gBuffer = nullptr;                        // Color and depth render targets.
     nes::DescriptorPool             m_descriptorPool = nullptr;
+
+    // Devive Buffers:
+
+    // Geometry Pipeline
     nes::Pipeline                   m_geometryPipeline = nullptr;
     nes::PipelineLayout             m_geometryPipelineLayout = nullptr;
+
+    // Skybox Pipeline
     nes::Pipeline                   m_skyboxPipeline = nullptr;
+    nes::PipelineLayout             m_skyboxPipelineLayout = nullptr;
+
+    // Grid Pipeline
     nes::Pipeline                   m_gridPipeline = nullptr;
     nes::PipelineLayout             m_gridPipelineLayout = nullptr;
-    nes::DeviceBuffer               m_globalConstantBuffer = nullptr;
+    
+    nes::Descriptor                 m_cubeSampler = nullptr;
+    nes::Descriptor                 m_skyboxTextureView = nullptr;
     std::vector<FrameData>          m_frames{};
+    nes::DeviceBuffer               m_globalConstantsBuffer = nullptr;
+    nes::DeviceBuffer               m_verticesBuffer = nullptr;    
+    nes::DeviceBuffer               m_indicesBuffer = nullptr;    
+    nes::VertexBufferRange          m_cubeVertexRange{};
+    nes::IndexBufferRange           m_cubeIndexRange{};
     nes::EFormat                    m_depthFormat = nes::EFormat::Unknown;
-
+    
     // Camera Data:
     CameraState                     m_camera{};
     nes::Vec3                       m_inputMovement = nes::Vec3::Zero();
     nes::Vec2                       m_inputRotation = nes::Vec2::Zero();
     float                           m_cameraMoveSpeed = 50.f;
+    float                           m_cameraSensitivity = 1.f;
     bool                            m_cameraRotationEnabled = false;
 };

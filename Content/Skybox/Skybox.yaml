@@ -1,0 +1,10 @@
+# Miramar Textures
+TextureCube:
+  Paths: [
+      "Skybox\\miramar_ft.png", # Front
+      "Skybox\\miramar_bk.png", # Back
+      "Skybox\\miramar_up.png", # Up
+      "Skybox\\miramar_dn.png", # Down
+      "Skybox\\miramar_rt.png", # Left
+      "Skybox\\miramar_lf.png", # Right
+  ]

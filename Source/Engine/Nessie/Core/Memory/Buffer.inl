@@ -18,7 +18,12 @@ namespace nes
         memcpy(buffer.m_pData, static_cast<const uint8*>(pData) + srcOffset, size);
         return buffer;
     }
-    
+
+    inline Buffer::Buffer(const uint64 size)
+    {
+        Allocate(size);
+    }
+
     inline uint8& Buffer::operator[](const uint64 index)
     {
         NES_ASSERT(index < m_size);

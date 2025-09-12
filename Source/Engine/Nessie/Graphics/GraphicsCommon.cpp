@@ -310,8 +310,9 @@ namespace nes
         NES_ASSERT(stride > 0);
     }
 
-    IndexBufferRange::IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type, const uint64 bufferOffset)
+    IndexBufferRange::IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const uint32 firstIndex, const EIndexType type, const uint64 bufferOffset)
         : DeviceBufferRange(pBuffer, bufferOffset, indexCount * (type == EIndexType::U16 ? sizeof(uint16) : sizeof(uint32)))
+        , m_firstIndex(firstIndex)
         , m_indexCount(static_cast<uint32>(indexCount))
         , m_indexType(type)
     {

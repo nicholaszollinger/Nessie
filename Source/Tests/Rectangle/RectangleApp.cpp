@@ -198,7 +198,7 @@ void RectangleApp::CreateGeometryBuffer(nes::RenderDevice& device)
         m_geometryBuffer = nes::DeviceBuffer(device, desc);
             
         m_vertexBufferDesc = nes::VertexBufferRange(&m_geometryBuffer, sizeof(Vertex), vertices.size());
-        m_indexBufferDesc = nes::IndexBufferRange(&m_geometryBuffer, indices.size(), nes::EIndexType::U16, vertexBufferSize);
+        m_indexBufferDesc = nes::IndexBufferRange(&m_geometryBuffer, indices.size(), 0, nes::EIndexType::U16, vertexBufferSize);
     }
 
     // Upload the vertex and index data to the buffer.

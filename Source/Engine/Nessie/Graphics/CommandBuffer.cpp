@@ -164,15 +164,16 @@ namespace nes
     {
         const vk::Offset3D imageOffset = { desc.m_imageOffset.x, desc.m_imageOffset.y, desc.m_imageOffset.z };
 
-        // [TODO]: This should be part of the copy parameters:
+        // [TODO]: All of these should be parameters:
         const vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
-            .setAspectMask(vk::ImageAspectFlagBits::eColor)
-            .setLayerCount(1)
-            .setMipLevel(0);
+            .setAspectMask(GetVkImageAspectFlags(desc.m_planes))
+            .setBaseArrayLayer(0)
+            .setMipLevel(0)
+            .setLayerCount(desc.m_layerCount);
         
         vk::BufferImageCopy2 region = vk::BufferImageCopy2()
-            .setBufferRowLength(0)
-            .setBufferImageHeight(0)
+            .setBufferRowLength(0)     
+            .setBufferImageHeight(0) 
             .setBufferOffset(desc.m_srcOffset)
             .setImageExtent(desc.m_dstImage->GetExtent())
             .setImageOffset(imageOffset)
