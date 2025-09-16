@@ -17,7 +17,7 @@ namespace nes
         // Access after?
     };
     
-    struct ImageUploadDesc
+    struct UploadImageDesc
     {
         DeviceImage*        m_pImage = nullptr;                     // Device Image that we are uploading to.
         const void*         m_pSrcData = nullptr;                   // Array of pixel data to upload to m_layerCount number of layers in the image. The size of each layer is expected to be the image size.
@@ -49,7 +49,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a staging buffer to copy the image data into the destination image.
         //----------------------------------------------------------------------------------------------------
-        void                                AppendUploadImage(const ImageUploadDesc& desc, const SemaphoreValue& semaphoreState = {});
+        void                                AppendUploadImage(const UploadImageDesc& desc, const SemaphoreValue& semaphoreState = {});
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Records all pending upload operations into the command buffer,

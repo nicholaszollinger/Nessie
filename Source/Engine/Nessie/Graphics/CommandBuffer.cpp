@@ -462,7 +462,7 @@ namespace nes
 
     void CommandBuffer::DrawIndexed(const DrawIndexedDesc& draw)
     {
-        m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_firstVertex), draw.m_firstInstance);
+        m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_vertexOffset), draw.m_firstInstance);
     }
 
     void CommandBuffer::ResolveImage(const DeviceImage& srcImage, DeviceImage& dstImage)

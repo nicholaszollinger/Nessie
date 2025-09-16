@@ -126,6 +126,8 @@ namespace nes
     concept ValidAssetType = std::same_as<Type, AssetBase> ||
         (TypeIsDerivedFrom<Type, AssetBase>
         && std::is_default_constructible_v<Type>
+        && std::is_move_assignable_v<Type>
+        && std::is_move_constructible_v<Type>
         && HasValidTypeInfo<Type>);
 
     static_assert(ValidAssetType<AssetBase>);

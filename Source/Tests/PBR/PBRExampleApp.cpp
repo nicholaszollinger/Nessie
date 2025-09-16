@@ -1,5 +1,8 @@
 // PBRExampleApp.cpp
 #include "PBRExampleApp.h"
+
+#include <iostream>
+
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Asset/AssetManager.h"
@@ -10,11 +13,10 @@
 #include "Nessie/Graphics/Shader.h"
 #include "Nessie/Graphics/Texture.h"
 #include "Nessie/Input/InputManager.h"
-#include "Helpers/Primitives.h"
 
 bool PBRExampleApp::Internal_AppInit()
 {
-    if (!LoadAssets())
+    if (!LoadScene())
         return false;
     
     // Initial Camera Position:
@@ -37,7 +39,7 @@ bool PBRExampleApp::Internal_AppInit()
         .SetMaxSampleCount();
     m_gBuffer = nes::GBuffer(gBufferDesc);
     
-    CreateBuffers(device);
+    CreateBuffersAndImages(device);
     UpdateGBuffer(device, swapchainExtent.width, swapchainExtent.height);
     CreateGridPipeline(device);
     CreateSkyboxPipeline(device);
@@ -111,7 +113,7 @@ void PBRExampleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const 
     // Set the msaa image as our color render target:
     nes::RenderTargetsDesc renderTargetsDesc = nes::RenderTargetsDesc()
         .SetColorTargets(&m_gBuffer.GetColorImageView())
-        .SetDepthStencilTargets(&m_gBuffer.GetDepthImageView());
+        .SetDepthStencilTarget(&m_gBuffer.GetDepthImageView());
     
     // Record the Render commands:
     commandBuffer.BeginRendering(renderTargetsDesc);
@@ -127,12 +129,9 @@ void PBRExampleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const 
         const nes::Scissor scissor(viewport);
         commandBuffer.SetViewports(viewport);
         commandBuffer.SetScissors(scissor);
-
-        // Render the Skybox
+        
         RenderSkybox(commandBuffer, context);
-
-        // [TODO]: Render the Geometry
-
+        RenderInstances(commandBuffer, context);
         RenderGrid(commandBuffer, context);
 
         // Finish.
@@ -175,17 +174,27 @@ void PBRExampleApp::Internal_AppShutdown()
 {
     m_gBuffer = nullptr;
     m_frames.clear();
+
+    m_verticesBuffer = nullptr;
+    m_indicesBuffer = nullptr;
+    m_instanceBuffer = nullptr;
+    
     m_skyboxPipeline = nullptr;
+    m_skyboxPipelineLayout = nullptr;
+    m_skyboxDescriptorSet = nullptr;
+    
     m_gridPipeline = nullptr;
     m_gridPipelineLayout = nullptr;
-    m_geometryPipeline = nullptr;
-    m_geometryPipelineLayout = nullptr;
+    
+    m_pbrPipeline = nullptr;
+    m_pbrPipelineLayout = nullptr;
+    
     m_descriptorPool = nullptr;
 }
 
-bool PBRExampleApp::LoadAssets()
+bool PBRExampleApp::LoadScene()
 {
-    NES_LOG("Loading Assets...");
+    NES_LOG("Loading Scene...");
     std::filesystem::path assetPath{};
     
     // Grid Vert Shader:
@@ -240,6 +249,32 @@ bool PBRExampleApp::LoadAssets()
         }
     }
 
+    // PBR Vert Shader:
+    {
+        assetPath = NES_SHADER_DIR;
+        assetPath /= "PBR.vert.spv";
+
+        const auto result = nes::AssetManager::LoadSync<nes::Shader>(m_pbrVertShader, assetPath);
+        if (result != nes::ELoadResult::Success)
+        {
+            NES_ERROR("Failed to load PBR Vert Shader!");
+            return false;
+        }
+    }
+
+    // PBR Frag Shader:
+    {
+        assetPath = NES_SHADER_DIR;
+        assetPath /= "PBR.frag.spv";
+
+        const auto result = nes::AssetManager::LoadSync<nes::Shader>(m_pbrFragShader, assetPath);
+        if (result != nes::ELoadResult::Success)
+        {
+            NES_ERROR("Failed to load PBR Frag Shader!");
+            return false;
+        }
+    }
+
     // Skybox Texture:
     {
         assetPath = NES_CONTENT_DIR;
@@ -252,12 +287,38 @@ bool PBRExampleApp::LoadAssets()
             return false;
         }
     }
+
+    // Load the Scene Data:
+    // Gather vertices and indices:
+    m_scene.m_indices.reserve(128);
+    m_scene.m_vertices.reserve(128);
+
+    // Cube Mesh:
+    Mesh cubeMesh;
+    helpers::AppendCubeMeshData(m_scene.m_vertices, m_scene.m_indices, cubeMesh);
+    m_scene.m_meshes.emplace_back(cubeMesh);
+
+    // Cube Material:
+    PBRMaterialInstance cubeMaterial{};
+    cubeMaterial.m_baseColorMapIndex = 0;
+    m_scene.m_materials.emplace_back(cubeMaterial);
     
-    NES_LOG("Assets Loaded.");
+    // Cube Mesh Instance:
+    Instance cubeInstance{};
+    cubeInstance.m_meshIndex = 0;
+    cubeInstance.m_materialIndex = 0;
+    // At the origin, uniformScale == 1, no rotation. 
+    cubeInstance.m_matRow0 = nes::Vec4(1.0f, 0.0f, 0.0f, 0.0f);
+    cubeInstance.m_matRow1 = nes::Vec4(0.0f, 1.0f, 0.0f, 0.0f);
+    cubeInstance.m_matRow2 = nes::Vec4(0.0f, 0.0f, 1.0f, 0.0f);
+    m_scene.m_instances.emplace_back(cubeInstance);
+    //m_scene.m_instances.emplace_back(cubeInstance);
+    
+    NES_LOG("Scene Loaded.");
     return true;
 }
 
-void PBRExampleApp::CreateBuffers(nes::RenderDevice& device)
+void PBRExampleApp::CreateBuffersAndImages(nes::RenderDevice& device)
 {
     // Global Constant Buffer: 
     {
@@ -270,40 +331,68 @@ void PBRExampleApp::CreateBuffers(nes::RenderDevice& device)
         m_globalConstantsBuffer = nes::DeviceBuffer(device, desc);
     }
 
-    // Gather vertices and indices:
-    std::vector<uint32> indices{};
-    indices.reserve(128);
-    std::vector<Vertex> vertices{};
-    vertices.reserve(128);
-
-    Mesh cubeMesh;
-    helpers::AppendCubeMeshData(vertices, indices, cubeMesh);
-
-    // All indices for Geometry in the scene in a single buffer:
+    // Index Device Buffer
     {
         nes::AllocateBufferDesc desc;
-        desc.m_size = static_cast<uint32>(indices.size()) * sizeof(uint32);
+        desc.m_size = static_cast<uint32>(m_scene.m_indices.size()) * sizeof(uint32);
         desc.m_usage = nes::EBufferUsageBits::IndexBuffer;
         desc.m_location = nes::EMemoryLocation::Device;
         m_indicesBuffer = nes::DeviceBuffer(device, desc);
     }
 
-    // All vertices for Geometry in the scene in a single buffer:
+    // Vertex Device Buffer
     {
         nes::AllocateBufferDesc desc;
-        desc.m_size = static_cast<uint32>(vertices.size()) * sizeof(Vertex);
+        desc.m_size = static_cast<uint32>(m_scene.m_vertices.size()) * sizeof(Vertex);
         desc.m_usage = nes::EBufferUsageBits::VertexBuffer;
         desc.m_location = nes::EMemoryLocation::Device;
         m_verticesBuffer = nes::DeviceBuffer(device, desc);
     }
 
-    // Save buffer ranges:
+    // Transform Device Buffer
     {
-        m_cubeIndexRange = nes::IndexBufferRange(&m_indicesBuffer, cubeMesh.m_indexCount, cubeMesh.m_firstIndex, nes::EIndexType::U32, cubeMesh.m_firstIndex * sizeof(uint32));
-        m_cubeVertexRange = nes::VertexBufferRange(&m_verticesBuffer, sizeof(Vertex), cubeMesh.m_vertexCount, cubeMesh.m_firstVertex * sizeof(Vertex));
+        nes::AllocateBufferDesc desc;
+        desc.m_size = static_cast<uint32>(m_scene.m_instances.size()) * sizeof(Instance);
+        desc.m_usage = nes::EBufferUsageBits::VertexBuffer; // 
+        desc.m_location = nes::EMemoryLocation::HostUpload; // We are updating the instance information each frame.
+        m_instanceBuffer = nes::DeviceBuffer(device, desc);
+    }
+    
+    // 32x32 White Texture:
+    static constexpr size_t kImageSize = 32;
+    nes::DeviceImage whiteImage = nullptr;
+    nes::Color* pWhiteImageData = nullptr;
+    
+    {
+        // White Image Data:
+        // - White in a metallic PBR workflow isn't full 255.
+        //   Base Color values range from [30, 240]
+        pWhiteImageData = static_cast<nes::Color*>(NES_ALLOC(kImageSize * kImageSize * sizeof(nes::Color)));
+        constexpr nes::Color kPhysicalWhite = nes::Color(240, 240, 240); 
+        for (size_t i = 0; i < kImageSize * kImageSize; ++i)
+        {
+            pWhiteImageData[i] = kPhysicalWhite;
+        }
+
+        // Create the Device Image:
+        nes::ImageDesc imageDesc{};
+        imageDesc.m_width = kImageSize;
+        imageDesc.m_height = kImageSize;
+        imageDesc.m_depth = 1;
+        imageDesc.m_usage = nes::EImageUsageBits::ShaderResource;
+        imageDesc.m_layerCount = 1;
+        imageDesc.m_mipCount = 1;
+        imageDesc.m_sampleCount = 1;
+        imageDesc.m_sharingMode = nes::ESharingMode::Exclusive;
+        imageDesc.m_format = nes::EFormat::RGBA8_UNORM;
+
+        nes::AllocateImageDesc allocDesc{};
+        allocDesc.m_desc = imageDesc;
+        allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
+        whiteImage = nes::DeviceImage(device, allocDesc);
     }
 
-    // Upload index and vertex data:
+    // Upload Data
     {
         nes::DataUploader uploader(device);
         nes::CommandBuffer cmdBuffer = nes::Renderer::BeginTempCommands();
@@ -311,22 +400,42 @@ void PBRExampleApp::CreateBuffers(nes::RenderDevice& device)
         // Indices:
         nes::UploadBufferDesc desc;
         desc.m_pBuffer = &m_indicesBuffer;
-        desc.m_pData = indices.data();
+        desc.m_pData = m_scene.m_indices.data();
         desc.m_uploadOffset = 0;
-        desc.m_uploadSize = indices.size() * sizeof(uint32);
+        desc.m_uploadSize = m_scene.m_indices.size() * sizeof(uint32);
         uploader.AppendUploadBuffer(desc);
 
         // Vertices:
         desc.m_pBuffer = &m_verticesBuffer;
         desc.m_uploadOffset = 0;
-        desc.m_pData = vertices.data();
-        desc.m_uploadSize = vertices.size() * sizeof(Vertex);
+        desc.m_pData = m_scene.m_vertices.data();
+        desc.m_uploadSize = m_scene.m_vertices.size() * sizeof(Vertex);
         uploader.AppendUploadBuffer(desc);
+
+        // Instances:
+        desc.m_pBuffer = &m_instanceBuffer;
+        desc.m_uploadOffset = 0;
+        desc.m_pData = m_scene.m_instances.data();
+        desc.m_uploadSize = m_scene.m_instances.size() * sizeof(Instance);
+        uploader.AppendUploadBuffer(desc);
+
+        // White Image:
+        nes::UploadImageDesc imageUploadDesc{};
+        imageUploadDesc.m_pImage = &whiteImage;
+        imageUploadDesc.m_layerCount = 1;
+        imageUploadDesc.m_planes = nes::EImagePlaneBits::Color;
+        imageUploadDesc.m_pSrcData = pWhiteImageData;
+        imageUploadDesc.m_newLayout = nes::EImageLayout::ShaderResource;
+        uploader.AppendUploadImage(imageUploadDesc);
 
         // Submit:
         uploader.RecordCommands(cmdBuffer);
         nes::Renderer::SubmitAndWaitTempCommands(cmdBuffer);
     }
+
+    // Add the White Texture to the Asset Manager:
+    nes::Texture whiteTexture = nes::Texture(std::move(whiteImage), nes::Buffer(pWhiteImageData, kImageSize * kImageSize * sizeof(nes::Color)));
+    nes::AssetManager::AddMemoryAsset(m_whiteTexture, std::move(whiteTexture));
 }
 
 void PBRExampleApp::UpdateGBuffer(nes::RenderDevice& device, const uint32 width, const uint32 height)
@@ -347,14 +456,19 @@ void PBRExampleApp::UpdateGBuffer(nes::RenderDevice& device, const uint32 width,
     {
         auto commandBuffer = nes::Renderer::BeginTempCommands();
         auto& msaaImage = m_gBuffer.GetColorImage();
+        auto& depthImage = m_gBuffer.GetDepthImage();
         
         nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
             .SetImage(&msaaImage)
             .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ResolveSource)
             .SetAccess(nes::EAccessBits::None, nes::EAccessBits::ResolveSource);
 
+        nes::ImageBarrierDesc depthBarrier = nes::ImageBarrierDesc()
+            .SetImage(&depthImage, nes::EImagePlaneBits::Depth | nes::EImagePlaneBits::Stencil)
+            .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::DepthStencilAttachment);
+
         nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
-            .SetImageBarriers(imageBarrier);
+            .SetImageBarriers({imageBarrier, depthBarrier});
         
         commandBuffer.SetBarriers(barrierGroup);
 
@@ -444,35 +558,43 @@ void PBRExampleApp::CreateGridPipeline(nes::RenderDevice& device)
 
 void PBRExampleApp::CreateSkyboxPipeline(nes::RenderDevice& device)
 {
-    // Pipeline Layout : Camera data, Texture Cube, Sampler:
+    // Pipeline Layout :
+    //  Set 0: "Global"
+    //      Binding 0: Camera data
+    //  Set 1: "Skybox"
+    //      Binding 0: Sampler
+    //      Binding 1: ImageCube
     {
-        std::array bindings = 
-        {
-            // Global Constants Data: 
-            nes::DescriptorBindingDesc()
-                .SetBindingIndex(0)
-                .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
-                .SetShaderStages(nes::EPipelineStageBits::VertexShader),
+        // Global:
+        nes::DescriptorBindingDesc globalBindings = nes::DescriptorBindingDesc()
+            .SetBindingIndex(0)
+            .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader | nes::EPipelineStageBits::FragmentShader);
 
+        nes::DescriptorSetDesc globalSetDesc = nes::DescriptorSetDesc()
+            .SetBindings(&globalBindings, 1);
+        
+        // Skybox:
+        std::array skyboxBindings =
+        {
             // Linear Sampler
             nes::DescriptorBindingDesc()
-                .SetBindingIndex(1)
+                .SetBindingIndex(0)
                 .SetDescriptorType(nes::EDescriptorType::Sampler)
                 .SetShaderStages(nes::EPipelineStageBits::FragmentShader),
             
             // Skybox Image
             nes::DescriptorBindingDesc()
-                .SetBindingIndex(2)
+                .SetBindingIndex(1)
                 .SetDescriptorType(nes::EDescriptorType::Image)
                 .SetShaderStages(nes::EPipelineStageBits::FragmentShader),
         };
-
-        nes::DescriptorSetDesc descriptorSetDesc = nes::DescriptorSetDesc()
-            .SetBindings(bindings.data(), static_cast<uint32>(bindings.size()));
-
-        // Add this set to the Pipeline Layout.
+        nes::DescriptorSetDesc skyboxSetDesc = nes::DescriptorSetDesc()
+            .SetBindings(skyboxBindings.data(), static_cast<uint32>(skyboxBindings.size()));
+        
+        // Create the layout:
         nes::PipelineLayoutDesc layoutDesc = nes::PipelineLayoutDesc()
-            .SetDescriptorSets(descriptorSetDesc)
+            .SetDescriptorSets({globalSetDesc, skyboxSetDesc})
             .SetShaderStages(nes::EPipelineStageBits::VertexShader | nes::EPipelineStageBits::FragmentShader);
 
         m_skyboxPipelineLayout = nes::PipelineLayout(device, layoutDesc);
@@ -502,36 +624,9 @@ void PBRExampleApp::CreateSkyboxPipeline(nes::RenderDevice& device)
     };
 
     // Vertex Input: Vertex object.
-    std::array vertexAttributeDescs =
-    {
-        // Position
-        nes::VertexAttributeDesc
-        {
-            .m_location = 0,
-            .m_offset = offsetof(Vertex, m_position),
-            .m_format = nes::EFormat::RGB32_SFLOAT,
-            .m_streamIndex = 0
-        },
-        
-        // Normal
-        nes::VertexAttributeDesc
-        {
-            .m_location = 1,
-            .m_offset = offsetof(Vertex, m_normal),
-            .m_format = nes::EFormat::RGB32_SFLOAT,
-            .m_streamIndex = 0
-        },
+    std::array vertexAttributeDescs = Vertex::GetBindingDescs();
 
-        // UV
-        nes::VertexAttributeDesc
-        {
-            .m_location = 2,
-            .m_offset = offsetof(Vertex, m_uv),
-            .m_format = nes::EFormat::RG32_SFLOAT,
-            .m_streamIndex = 0
-        },
-    };
-
+    // Per-Vertex Stream.
     nes::VertexStreamDesc vertexStreamDesc = nes::VertexStreamDesc()
         .SetBinding(0)
         .SetStepRate(nes::EVertexStreamStepRate::PerVertex)
@@ -555,7 +650,7 @@ void PBRExampleApp::CreateSkyboxPipeline(nes::RenderDevice& device)
     // Color attachment - to the GBuffer's color attachment.
     nes::ColorAttachmentDesc colorAttachment = {};
     colorAttachment.m_format = m_gBuffer.GetColorFormat();
-    colorAttachment.m_enableBlend = true; // Default blending behavior is based on alpha.
+    colorAttachment.m_enableBlend = false; // Default blending behavior is based on alpha.
     
     // OutputMerger:
     nes::OutputMergerDesc outputMergerDesc = nes::OutputMergerDesc();
@@ -576,9 +671,119 @@ void PBRExampleApp::CreateSkyboxPipeline(nes::RenderDevice& device)
     m_skyboxPipeline.SetDebugName("Skybox Graphics Pipeline");
 }
 
-void PBRExampleApp::CreateGeometryPipeline(nes::RenderDevice& /*device*/)
+void PBRExampleApp::CreateGeometryPipeline(nes::RenderDevice& device)
 {
-    // [TODO]: 
+    // Pipeline Layout :
+    //  Set 0: "Global"
+    //      Binding 0: Camera data
+    {
+        // Global:
+        nes::DescriptorBindingDesc globalBindings = nes::DescriptorBindingDesc()
+            .SetBindingIndex(0)
+            .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader | nes::EPipelineStageBits::FragmentShader);
+
+        nes::DescriptorSetDesc globalSetDesc = nes::DescriptorSetDesc()
+            .SetBindings(&globalBindings, 1);
+        
+        // Create the layout:
+        nes::PipelineLayoutDesc layoutDesc = nes::PipelineLayoutDesc()
+            .SetDescriptorSets({globalSetDesc})
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader | nes::EPipelineStageBits::FragmentShader);
+
+        m_pbrPipelineLayout = nes::PipelineLayout(device, layoutDesc);
+    }
+    
+    // Shader Stages:
+    nes::AssetPtr<nes::Shader> vertShader = nes::AssetManager::GetAsset<nes::Shader>(m_pbrVertShader);
+    NES_ASSERT(vertShader);
+
+    nes::AssetPtr<nes::Shader> fragShader = nes::AssetManager::GetAsset<nes::Shader>(m_pbrFragShader);
+    NES_ASSERT(fragShader);
+
+    const nes::ShaderDesc vertStage
+    {
+        .m_stage = nes::EPipelineStageBits::VertexShader,
+        .m_pByteCode = vertShader->GetByteCode().data(),
+        .m_size = vertShader->GetByteCode().size(),
+        .m_entryPointName = "main",
+    };
+
+    const nes::ShaderDesc fragStage
+    {
+        .m_stage = nes::EPipelineStageBits::FragmentShader,
+        .m_pByteCode = fragShader->GetByteCode().data(),
+        .m_size = fragShader->GetByteCode().size(),
+        .m_entryPointName = "main",
+    };
+
+    // Vertex Input: Vertex object.
+    std::array vertexAttributeDescs = Vertex::GetBindingDescs();
+    std::vector<nes::VertexAttributeDesc> vertexAttributes;
+    vertexAttributes.reserve(10);
+    vertexAttributes.insert(vertexAttributes.end(), vertexAttributeDescs.begin(), vertexAttributeDescs.end());
+
+    // Vertex Input: Instance data
+    vertexAttributes.emplace_back(5, static_cast<uint32>(offsetof(Instance, m_matRow0)), nes::EFormat::RGBA32_SFLOAT, 1);
+    vertexAttributes.emplace_back(6, static_cast<uint32>(offsetof(Instance, m_matRow1)), nes::EFormat::RGBA32_SFLOAT, 1);
+    vertexAttributes.emplace_back(7, static_cast<uint32>(offsetof(Instance, m_matRow2)), nes::EFormat::RGBA32_SFLOAT, 1);
+    vertexAttributes.emplace_back(8, static_cast<uint32>(offsetof(Instance, m_meshIndex)), nes::EFormat::R32_UINT, 1);
+    vertexAttributes.emplace_back(9, static_cast<uint32>(offsetof(Instance, m_materialIndex)), nes::EFormat::R32_UINT, 1);
+    
+    std::array vertexStreamDescs =
+    {
+        // Per Vertex
+        nes::VertexStreamDesc()
+            .SetBinding(0)
+            .SetStepRate(nes::EVertexStreamStepRate::PerVertex)
+            .SetStride(sizeof(Vertex)),
+
+        // Per Instance
+        nes::VertexStreamDesc()
+            .SetBinding(1)
+            .SetStepRate(nes::EVertexStreamStepRate::PerInstance)
+            .SetStride(sizeof(Instance))
+    };
+    
+    nes::VertexInputDesc vertexInputDesc = nes::VertexInputDesc()
+        .SetAttributes(vertexAttributes)
+        .SetStreams(vertexStreamDescs);
+    
+    // Rasterizer:
+    nes::RasterizationDesc rasterDesc = {};
+    rasterDesc.m_cullMode = nes::ECullMode::Back;
+    rasterDesc.m_enableDepthClamp = false;
+    rasterDesc.m_fillMode = nes::EFillMode::Solid;
+    rasterDesc.m_frontFace = nes::EFrontFaceWinding::CounterClockwise;
+
+    // Use the GBuffer Sample count.
+    nes::MultisampleDesc multisampleDesc = {};
+    multisampleDesc.m_sampleCount = m_gBuffer.GetSampleCount();
+
+    // Color attachment - to the GBuffer's color attachment.
+    nes::ColorAttachmentDesc colorAttachment = {};
+    colorAttachment.m_format = m_gBuffer.GetColorFormat();
+    colorAttachment.m_enableBlend = false;
+    
+    // OutputMerger:
+    nes::OutputMergerDesc outputMergerDesc = nes::OutputMergerDesc();
+    outputMergerDesc.m_depthStencilFormat = m_gBuffer.GetDepthFormat();
+    outputMergerDesc.m_depth.m_compareOp = nes::ECompareOp::Less;
+    outputMergerDesc.m_depth.m_enableWrite = true;
+    outputMergerDesc.m_colorCount = 1;
+    outputMergerDesc.m_pColors = &colorAttachment;
+    
+    // Create the Pipeline:
+    nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
+        .SetShaderStages({ vertStage, fragStage })
+        .SetVertexInput(vertexInputDesc)
+        .SetRasterizationDesc(rasterDesc)
+        .SetOutputMergerDesc(outputMergerDesc)
+        .SetMultisampleDesc(multisampleDesc);
+
+    NES_ASSERT(m_pbrPipelineLayout != nullptr);
+    m_pbrPipeline = nes::Pipeline(device, m_pbrPipelineLayout, pipelineDesc);
+    m_pbrPipeline.SetDebugName("PBR Graphics Pipeline");
 }
 
 void PBRExampleApp::CreateDescriptorPool(nes::RenderDevice& device)
@@ -592,15 +797,12 @@ void PBRExampleApp::CreateDescriptorPool(nes::RenderDevice& device)
     // - Descriptor for Texture Cube Image.
     // - Descriptor Set for each Mesh's PBR material parameters.
     
-    // Create a descriptor pool that will only be able to allocate the
-    // exact number of constant buffer descriptors that we need (1 per frame).
-    const uint32 numFrames = static_cast<uint32>(m_frames.size());
+    //const uint32 numFrames = nes::Renderer::GetMaxFramesInFlight();
     nes::DescriptorPoolDesc poolDesc{};
-    poolDesc.m_descriptorSetMaxNum = numFrames * 2; // Grid Descriptor Sets, Skybox Descriptor Sets. 
-    poolDesc.m_uniformBufferMaxNum = numFrames * 2;
-    poolDesc.m_samplerMaxNum = numFrames;           // Skybox Sampler
-    poolDesc.m_imageMaxNum = numFrames;             // Skybox Image
-    
+    poolDesc.m_descriptorSetMaxNum = 64;//numFrames * 2; 
+    poolDesc.m_uniformBufferMaxNum = 64;//numFrames * 2;
+    poolDesc.m_samplerMaxNum = 64;//numFrames;      
+    poolDesc.m_imageMaxNum = 64;                    
     m_descriptorPool = nes::DescriptorPool(device, poolDesc);
 }
 
@@ -613,7 +815,7 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
         samplerDesc.m_filters = {nes::EFilterType::Linear, nes::EFilterType::Linear, nes::EFilterType::Linear};
         samplerDesc.m_anisotropy = static_cast<uint8>(device.GetDesc().m_other.m_maxSamplerAnisotropy);
         samplerDesc.m_mipMax = 16.f;
-        m_cubeSampler = nes::Descriptor(device, samplerDesc);
+        m_sampler = nes::Descriptor(device, samplerDesc);
     }
     
     // Skybox Texture Descriptor
@@ -646,55 +848,68 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
     {
         // Create the GlobalConstant Descriptor for this frame:
         bufferViewDesc.m_offset = i * sizeof(GlobalConstants);
-        m_frames[i].m_globalBufferView = nes::Descriptor(device, bufferViewDesc);
+        m_frames[i].m_globalConstantBuffer = nes::Descriptor(device, bufferViewDesc);
         m_frames[i].m_globalBufferOffset = bufferViewDesc.m_offset;
-
-        // Grid Descriptor Set: Only the Constants:
+        
+        // Global Constants Descriptor Set: Camera Data 
         {
-            m_descriptorPool.AllocateDescriptorSets(m_gridPipelineLayout, 0, &m_frames[i].m_gridDescriptorSet);
+            // Global Constant Descriptor Set - Allocated from the grid pipeline layout, which just needs the global constants.
+            m_descriptorPool.AllocateDescriptorSets(m_gridPipelineLayout, 0, &m_frames[i].m_globalConstantSet);
         
             std::array updateDescs =
             {
-                nes::DescriptorBindingUpdateDesc(&m_frames[i].m_globalBufferView, 1),
+                nes::DescriptorBindingUpdateDesc(&m_frames[i].m_globalConstantBuffer, 1),
             };
-            m_frames[i].m_gridDescriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
+            m_frames[i].m_globalConstantSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
         }
-
-        // Skybox Descriptor Set:
+    }
+    
+    // Skybox Descriptor Set: Sampler and CubeImage.
+    {
+        m_descriptorPool.AllocateDescriptorSets(m_skyboxPipelineLayout, 1, &m_skyboxDescriptorSet);
+    
+        std::array updateDescs =
         {
-            m_descriptorPool.AllocateDescriptorSets(m_skyboxPipelineLayout, 0, &m_frames[i].m_skyboxDescriptorSet);
-        
-            std::array updateDescs =
-            {
-                nes::DescriptorBindingUpdateDesc(&m_frames[i].m_globalBufferView, 1),
-                nes::DescriptorBindingUpdateDesc(&m_cubeSampler, 1),
-                nes::DescriptorBindingUpdateDesc(&m_skyboxTextureView, 1),
-            };
-            m_frames[i].m_skyboxDescriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
-        }
+            nes::DescriptorBindingUpdateDesc(&m_sampler, 1),
+            nes::DescriptorBindingUpdateDesc(&m_skyboxTextureView, 1),
+        };
+        m_skyboxDescriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
     }
 }
 
 void PBRExampleApp::UpdateUniformBuffers(const nes::RenderFrameContext& context)
 {
-    // Calculate forward & up vectors.
-    const nes::Vec3 forward = m_camera.m_rotation.RotatedVector(nes::Vec3::Forward());
-    const nes::Vec3 up = m_camera.m_rotation.RotatedVector(nes::Vec3::Up());
+    // Update Globals
+    {
+        // Calculate forward & up vectors.
+        const nes::Vec3 forward = m_camera.m_rotation.RotatedVector(nes::Vec3::Forward());
+        const nes::Vec3 up = m_camera.m_rotation.RotatedVector(nes::Vec3::Up());
     
-    // Set the Camera Constants:
-    GlobalConstants constants;
-    const auto viewport = context.GetSwapchainViewport();
-    constants.m_view = nes::Mat44::LookAt(m_camera.m_position, m_camera.m_position + forward, up);
-    constants.m_projection = nes::Mat44::Perspective(m_camera.m_FOVY, viewport.m_extent.x / viewport.m_extent.y, 0.1f, 1000.f);
+        // Set the Camera Constants:
+        GlobalConstants constants;
+        const auto viewport = context.GetSwapchainViewport();
+        constants.m_view = nes::Mat44::LookAt(m_camera.m_position, m_camera.m_position + forward, up);
+        constants.m_projection = nes::Mat44::Perspective(m_camera.m_FOVY, viewport.m_extent.x / viewport.m_extent.y, 0.1f, 1000.f);
 
-    // Flip the Y projection.
-    constants.m_projection[1][1] *= -1.f;
+        // Flip the Y projection.
+        constants.m_projection[1][1] *= -1.f;
 
-    // Set the scene uniform data:
-    m_globalConstantsBuffer.CopyToMappedMemory(&constants, m_frames[context.GetFrameIndex()].m_globalBufferOffset, sizeof(GlobalConstants));
+        // Set the scene uniform data:
+        m_globalConstantsBuffer.CopyToMappedMemory(&constants, m_frames[context.GetFrameIndex()].m_globalBufferOffset, sizeof(GlobalConstants));
+    }
+
+    // [TODO]: 
+    // Update Instance Positions
+    // {
+    //     for (uint32 i = 0; i < m_scene.m_instances.size(); ++i)
+    //     {
+    //         
+    //     }
+    // }
+    
 }
 
-void PBRExampleApp::RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) const
+void PBRExampleApp::RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
     NES_ASSERT(m_skyboxPipeline != nullptr);
     NES_ASSERT(m_skyboxPipelineLayout != nullptr);
@@ -702,15 +917,63 @@ void PBRExampleApp::RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::R
 
     commandBuffer.BindPipelineLayout(m_skyboxPipelineLayout);
     commandBuffer.BindPipeline(m_skyboxPipeline);
-    commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_skyboxDescriptorSet);
-    commandBuffer.BindVertexBuffers(m_cubeVertexRange);
-    commandBuffer.BindIndexBuffer(m_cubeIndexRange);
+    commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_globalConstantSet);
+    commandBuffer.BindDescriptorSet(1, m_skyboxDescriptorSet);
+
+    const auto cubeMesh = m_scene.m_meshes[0];
+    
+    // Bind the vertex buffer range for the cube.
+    nes::VertexBufferRange vertexBuffer(&m_verticesBuffer, sizeof(Vertex), cubeMesh.m_vertexCount, cubeMesh.m_firstVertex * sizeof(Vertex));
+    commandBuffer.BindVertexBuffers(vertexBuffer);
+
+    // Bind the index buffer range for the cube.
+    nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, cubeMesh.m_indexCount, cubeMesh.m_firstIndex);
+    commandBuffer.BindIndexBuffer(indexBuffer);
 
     nes::DrawIndexedDesc drawDesc{};
-    drawDesc.m_firstIndex = m_cubeIndexRange.GetFirstIndex();
-    drawDesc.m_indexCount = m_cubeIndexRange.GetNumIndices();
-    drawDesc.m_firstVertex = m_cubeVertexRange.GetOffset();
+    drawDesc.m_firstIndex = indexBuffer.GetFirstIndex();
+    drawDesc.m_indexCount = indexBuffer.GetNumIndices();
+    drawDesc.m_vertexOffset = vertexBuffer.GetOffset();
     commandBuffer.DrawIndexed(drawDesc);
+}
+
+void PBRExampleApp::RenderInstances(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+{
+    NES_ASSERT(m_pbrPipeline != nullptr);
+    NES_ASSERT(m_pbrPipelineLayout != nullptr);
+    NES_ASSERT(m_frames.size() > context.GetFrameIndex());
+    
+    commandBuffer.BindPipelineLayout(m_pbrPipelineLayout);
+    commandBuffer.BindPipeline(m_pbrPipeline);
+    commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_globalConstantSet);
+
+    // Bind the index buffer for the entire range:
+    nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, m_scene.m_indices.size(), 0);
+    commandBuffer.BindIndexBuffer(indexBuffer);
+    
+    for (uint32 i = 0; i < static_cast<uint32>(m_scene.m_instances.size()); ++i)
+    {
+        const auto& instance = m_scene.m_instances[i];
+        const Mesh& mesh = m_scene.m_meshes[instance.m_meshIndex];
+
+        // [TODO]: 
+        //const PBRMaterialInstance& material = m_scene.m_materials[instance.m_materialIndex];
+
+        // Vertex Buffers - First is the mesh, second is the instance.
+        nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
+        nes::VertexBufferRange instanceVertexBuffer(&m_instanceBuffer, sizeof(Instance), 1, i * sizeof(Instance));
+        commandBuffer.BindVertexBuffers({ meshVertexBuffer, instanceVertexBuffer}, 0);
+
+        //auto& vkCommandBuffer = commandBuffer.GetVkCommandBuffer();
+        //vkCommandBuffer.bindVertexBuffers(1, instanceVertexBuffer.GetBuffer()->GetVkBuffer(), instanceVertexBuffer.GetOffset());
+        //vkCommandBuffer.bindVertexBuffers(0, meshVertexBuffer.GetBuffer()->GetVkBuffer(), meshVertexBuffer.GetOffset());
+
+        nes::DrawIndexedDesc drawDesc{};
+        drawDesc.m_firstIndex = mesh.m_firstIndex;
+        drawDesc.m_indexCount = mesh.m_indexCount;
+        drawDesc.m_vertexOffset = meshVertexBuffer.GetOffset();
+        commandBuffer.DrawIndexed(drawDesc);
+    }
 }
 
 void PBRExampleApp::RenderGrid(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) const
@@ -721,7 +984,7 @@ void PBRExampleApp::RenderGrid(nes::CommandBuffer& commandBuffer, const nes::Ren
     
     commandBuffer.BindPipelineLayout(m_gridPipelineLayout);
     commandBuffer.BindPipeline(m_gridPipeline);
-    commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_gridDescriptorSet);
+    commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_globalConstantSet);
     commandBuffer.DrawVertices(6);
 }
 
@@ -801,6 +1064,11 @@ void PBRExampleApp::ProcessInput()
     }
 }
 
+// void TestCallback(nes::ELogLevel, const char*, const uint32, const char* message, const nes::LogTag&, void*)
+// {
+//     std::cout << message << "\n";
+// }
+
 std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outAppDesc, WindowDesc& outWindowDesc, RendererDesc& outRendererDesc)
 {
     outAppDesc.SetApplicationName("PBRExampleApp")
@@ -815,6 +1083,12 @@ std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outApp
     outRendererDesc.EnableValidationLayer()
         .RequireQueueType(EQueueType::Graphics)
         .RequireQueueType(EQueueType::Transfer);
+    
+// #if NES_RELEASE
+//         outRendererDesc.EnableValidationLayer(true);
+//         outRendererDesc.SetDebugMessageCallback(TestCallback);
+// #endif
+    
 
     return std::make_unique<PBRExampleApp>(outAppDesc);
 }

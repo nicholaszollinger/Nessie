@@ -9,6 +9,7 @@
 #include "Nessie/Graphics/PipelineLayout.h"
 #include "Nessie/Graphics/DescriptorPool.h"
 #include "Nessie/Graphics/GBuffer.h"
+#include "Helpers/Scene.h"
 
 struct CameraState
 {
@@ -44,22 +45,21 @@ private:
 
     struct FrameData
     {
-        nes::Descriptor             m_globalBufferView = nullptr;      // View into the World uniform buffer.
-        nes::DescriptorSet          m_gridDescriptorSet = nullptr;
-        nes::DescriptorSet          m_skyboxDescriptorSet = nullptr;
-        uint64                      m_globalBufferOffset = 0;          // Offset to the GlobalConstants struct for this frame.
+        nes::Descriptor             m_globalConstantBuffer = nullptr;       // Camera, lighting (todo).
+        nes::DescriptorSet          m_globalConstantSet = nullptr;          // Value for the global constants.
+        uint64                      m_globalBufferOffset = 0;               // Offset to the GlobalConstants value in the 
     };
 
 private:
     //----------------------------------------------------------------------------------------------------
     /// @brief : Load the Shaders, Textures and Meshes for the App.  
     //----------------------------------------------------------------------------------------------------
-    bool                            LoadAssets();
+    bool                            LoadScene();
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the global constants buffer and the vertex/index buffers for all geometry.
     //----------------------------------------------------------------------------------------------------
-    void                            CreateBuffers(nes::RenderDevice& device);
+    void                            CreateBuffersAndImages(nes::RenderDevice& device);
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the pipeline to render the grid plane.
@@ -101,8 +101,13 @@ private:
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render the skybox.
     //----------------------------------------------------------------------------------------------------
-    void                            RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) const;
+    void                            RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Render each instance in the scene.
+    //----------------------------------------------------------------------------------------------------
+    void                            RenderInstances(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render the 3D grid.
     //----------------------------------------------------------------------------------------------------
@@ -122,34 +127,42 @@ private:
     // Assets:
     nes::AssetID                    m_gridVertShader = nes::kInvalidAssetID;
     nes::AssetID                    m_gridFragShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_pbrVertShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_pbrFragShader = nes::kInvalidAssetID;
     nes::AssetID                    m_skyboxTexture = nes::kInvalidAssetID;
     nes::AssetID                    m_skyboxVertShader = nes::kInvalidAssetID;
     nes::AssetID                    m_skyboxFragShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_whiteTexture = nes::kInvalidAssetID;
     nes::GBuffer                    m_gBuffer = nullptr;                        // Color and depth render targets.
     nes::DescriptorPool             m_descriptorPool = nullptr;
 
-    // Devive Buffers:
-
     // Geometry Pipeline
-    nes::Pipeline                   m_geometryPipeline = nullptr;
-    nes::PipelineLayout             m_geometryPipelineLayout = nullptr;
+    nes::PipelineLayout             m_pbrPipelineLayout = nullptr;
+    nes::Pipeline                   m_pbrPipeline = nullptr;
 
     // Skybox Pipeline
-    nes::Pipeline                   m_skyboxPipeline = nullptr;
     nes::PipelineLayout             m_skyboxPipelineLayout = nullptr;
+    nes::Pipeline                   m_skyboxPipeline = nullptr;
+    nes::DescriptorSet              m_skyboxDescriptorSet = nullptr;        // ImageCube.
+
 
     // Grid Pipeline
-    nes::Pipeline                   m_gridPipeline = nullptr;
     nes::PipelineLayout             m_gridPipelineLayout = nullptr;
+    nes::Pipeline                   m_gridPipeline = nullptr;
     
-    nes::Descriptor                 m_cubeSampler = nullptr;
+    nes::Descriptor                 m_sampler = nullptr;
     nes::Descriptor                 m_skyboxTextureView = nullptr;
+
+    // Scene Data:
+    Scene                           m_scene{};
+
+    // Device Buffers:
     std::vector<FrameData>          m_frames{};
-    nes::DeviceBuffer               m_globalConstantsBuffer = nullptr;
-    nes::DeviceBuffer               m_verticesBuffer = nullptr;    
-    nes::DeviceBuffer               m_indicesBuffer = nullptr;    
-    nes::VertexBufferRange          m_cubeVertexRange{};
-    nes::IndexBufferRange           m_cubeIndexRange{};
+    nes::DeviceBuffer               m_globalConstantsBuffer = nullptr;      // Global Scene Data 
+    nes::DeviceBuffer               m_indicesBuffer = nullptr;              // Index Data
+    nes::DeviceBuffer               m_verticesBuffer = nullptr;             // Vertex Data
+    nes::DeviceBuffer               m_instanceBuffer = nullptr;            // Transform Buffer.
+    nes::DescriptorSet              m_materialDescriptorSet = nullptr;      // Images for the Materials.
     nes::EFormat                    m_depthFormat = nes::EFormat::Unknown;
     
     // Camera Data:

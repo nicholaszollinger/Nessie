@@ -1,20 +1,6 @@
 // Primitives.h
 #pragma once
-
-struct Vertex
-{
-    nes::Vec3   m_position{};
-    nes::Vec3   m_normal{};
-    nes::Vec2   m_uv{};
-};
-
-struct Mesh
-{
-    uint32      m_firstVertex = 0;
-    uint32      m_firstIndex = 0;
-    uint32      m_vertexCount = 0;
-    uint32      m_indexCount = 0;
-};
+#include "Mesh.h"
 
 namespace helpers
 {
@@ -39,14 +25,14 @@ namespace helpers
         
         outVertices.insert(outVertices.end(), 
         {
-            { { -0.5f,  0.5f, -0.5f }, {}, { } },
-            { {  0.5f,  0.5f, -0.5f }, {}, { } },
-            { {  0.5f, -0.5f, -0.5f }, {}, { } },
-            { { -0.5f, -0.5f, -0.5f }, {}, { } },
-            { { -0.5f,  0.5f,  0.5f }, {}, { } },
-            { {  0.5f,  0.5f,  0.5f }, {}, { } },
-            { {  0.5f, -0.5f,  0.5f }, {}, { } },
-            { { -0.5f, -0.5f,  0.5f }, {}, { } },
+            { { -0.5f,  0.5f, -0.5f }, {}, { }, {} },
+            { {  0.5f,  0.5f, -0.5f }, {}, { }, {} },
+            { {  0.5f, -0.5f, -0.5f }, {}, { }, {} },
+            { { -0.5f, -0.5f, -0.5f }, {}, { }, {} },
+            { { -0.5f,  0.5f,  0.5f }, {}, { }, {} },
+            { {  0.5f,  0.5f,  0.5f }, {}, { }, {} },
+            { {  0.5f, -0.5f,  0.5f }, {}, { }, {} },
+            { { -0.5f, -0.5f,  0.5f }, {}, { }, {} },
         });
 
         // Generate normals and UVs from position.
@@ -56,6 +42,8 @@ namespace helpers
             vertex.m_normal = vertex.m_position.Normalized();
             vertex.m_uv.x = vertex.m_position.x + 0.5f;
             vertex.m_uv.y = vertex.m_position.y + 0.5f;
+
+            // [TODO]: Tangent
         }
 
         outIndices.insert(outIndices.end(),

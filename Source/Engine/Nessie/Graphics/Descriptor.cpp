@@ -173,7 +173,7 @@ namespace nes
         // Create the image view
         auto& vkDevice = device.GetVkDevice();
         m_imageView = vkDevice.createImageView(viewInfo, device.GetVkAllocationCallbacks());
-
+        
         // Set description values.
         m_type = GetDescriptorType(imageViewDesc.m_viewType);
         m_imageDesc.m_pImage = imageViewDesc.m_pImage;

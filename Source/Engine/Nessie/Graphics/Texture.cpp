@@ -11,6 +11,31 @@
 
 namespace nes
 {
+    Texture::Texture(DeviceImage&& image, Buffer&& imageData)
+        : m_image(std::move(image))
+        , m_imageData(std::move(imageData))
+    {
+        //
+    }
+
+    Texture::Texture(Texture&& other) noexcept
+        : m_image(std::move(other.m_image))
+        , m_imageData(std::move(other.m_imageData))
+    {
+        //
+    }
+
+    Texture& Texture::operator=(Texture&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_image = std::move(other.m_image);
+            m_imageData = std::move(other.m_imageData);
+        }
+
+        return *this;
+    }
+
     Texture::~Texture()
     {
         NES_ASSERT(Platform::IsMainThread());
@@ -83,7 +108,7 @@ namespace nes
         {
             // Upload image data:
             DataUploader dataUploader(Renderer::GetDevice());
-            ImageUploadDesc uploadDesc{};
+            UploadImageDesc uploadDesc{};
             uploadDesc.m_pImage = &m_image;
             uploadDesc.m_pSrcData = pData;
             uploadDesc.m_newLayout = EImageLayout::ShaderResource;
@@ -187,7 +212,7 @@ namespace nes
         {
             // Upload image data:
             DataUploader dataUploader(Renderer::GetDevice());
-            ImageUploadDesc uploadDesc{};
+            UploadImageDesc uploadDesc{};
             uploadDesc.m_pSrcData = m_imageData.Get();
             uploadDesc.m_layerCount = 6;
             uploadDesc.m_pImage = &m_image;

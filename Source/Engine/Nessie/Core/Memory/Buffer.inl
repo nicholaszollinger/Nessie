@@ -24,6 +24,30 @@ namespace nes
         Allocate(size);
     }
 
+    inline Buffer::Buffer(Buffer&& other) noexcept
+        : m_pData(other.m_pData)
+        , m_size(other.m_size)
+    {
+        other.m_pData = nullptr;
+        other.m_size = 0;
+    }
+
+    inline Buffer& Buffer::operator=(Buffer&& other) noexcept
+    {
+        if (this != &other)
+        {
+            Free();
+            
+            m_pData = other.m_pData;
+            m_size = other.m_size;
+            
+            other.m_pData = nullptr;
+            other.m_size = 0;
+        }
+
+        return *this;
+    }
+
     inline uint8& Buffer::operator[](const uint64 index)
     {
         NES_ASSERT(index < m_size);

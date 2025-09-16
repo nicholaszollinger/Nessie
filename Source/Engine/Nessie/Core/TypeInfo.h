@@ -15,7 +15,7 @@
 #define NES_DEFINE_TYPE_INFO(_type)                                                                      \
 private:                                                                                                 \
     static_assert(std::is_class_v<_type>, "NES_DEFINE_TYPE_INFO(): _type must be a class or a struct");  \
-    static constexpr nes::TypeID                kTypeID = HashString64(#_type);                          \
+    static constexpr nes::TypeID                kTypeID = nes::HashString64(#_type);                     \
 public:                                                                                                  \
     [[nodiscard]] static constexpr nes::TypeID  GetStaticTypeID()               { return kTypeID; }      \
     [[nodiscard]] virtual nes::TypeID           GetTypeID() const override      { return kTypeID; }      \
@@ -26,7 +26,7 @@ private:
 #define NES_DEFINE_TYPE_INFO_NON_VIRTUAL(_type)                                                          \
 private:                                                                                                 \
     static_assert(std::is_class_v<_type>, "NES_DEFINE_TYPE_INFO_NON_VIRTUAL(): _type must be a class or a struct");  \
-    static constexpr nes::TypeID                kTypeID = HashString64(#_type);                          \
+    static constexpr nes::TypeID                kTypeID = nes::HashString64(#_type);                     \
 public:                                                                                                  \
     [[nodiscard]] static constexpr nes::TypeID  GetStaticTypeID()               { return kTypeID; }      \
     [[nodiscard]] nes::TypeID                   GetTypeID() const               { return kTypeID; }      \

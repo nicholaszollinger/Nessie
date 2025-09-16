@@ -329,7 +329,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the image that will be transitioned.
         //----------------------------------------------------------------------------------------------------
-        ImageBarrierDesc&   SetImage(DeviceImage* pImage);
+        ImageBarrierDesc&   SetImage(DeviceImage* pImage, const EImagePlaneBits planes = EImagePlaneBits::Color);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the layout that the image should be in before the barrier, and what layout the barrier should
@@ -1299,7 +1299,8 @@ namespace nes
         uint32              GetNumVertices() const  { return m_vertexCount; }
 
     private:
-        uint32              m_stride = 0; 
+        uint32              m_stride = 0;
+        uint32              m_firstVertex = 0;
         uint32              m_vertexCount = 0;
     };
 
@@ -1332,6 +1333,9 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         uint32              GetNumIndices() const    { return m_indexCount; }
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the index of the first index value in the range.
+        //----------------------------------------------------------------------------------------------------
         uint32              GetFirstIndex() const    { return m_firstIndex; }
     
     private:
@@ -1696,6 +1700,15 @@ namespace nes
         DepthAttachmentDesc         m_depth{};
         StencilAttachmentDesc       m_stencil{};
         EFormat                     m_depthStencilFormat = EFormat::Unknown;
+
+        //  The application can enable a logical operation between the fragment’s color values
+        //  and the existing value in the framebuffer attachment. This logical operation is applied
+        //  prior to updating the framebuffer attachment. Logical operations are applied only for
+        //  signed and unsigned integer and normalized integer framebuffers. Logical operations are
+        //  not applied to floating-point or sRGB format color attachments.
+        //
+        //  The "source" (s) color is the fragment output for the color attachment, and the "dest" (d) color is
+        //  the color attachment's RGBA component value. 
         ELogicOp                    m_logicOp = ELogicOp::None;              
     };
 
@@ -1716,7 +1729,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set an optional depth image target. Depth information will be written to this image.
         //----------------------------------------------------------------------------------------------------
-        RenderTargetsDesc&          SetDepthStencilTargets(const Descriptor* depthStencil);
+        RenderTargetsDesc&          SetDepthStencilTarget(const Descriptor* depthStencil);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether any attachments have been set.
@@ -1925,7 +1938,7 @@ namespace nes
         DrawIndexedDesc() = default;
         DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
         
-        uint64  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                   
+        uint64  m_vertexOffset = 0;     // Byte offset to the first vertex in Device Buffer. With an index value == 0, this is the byte position that it points to.                   
         uint32  m_indexCount = 0;       // Number of indices to submit.   
         uint32  m_firstIndex = 0;       // First index in the index buffer.                       
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.

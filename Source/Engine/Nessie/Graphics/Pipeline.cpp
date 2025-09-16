@@ -70,20 +70,23 @@ namespace nes
         // Vertex Input
         std::vector<vk::VertexInputAttributeDescription> vertexAttributes(desc.m_vertexInput.m_attributes.size());
         std::vector<vk::VertexInputBindingDescription> vertexBindings(desc.m_vertexInput.m_streams.size());
-        
         vk::PipelineVertexInputStateCreateInfo vertexInputState = vk::PipelineVertexInputStateCreateInfo()
             .setPVertexAttributeDescriptions(vertexAttributes.data())
-            .setVertexAttributeDescriptionCount(desc.m_vertexInput.m_attributes.size())
             .setPVertexBindingDescriptions(vertexBindings.data())
+            .setVertexAttributeDescriptionCount(desc.m_vertexInput.m_attributes.size())
             .setVertexBindingDescriptionCount(desc.m_vertexInput.m_streams.size());
 
+        VertexStreamDesc const* pStreams = desc.m_vertexInput.m_streams.data();
+        VertexAttributeDesc const* pAttributes = desc.m_vertexInput.m_attributes.data();
+        
         // Fill out attributes:
         for (uint32 i = 0; i < desc.m_vertexInput.m_attributes.size(); ++i)
         {
-            const auto& attribute = *(desc.m_vertexInput.m_attributes.begin() + i);
+            const auto& attribute = pAttributes[i];
             auto& vkAttribute = vertexAttributes[i];
 
-            vkAttribute.setFormat(GetVkFormat(attribute.m_format))
+            vkAttribute = vk::VertexInputAttributeDescription()
+                .setFormat(GetVkFormat(attribute.m_format))
                 .setOffset(attribute.m_offset)
                 .setBinding(attribute.m_streamIndex)
                 .setLocation(attribute.m_location);
@@ -92,14 +95,15 @@ namespace nes
         // Fill out bindings:
         for (uint32 i = 0; i < desc.m_vertexInput.m_streams.size(); ++i)
         {
-            const auto& stream = *(desc.m_vertexInput.m_streams.begin() + i);
+            const VertexStreamDesc& stream = pStreams[i];
             auto& vkBinding = vertexBindings[i];
 
-            vkBinding.setBinding(stream.m_bindingIndex)
-                .setStride(stream.m_stride)
-                .setInputRate(stream.m_stepRate == EVertexStreamStepRate::PerVertex? vk::VertexInputRate::eVertex : vk::VertexInputRate::eInstance);
+            vkBinding = vk::VertexInputBindingDescription();
+            vkBinding.binding = stream.m_bindingIndex;
+            vkBinding.stride = stream.m_stride;
+            vkBinding.inputRate = stream.m_stepRate == EVertexStreamStepRate::PerVertex? vk::VertexInputRate::eVertex : vk::VertexInputRate::eInstance;
         }
-
+        
         // Input Assembly:
         const auto& descInputAssembly = desc.m_inputAssembly;
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState = vk::PipelineInputAssemblyStateCreateInfo()

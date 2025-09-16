@@ -15,6 +15,10 @@ namespace nes
         NES_DEFINE_TYPE_INFO(Texture)
         
     public:
+        Texture() = default;
+        Texture(DeviceImage&& image, Buffer&& imageData);
+        Texture(Texture&& other) noexcept;
+        Texture& operator=(Texture&& other) noexcept;
         virtual             ~Texture() override;
 
         //----------------------------------------------------------------------------------------------------

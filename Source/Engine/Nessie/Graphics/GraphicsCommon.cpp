@@ -1,6 +1,7 @@
 ﻿// GraphicsCommon.cpp
 #include "GraphicsCommon.h"
 #include "DeviceBuffer.h"
+#include "DeviceImage.h"
 
 namespace nes
 {
@@ -51,10 +52,11 @@ namespace nes
 #pragma region [ Pipline Stages and Barriers ]
 //============================================================================================================================================================================================
 
-    ImageBarrierDesc& ImageBarrierDesc::SetImage(DeviceImage* pImage)
+    ImageBarrierDesc& ImageBarrierDesc::SetImage(DeviceImage* pImage, const EImagePlaneBits planes)
     {
         NES_ASSERT(pImage != nullptr);
         m_pImage = pImage;
+        m_planes = planes;
         return *this;
     }
 
@@ -331,7 +333,7 @@ namespace nes
         return *this;
     }
 
-    RenderTargetsDesc& RenderTargetsDesc::SetDepthStencilTargets(const Descriptor* depthStencil)
+    RenderTargetsDesc& RenderTargetsDesc::SetDepthStencilTarget(const Descriptor* depthStencil)
     {
         m_pDepthStencil = depthStencil;
         return *this;
@@ -435,7 +437,7 @@ namespace nes
     }
 
     DrawIndexedDesc::DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex, const uint32 firstVertex, const uint32 numInstances, const uint32 firstInstance)
-        : m_firstVertex(firstVertex)
+        : m_vertexOffset(firstVertex)
         , m_indexCount(numIndices)
         , m_firstIndex(firstIndex)
         , m_instanceCount(numInstances)

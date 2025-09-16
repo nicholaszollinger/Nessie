@@ -55,7 +55,7 @@ namespace nes
         m_copyBufferDescs.emplace_back(copyDesc);
     }
 
-    void DataUploader::AppendUploadImage(const ImageUploadDesc& desc, const SemaphoreValue& semaphoreState)
+    void DataUploader::AppendUploadImage(const UploadImageDesc& desc, const SemaphoreValue& semaphoreState)
     {
         NES_ASSERT(desc.m_pImage != nullptr);
         NES_ASSERT(desc.m_pSrcData != nullptr);
