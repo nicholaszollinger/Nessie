@@ -1,0 +1,58 @@
+# PBR Test Scene
+Assets:
+  # Invalid Asset ID: 18446744073709551615
+  #
+  # Default Meshes:
+  #   AssetID: 1 == CubeMesh
+  #   AssetID: 2 == PlaneMesh
+  #   AssetID: 3 == SphereMesh
+  #
+  # Default Textures:
+  #   AssetID: 10 == "Error Texture"
+  #   AssetID: 11 == "White Texture"
+
+  Textures:
+  # Reserved Textures - Loaded in a specific order.
+  - AssetID: 10
+    Path: "Images\\ErrorTexture.png"
+  - AssetID: 11
+    Path: "Images\\BlackTexture.png"
+  - AssetID: 12
+    Path: "Images\\WhiteTexture.png"
+  - AssetID: 13
+    Path: "Images\\FlatNormalTexture.png"
+
+  # Asset Textures:
+  - AssetID: 50
+    Path: "Images\\light-gold-ue\\lightgold_albedo.png"
+  - AssetID: 51
+    Path: "Images\\light-gold-ue\\lightgold_normal-dx.png"
+  - AssetID: 52
+    Path: "Images\\light-gold-ue\\lightgold_RoughnessMetallic.png"
+
+  TextureCubes:
+  - AssetID: 500
+    Path: "Skybox\\Skybox.yaml"
+
+  Shaders:
+  - AssetID: 1000
+    Path: "GridShader.yaml"
+  - AssetID: 1001
+    Path: "SkyboxShader.yaml"
+  - AssetID: 1002
+    Path: "PBRShader.yaml"
+
+  Materials:
+  - AssetID: 5000
+    Path: "Materials\\DefaultMaterial.yaml"
+  - AssetID: 5001
+    Path: "Materials\\GoldMaterial.yaml"
+
+  # Hack for now: I need to know these specific asset ids to setup the pipeline.
+  # - I need to find a better solution for this.
+  SceneConfig:
+   GridShaderID: 1000
+   SkyboxTextureID: 500
+   SkyboxShaderID: 1001
+   PBRShaderID: 1002
+    

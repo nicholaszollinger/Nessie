@@ -10,6 +10,8 @@
 #include "Nessie/Graphics/DescriptorPool.h"
 #include "Nessie/Graphics/GBuffer.h"
 #include "Helpers/Scene.h"
+#include "Helpers/Camera.h"
+#include "Helpers/LightTypes.h."
 
 struct CameraState
 {
@@ -36,26 +38,47 @@ public:
     virtual void                    Internal_AppShutdown() override;
 
 private:
-    struct GlobalConstants
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Struct containing the number of lights per type in the variable sized storage buffers. 
+    //----------------------------------------------------------------------------------------------------
+    struct alignas (64) LightCountUBO
     {
-        // Camera Data:
-        nes::Mat44                  m_projection = nes::Mat44::Identity();
-        nes::Mat44                  m_view = nes::Mat44::Identity();
+        static constexpr uint32     kMaxPointLights = 1024;
+        static constexpr uint32     kMaxDirectionalLights = 4;
+        static constexpr uint32     kMaxSpotLights = 256;
+        static constexpr uint32     kMaxAreaLights = 128;
+        
+        uint32                      m_directionalCount = 0;
+        uint32                      m_pointCount = 0;
+        uint32                      m_spotCount = 0;
+        uint32                      m_areaCount = 0;
     };
+
+    // Both CameraUBO and LightUBO are 64-byte aligned.
+    static constexpr uint32         kGlobalUBOElementSize = sizeof(CameraUBO) + sizeof(LightCountUBO);
 
     struct FrameData
     {
-        nes::Descriptor             m_globalConstantBuffer = nullptr;       // Camera, lighting (todo).
-        nes::DescriptorSet          m_globalConstantSet = nullptr;          // Value for the global constants.
-        uint64                      m_globalBufferOffset = 0;               // Offset to the GlobalConstants value in the 
+        // Buffers & Resource Views:
+        nes::Descriptor             m_cameraUBOView = nullptr;              // Camera UBO view.
+        nes::Descriptor             m_lightCountUBOView = nullptr;          // LightCount UBO view.
+        nes::Descriptor             m_pointLightsView = nullptr;            // Point Lights SSBO view.
+        nes::Descriptor             m_directionalLightsView = nullptr;      // Directional Lights SSBO view.
+        nes::Descriptor             m_objectUBOView = nullptr;              // ObjectUBO view.
+        nes::DeviceBuffer           m_objectUBOBuffer = nullptr;            // ObjectUBO device buffer.
+        nes::DeviceBuffer           m_pointLightsBuffer = nullptr;          // Point Lights SSBO buffer.
+        nes::DeviceBuffer           m_directionalLightsBuffer = nullptr;    // Directional Lights SSBO buffer.
+
+        // Descriptor Set Values:
+        nes::DescriptorSet          m_cameraSet = nullptr;                  // Value for the CameraUBO
+        nes::DescriptorSet          m_lightDataSet = nullptr;               // Value for LightCount and Light Array values.
+        nes::DescriptorSet          m_objectDataSet = nullptr;              // Value for the ObjectBuffer.
+        
+        uint64                      m_cameraBufferOffset = 0;               // Byte offset in the Global buffer for the CameraUBO for this frame. 
+        uint64                      m_lightCountOffset  = 0;                // Byte offset in the Global buffer for the LightCountUBO for this frame. 
     };
 
 private:
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Load the Shaders, Textures and Meshes for the App.  
-    //----------------------------------------------------------------------------------------------------
-    bool                            LoadScene();
-
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the global constants buffer and the vertex/index buffers for all geometry.
     //----------------------------------------------------------------------------------------------------
@@ -124,15 +147,13 @@ private:
     void                            ProcessInput();
 
 private:
+    std::vector<nes::AssetID>       m_loadedAssets;
+    
     // Assets:
-    nes::AssetID                    m_gridVertShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_gridFragShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_pbrVertShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_pbrFragShader = nes::kInvalidAssetID;
     nes::AssetID                    m_skyboxTexture = nes::kInvalidAssetID;
-    nes::AssetID                    m_skyboxVertShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_skyboxFragShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_whiteTexture = nes::kInvalidAssetID;
+    nes::AssetID                    m_skyboxShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_gridShader = nes::kInvalidAssetID;
+    nes::AssetID                    m_pbrShader = nes::kInvalidAssetID;
     nes::GBuffer                    m_gBuffer = nullptr;                        // Color and depth render targets.
     nes::DescriptorPool             m_descriptorPool = nullptr;
 
@@ -143,26 +164,24 @@ private:
     // Skybox Pipeline
     nes::PipelineLayout             m_skyboxPipelineLayout = nullptr;
     nes::Pipeline                   m_skyboxPipeline = nullptr;
-    nes::DescriptorSet              m_skyboxDescriptorSet = nullptr;        // ImageCube.
-
-
+    nes::DescriptorSet              m_skyboxDescriptorSet = nullptr;
+    
     // Grid Pipeline
     nes::PipelineLayout             m_gridPipelineLayout = nullptr;
     nes::Pipeline                   m_gridPipeline = nullptr;
-    
-    nes::Descriptor                 m_sampler = nullptr;
-    nes::Descriptor                 m_skyboxTextureView = nullptr;
 
     // Scene Data:
     Scene                           m_scene{};
-
-    // Device Buffers:
+    nes::Descriptor                 m_sampler = nullptr;
     std::vector<FrameData>          m_frames{};
-    nes::DeviceBuffer               m_globalConstantsBuffer = nullptr;      // Global Scene Data 
     nes::DeviceBuffer               m_indicesBuffer = nullptr;              // Index Data
     nes::DeviceBuffer               m_verticesBuffer = nullptr;             // Vertex Data
-    nes::DeviceBuffer               m_instanceBuffer = nullptr;            // Transform Buffer.
-    nes::DescriptorSet              m_materialDescriptorSet = nullptr;      // Images for the Materials.
+
+    // [TODO]: Combine the Light Count and Camera data into a single buffer?
+    //      - They are both small, and will only have 1 per frame.
+    
+    nes::DeviceBuffer               m_globalsBuffer = nullptr;               // Contains the Camera information and  
+    std::vector<nes::DescriptorSet> m_materialDescriptorSets{};
     nes::EFormat                    m_depthFormat = nes::EFormat::Unknown;
     
     // Camera Data:
@@ -170,6 +189,9 @@ private:
     nes::Vec3                       m_inputMovement = nes::Vec3::Zero();
     nes::Vec2                       m_inputRotation = nes::Vec2::Zero();
     float                           m_cameraMoveSpeed = 50.f;
-    float                           m_cameraSensitivity = 1.f;
+    float                           m_cameraSensitivity = 1.25f;
+    float                           m_cameraAperture = 8.f;
+    float                           m_cameraShutterSpeed = 1.f / 125.f;
+    float                           m_cameraISO = 100.f;
     bool                            m_cameraRotationEnabled = false;
 };

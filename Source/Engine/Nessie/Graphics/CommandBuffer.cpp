@@ -403,7 +403,7 @@ namespace nes
             vkViewports[i] = *(viewports.begin() + i);
         }
         
-        m_buffer.setViewport(0, vkViewports);
+        m_buffer.setViewportWithCount(vkViewports);
     }
 
     void CommandBuffer::SetScissors(const vk::ArrayProxy<Scissor>& scissors)
@@ -414,7 +414,7 @@ namespace nes
             vkScissors[i] = *(scissors.begin() + i);
         }
         
-        m_buffer.setScissor(0, vkScissors);
+        m_buffer.setScissorWithCount(vkScissors);
     }
 
     void CommandBuffer::BindIndexBuffer(const IndexBufferRange& desc)

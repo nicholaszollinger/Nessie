@@ -1,14 +1,19 @@
 #version 450
 
-layout(binding = 0) uniform Camera
+layout (set = 0, binding = 0) uniform CameraUBO
 {
-    mat4 projectionMatrix;
-    mat4 viewMatrix;
-};
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    vec3 position;
+    float exposureFactor;
+} u_camera;
 
+// Input:
 layout(location = 0) in vec3 nearPoint;
 layout(location = 1) in vec3 farPoint;
 
+// Output:
 layout(location = 0) out vec4 outColor;
 
 /// Credit: https://asliceofrendering.com/scene%20helper/2020/01/05/InfiniteGrid/
@@ -30,7 +35,7 @@ vec4 grid(vec3 fragPos, float scale)
 
 float computeDepth(vec3 fragPos)
 {
-    vec4 clipPos = vec4(projectionMatrix * viewMatrix * vec4(fragPos, 1.0));
+    vec4 clipPos = vec4(u_camera.proj * u_camera.view * vec4(fragPos, 1.0));
     return clipPos.z / clipPos.w;
 }
 

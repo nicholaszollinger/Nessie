@@ -131,4 +131,7 @@ namespace nes
         && HasValidTypeInfo<Type>);
 
     static_assert(ValidAssetType<AssetBase>);
+    
+    template <ValidAssetType Type>
+    class AssetPtr;
 }

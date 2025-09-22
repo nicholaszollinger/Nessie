@@ -27,12 +27,12 @@ std::array<nes::VertexAttributeDesc, 5> Vertex::GetBindingDescs()
         nes::VertexAttributeDesc
         {
             .m_location = 2,
-            .m_offset = offsetof(Vertex, m_uv),
+            .m_offset = offsetof(Vertex, m_texCoord),
             .m_format = nes::EFormat::RG32_SFLOAT,
             .m_streamIndex = 0
         },
 
-        // UV
+        // Tangent
         nes::VertexAttributeDesc
         {
             .m_location = 3,
@@ -41,7 +41,7 @@ std::array<nes::VertexAttributeDesc, 5> Vertex::GetBindingDescs()
             .m_streamIndex = 0
         },
 
-        // UV
+        // Bitangent.
         nes::VertexAttributeDesc
         {
             .m_location = 4,

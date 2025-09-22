@@ -4,6 +4,7 @@
 #include "RenderDevice.h"
 #include "PipelineLayout.h"
 #include "Renderer.h"
+#include "ShaderModule.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 
 namespace nes
@@ -55,18 +56,26 @@ namespace nes
         
         // Shaders
         const auto& descShaders = desc.m_shaderStages;
-        std::vector<vk::PipelineShaderStageCreateInfo> stages(descShaders.size());
-        
-        std::vector<vk::raii::ShaderModule> shaderModules;
-        shaderModules.reserve(descShaders.size());
-        
-        for (size_t i = 0; i < descShaders.size(); ++i)
-        {
-            shaderModules.emplace_back(nullptr);
-            auto& stage = stages[i];
-            NES_GRAPHICS_MUST_PASS(device, SetupShaderStage(descShaders[i], stage, shaderModules[i]));
-        }
+        std::vector<vk::PipelineShaderStageCreateInfo> stages;
 
+        #define TRY_ADD_STAGE(pModule)  \
+        if (pModule)            \
+        { \
+            vk::PipelineShaderStageCreateInfo info; \
+            SetupShaderStage(*(pModule), info); \
+            stages.emplace_back(info); \
+        }
+        
+        TRY_ADD_STAGE(descShaders.m_vertex);
+        TRY_ADD_STAGE(descShaders.m_fragment);
+        TRY_ADD_STAGE(descShaders.m_geometry);
+        TRY_ADD_STAGE(descShaders.m_tessControl);
+        TRY_ADD_STAGE(descShaders.m_tessEval);
+        TRY_ADD_STAGE(descShaders.m_meshControl);
+        TRY_ADD_STAGE(descShaders.m_meshEval);
+        
+        #undef TRY_ADD_STAGE
+        
         // Vertex Input
         std::vector<vk::VertexInputAttributeDescription> vertexAttributes(desc.m_vertexInput.m_attributes.size());
         std::vector<vk::VertexInputBindingDescription> vertexBindings(desc.m_vertexInput.m_streams.size());
@@ -168,8 +177,8 @@ namespace nes
         
         // Viewport State (will be dynamic).
         vk::PipelineViewportStateCreateInfo viewportState = vk::PipelineViewportStateCreateInfo()
-            .setViewportCount(1)
-            .setScissorCount(1);
+            .setViewportCount(0)
+            .setScissorCount(0);
 
         // Depth-Stencil
         const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
@@ -221,7 +230,7 @@ namespace nes
         }
         
         vk::PipelineColorBlendStateCreateInfo colorBlendState = vk::PipelineColorBlendStateCreateInfo()
-            .setLogicOpEnable(desc.m_outputMerger.m_logicOp != ELogicOp::None)
+            .setLogicOpEnable(desc.m_outputMerger.m_logicOp != ELogicOp::None) // This requires a feature to be enabled!
             .setLogicOp(GetVkLogicOp(desc.m_outputMerger.m_logicOp))
             .setAttachments(colorAttachments);
         
@@ -244,8 +253,8 @@ namespace nes
         // Dynamic State
         uint32 dynamicStateCount = 0;
         std::array<vk::DynamicState, 16> dynamicStates;
-        dynamicStates[dynamicStateCount++] = vk::DynamicState::eViewport; // [TODO]: WithCount
-        dynamicStates[dynamicStateCount++] = vk::DynamicState::eScissor;  // [TODO]: WithCount
+        dynamicStates[dynamicStateCount++] = vk::DynamicState::eViewportWithCount; 
+        dynamicStates[dynamicStateCount++] = vk::DynamicState::eScissorWithCount;
 
         if (vertexInputState.pVertexAttributeDescriptions)
             dynamicStates[dynamicStateCount++] = vk::DynamicState::eVertexInputBindingStride;
@@ -276,8 +285,7 @@ namespace nes
         vk::GraphicsPipelineCreateInfo info = vk::GraphicsPipelineCreateInfo()
             .setPNext(&pipelineRenderingInfo)
             .setFlags(flags)
-            .setStageCount(static_cast<uint32>(descShaders.size()))
-            .setPStages(stages.data())
+            .setStages(stages)
             .setPVertexInputState(&vertexInputState)
             .setPInputAssemblyState(&inputAssemblyState)
             .setPTessellationState(&tessellationState)
@@ -320,24 +328,13 @@ namespace nes
         m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
-    EGraphicsResult Pipeline::SetupShaderStage(const ShaderDesc& desc, vk::PipelineShaderStageCreateInfo& outStage, vk::raii::ShaderModule& outModule)
+    EGraphicsResult Pipeline::SetupShaderStage(const ShaderModule& module, vk::PipelineShaderStageCreateInfo& outStage)
     {
-        vk::ShaderModuleCreateInfo createInfo = vk::ShaderModuleCreateInfo()
-            .setCodeSize(desc.m_size)
-            .setPCode(static_cast<const uint32_t*>(desc.m_pByteCode));
-        
-        auto& device = DeviceManager::GetRenderDevice();
-        outModule = vk::raii::ShaderModule(device, createInfo);
-
+        auto& desc = module.GetDesc();
         outStage = vk::PipelineShaderStageCreateInfo()
             .setStage(GetVkShaderStageFlagBits(desc.m_stage))
-            .setModule(outModule);
-
-
-        // Entry Point:
-        // [TODO]: This is only valid for glsl; slang is based on stage, "vertMain", "fragMain", etc.
-        // - I should handle this within the Shader Desc / Shader itself.
-        outStage.pName = desc.m_entryPointName == nullptr ? "main" : desc.m_entryPointName;
+            .setModule(*module.GetVkShaderModule())
+            .setPName(desc.m_entryPointName.c_str());
         
         return EGraphicsResult::Success;
     }

@@ -1,17 +1,20 @@
 // Skybox.vert.glsl
 #version 450
 
-layout (set = 0, binding = 0) uniform Camera
+layout (set = 0, binding = 0) uniform CameraUBO
 {
-    mat4 proj;
     mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    vec3 position;
+    float exposureFactor;
 } u_camera;
 
 // Vertex Input
 layout (location = 0) in vec3 inVertPosition;
 layout (location = 1) in vec3 inVertNormal; 
 layout (location = 2) in vec2 inUV;         
-layout (location = 3) in vec3 inTangent;    
+layout (location = 3) in vec3 inTangent;
 layout (location = 4) in vec3 inBitangent;
 
 // Vertex Output.

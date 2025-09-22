@@ -378,9 +378,9 @@ namespace nes
 #pragma region [ Pipelines ]
 //============================================================================================================================================================================================
 
-    GraphicsPipelineDesc& GraphicsPipelineDesc::SetShaderStages(const std::vector<ShaderDesc>& shaderStages)
+    GraphicsPipelineDesc& GraphicsPipelineDesc::SetShaderStages(const GraphicsPipelineShaders& shaders)
     {
-        m_shaderStages = shaderStages;
+        m_shaderStages = shaders;
         return *this;
     }
 

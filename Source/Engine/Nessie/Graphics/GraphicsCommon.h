@@ -486,7 +486,7 @@ namespace nes
     struct BufferDesc
     {
         uint64              m_size = 0;                                 // Byte size of the buffer.
-        uint32              m_structuredStride = 0;                     // 
+        uint32              m_structuredStride = 0;                     // If the Buffer is being used as a storage buffer, this is the size of an element.
         EBufferUsageBits    m_usage = EBufferUsageBits::VertexBuffer;   // How the buffer will be used.
     };
 
@@ -585,6 +585,10 @@ namespace nes
     {
         // Size of the buffer, in bytes.
         uint64                      m_size = 0;
+
+        // If the Buffer is being used as a storage buffer (not a StorageTexelBuffer), this is the size of an element in the buffer.
+        // - For StorageTexelBuffers or Uniform Buffers, leave this at 0.
+        uint32                      m_structureStride = 0;
 
         // Defines how the buffer will be used.
         EBufferUsageBits            m_usage = EBufferUsageBits::ShaderResource;
@@ -822,9 +826,6 @@ namespace nes
         EFormat             m_format;               // Format of an element in the buffer.
         uint64              m_offset = 0;           // Offset from the beginning 
         uint64              m_size = vk::WholeSize;
-
-        // Optional
-        uint32              m_structuredStride; // This will equal the structure stride from "BufferDesc" if not provided.
     };
 
     struct AddressModes
@@ -944,7 +945,8 @@ namespace nes
         Image                   = vk::DescriptorType::eSampledImage,
         StorageImage            = vk::DescriptorType::eStorageImage,     
         Buffer                  = vk::DescriptorType::eUniformTexelBuffer,
-        StorageBuffer           = vk::DescriptorType::eStorageTexelBuffer,
+        StorageTexelBuffer      = vk::DescriptorType::eStorageTexelBuffer,          // A Storage buffer formatted for pixel-like data.
+        StorageBuffer           = vk::DescriptorType::eStorageBuffer,               // A Storage buffer for custom structures. AKA a "structured buffer". 
         AccelerationStructure   = vk::DescriptorType::eAccelerationStructureKHR,
     };
 
@@ -1053,10 +1055,9 @@ namespace nes
         uint32                      m_dynamicUniformBufferMaxNum = 0;      
         uint32                      m_imageMaxNum = 0;      
         uint32                      m_storageImageMaxNum = 0;
-        uint32                      m_bufferMaxNum = 0;      
-        uint32                      m_storageBufferMaxNum = 0;      
-        uint32                      m_structuredBufferMaxNum = 0;      
-        uint32                      m_storageStructuredBufferMaxNum = 0;
+        uint32                      m_bufferMaxNum = 0;
+        uint32                      m_storageBufferMaxNum = 0;          // Number of Storage Buffer (AKA Structured Buffers) that can be allocated.
+        uint32                      m_storageTexelBufferMaxNum = 0;     // Number of Storage Texel Buffers (storage buffers with pixel-like elements) that can be allocated.
         uint32                      m_accelerationStructureMaxNum = 0;
         EDescriptorPoolBits         m_flags = EDescriptorPoolBits::None;
     };
@@ -1066,7 +1067,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DescriptorBindingUpdateDesc
     {
-        const Descriptor*           m_pDescriptors = nullptr;   // Array of descriptors that will be written to the descriptor set.
+        const Descriptor* const*    m_pDescriptors = nullptr;   // Array of descriptors that will be written to the descriptor set.
         uint32                      m_descriptorCount = 0;      // Number of descriptors values that will be set.
         uint32                      m_baseDescriptorIndex = 0;  // If the binding is an array, this is the first element to update in that array.
     };
@@ -1661,18 +1662,38 @@ namespace nes
 
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineColorBlendAttachmentState.html
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_render_target_blend_desc
+    //
+    /// @brief : Describes how blending is calculated.
+    ///  Equation: <code> Result = (srcBlendFactor * newColor) <Op> (dstBlendFactor * oldColor); </code>
+    ///
+    /// Example for Alpha Blending:
+    ///
+    /// Color Blend Desc:
+    ///     - m_srcFactor = EBlendFactor::SrcAlpha;
+    ///     - m_dstFactor = EBlendFactor::OneMinusSrcAlpha;
+    ///     - m_op        = EBlendOp::Add;
+    ///
+    /// Alpha Blend Desc:
+    ///     - m_srcFactor = EBlendFactor::One;
+    ///     - m_dstFactor = EBlendFactor::Zero;
+    ///     - m_op        = EBlendOp::Add;
+    ///
+    /// Code Result: <code>
+    ///     finalColor.rgb = (oldColor.a * newColor.rgb) + ((1 - oldColor.a) * oldColor.rgb);
+    ///     finalColor.a = (1 * newColor.a) + (0.f * oldColor.a);
+    /// </code>
     //----------------------------------------------------------------------------------------------------
     struct BlendDesc
     {
         EBlendFactor                m_srcFactor = EBlendFactor::SrcAlpha;
-        EBlendFactor                m_dstFactor = EBlendFactor::OneMinusSrc1Alpha;
+        EBlendFactor                m_dstFactor = EBlendFactor::OneMinusSrcAlpha;
         EBlendOp                    m_op        = EBlendOp::Add;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Default Blend Description for blending color channels based on alpha. 
         //----------------------------------------------------------------------------------------------------
-        static constexpr BlendDesc  AlphaBlend() { return {}; }
+        static constexpr BlendDesc  ColorAlphaBlend() { return {}; }
+        static constexpr BlendDesc  AlphaBlend() { return { EBlendFactor::One, EBlendFactor::Zero, EBlendOp::Add }; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1682,7 +1703,7 @@ namespace nes
     struct ColorAttachmentDesc
     {
         EFormat                     m_format            = EFormat::RGBA8_SRGB;          // The format of the color channels.
-        BlendDesc                   m_colorBlend        = BlendDesc::AlphaBlend();      // Defines how the r,g,b components will be blended.
+        BlendDesc                   m_colorBlend        = BlendDesc::ColorAlphaBlend(); // Defines how the r,g,b components will be blended.
         BlendDesc                   m_alphaBlend        = BlendDesc::AlphaBlend();      // Defines how the alpha channel will be blended.
         EColorComponentBits         m_colorWriteMask    = EColorComponentBits::RGBA;    // Defines which color channels will actually be blended.
         bool                        m_enableBlend       = true;                         // Should this blending attachment be enabled.
@@ -1785,17 +1806,32 @@ namespace nes
         Off,        // No overhead, no robust access (out-of-bounds access is not allowed).
     };
 
-    struct ShaderDesc
+    struct ShaderModuleDesc
     {
-        EPipelineStageBits      m_stage = EPipelineStageBits::GraphicsShaders;
-        const void*             m_pByteCode = nullptr;
-        uint64                  m_size = 0;
-        const char*             m_entryPointName = "main";
+        EPipelineStageBits      m_stage = EPipelineStageBits::None;
+        std::vector<char>       m_binary{};
+        std::string             m_entryPointName{};
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check that this points to a loaded shader. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsValid() const { return m_pByteCode != nullptr && m_size > 0; }
+        bool                    IsValid() const { return m_stage != EPipelineStageBits::None && !m_binary.empty() && !m_entryPointName.empty(); }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Set of shader modules that can be part of a graphics pipeline.
+    //----------------------------------------------------------------------------------------------------
+    struct GraphicsPipelineShaders
+    {
+        static constexpr uint32 kGraphicsShaderStagesCount = 7; 
+        
+        const ShaderModule* m_vertex = nullptr;         // Vertex Shader.
+        const ShaderModule* m_fragment = nullptr;       // Fragment Shader.
+        const ShaderModule* m_tessControl = nullptr;    // Tesselation Control Shader.
+        const ShaderModule* m_tessEval = nullptr;       // Tesselation Evaluation Shader.
+        const ShaderModule* m_geometry = nullptr;       // Geometry Shader.
+        const ShaderModule* m_meshControl = nullptr;    // Mesh Control (Task) Shader.
+        const ShaderModule* m_meshEval = nullptr;       // Mesh Evaluation Shader.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1806,7 +1842,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the shaders that will run at different stages in the pipeline's execution. 
         //----------------------------------------------------------------------------------------------------
-        GraphicsPipelineDesc&           SetShaderStages(const std::vector<ShaderDesc>& shaderStages);
+        GraphicsPipelineDesc&           SetShaderStages(const GraphicsPipelineShaders& shaders);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the format of the data sent to the vertex shader. 
@@ -1839,8 +1875,8 @@ namespace nes
         ///     blending and depth testing.
         //----------------------------------------------------------------------------------------------------
         GraphicsPipelineDesc&           SetOutputMergerDesc(const OutputMergerDesc& desc);
-        
-        std::vector<ShaderDesc>         m_shaderStages{};
+
+        GraphicsPipelineShaders         m_shaderStages{};
         VertexInputDesc                 m_vertexInput{};
         InputAssemblyDesc               m_inputAssembly{};
         RasterizationDesc               m_rasterization{};
@@ -1853,7 +1889,7 @@ namespace nes
     struct ComputePipelineDesc
     {
         const PipelineLayout*           m_pPipelineLayout;
-        ShaderDesc                      m_shader;
+        ShaderModuleDesc                      m_shader;
         ERobustness                     m_robustness;       // Optional.
     };
 
@@ -1938,7 +1974,7 @@ namespace nes
         DrawIndexedDesc() = default;
         DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
         
-        uint64  m_vertexOffset = 0;     // Byte offset to the first vertex in Device Buffer. With an index value == 0, this is the byte position that it points to.                   
+        uint64  m_vertexOffset = 0;     // Byte offset to the first vertex in the vertex buffer range. With a value == 0, this will start at the first vertex in the range.                   
         uint32  m_indexCount = 0;       // Number of indices to submit.   
         uint32  m_firstIndex = 0;       // First index in the index buffer.                       
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.

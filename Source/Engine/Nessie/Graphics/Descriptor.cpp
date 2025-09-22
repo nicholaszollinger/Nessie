@@ -82,7 +82,7 @@ namespace nes
 
         m_type = EDescriptorType::Buffer;
         m_bufferDesc.m_offset = bufferViewDesc.m_offset;
-        m_bufferDesc.m_size = (bufferViewDesc.m_size == graphics::kUseRemaining) ? bufferDesc.m_size : bufferViewDesc.m_size;
+        m_bufferDesc.m_size = (bufferViewDesc.m_size == graphics::kWholeSize) ? bufferDesc.m_size : bufferViewDesc.m_size;
         m_bufferDesc.m_pBuffer = bufferViewDesc.m_pBuffer;
         m_bufferDesc.m_viewType = bufferViewDesc.m_viewType;
 

@@ -1,0 +1,10 @@
+# Grid Shader - Vert and Frag.
+Shader:
+  Name: "Grid"
+  Modules:
+  - Stage: 2 # Vertex
+    Path: "Grid.vert.spv"
+    EntryPoint: "main"
+  - Stage: 128 # Fragment
+    Path: "Grid.frag.spv"
+    EntryPoint: "main"

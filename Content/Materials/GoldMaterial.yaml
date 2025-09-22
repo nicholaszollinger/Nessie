@@ -1,0 +1,12 @@
+# Gold Material using texture Maps.
+PBRMaterial:
+  BaseColor: [1, 1, 1]
+  Emission: [0, 0, 0]
+  Roughness: 1.0
+  Metallic: 1.0
+  Alpha: 1.0
+  Maps:
+      BaseColor: 50
+      Normal: 51
+      RoughnessMetallic: 52
+      Emission: 18446744073709551615 # No emission. Default is Black.

@@ -9,11 +9,11 @@
 //----------------------------------------------------------------------------------------------------
 struct Vertex
 {
-    nes::Vec3   m_position{};
-    nes::Vec3   m_normal{};
-    nes::Vec2   m_uv{};
-    nes::Vec3   m_tangent{};
-    nes::Vec3   m_bitangent{};
+    nes::Vec3 m_position{};
+    nes::Vec3 m_normal{};
+    nes::Vec2 m_texCoord{};
+    nes::Vec3 m_tangent{};
+    nes::Vec3 m_bitangent{};
     
     static std::array<nes::VertexAttributeDesc, 5> GetBindingDescs(); 
 };

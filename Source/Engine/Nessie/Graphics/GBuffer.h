@@ -33,7 +33,7 @@ namespace nes
     };
     
     //----------------------------------------------------------------------------------------------------
-    /// @brief : A GBuffer is multiple render targets with optional depth management.
+    /// @brief : A GBuffer is a series of color attachments with optional depth management.
     ///
     /// This class manages multiple color buffers and a depth buffer for deferred rendering or other
     /// multi-target rendering techniques.
@@ -80,6 +80,11 @@ namespace nes
         /// @brief : Get the format of a color image at the given index. 
         //----------------------------------------------------------------------------------------------------
         EFormat                     GetColorFormat(const uint32 colorIndex = 0) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get all color formats of the GBuffer.
+        //----------------------------------------------------------------------------------------------------
+        const std::vector<EFormat>& GetColorFormats() const                         { return m_desc.m_colorFormats; };
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the depth image.

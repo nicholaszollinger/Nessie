@@ -16,7 +16,7 @@ bool RectangleApp::Internal_AppInit()
     // Load the Simple Shader
     {
         std::filesystem::path shaderPath = NES_SHADER_DIR;
-        shaderPath /= "Rectangle.spv";
+        shaderPath /= "RectangleShader.yaml";
 
         const auto result = nes::AssetManager::LoadSync<nes::Shader>(m_shaderID, shaderPath);
         if (result != nes::ELoadResult::Success)
@@ -30,7 +30,7 @@ bool RectangleApp::Internal_AppInit()
     // Load Image
     {
         std::filesystem::path texturePath = NES_CONTENT_DIR;
-        texturePath /= "StatueTestImage.jpg";
+        texturePath /= "Images/StatueTestImage.jpg";
 
         const auto result = nes::AssetManager::LoadSync<nes::Texture>(m_textureID, texturePath);
         if (result != nes::ELoadResult::Success)
@@ -344,24 +344,9 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
         .SetStreams(vertexStreamDesc);
 
     // Shader Stages:
-    nes::AssetPtr<nes::Shader> triangleShader = nes::AssetManager::GetAsset<nes::Shader>(m_shaderID);
-    NES_ASSERT(triangleShader, "Failed to create Pipeline! Shader not present!");
-
-    const auto& byteCode = triangleShader->GetByteCode();
-    nes::ShaderDesc vertStage
-    {
-        .m_stage = nes::EPipelineStageBits::VertexShader,
-        .m_pByteCode = byteCode.data(),
-        .m_size = byteCode.size(),
-        .m_entryPointName = "vertMain",
-    };
-    nes::ShaderDesc fragStage
-    {
-        .m_stage = nes::EPipelineStageBits::FragmentShader,
-        .m_pByteCode = byteCode.data(),
-        .m_size = byteCode.size(),
-        .m_entryPointName = "fragMain",
-    };
+    nes::AssetPtr<nes::Shader> shader = nes::AssetManager::GetAsset<nes::Shader>(m_shaderID);
+    NES_ASSERT(shader, "Failed to create Pipeline! Shader not present!");
+    auto shaderStages = shader->GetGraphicsShaderStages();
 
     // Get the maximum samples for the swapchain format:
     nes::EFormat swapchainFormat = nes::Renderer::GetSwapchainFormat();
@@ -391,7 +376,7 @@ void RectangleApp::CreatePipeline(nes::RenderDevice& device)
     
     // Create the Pipeline:
     nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
-        .SetShaderStages({ vertStage, fragStage })
+        .SetShaderStages(shaderStages)
         .SetVertexInput(vertexInputDesc)
         .SetMultisampleDesc(multisampleDesc)
         .SetRasterizationDesc(rasterDesc)
@@ -433,6 +418,7 @@ void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
     imageViewDesc.m_format = desc.m_format;
     imageViewDesc.m_viewType = nes::EImage2DViewType::ShaderResource2D;
     m_imageView = nes::Descriptor(device, imageViewDesc);
+    nes::Descriptor* pImageView = &m_imageView;
 
     // Create the Sampler descriptor:
     nes::SamplerDesc samplerDesc{};
@@ -447,6 +433,7 @@ void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
     samplerDesc.m_compareOp = nes::ECompareOp::None;
     samplerDesc.m_anisotropy = static_cast<uint8>(device.GetDesc().m_other.m_maxSamplerAnisotropy);
     m_sampler = nes::Descriptor(device, samplerDesc);
+    nes::Descriptor* pSamplerView = &m_sampler;
     
     // View into the single uniform buffer:
     nes::BufferViewDesc bufferViewDesc{};
@@ -462,14 +449,16 @@ void RectangleApp::CreateDescriptorSets(nes::RenderDevice& device)
         m_frames[i].m_uniformBufferView = nes::Descriptor(device, bufferViewDesc);
         m_frames[i].m_uniformBufferViewOffset = bufferViewDesc.m_offset;
 
+        nes::Descriptor* pBufferView = &m_frames[i].m_uniformBufferView;
+        
         // Allocate the Descriptor Set:
         m_descriptorPool.AllocateDescriptorSets(m_pipelineLayout, 0, &m_frames[i].m_descriptorSet);
 
         std::array updateDescs =
         {
-            nes::DescriptorBindingUpdateDesc(&m_frames[i].m_uniformBufferView, 1),
-            nes::DescriptorBindingUpdateDesc(&m_imageView, 1),
-            nes::DescriptorBindingUpdateDesc(&m_sampler, 1),
+            nes::DescriptorBindingUpdateDesc(&pBufferView, 1),
+            nes::DescriptorBindingUpdateDesc(&pImageView, 1),
+            nes::DescriptorBindingUpdateDesc(&pSamplerView, 1),
         };
         
         m_frames[i].m_descriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));

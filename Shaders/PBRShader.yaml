@@ -1,0 +1,10 @@
+# PBR Shader
+Shader:
+  Name: "PBR"
+  Modules:
+  - Stage: 2 # Vertex
+    Path: "PBR.vert.spv"
+    EntryPoint: "main"
+  - Stage: 128 # Fragment
+    Path: "PBR.frag.spv"
+    EntryPoint: "main"

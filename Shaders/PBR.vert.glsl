@@ -1,60 +1,47 @@
 // 3D Geometry Shader.
 #version 450
 
-layout (set = 0, binding = 0) uniform CameraUniforms
+layout (set = 0, binding = 0) uniform CameraUBO
 {
-    mat4 proj;
     mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    vec3 position;
+    float exposureFactor;
 } u_camera;
 
-struct VertexOutput
+layout (set = 1, binding = 0) uniform ObjectUBO
 {
-    mat3 worldTransform; // Rotation & Scale Transform.
-    mat3 worldNormals;
-    vec3 worldPosition;  // World Position.
-    vec3 normal;         // Vertex Normal
-    vec2 texCoord;       // Vertex Texture coordinate, or UV.
-    vec3 tangent;
-    vec3 bitangent;
-};
+    mat4 modelMatrix;   // Transform vertices from object -> world space.
+    mat4 normalMatrix;  // Transform normals/tangents from object -> world space.
+    uint meshIndex;
+    uint materialIndex;
+} u_object;
 
 // Vertex Data:
-layout (location = 0) in vec3 inVertPosition;
-layout (location = 1) in vec3 inVertNormal;
+layout (location = 0) in vec3 inPosition;
+layout (location = 1) in vec3 inNormal;
 layout (location = 2) in vec2 inTexCoord;
 layout (location = 3) in vec3 inTangent;
 layout (location = 4) in vec3 inBitangent;
 
-// Transform Data:
-layout (location = 5) in vec4 inMatRow0;
-layout (location = 6) in vec4 inMatRow1;
-layout (location = 7) in vec4 inMatRow2;
-layout (location = 8) in uint inMeshIndex;
-layout (location = 9) in uint inMaterialIndex;
-
 // Output:
-layout (location = 0) out VertexOutput outData;
+layout(location = 0) out vec3 outWorldPos;
+layout(location = 1) out vec3 outWorldNormal;
+layout(location = 2) out vec2 outTexCoord;
+layout(location = 3) out vec3 outWorldTangent;
+layout(location = 4) out vec3 outWorldBitangent;
 
-void main() 
+void main()
 {
-    // Construct the object matrix from the row data:
-    mat4 objectMatrix = mat4
-    (
-        vec4(inMatRow0.x, inMatRow1.x, inMatRow2.x, 0.0), // Column 0
-        vec4(inMatRow0.y, inMatRow1.y, inMatRow2.y, 0.0), // Column 1
-        vec4(inMatRow0.z, inMatRow1.z, inMatRow2.z, 0.0), // Column 2
-        vec4(inMatRow0.w, inMatRow1.w, inMatRow2.w, 1.0)  // Column 4
-    );
-    vec4 worldPosition = vec4(objectMatrix * vec4(inVertPosition, 1.0));
-
-    // Set the Output Data
-    outData.worldPosition = worldPosition.xyz;
-    outData.worldTransform = mat3(objectMatrix);
-    outData.worldNormals = mat3(objectMatrix) * mat3(inTangent, inBitangent, inVertNormal);
-    outData.normal = normalize((objectMatrix * vec4(inVertNormal, 0)).xyz);
-    outData.texCoord = inTexCoord;
-    outData.tangent = inTangent;
-    outData.bitangent = inBitangent;
+    vec4 worldPosition = u_object.modelMatrix * vec4(inPosition, 1.0);
+    outWorldPos = worldPosition.xyz;
+    outTexCoord = inTexCoord;
     
-    gl_Position = u_camera.proj * u_camera.view * objectMatrix * worldPosition;
+    mat3 normalMatrix = mat3(u_object.normalMatrix);
+    outWorldNormal = normalize(normalMatrix * inNormal);
+    outWorldTangent = normalize(normalMatrix * inTangent);
+    outWorldBitangent = cross(outWorldNormal, outWorldTangent);
+    
+    gl_Position = u_camera.viewProj * worldPosition;
 }

@@ -1,10 +1,13 @@
 // Skybox.frag.glsl
 #version 450
 
-layout (set = 0, binding = 0) uniform CameraUniforms
+layout (set = 0, binding = 0) uniform CameraUBO
 {
-    mat4 proj;
     mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    vec3 position;
+    float exposureFactor;
 } u_camera;
 
 layout (set = 1, binding = 0) uniform sampler       inSkyboxSampler;

@@ -1,21 +1,23 @@
 ﻿// Scene.h
 #pragma once
 #include "Primitives.h"
+#include "LightTypes.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Render information for an object in the Scene. Contains the object's model matrix, as well
 ///     as the mesh and material indices.
 //----------------------------------------------------------------------------------------------------
-struct Instance
+struct ObjectUBO
 {
-    // Each represents a row in the Object matrix.
-    // The last row is omitted, since it will always be [0, 0, 0, 1].
-    nes::Vec4               m_matRow0 = nes::Vec4(0.0f);
-    nes::Vec4               m_matRow1 = nes::Vec4(0.0f);
-    nes::Vec4               m_matRow2 = nes::Vec4(0.0f);
+    nes::Mat44              m_model             = nes::Mat44::Identity();   // Converts vertex positions to world space.
+    nes::Mat33              m_normal            = nes::Mat33::Identity();   // Converts vertex normals/tangents to world space.
+    uint32                  m_meshIndex         = helpers::kInvalidIndex;
+    uint32                  m_materialIndex     = helpers::kInvalidIndex;
 
-    uint32                  m_meshIndex = helpers::kInvalidIndex;
-    uint32                  m_materialIndex = helpers::kInvalidIndex;
+    ObjectUBO&              SetTransform(const nes::Vec3 translation, const nes::Quat rotation, const nes::Vec3 scale = { 1.f, 1.f, 1.f });
+    ObjectUBO&              SetTransform(const nes::Mat44& transform);
+    ObjectUBO&              SetMesh(const uint32 meshIndex);
+    ObjectUBO&              SetMaterial(const uint32 materialIndex);
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -28,9 +30,35 @@ struct Instance
 //----------------------------------------------------------------------------------------------------
 struct Scene
 {
-    std::vector<Vertex>                 m_vertices{};       // Array of all vertices for all meshes used in the scene. 
-    std::vector<uint32>                 m_indices{};        // Array of all indices for all meshes used in the scene.
-    std::vector<Mesh>                   m_meshes{};         // Array of meshes that can be used by instances.
-    std::vector<Instance>               m_instances{};      // Each entry is an object that is rendered in the scene.
-    std::vector<PBRMaterialInstance>    m_materials{};      // Array of materials that can be used by instances. 
+    std::vector<Vertex>                 m_vertices{};           // Array of all vertices for all meshes used in the scene. 
+    std::vector<uint32>                 m_indices{};            // Array of all indices for all meshes used in the scene.
+    std::vector<Mesh>                   m_meshes{};             // Array of meshes that can be used by instances.
+    std::vector<ObjectUBO>              m_objects{};            // Each entry is an object that is rendered in the scene.
+    std::vector<PBRMaterialInstance>    m_materials{};          // Array of materials that can be used by instances.
+    std::vector<PointLight>             m_pointLights{};        // Array of point light info for the scene.
+    std::vector<DirectionalLight>       m_directionalLights{};  // Array of directional light info for the scene.
+    std::vector<nes::Descriptor>        m_textures{};       
+    
+    using AssetIDToIndexMap = std::unordered_map<nes::AssetID, uint32, nes::UUIDHasher>;
+    AssetIDToIndexMap                   m_idToTextureIndex{};
+    AssetIDToIndexMap                   m_idToMaterialIndex{};
 };
+
+namespace helpers
+{
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : HACK. I need to know specific AssetIDs when loading the scene. 
+    //----------------------------------------------------------------------------------------------------
+    struct SceneConfig
+    {
+        nes::AssetID m_gridShaderID = nes::kInvalidAssetID;
+        nes::AssetID m_skyboxShaderID = nes::kInvalidAssetID;
+        nes::AssetID m_skyboxTextureID = nes::kInvalidAssetID;
+        nes::AssetID m_pbrShaderID = nes::kInvalidAssetID;
+    };
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : HACK. A Scene will not be loaded from data, the world will be. But for now, I am going to load the scene.
+    //----------------------------------------------------------------------------------------------------
+    bool LoadScene(const std::filesystem::path& assetPath, nes::RenderDevice& device, Scene& outScene, std::vector<nes::AssetID>& outLoadedAssets, SceneConfig& outConfig);
+}
