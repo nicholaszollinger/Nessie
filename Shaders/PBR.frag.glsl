@@ -36,8 +36,26 @@ layout (set = 0, binding = 0) uniform CameraUBO
 } u_camera;
 
 //-----------------------------------
-// Set 1: Object UBO - Only in Vertex Shader.
+// Set 1: Material UBO:
 //-----------------------------------
+struct MaterialUBO
+{
+    vec3  baseColorScale;
+    float metallicScale;
+    vec3  emissionScale;
+    float roughnessScale;
+    float normalScale;
+
+    uint  baseColorIndex;
+    uint  normalIndex;
+    uint  roughnessMetallicIndex;
+    uint  emissionIndex;
+};
+
+layout (set = 1, binding = 0) readonly buffer MaterialSSBO
+{
+    MaterialUBO u_materials[];
+};
 
 //-----------------------------------
 // Set 2: Lighting
@@ -72,23 +90,34 @@ layout (set = 3, binding = 3) uniform texture2D     u_roughnessMetallicMap;
 layout (set = 3, binding = 4) uniform texture2D     u_emissionMap;
 
 //------------------------------------
-// Push Constants: PBR Material Info,
-//   aside from TextureMaps.
+// Push Constants
 //------------------------------------
-layout (push_constant) uniform MaterialUniforms
+layout (push_constant) uniform InstanceData
 {
-    vec3  baseColorScale;
-    float metallicScale;
-    vec3  emissionScale;
-    float roughnessScale;
-    float normalScale;
+    mat4 modelMatrix;   // Transform vertices from object -> world space.
+    mat4 normalMatrix;  // Transform normals/tangents from object -> world space.
+    uint meshIndex;
+    uint materialIndex;
+} u_instance;
 
-    uint  baseColorIndex;
-    uint  normalIndex;
-    uint  roughnessMetallicIndex;
-    uint  emissionIndex;
-    
-} p_materialParams;
+////------------------------------------
+//// Push Constants:
+////------------------------------------
+//layout (push_constant) uniform MaterialUniforms
+//{
+//    // Material Parameters:
+//    vec3  baseColorScale;
+//    float metallicScale;
+//    vec3  emissionScale;
+//    float roughnessScale;
+//    float normalScale;
+//
+//    uint  baseColorIndex;
+//    uint  normalIndex;
+//    uint  roughnessMetallicIndex;
+//    uint  emissionIndex;
+//    
+//} p_materialParams;
 
 // Vertex Input:
 layout (location = 0) in vec3 inWorldPosition;
@@ -402,10 +431,10 @@ vec3 HDRToLinear(vec3 colorMulExposure)
     return color;
 }
 
-vec3 GetNormalFromMap()
+vec3 GetNormalFromMap(MaterialUBO material)
 {
     vec3 tangentNormal = texture(sampler2D(u_normalMap, u_sampler), inTexCoord).xyz * 2.0 - 1.0;
-    tangentNormal.xy *= p_materialParams.normalScale;
+    tangentNormal.xy *= material.normalScale;
     
     mat3 TBN = mat3
     (
@@ -419,19 +448,21 @@ vec3 GetNormalFromMap()
 
 void main()
 {
+    MaterialUBO material = u_materials[u_instance.materialIndex];
+    
     vec3 V = normalize(u_camera.position - inWorldPosition);
-    vec3 N = GetNormalFromMap();
+    vec3 N = GetNormalFromMap(material);
     
     // Metallic & Roughness
     vec3 metallicRoughness = texture(sampler2D(u_roughnessMetallicMap, u_sampler), inTexCoord).rgb;
-    float metallic = metallicRoughness.b * p_materialParams.metallicScale;
-    float roughness = metallicRoughness.g * p_materialParams.roughnessScale;
+    float metallic = metallicRoughness.b * material.metallicScale;
+    float roughness = metallicRoughness.g * material.roughnessScale;
 
     // Emissive:
-    vec3 emissive = texture(sampler2D(u_emissionMap, u_sampler), inTexCoord).rgb * p_materialParams.emissionScale;
+    vec3 emissive = texture(sampler2D(u_emissionMap, u_sampler), inTexCoord).rgb * material.emissionScale;
 
     // Albedo / Rf0.
-    vec3 albedo = texture(sampler2D(u_baseColorMap, u_sampler), inTexCoord).rgb * p_materialParams.baseColorScale;
+    vec3 albedo = texture(sampler2D(u_baseColorMap, u_sampler), inTexCoord).rgb * material.baseColorScale;
     vec3 Rf0 = mix(vec3(kRf0Dialectrics), albedo, metallic);
 
     // Calculate Lighting:

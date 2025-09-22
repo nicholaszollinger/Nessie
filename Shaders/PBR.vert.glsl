@@ -10,13 +10,16 @@ layout (set = 0, binding = 0) uniform CameraUBO
     float exposureFactor;
 } u_camera;
 
-layout (set = 1, binding = 0) uniform ObjectUBO
+//------------------------------------
+// Push Constants
+//------------------------------------
+layout (push_constant) uniform InstanceData
 {
     mat4 modelMatrix;   // Transform vertices from object -> world space.
     mat4 normalMatrix;  // Transform normals/tangents from object -> world space.
     uint meshIndex;
     uint materialIndex;
-} u_object;
+} u_instance;
 
 // Vertex Data:
 layout (location = 0) in vec3 inPosition;
@@ -34,11 +37,11 @@ layout(location = 4) out vec3 outWorldBitangent;
 
 void main()
 {
-    vec4 worldPosition = u_object.modelMatrix * vec4(inPosition, 1.0);
+    vec4 worldPosition = u_instance.modelMatrix * vec4(inPosition, 1.0);
     outWorldPos = worldPosition.xyz;
     outTexCoord = inTexCoord;
     
-    mat3 normalMatrix = mat3(u_object.normalMatrix);
+    mat3 normalMatrix = mat3(u_instance.normalMatrix);
     outWorldNormal = normalize(normalMatrix * inNormal);
     outWorldTangent = normalize(normalMatrix * inTangent);
     outWorldBitangent = cross(outWorldNormal, outWorldTangent);

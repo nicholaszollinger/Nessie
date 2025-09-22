@@ -64,15 +64,15 @@ private:
         nes::Descriptor             m_lightCountUBOView = nullptr;          // LightCount UBO view.
         nes::Descriptor             m_pointLightsView = nullptr;            // Point Lights SSBO view.
         nes::Descriptor             m_directionalLightsView = nullptr;      // Directional Lights SSBO view.
-        nes::Descriptor             m_objectUBOView = nullptr;              // ObjectUBO view.
-        nes::DeviceBuffer           m_objectUBOBuffer = nullptr;            // ObjectUBO device buffer.
+        nes::Descriptor             m_materialUBOView = nullptr;              // ObjectUBO view.
+        nes::DeviceBuffer           m_materialUBOBuffer = nullptr;           // ObjectUBO device buffer.
         nes::DeviceBuffer           m_pointLightsBuffer = nullptr;          // Point Lights SSBO buffer.
         nes::DeviceBuffer           m_directionalLightsBuffer = nullptr;    // Directional Lights SSBO buffer.
 
         // Descriptor Set Values:
         nes::DescriptorSet          m_cameraSet = nullptr;                  // Value for the CameraUBO
         nes::DescriptorSet          m_lightDataSet = nullptr;               // Value for LightCount and Light Array values.
-        nes::DescriptorSet          m_objectDataSet = nullptr;              // Value for the ObjectBuffer.
+        nes::DescriptorSet          m_materialDataSet = nullptr;              // Value for the ObjectBuffer.
         
         uint64                      m_cameraBufferOffset = 0;               // Byte offset in the Global buffer for the CameraUBO for this frame. 
         uint64                      m_lightCountOffset  = 0;                // Byte offset in the Global buffer for the LightCountUBO for this frame. 

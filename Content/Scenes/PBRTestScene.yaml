@@ -29,6 +29,12 @@ Assets:
     Path: "Images\\light-gold-ue\\lightgold_normal-dx.png"
   - AssetID: 52
     Path: "Images\\light-gold-ue\\lightgold_RoughnessMetallic.png"
+  - AssetID: 53
+    Path: "Images\\Copper\\copper-rock1-alb.png"
+  - AssetID: 54
+    Path: "Images\\Copper\\copper-rock1-normal.png"
+  - AssetID: 55
+    Path: "Images\\Copper\\copper-rock1-roughMetal.png"
 
   TextureCubes:
   - AssetID: 500
@@ -47,6 +53,8 @@ Assets:
     Path: "Materials\\DefaultMaterial.yaml"
   - AssetID: 5001
     Path: "Materials\\GoldMaterial.yaml"
+  - AssetID: 5002
+    Path: "Materials\\CopperRockMaterial.yaml"
 
   # Hack for now: I need to know these specific asset ids to setup the pipeline.
   # - I need to find a better solution for this.

@@ -212,7 +212,7 @@ void PBRExampleApp::CreateBuffersAndImages(nes::RenderDevice& device)
     // Globals Buffer: Contains CameraUBO + LightCountUBO. 
     {
         nes::AllocateBufferDesc desc;
-        desc.m_size = kGlobalUBOElementSize * nes::Renderer::GetMaxFramesInFlight();
+        desc.m_size = static_cast<uint64>(kGlobalUBOElementSize) * nes::Renderer::GetMaxFramesInFlight();
         desc.m_usage = nes::EBufferUsageBits::UniformBuffer;
         desc.m_location = nes::EMemoryLocation::HostUpload;         // We are updating the data each frame, so we need to write to it.
         m_globalsBuffer = nes::DeviceBuffer(device, desc);
@@ -239,19 +239,19 @@ void PBRExampleApp::CreateBuffersAndImages(nes::RenderDevice& device)
         m_verticesBuffer.SetDebugName("Vertices Buffer");
     }
 
-    // Object UBO Device Buffers
-    // [TODO]: Make these dynamically sized.
+    // Material Storage Buffer per frame.
     {
         for (uint32 i = 0; i < nes::Renderer::GetMaxFramesInFlight(); ++i)
         {
             auto& frame = m_frames[i];
             
             nes::AllocateBufferDesc desc;
-            desc.m_size = static_cast<uint32>(m_scene.m_objects.size()) * sizeof(ObjectUBO);
-            desc.m_usage = nes::EBufferUsageBits::UniformBuffer; 
-            desc.m_location = nes::EMemoryLocation::HostUpload; // We are updating the instance information each frame.
-            frame.m_objectUBOBuffer = nes::DeviceBuffer(device, desc);
-            frame.m_objectUBOBuffer.SetDebugName(fmt::format("ObjectUBO Buffer ({})", i));
+            desc.m_size = static_cast<uint32>(m_scene.m_materials.size()) * sizeof(MaterialUBO);
+            desc.m_usage = nes::EBufferUsageBits::ShaderResourceStorage; 
+            desc.m_location = nes::EMemoryLocation::HostUpload;
+            desc.m_structureStride = sizeof(MaterialUBO);
+            frame.m_materialUBOBuffer = nes::DeviceBuffer(device, desc);
+            frame.m_materialUBOBuffer.SetDebugName(fmt::format("Materials SSBO({})", i));
         }
     }
     
@@ -299,17 +299,6 @@ void PBRExampleApp::CreateBuffersAndImages(nes::RenderDevice& device)
         desc.m_pData = m_scene.m_vertices.data();
         desc.m_uploadSize = m_scene.m_vertices.size() * sizeof(Vertex);
         uploader.AppendUploadBuffer(desc);
-
-        // Object Buffers:
-        for (uint32 i = 0; i < nes::Renderer::GetMaxFramesInFlight(); ++i)
-        {
-            // Objects:
-            desc.m_pBuffer = &m_frames[i].m_objectUBOBuffer;
-            desc.m_uploadOffset = 0;
-            desc.m_pData = m_scene.m_objects.data();
-            desc.m_uploadSize = m_scene.m_objects.size() * sizeof(ObjectUBO);
-            uploader.AppendUploadBuffer(desc);
-        }
         
         // Submit:
         uploader.RecordCommands(cmdBuffer);
@@ -525,22 +514,22 @@ void PBRExampleApp::CreateGeometryPipeline(nes::RenderDevice& device)
     // Pipeline Layout :
     //  Set 0: "Camera"
     //      Binding 0: CameraUBO.
-    //  Set 1: "ObjectUBO" - Only Vertex
-    //      Binding 0: ObjectUBO.
+    //  Set 1: "Material Params" - Fragment
+    //      Binding 0: Materials SSBO
     //  Set 2: "Lighting" - Only Fragment
     //      Binding 0: LightCountUBO
     //      Binding 1: DirectionLights SSBO
     //      Binding 2: PointLights SSBO
     //      (TODO) Binding 3: SpotLights SSBO 
     //      (TODO) Binding 4: AreaLights SSBO
-    //  Set 3: "Sampler and Materials" - Only Fragment
+    //  Set 3: "Sampler and Textures" - Only Fragment
     //      Binding 0: Sampler
     //      Binding 1: BaseColor Texture
     //      Binding 2: Normal Texture
     //      Binding 3: RoughnessMetallic Texture
     //      Binding 4: Emission Texture
-    // PushConstants: - Only Fragment
-    //      PBRMaterialInstance data with 0 offset.
+    // PushConstants:
+    //      Instance Data.
     {
         // Camera:
         nes::DescriptorBindingDesc cameraBinding = nes::DescriptorBindingDesc()
@@ -551,14 +540,14 @@ void PBRExampleApp::CreateGeometryPipeline(nes::RenderDevice& device)
         nes::DescriptorSetDesc cameraSet = nes::DescriptorSetDesc()
             .SetBindings(&cameraBinding, 1u);
 
-        // Object
-        nes::DescriptorBindingDesc objectBinding = nes::DescriptorBindingDesc()
+        // Material
+        nes::DescriptorBindingDesc materialBinding = nes::DescriptorBindingDesc()
                 .SetBindingIndex(0)
-                .SetDescriptorType(nes::EDescriptorType::UniformBuffer)
-                .SetShaderStages(nes::EPipelineStageBits::VertexShader);
+                .SetDescriptorType(nes::EDescriptorType::StorageBuffer)
+                .SetShaderStages(nes::EPipelineStageBits::FragmentShader);
         
-        nes::DescriptorSetDesc objectSet = nes::DescriptorSetDesc()
-            .SetBindings(&objectBinding, 1u);
+        nes::DescriptorSetDesc materialSet = nes::DescriptorSetDesc()
+            .SetBindings(&materialBinding, 1u);
 
         // Light Set:
         std::array lightBindings = 
@@ -583,7 +572,7 @@ void PBRExampleApp::CreateGeometryPipeline(nes::RenderDevice& device)
             .SetBindings(lightBindings.data(), static_cast<uint32_t>(lightBindings.size()));
         
         // Sampler & Materials
-        std::array materialBindings =
+        std::array textureBindings =
         {
             nes::DescriptorBindingDesc()
                 .SetBindingIndex(0)
@@ -611,17 +600,17 @@ void PBRExampleApp::CreateGeometryPipeline(nes::RenderDevice& device)
                 .SetShaderStages(nes::EPipelineStageBits::FragmentShader),
         };
 
-        nes::DescriptorSetDesc materialSetDesc = nes::DescriptorSetDesc()
-            .SetBindings(materialBindings.data(), static_cast<uint32>(materialBindings.size()));
+        nes::DescriptorSetDesc textureSet = nes::DescriptorSetDesc()
+            .SetBindings(textureBindings.data(), static_cast<uint32>(textureBindings.size()));
 
         nes::PushConstantDesc pushConstantDesc{};
         pushConstantDesc.m_offset = 0;
-        pushConstantDesc.m_size = sizeof(PBRMaterialInstance);
-        pushConstantDesc.m_shaderStages = nes::EPipelineStageBits::FragmentShader;
+        pushConstantDesc.m_size = sizeof(ObjectUBO);
+        pushConstantDesc.m_shaderStages = nes::EPipelineStageBits::VertexShader | nes::EPipelineStageBits::FragmentShader;
         
         // Create the layout:
         nes::PipelineLayoutDesc layoutDesc = nes::PipelineLayoutDesc()
-            .SetDescriptorSets({cameraSet, objectSet, lightSet, materialSetDesc})
+            .SetDescriptorSets({cameraSet, materialSet, lightSet, textureSet})
             .SetPushConstants(pushConstantDesc)
             .SetShaderStages(nes::EPipelineStageBits::VertexShader | nes::EPipelineStageBits::FragmentShader);
 
@@ -711,18 +700,16 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
     cameraView.m_pBuffer = &m_globalsBuffer;
     cameraView.m_viewType = nes::EBufferViewType::Uniform;
     cameraView.m_size = sizeof(CameraUBO);
-
-    // Object Descriptors
-    nes::BufferViewDesc objectViewDesc{};
-    objectViewDesc.m_viewType = nes::EBufferViewType::Uniform;
-    objectViewDesc.m_size = sizeof(ObjectUBO) * m_scene.m_objects.size(); // Should be a max size.
-    objectViewDesc.m_offset = 0;
-
+    
     // Light Count Descriptor
     nes::BufferViewDesc lightCountView{};
     lightCountView.m_viewType = nes::EBufferViewType::Uniform;
     lightCountView.m_pBuffer = &m_globalsBuffer;
     lightCountView.m_size = sizeof(LightCountUBO);
+
+    // Object Descriptors
+    nes::BufferViewDesc objectViewDesc{};
+    objectViewDesc.m_viewType = nes::EBufferViewType::ShaderResourceStorage;
 
     // Point Light Descriptor:
     nes::BufferViewDesc pointLightView{};
@@ -752,10 +739,10 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
             frame.m_lightCountUBOView = nes::Descriptor(device, lightCountView);
         }
 
-        // ObjectUBO View
+        // Materials View
         {
-            objectViewDesc.m_pBuffer = &frame.m_objectUBOBuffer;
-            frame.m_objectUBOView = nes::Descriptor(device, objectViewDesc);
+            objectViewDesc.m_pBuffer = &frame.m_materialUBOBuffer;
+            frame.m_materialUBOView = nes::Descriptor(device, objectViewDesc);
         }
 
         // Light Type Views
@@ -776,12 +763,12 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
             frame.m_cameraSet.UpdateBindings(&updateDesc, 0);
         }
 
-        // Object Data Set: Used by PBR Pipeline Layout only.
+        // Material Data Set: Used by PBR Pipeline Layout only.
         {
-            m_descriptorPool.AllocateDescriptorSets(m_pbrPipelineLayout, 1, &frame.m_objectDataSet);
-            nes::Descriptor* pView = &frame.m_objectUBOView;
+            m_descriptorPool.AllocateDescriptorSets(m_pbrPipelineLayout, 1, &frame.m_materialDataSet);
+            nes::Descriptor* pView = &frame.m_materialUBOView;
             auto updateDesc = nes::DescriptorBindingUpdateDesc(&pView, 1);
-            frame.m_objectDataSet.UpdateBindings(&updateDesc, 0);
+            frame.m_materialDataSet.UpdateBindings(&updateDesc, 0);
         }
 
         // Light Data Set: Used by PBR Pipeline Layout only.
@@ -825,7 +812,7 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
         m_skyboxDescriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
     }
 
-    // Material Descriptor Sets: Sampler and Images
+    // Sampler and Images Set - Per Material.
     {
         uint32 numMaterials = static_cast<uint32>(m_scene.m_materials.size());
         m_materialDescriptorSets.reserve(numMaterials);
@@ -908,7 +895,11 @@ void PBRExampleApp::UpdateUniformBuffers(const nes::RenderFrameContext& context)
         // [TODO]: Spot Lights, Area Lights.
     }
     
-    // [TODO]: Update Object Data. We aren't moving anything right now, so I don't need to worry about this yet.
+    // Update Material Data:
+    if (!m_scene.m_materials.empty())
+    {
+        frame.m_materialUBOBuffer.CopyToMappedMemory(m_scene.m_materials.data());
+    }
 }
 
 void PBRExampleApp::RenderSkybox(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
@@ -949,27 +940,27 @@ void PBRExampleApp::RenderInstances(nes::CommandBuffer& commandBuffer, const nes
     commandBuffer.BindPipelineLayout(m_pbrPipelineLayout);
     commandBuffer.BindPipeline(m_pbrPipeline);
     commandBuffer.BindDescriptorSet(0, frame.m_cameraSet);
-    commandBuffer.BindDescriptorSet(1, frame.m_objectDataSet);
+    commandBuffer.BindDescriptorSet(1, frame.m_materialDataSet);
     commandBuffer.BindDescriptorSet(2, frame.m_lightDataSet);
 
     // Bind the index buffer for the entire range:
     nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, m_scene.m_indices.size(), 0);
     commandBuffer.BindIndexBuffer(indexBuffer);
     
-    for (uint32 i = 0; i < static_cast<uint32>(m_scene.m_objects.size()); ++i)
+    for (auto& object : m_scene.m_objects)
     {
-        const auto& instance = m_scene.m_objects[i];
-        const Mesh& mesh = m_scene.m_meshes[instance.m_meshIndex];
+        // Push the Instance data
+        commandBuffer.SetPushConstant(0, &object, sizeof(ObjectUBO));
 
-        // Set the Material Data:
-        const PBRMaterialInstance& material = m_scene.m_materials[instance.m_materialIndex];
-        commandBuffer.SetPushConstant(0, &material, sizeof(PBRMaterialInstance));
-        commandBuffer.BindDescriptorSet(3, m_materialDescriptorSets[instance.m_materialIndex]);
+        // Bind Material Textures:
+        commandBuffer.BindDescriptorSet(3, m_materialDescriptorSets[object.m_materialIndex]);
         
-        // Mesh Vertex Buffer.
+        // Bind Mesh Vertex Buffer.
+        const Mesh& mesh = m_scene.m_meshes[object.m_meshIndex];
         nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
         commandBuffer.BindVertexBuffers({ meshVertexBuffer}, 0);
 
+        // Draw
         nes::DrawIndexedDesc drawDesc{};
         drawDesc.m_firstIndex = mesh.m_firstIndex;
         drawDesc.m_indexCount = mesh.m_indexCount;

@@ -9,4 +9,4 @@ PBRMaterial:
       BaseColor: 50
       Normal: 51
       RoughnessMetallic: 52
-      Emission: 18446744073709551615 # No emission. Default is Black.
+      Emission: 18446744073709551615 # No emission.

@@ -33,23 +33,6 @@ enum class EDefaultTextures : uint32
 };
 
 //----------------------------------------------------------------------------------------------------
-/// @brief : Runtime information for a PBR Material. This data is uploaded to the GPU.
-//----------------------------------------------------------------------------------------------------
-struct alignas(16) PBRMaterialInstance
-{
-    nes::Float3                 m_baseColorScale            = nes::Float3(1.f);
-    float                       m_metallicScale             = 1.f;
-    nes::Float3                 m_emissionScale             = nes::Float3(1.f);
-    float                       m_roughnessScale            = 1.f; 
-    float                       m_normalScale               = 1.f;
-    
-    uint32                      m_baseColorIndex            = static_cast<uint32>(EDefaultTextures::White);
-    uint32                      m_normalIndex               = static_cast<uint32>(EDefaultTextures::FlatNormal);
-    uint32                      m_roughnessMetallicIndex    = static_cast<uint32>(EDefaultTextures::White);
-    uint32                      m_emissionIndex             = static_cast<uint32>(EDefaultTextures::White);
-};
-
-//----------------------------------------------------------------------------------------------------
 /// @brief : Material Data for a PBR Material Asset. 
 //----------------------------------------------------------------------------------------------------
 struct PBRMaterialDesc

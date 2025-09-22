@@ -4,15 +4,32 @@
 #include "LightTypes.h"
 
 //----------------------------------------------------------------------------------------------------
+/// @brief : Parameters for a given Material.
+//----------------------------------------------------------------------------------------------------
+struct alignas(64) MaterialUBO
+{
+    nes::Float3                 m_baseColorScale            = nes::Float3(1.f);
+    float                       m_metallicScale             = 1.f;
+    nes::Float3                 m_emissionScale             = nes::Float3(1.f);
+    float                       m_roughnessScale            = 1.f; 
+    float                       m_normalScale               = 1.f;
+    
+    uint32                      m_baseColorIndex            = static_cast<uint32>(EDefaultTextures::White);
+    uint32                      m_normalIndex               = static_cast<uint32>(EDefaultTextures::FlatNormal);
+    uint32                      m_roughnessMetallicIndex    = static_cast<uint32>(EDefaultTextures::White);
+    uint32                      m_emissionIndex             = static_cast<uint32>(EDefaultTextures::White);
+};
+
+//----------------------------------------------------------------------------------------------------
 /// @brief : Render information for an object in the Scene. Contains the object's model matrix, as well
 ///     as the mesh and material indices.
 //----------------------------------------------------------------------------------------------------
-struct ObjectUBO
+struct alignas (64) ObjectUBO
 {
     nes::Mat44              m_model             = nes::Mat44::Identity();   // Converts vertex positions to world space.
-    nes::Mat33              m_normal            = nes::Mat33::Identity();   // Converts vertex normals/tangents to world space.
-    uint32                  m_meshIndex         = helpers::kInvalidIndex;
-    uint32                  m_materialIndex     = helpers::kInvalidIndex;
+    nes::Mat44              m_normal            = nes::Mat44::Identity();   // Converts vertex normals/tangents to world space.
+    uint32                  m_meshIndex         = helpers::kInvalidIndex;   // Index into the Scene's Mesh buffer.
+    uint32                  m_materialIndex     = helpers::kInvalidIndex;   // Index into the Scene's MaterialUBO buffer.
 
     ObjectUBO&              SetTransform(const nes::Vec3 translation, const nes::Quat rotation, const nes::Vec3 scale = { 1.f, 1.f, 1.f });
     ObjectUBO&              SetTransform(const nes::Mat44& transform);
@@ -34,7 +51,7 @@ struct Scene
     std::vector<uint32>                 m_indices{};            // Array of all indices for all meshes used in the scene.
     std::vector<Mesh>                   m_meshes{};             // Array of meshes that can be used by instances.
     std::vector<ObjectUBO>              m_objects{};            // Each entry is an object that is rendered in the scene.
-    std::vector<PBRMaterialInstance>    m_materials{};          // Array of materials that can be used by instances.
+    std::vector<MaterialUBO>            m_materials{};          // Each element contains information to render and instance.
     std::vector<PointLight>             m_pointLights{};        // Array of point light info for the scene.
     std::vector<DirectionalLight>       m_directionalLights{};  // Array of directional light info for the scene.
     std::vector<nes::Descriptor>        m_textures{};       

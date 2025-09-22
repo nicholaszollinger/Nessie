@@ -163,7 +163,7 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
                 const auto& desc = pMaterial->GetDesc();
 
                 // Create the Material Instance:
-                PBRMaterialInstance materialInstance{};
+                MaterialUBO materialInstance{};
                 materialInstance.m_baseColorScale = nes::Float3(desc.m_baseColor.x, desc.m_baseColor.y, desc.m_baseColor.z);
                 materialInstance.m_metallicScale = desc.m_metallic;
                 materialInstance.m_emissionScale = nes::Float3(desc.m_emission.x, desc.m_emission.y, desc.m_emission.z);
@@ -221,7 +221,7 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
         PointLight light{};
         light.m_position = nes::Float3(-1.5f, 0.f, 0.f);
         light.m_color = nes::Float3(1.0f, 0.0f, 0.0f); //nes::Float3(1.0f, 0.9f, 0.8f);
-        light.m_intensity = 80000.f; // in Lumens - 60W equivalent LED.
+        light.m_intensity = 80000.f; // in lumens.
         light.m_radius = 10.f; // In Meters
         outScene.m_pointLights.emplace_back(light);
     }
@@ -233,7 +233,11 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
             .SetTransform(nes::Vec3(0.f, 0.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
             .SetMesh(1)
             .SetMaterial(1);
-        
+        outScene.m_objects.emplace_back(object);
+
+        object.SetTransform(nes::Vec3(0.f, 2.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
+            .SetMesh(1)
+            .SetMaterial(2);
         outScene.m_objects.emplace_back(object);
     }
 
@@ -252,17 +256,20 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
 ObjectUBO& ObjectUBO::SetTransform(const nes::Vec3 translation, const nes::Quat rotation, const nes::Vec3 scale)
 {
     m_model = nes::Mat44::ComposeTransform(translation, rotation, scale);
-    nes::Mat44 normal44 = m_model.Inversed3x3().Transposed3x3();
-    m_normal = nes::Mat33(normal44.GetColumn3(0), normal44.GetColumn3(1), normal44.GetColumn3(2));
-
+    m_normal = m_model.Inversed3x3().Transposed3x3();
+    
+    //nes::Mat44 normal44 = m_model.Inversed3x3().Transposed3x3();
+    //m_normal = nes::Mat33(normal44.GetColumn3(0), normal44.GetColumn3(1), normal44.GetColumn3(2));
     return *this;
 }
 
 ObjectUBO& ObjectUBO::SetTransform(const nes::Mat44& transform)
 {
     m_model = transform;
-    nes::Mat44 normal44 = m_model.Inversed3x3().Transposed3x3();
-    m_normal = nes::Mat33(normal44.GetColumn3(0), normal44.GetColumn3(1), normal44.GetColumn3(2));
+    m_normal = m_model.Inversed3x3().Transposed3x3();
+    
+    //nes::Mat44 normal44 = m_model.Inversed3x3().Transposed3x3();
+    //m_normal = nes::Mat33(normal44.GetColumn3(0), normal44.GetColumn3(1), normal44.GetColumn3(2));
     return *this;
 }
 
