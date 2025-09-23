@@ -100,25 +100,6 @@ layout (push_constant) uniform InstanceData
     uint materialIndex;
 } u_instance;
 
-////------------------------------------
-//// Push Constants:
-////------------------------------------
-//layout (push_constant) uniform MaterialUniforms
-//{
-//    // Material Parameters:
-//    vec3  baseColorScale;
-//    float metallicScale;
-//    vec3  emissionScale;
-//    float roughnessScale;
-//    float normalScale;
-//
-//    uint  baseColorIndex;
-//    uint  normalIndex;
-//    uint  roughnessMetallicIndex;
-//    uint  emissionIndex;
-//    
-//} p_materialParams;
-
 // Vertex Input:
 layout (location = 0) in vec3 inWorldPosition;
 layout (location = 1) in vec3 inWorldNormal;
