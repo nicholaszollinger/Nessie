@@ -148,7 +148,7 @@ namespace nes
         if (auto it = assetManager.m_infoMap.find(id); it != assetManager.m_infoMap.end())
         {
             auto& info = it->second;
-            NES_ASSERT(info.m_typeID == Type::GetStaticTypeID());
+            NES_ASSERT(info.m_typeID == Type::GetStaticTypeID(), "Tried to get a loaded asset that is not the requested type!\n\tRequested type: {}", Type::GetStaticTypename());
 
             // If we are queued to free, but requested, cancel the free operation.
             // Because we only get assets from the main thread, we won't be freeing an asset while

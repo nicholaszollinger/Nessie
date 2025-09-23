@@ -96,7 +96,7 @@ namespace nes
         // Set the description parameters:
         m_desc.m_size = allocDesc.m_size;
         m_desc.m_usage = allocDesc.m_usage;
-        m_desc.m_structuredStride = 0; // [TODO]: Get rid?
+        m_desc.m_structuredStride = allocDesc.m_structureStride;
         
         // Fill out the BufferCreateInfo object. 
         vk::BufferCreateInfo bufferInfo = vk::BufferCreateInfo()

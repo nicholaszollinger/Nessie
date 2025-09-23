@@ -15,9 +15,6 @@
 namespace nes
 {
     NES_DEFINE_LOG_TAG(kAssetLogTag, "Asset", Warn);
-
-    template <ValidAssetType Type>
-    class AssetPtr;
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Manages the lifetime of assets. Assets are explicitly loaded and freed.

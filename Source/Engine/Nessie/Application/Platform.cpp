@@ -187,7 +187,7 @@ namespace nes
     
         while (!m_pWindow->ShouldClose() && !m_pApp->ShouldQuit())
         {
-            // Wait for the Render frame to finish.
+            // Thread Sync.
             SyncFrame();
             
             // Process window events.
@@ -296,7 +296,7 @@ namespace nes
         // handled by the input manager.
         // Send the event to the application.
         if (m_pApp)
-            m_pApp->PushEvent(event);
+            m_pApp->OnEvent(event);
     }
 
     void Platform::OnWindowResize(const uint32 width, const uint32 height) const
@@ -311,22 +311,18 @@ namespace nes
 
             // Push the resize event to the Application:
             WindowResizeEvent event(width, height);
-            m_pApp->PushEvent(event);
+            m_pApp->OnEvent(event);
         }
     }
 
     void Platform::SyncFrame()
     {
-        // Sync with the Render thread.
+        // Sync the Render Frame.
         {
             NES_SCOPED_TIMER_MEMBER(m_performanceInfo.m_mainThreadWaitTime, Timer::Milliseconds);
             m_pRenderer->WaitForFrameCompletion();
         }
         
-        // Update render thread timings while synced.
-        m_performanceInfo.m_renderThreadWaitTime = m_pRenderer->GetRenderThreadWaitTime();
-        m_performanceInfo.m_renderThreadWorkTime = m_pRenderer->GetRenderThreadWorkTime();
-
         // Sync with the asset thread.
         if (m_pAssetManager != nullptr)
         {
@@ -343,7 +339,7 @@ namespace nes
         
         for (uint32 frameID = 0; frameID < numFrames && !m_pApp->ShouldQuit(); ++frameID)
         {
-            // Wait for the Render frame to finish.
+            // Synchronize the frame.
             SyncFrame();
             
             // Begin Render frame:

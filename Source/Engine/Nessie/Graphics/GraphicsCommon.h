@@ -89,33 +89,44 @@ namespace nes
         UVec2       m_extent = UVec2::Zero();
     };
 
-    struct DepthStencil
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Values to use to clear depth and stencil channels in a depth attachment.
+    //----------------------------------------------------------------------------------------------------
+    struct ClearDepthStencilValue
     {
-        float           m_depth = 0.f;
-        uint8           m_stencil = 0;
+        ClearDepthStencilValue() = default;
+        ClearDepthStencilValue(const float depth, const uint32 stencil = 0) : m_depth(depth), m_stencil(stencil) {}
+        
+        float           m_depth = 1.f;
+        uint32          m_stencil = 0;
     };
 
-    union ClearColor
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Values to use to clear color channels in a color attachment.
+    //----------------------------------------------------------------------------------------------------
+    union ClearColorValue
     {
-        ClearColor() = default;
-        ClearColor(const float r, const float g, const float b, float a = 1.0f) : m_float32(r, g, b, a) {}
+        ClearColorValue() = default;
+        ClearColorValue(const float r, const float g, const float b, float a = 1.0f) : m_float32(r, g, b, a) {}
         
         Vec4            m_float32{};
         UVec4           m_uint32;
         IVec4           m_int32;
     };
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Value used to clear either a color or depth attachment. 
+    //----------------------------------------------------------------------------------------------------
     union ClearValue
     {
-        ClearColor      m_color;
-        DepthStencil    m_depthStencil;
+        ClearValue() : m_color(0.0f, 0.0f, 0.0f, 1.0f) {}
+        ClearValue(const ClearColorValue& color) : m_color(color) {}
+        ClearValue(const ClearDepthStencilValue depthStencil) : m_depthStencil(depthStencil) {}
+        
+        ClearColorValue         m_color;
+        ClearDepthStencilValue  m_depthStencil;
     };
-
-    struct SampleLocation
-    {
-        int8 x, y = 0;
-    };
-
+    
 #pragma endregion
 
 //============================================================================================================================================================================================
@@ -318,7 +329,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the image that will be transitioned.
         //----------------------------------------------------------------------------------------------------
-        ImageBarrierDesc&   SetImage(DeviceImage* pImage);
+        ImageBarrierDesc&   SetImage(DeviceImage* pImage, const EImagePlaneBits planes = EImagePlaneBits::Color);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the layout that the image should be in before the barrier, and what layout the barrier should
@@ -475,7 +486,7 @@ namespace nes
     struct BufferDesc
     {
         uint64              m_size = 0;                                 // Byte size of the buffer.
-        uint32              m_structuredStride = 0;                     // 
+        uint32              m_structuredStride = 0;                     // If the Buffer is being used as a storage buffer, this is the size of an element.
         EBufferUsageBits    m_usage = EBufferUsageBits::VertexBuffer;   // How the buffer will be used.
     };
 
@@ -574,6 +585,10 @@ namespace nes
     {
         // Size of the buffer, in bytes.
         uint64                      m_size = 0;
+
+        // If the Buffer is being used as a storage buffer (not a StorageTexelBuffer), this is the size of an element in the buffer.
+        // - For StorageTexelBuffers or Uniform Buffers, leave this at 0.
+        uint32                      m_structureStride = 0;
 
         // Defines how the buffer will be used.
         EBufferUsageBits            m_usage = EBufferUsageBits::ShaderResource;
@@ -756,7 +771,7 @@ namespace nes
         uint32              m_depth = graphics::kUseRemaining;      // Depth of the region, or the number of pixels in the z-axis.
         uint32              m_mipLevel = 0;                         // Mip Level of the image.     
         uint32              m_layer = 0;                            // Which image layer.  
-        EImagePlaneBits     m_planes = EImagePlaneBits::All;        // Which of the image planes will be accessed. Default is color. 
+        EImagePlaneBits     m_planes = EImagePlaneBits::All;        // Which of the image planes will be accessed. Default is All. 
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -811,9 +826,6 @@ namespace nes
         EFormat             m_format;               // Format of an element in the buffer.
         uint64              m_offset = 0;           // Offset from the beginning 
         uint64              m_size = vk::WholeSize;
-
-        // Optional
-        uint32              m_structuredStride; // This will equal the structure stride from "BufferDesc" if not provided.
     };
 
     struct AddressModes
@@ -844,7 +856,7 @@ namespace nes
         float               m_mipMax;       // Maximum level of detail (mip level) to use.
         AddressModes        m_addressModes;
         ECompareOp          m_compareOp;
-        ClearColor          m_borderColor;
+        ClearColorValue          m_borderColor;
         bool                m_isInteger;
     };
 
@@ -933,7 +945,8 @@ namespace nes
         Image                   = vk::DescriptorType::eSampledImage,
         StorageImage            = vk::DescriptorType::eStorageImage,     
         Buffer                  = vk::DescriptorType::eUniformTexelBuffer,
-        StorageBuffer           = vk::DescriptorType::eStorageTexelBuffer,
+        StorageTexelBuffer      = vk::DescriptorType::eStorageTexelBuffer,          // A Storage buffer formatted for pixel-like data.
+        StorageBuffer           = vk::DescriptorType::eStorageBuffer,               // A Storage buffer for custom structures. AKA a "structured buffer". 
         AccelerationStructure   = vk::DescriptorType::eAccelerationStructureKHR,
     };
 
@@ -1042,10 +1055,9 @@ namespace nes
         uint32                      m_dynamicUniformBufferMaxNum = 0;      
         uint32                      m_imageMaxNum = 0;      
         uint32                      m_storageImageMaxNum = 0;
-        uint32                      m_bufferMaxNum = 0;      
-        uint32                      m_storageBufferMaxNum = 0;      
-        uint32                      m_structuredBufferMaxNum = 0;      
-        uint32                      m_storageStructuredBufferMaxNum = 0;
+        uint32                      m_bufferMaxNum = 0;
+        uint32                      m_storageBufferMaxNum = 0;          // Number of Storage Buffer (AKA Structured Buffers) that can be allocated.
+        uint32                      m_storageTexelBufferMaxNum = 0;     // Number of Storage Texel Buffers (storage buffers with pixel-like elements) that can be allocated.
         uint32                      m_accelerationStructureMaxNum = 0;
         EDescriptorPoolBits         m_flags = EDescriptorPoolBits::None;
     };
@@ -1055,7 +1067,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DescriptorBindingUpdateDesc
     {
-        const Descriptor*           m_pDescriptors = nullptr;   // Array of descriptors that will be written to the descriptor set.
+        const Descriptor* const*    m_pDescriptors = nullptr;   // Array of descriptors that will be written to the descriptor set.
         uint32                      m_descriptorCount = 0;      // Number of descriptors values that will be set.
         uint32                      m_baseDescriptorIndex = 0;  // If the binding is an array, this is the first element to update in that array.
     };
@@ -1288,7 +1300,8 @@ namespace nes
         uint32              GetNumVertices() const  { return m_vertexCount; }
 
     private:
-        uint32              m_stride = 0; 
+        uint32              m_stride = 0;
+        uint32              m_firstVertex = 0;
         uint32              m_vertexCount = 0;
     };
 
@@ -1304,11 +1317,12 @@ namespace nes
         /// @brief : Construct the description of indices within the Device Buffer.
         ///	@param pBuffer : Buffer resource that contains the indices. Must not be null. 
         ///	@param indexCount : Number of indices in the range.
+        ///	@param firstIndex : First index in the range.
         ///	@param type : Type of index that is stored. Default is uint32.
         ///	@param bufferOffset : Byte offset from the beginning of the DeviceBuffer to get to first index.
         ///     Default is 0; the start of the buffer.
         //----------------------------------------------------------------------------------------------------
-        IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type = EIndexType::U32, const uint64 bufferOffset = 0);
+        IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const uint32 firstIndex = 0, const EIndexType type = EIndexType::U32, const uint64 bufferOffset = 0);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the type of indices that this index buffer contains.
@@ -1319,8 +1333,14 @@ namespace nes
         /// @brief : Get the number of indices in the range.
         //----------------------------------------------------------------------------------------------------
         uint32              GetNumIndices() const    { return m_indexCount; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the index of the first index value in the range.
+        //----------------------------------------------------------------------------------------------------
+        uint32              GetFirstIndex() const    { return m_firstIndex; }
     
     private:
+        uint32              m_firstIndex = 0;
         uint32              m_indexCount = 0;
         EIndexType          m_indexType  = EIndexType::U16;
     };
@@ -1614,12 +1634,12 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct StencilDesc
     {
-        ECompareOp                  m_compareOp;        // How to compare depth values.
-        EStencilOp                  m_failOp;           // Value to use on fail.
-        EStencilOp                  m_passOp;           // Value to use on pass.
-        EStencilOp                  m_depthFailOp;      // Value to use on depth fail.
-        uint8                       m_writeMask;        // Which color channels to write to.
-        uint8                       m_compareMask;      // Which color channels to compare.
+        ECompareOp                  m_compareOp = ECompareOp::None;     // How to compare depth values.
+        EStencilOp                  m_failOp;                           // Value to use on fail.
+        EStencilOp                  m_passOp;                           // Value to use on pass.
+        EStencilOp                  m_depthFailOp;                      // Value to use on depth fail.
+        uint8                       m_writeMask;                        // Which channels to write to.
+        uint8                       m_compareMask;                      // Which channels to compare.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1627,36 +1647,53 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DepthAttachmentDesc
     {
-        ECompareOp                  m_compareOp = ECompareOp::Less; // How depth values should be compared. Default behavior is 'lesser' values are preferred.  
+        ECompareOp                  m_compareOp = ECompareOp::None; // How depth values should be compared. Setting to None disables depth testing.  
         bool                        m_enableWrite = true;           // If true, depth values that pass will be written to the depth buffer.
-        bool                        m_enableBoundsTest = false;     // Requires "features.m_depthBoundsTest", expects "CmdSetDepthBounds".   
+
+        // TODO: Requires a feature and dynamic state call.
+        //bool                        m_enableBoundsTest = false;
     };
 
     struct StencilAttachmentDesc
     {
-        StencilDesc                 m_front;
-        StencilDesc                 m_back;             // Requires "features.m_independentFrontAndBackStencilReferenceAndMasks" for "back.m_writeMask"
+        StencilDesc                 m_front{};
+        StencilDesc                 m_back{};             
     };
 
     //----------------------------------------------------------------------------------------------------
     // https://registry.khronos.org/vulkan/specs/latest/man/html/VkPipelineColorBlendAttachmentState.html
-    // https://learn.microsoft.com/en-us/windows/win32/api/d3d12/ns-d3d12-d3d12_render_target_blend_desc
+    //
+    /// @brief : Describes how blending is calculated.
+    ///  Equation: <code> Result = (srcBlendFactor * newColor) <Op> (dstBlendFactor * oldColor); </code>
+    ///
+    /// Example for Alpha Blending:
+    ///
+    /// Color Blend Desc:
+    ///     - m_srcFactor = EBlendFactor::SrcAlpha;
+    ///     - m_dstFactor = EBlendFactor::OneMinusSrcAlpha;
+    ///     - m_op        = EBlendOp::Add;
+    ///
+    /// Alpha Blend Desc:
+    ///     - m_srcFactor = EBlendFactor::One;
+    ///     - m_dstFactor = EBlendFactor::Zero;
+    ///     - m_op        = EBlendOp::Add;
+    ///
+    /// Code Result: <code>
+    ///     finalColor.rgb = (oldColor.a * newColor.rgb) + ((1 - oldColor.a) * oldColor.rgb);
+    ///     finalColor.a = (1 * newColor.a) + (0.f * oldColor.a);
+    /// </code>
     //----------------------------------------------------------------------------------------------------
     struct BlendDesc
     {
         EBlendFactor                m_srcFactor = EBlendFactor::SrcAlpha;
-        EBlendFactor                m_dstFactor = EBlendFactor::OneMinusSrc1Alpha;
+        EBlendFactor                m_dstFactor = EBlendFactor::OneMinusSrcAlpha;
         EBlendOp                    m_op        = EBlendOp::Add;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Default Blend Description for blending color channels based on alpha. 
         //----------------------------------------------------------------------------------------------------
         static constexpr BlendDesc  ColorAlphaBlend() { return {}; }
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Default Blend Description for blending alpha channels for an 'alpha blending' color attachment. 
-        //----------------------------------------------------------------------------------------------------
-        static constexpr BlendDesc  AlphaBlend()      { return {.m_srcFactor = EBlendFactor::One, .m_dstFactor = EBlendFactor::Zero, .m_op = EBlendOp::Add }; }
+        static constexpr BlendDesc  AlphaBlend() { return { EBlendFactor::One, EBlendFactor::Zero, EBlendOp::Add }; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1684,6 +1721,15 @@ namespace nes
         DepthAttachmentDesc         m_depth{};
         StencilAttachmentDesc       m_stencil{};
         EFormat                     m_depthStencilFormat = EFormat::Unknown;
+
+        //  The application can enable a logical operation between the fragment’s color values
+        //  and the existing value in the framebuffer attachment. This logical operation is applied
+        //  prior to updating the framebuffer attachment. Logical operations are applied only for
+        //  signed and unsigned integer and normalized integer framebuffers. Logical operations are
+        //  not applied to floating-point or sRGB format color attachments.
+        //
+        //  The "source" (s) color is the fragment output for the color attachment, and the "dest" (d) color is
+        //  the color attachment's RGBA component value. 
         ELogicOp                    m_logicOp = ELogicOp::None;              
     };
 
@@ -1704,7 +1750,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set an optional depth image target. Depth information will be written to this image.
         //----------------------------------------------------------------------------------------------------
-        RenderTargetsDesc&          SetDepthStencilTargets(const Descriptor* depthStencil);
+        RenderTargetsDesc&          SetDepthStencilTarget(const Descriptor* depthStencil);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether any attachments have been set.
@@ -1716,38 +1762,36 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Defines any of color, depth and stencil values to use to clear a single render target.
+    /// @brief : Defines a color or depth stencil values to use to clear a single render target.
     ///     To be used for CommandBuffer::ClearAttachments().
+    /// @note : A single Clear Desc can be used for either color or depth, not both!
     //----------------------------------------------------------------------------------------------------
     struct ClearDesc
     {
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the color that will be used to clear an image's pixels.
-        ///     This will add the vk::ImageAspectFlags::eColor flag to the aspect.
+        /// @note : By setting the color value, this cannot be used for depth clear values as well!
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetColorValue(const vk::ClearColorValue& color, const uint32 attachmentIndex = 0);
+        static ClearDesc        Color(const LinearColor color, const uint32 attachmentIndex = 0);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the clear value for depth.
-        ///     This will add the vk::ImageAspectFlags::eDepth flag to the aspect.
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetDepthValue(const float depth);
+        static ClearDesc        Depth(const float depth);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the clear for the stencil.
-        ///     This will add the vk::ImageAspectFlags::eStencil flag to the aspect.
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetStencilValue(const uint32 stencil);
+        static ClearDesc        Stencil(const uint32 stencil);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set both the depth and stencil clear values.
-        ///     This will add both the vk::ImageAspectFlags::eDepth & eStencil flags to the aspect.
         //----------------------------------------------------------------------------------------------------
-        ClearDesc&              SetDepthStencilValue(const float depth, const uint32 stencil);
-        
-        vk::ClearValue          m_clearValue            = {};
-        vk::ImageAspectFlags    m_aspect                = vk::ImageAspectFlagBits::eNone;
-        uint32                  m_colorAttachmentIndex  = 0;
+        static ClearDesc        DepthStencil(const float depth, const uint32 stencil);
+
+        ClearValue              m_clearValue{};
+        EImagePlaneBits         m_planes = EImagePlaneBits::All; 
+        uint32                  m_colorAttachmentIndex = 0;
     };
 
 #pragma endregion
@@ -1762,17 +1806,32 @@ namespace nes
         Off,        // No overhead, no robust access (out-of-bounds access is not allowed).
     };
 
-    struct ShaderDesc
+    struct ShaderModuleDesc
     {
-        EPipelineStageBits      m_stage = EPipelineStageBits::GraphicsShaders;
-        const void*             m_pByteCode = nullptr;
-        uint64                  m_size = 0;
-        const char*             m_entryPointName = "main";
+        EPipelineStageBits      m_stage = EPipelineStageBits::None;
+        std::vector<char>       m_binary{};
+        std::string             m_entryPointName{};
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check that this points to a loaded shader. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsValid() const { return m_pByteCode != nullptr && m_size > 0; }
+        bool                    IsValid() const { return m_stage != EPipelineStageBits::None && !m_binary.empty() && !m_entryPointName.empty(); }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Set of shader modules that can be part of a graphics pipeline.
+    //----------------------------------------------------------------------------------------------------
+    struct GraphicsPipelineShaders
+    {
+        static constexpr uint32 kGraphicsShaderStagesCount = 7; 
+        
+        const ShaderModule* m_vertex = nullptr;         // Vertex Shader.
+        const ShaderModule* m_fragment = nullptr;       // Fragment Shader.
+        const ShaderModule* m_tessControl = nullptr;    // Tesselation Control Shader.
+        const ShaderModule* m_tessEval = nullptr;       // Tesselation Evaluation Shader.
+        const ShaderModule* m_geometry = nullptr;       // Geometry Shader.
+        const ShaderModule* m_meshControl = nullptr;    // Mesh Control (Task) Shader.
+        const ShaderModule* m_meshEval = nullptr;       // Mesh Evaluation Shader.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1783,7 +1842,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the shaders that will run at different stages in the pipeline's execution. 
         //----------------------------------------------------------------------------------------------------
-        GraphicsPipelineDesc&           SetShaderStages(const std::vector<ShaderDesc>& shaderStages);
+        GraphicsPipelineDesc&           SetShaderStages(const GraphicsPipelineShaders& shaders);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the format of the data sent to the vertex shader. 
@@ -1816,8 +1875,8 @@ namespace nes
         ///     blending and depth testing.
         //----------------------------------------------------------------------------------------------------
         GraphicsPipelineDesc&           SetOutputMergerDesc(const OutputMergerDesc& desc);
-        
-        std::vector<ShaderDesc>         m_shaderStages{};
+
+        GraphicsPipelineShaders         m_shaderStages{};
         VertexInputDesc                 m_vertexInput{};
         InputAssemblyDesc               m_inputAssembly{};
         RasterizationDesc               m_rasterization{};
@@ -1830,7 +1889,7 @@ namespace nes
     struct ComputePipelineDesc
     {
         const PipelineLayout*           m_pPipelineLayout;
-        ShaderDesc                      m_shader;
+        ShaderModuleDesc                      m_shader;
         ERobustness                     m_robustness;       // Optional.
     };
 
@@ -1897,12 +1956,13 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DrawDesc
     {
+        DrawDesc() = default;
+        DrawDesc(const uint32 numVertices, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
+        
         uint32  m_vertexCount = 0;      // Number of vertices to submit from the attached vertex buffer.
         uint32  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                      
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
         uint32  m_firstInstance = 0;    // Used as an offset for instanced rendering.
-
-        DrawDesc(const uint32 numVertices, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1911,13 +1971,14 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct DrawIndexedDesc
     {
-        uint32  m_firstVertex = 0;      // Used as a byte offset into the vertex buffer. Must be calculated as: (sizeof(vertex) * index).                   
+        DrawIndexedDesc() = default;
+        DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
+        
+        uint64  m_vertexOffset = 0;     // Byte offset to the first vertex in the vertex buffer range. With a value == 0, this will start at the first vertex in the range.                   
         uint32  m_indexCount = 0;       // Number of indices to submit.   
-        uint32  m_firstIndex = 0;       // Used as a byte offset into the index buffer. Must be calculated as: (sizeof(index) * index).                       
+        uint32  m_firstIndex = 0;       // First index in the index buffer.                       
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
         uint32  m_firstInstance = 0;    // Used as an offset for instanced rendering.
-        
-        DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -1943,7 +2004,7 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Right now, I am forcing the Color Aspect, Single layer, Buffer Row Length & Buffer image Height == 0
+    // [TODO]: Right now, I am forcing the Color Aspect, Buffer Row Length & Buffer image Height == 0
     //
     /// @brief : Parameters to copy a buffer's data to a Device Image.
     //----------------------------------------------------------------------------------------------------
@@ -1951,7 +2012,9 @@ namespace nes
     {
         DeviceImage*        m_dstImage = nullptr;                           // 
         Int3                m_imageOffset = {0, 0, 0};                // Extent offset in the image to begin copying.
+        uint32              m_layerCount = 1;
         EImageLayout        m_dstImageLayout = EImageLayout::CopyDestination;    // The layout that the image will be in at the time of the copy.
+        EImagePlaneBits     m_planes = EImagePlaneBits::Color;
         const DeviceBuffer* m_srcBuffer = nullptr;
         uint64              m_srcOffset = 0;
         uint64              m_size = graphics::kWholeSize;

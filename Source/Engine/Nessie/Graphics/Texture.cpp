@@ -11,6 +11,31 @@
 
 namespace nes
 {
+    Texture::Texture(DeviceImage&& image, Buffer&& imageData)
+        : m_image(std::move(image))
+        , m_imageData(std::move(imageData))
+    {
+        //
+    }
+
+    Texture::Texture(Texture&& other) noexcept
+        : m_image(std::move(other.m_image))
+        , m_imageData(std::move(other.m_imageData))
+    {
+        //
+    }
+
+    Texture& Texture::operator=(Texture&& other) noexcept
+    {
+        if (this != &other)
+        {
+            m_image = std::move(other.m_image);
+            m_imageData = std::move(other.m_imageData);
+        }
+
+        return *this;
+    }
+
     Texture::~Texture()
     {
         NES_ASSERT(Platform::IsMainThread());
@@ -83,10 +108,9 @@ namespace nes
         {
             // Upload image data:
             DataUploader dataUploader(Renderer::GetDevice());
-            ImageUploadDesc uploadDesc{};
-            uploadDesc.m_uploadSize = m_imageData.GetSize();
-            uploadDesc.m_pPixelData = m_imageData.Get();
+            UploadImageDesc uploadDesc{};
             uploadDesc.m_pImage = &m_image;
+            uploadDesc.m_pSrcData = pData;
             uploadDesc.m_newLayout = EImageLayout::ShaderResource;
             dataUploader.AppendUploadImage(uploadDesc);
             dataUploader.RecordCommands(cmdBuffer);
@@ -102,6 +126,110 @@ namespace nes
             Renderer::SubmitAndWaitTempCommands(cmdBuffer);
         }
         
+        return ELoadResult::Success;
+    }
+
+    ELoadResult TextureCube::LoadFromFile(const std::filesystem::path& path)
+    {
+        // Load the YAML file.
+        YAML::Node file = YAML::LoadFile(path.string());
+        if (!file)
+        {
+            NES_ERROR("Failed to load TextureCube file! Expecting a YAML file type. Path: {}", path.string());
+            return ELoadResult::InvalidArgument;
+        }
+
+        auto textureCube = file["TextureCube"];
+        if (!textureCube)
+        {
+            NES_ERROR("Failed to load TextureCube file! Missing TextureCube entry. Path: {}", path.string());
+            return ELoadResult::Failure;
+        }
+        
+        return LoadFromYAML(textureCube);
+    }
+
+    ELoadResult TextureCube::LoadFromYAML(const YAML::Node& node)
+    {
+        auto pathsNode = node["Paths"];
+        NES_ASSERT(pathsNode);
+        
+        // I am assuming 6 image paths.
+        NES_ASSERT(pathsNode.Type() == YAML::NodeType::Sequence && pathsNode.size() == 6);
+
+        // Load each of the size file paths:
+        std::vector<uint8_t> cubeMapBytes{};
+        std::array<void*, 6> cubeMapPtrs{};
+        int width;
+        int height;
+        int channels;
+        std::string path{};
+        
+        nes::ImageDesc imageDesc{};
+        imageDesc.m_width = 0;  // Set in the loop below:
+        imageDesc.m_height = 0; // Set in the loop below:
+        imageDesc.m_depth = 1;
+        imageDesc.m_format = EFormat::RGBA8_UNORM;
+        imageDesc.m_layerCount = 6;
+        imageDesc.m_mipCount = 1;       // [TODO]: mipLevels from file - not calculated.
+        imageDesc.m_sampleCount = 1;    // [TODO]: Load from data. Also check against allowed number of samples. 
+        imageDesc.m_type = EImageType::Image2D;
+        imageDesc.m_usage = EImageUsageBits::ShaderResource;
+        imageDesc.m_clearValue = ClearValue{};
+        
+        for (size_t i = 0; i < 6; i++)
+        {
+            path = NES_CONTENT_DIR;
+            path += pathsNode[i].as<std::string>();
+            
+            stbi_uc* pBytes = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+            cubeMapPtrs[i] = pBytes;
+
+            // Assert that the widths and heights are matching.
+            NES_ASSERT((imageDesc.m_width == 0 && imageDesc.m_height == 0) || (imageDesc.m_width == static_cast<uint32>(width) && imageDesc.m_height == static_cast<uint32>(height)));
+            imageDesc.m_width = static_cast<uint32>(width);
+            imageDesc.m_height = static_cast<uint32>(height);
+
+            // Add the image data to the buffer:
+            auto* pStart = static_cast<const uint8_t*>(pBytes);
+            const uint8_t* pEnd = &pStart[static_cast<uint32_t>(width * height * STBI_rgb_alpha)];
+            cubeMapBytes.insert(cubeMapBytes.end(), pStart, pEnd);
+        }
+
+        // Copy the image data:
+        m_imageData = Buffer::Copy(cubeMapBytes.data(), cubeMapBytes.size());
+        
+        // Create the Device Image:
+        nes::AllocateImageDesc allocDesc{};
+        allocDesc.m_desc = imageDesc;
+        allocDesc.m_memoryLocation = EMemoryLocation::Device;
+        allocDesc.m_isDedicated = true;
+        
+        auto& device = DeviceManager::GetRenderDevice();
+        m_image = DeviceImage(device, allocDesc);
+
+        auto cmdBuffer = Renderer::BeginTempCommands();
+        {
+            // Upload image data:
+            DataUploader dataUploader(Renderer::GetDevice());
+            UploadImageDesc uploadDesc{};
+            uploadDesc.m_pSrcData = m_imageData.Get();
+            uploadDesc.m_layerCount = 6;
+            uploadDesc.m_pImage = &m_image;
+            uploadDesc.m_newLayout = EImageLayout::ShaderResource;
+            dataUploader.AppendUploadImage(uploadDesc);
+            dataUploader.RecordCommands(cmdBuffer);
+            
+            // Submit commands:
+            Renderer::SubmitAndWaitTempCommands(cmdBuffer);
+        }
+
+        // Free the data loaded from stb. We are storing the memory above.
+        for (size_t i = 0; i < 6; i++)
+        {
+            stbi_image_free(cubeMapPtrs[i]);
+        }
+
         return ELoadResult::Success;
     }
 }

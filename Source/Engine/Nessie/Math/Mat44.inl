@@ -584,8 +584,8 @@ namespace nes
         const float width = height / aspectRatio;
         
         Mat44 result = Zero();
-        result.m_columns[0].m_f32[0] = height;
-        result.m_columns[1].m_f32[1] = width;
+        result.m_columns[0].m_f32[0] = width;
+        result.m_columns[1].m_f32[1] = height;
         result.m_columns[2].m_f32[3] = 1.f;
 
 #if NES_CLIP_VIEW_ZERO_TO_ONE

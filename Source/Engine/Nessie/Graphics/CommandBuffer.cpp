@@ -164,15 +164,16 @@ namespace nes
     {
         const vk::Offset3D imageOffset = { desc.m_imageOffset.x, desc.m_imageOffset.y, desc.m_imageOffset.z };
 
-        // [TODO]: This should be part of the copy parameters:
+        // [TODO]: All of these should be parameters:
         const vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
-            .setAspectMask(vk::ImageAspectFlagBits::eColor)
-            .setLayerCount(1)
-            .setMipLevel(0);
+            .setAspectMask(GetVkImageAspectFlags(desc.m_planes))
+            .setBaseArrayLayer(0)
+            .setMipLevel(0)
+            .setLayerCount(desc.m_layerCount);
         
         vk::BufferImageCopy2 region = vk::BufferImageCopy2()
-            .setBufferRowLength(0)
-            .setBufferImageHeight(0)
+            .setBufferRowLength(0)     
+            .setBufferImageHeight(0) 
             .setBufferOffset(desc.m_srcOffset)
             .setImageExtent(desc.m_dstImage->GetExtent())
             .setImageOffset(imageOffset)
@@ -301,18 +302,30 @@ namespace nes
 
         for (auto& clearDesc : clearDescs)
         {
-            // If depth aspect set, ensure the depth-stencil attachment is writeable.
-            if (clearDesc.m_aspect & vk::ImageAspectFlagBits::eDepth && !m_depthStencil->IsDepthWritable())
-                continue;
+            vk::ImageAspectFlags aspect = {};
 
-            // If stencil aspect set, ensure the depth-stencil attachment is writeable.
-            if (clearDesc.m_aspect & vk::ImageAspectFlagBits::eStencil && !m_depthStencil->IsStencilWritable())
-                continue;
+            // Color
+            if (clearDesc.m_planes & EImagePlaneBits::Color)
+                aspect |= vk::ImageAspectFlagBits::eColor;
 
+            // or Depth/Stencil
+            else
+            {
+                // If depth aspect set, ensure the depth-stencil attachment is writeable.
+                if ((clearDesc.m_planes & EImagePlaneBits::Depth) && m_depthStencil->IsDepthWritable())
+                    aspect |= vk::ImageAspectFlagBits::eDepth;
+
+                // If stencil aspect set, ensure the depth-stencil attachment is writeable.
+                if ((clearDesc.m_planes & EImagePlaneBits::Stencil) && m_depthStencil->IsStencilWritable())
+                    aspect |= vk::ImageAspectFlagBits::eStencil;
+            }
+
+            const vk::ClearValue clearValue = *(reinterpret_cast<const vk::ClearValue*>(&clearDesc.m_clearValue));
+            
             vk::ClearAttachment& clearAttachment = attachments[attachmentCount++];
-            clearAttachment.setAspectMask(clearDesc.m_aspect)
+            clearAttachment.setAspectMask(aspect)
                 .setColorAttachment(clearDesc.m_colorAttachmentIndex)
-                .setClearValue(clearDesc.m_clearValue);
+                .setClearValue(clearValue);
         }
 
         // No valid attachments found.
@@ -390,7 +403,7 @@ namespace nes
             vkViewports[i] = *(viewports.begin() + i);
         }
         
-        m_buffer.setViewport(0, vkViewports);
+        m_buffer.setViewportWithCount(vkViewports);
     }
 
     void CommandBuffer::SetScissors(const vk::ArrayProxy<Scissor>& scissors)
@@ -401,7 +414,7 @@ namespace nes
             vkScissors[i] = *(scissors.begin() + i);
         }
         
-        m_buffer.setScissor(0, vkScissors);
+        m_buffer.setScissorWithCount(vkScissors);
     }
 
     void CommandBuffer::BindIndexBuffer(const IndexBufferRange& desc)
@@ -442,14 +455,14 @@ namespace nes
         m_buffer.bindVertexBuffers2(firstBinding, vkBuffers, vkOffsets, vkSizes, vkStrides);
     }
 
-    void CommandBuffer::Draw(const DrawDesc& draw)
+    void CommandBuffer::DrawVertices(const DrawDesc& draw)
     {
         m_buffer.draw(draw.m_vertexCount, draw.m_instanceCount, draw.m_firstVertex, draw.m_firstInstance);
     }
 
     void CommandBuffer::DrawIndexed(const DrawIndexedDesc& draw)
     {
-        m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_firstVertex), draw.m_firstInstance);
+        m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_vertexOffset), draw.m_firstInstance);
     }
 
     void CommandBuffer::ResolveImage(const DeviceImage& srcImage, DeviceImage& dstImage)

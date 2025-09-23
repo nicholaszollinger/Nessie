@@ -35,6 +35,11 @@ namespace nes
 
     void InputManager::Update([[maybe_unused]] const double deltaTime)
     {
+        // Update cursor delta:
+        const auto newPosition = m_pWindow->GetCursorPosition();
+        m_cursorDelta = newPosition - m_cursorPosition;
+        m_cursorPosition = newPosition;
+        
         // [TODO Later]: Transition pressed keys to repeat if the delta is enough. 
         
         // [TODO Later]: Update key actions information.
@@ -55,14 +60,6 @@ namespace nes
         {
             m_mouseButtonStates[static_cast<uint32>(pMouseEvent->GetButton())] = pMouseEvent->GetAction();
         }
-
-        // Mouse Move
-        else if (auto* pMouseMovEvent = event.Cast<MouseMoveEvent>())
-        {
-            const auto newPosition = pMouseMovEvent->GetPosition();
-            m_cursorDelta = newPosition - m_cursorPosition;
-            m_cursorPosition = newPosition;
-        }
     }
 
     void InputManager::Shutdown()
@@ -76,7 +73,7 @@ namespace nes
         NES_ASSERT(g_pInstance != nullptr);
         
         const auto keyState = g_pInstance->m_keyStates[static_cast<uint32>(key)];
-        return keyState == EKeyAction::Pressed || keyState == EKeyAction::Released; 
+        return keyState == EKeyAction::Pressed || keyState == EKeyAction::Repeat; 
     }
 
     bool InputManager::IsKeyUp(const EKeyCode key)

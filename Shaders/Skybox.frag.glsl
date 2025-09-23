@@ -1,18 +1,22 @@
 // Skybox.frag.glsl
 #version 450
 
-layout (binding = 0) uniform CameraUniforms
+layout (set = 0, binding = 0) uniform CameraUBO
 {
-    mat4 projectionMatrix;
-    mat4 viewMatrix;
-};
+    mat4 view;
+    mat4 proj;
+    mat4 viewProj;
+    vec3 position;
+    float exposureFactor;
+} u_camera;
 
-layout (set = 1, binding = 3) uniform samplerCube inSkyboxTexture;
+layout (set = 1, binding = 0) uniform sampler       inSkyboxSampler;
+layout (set = 1, binding = 1) uniform textureCube   inSkyboxImage;
 
 layout (location = 0) in vec3 inUVW;
 layout (location = 0) out vec4 outColor;
 
 void main()
 {
-    outColor = texture(inSkyboxTexture, inUVW);
+    outColor = texture(samplerCube(inSkyboxImage, inSkyboxSampler), inUVW);
 }

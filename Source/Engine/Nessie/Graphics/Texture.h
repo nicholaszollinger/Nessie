@@ -10,11 +10,15 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     /// @brief : Represents a 2D image asset.
     //----------------------------------------------------------------------------------------------------
-    class Texture final : public AssetBase
+    class Texture : public AssetBase
     {
         NES_DEFINE_TYPE_INFO(Texture)
         
     public:
+        Texture() = default;
+        Texture(DeviceImage&& image, Buffer&& imageData);
+        Texture(Texture&& other) noexcept;
+        Texture& operator=(Texture&& other) noexcept;
         virtual             ~Texture() override;
 
         //----------------------------------------------------------------------------------------------------
@@ -48,12 +52,35 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         virtual ELoadResult LoadFromFile(const std::filesystem::path& path) override;
 
-    private:
+    protected:
         DeviceImage         m_image = nullptr;         // Device Image Asset.
         Buffer              m_imageData{};             // Raw image data.
     };
 
     static_assert(ValidAssetType<Texture>);
+
+    //----------------------------------------------------------------------------------------------------
+    // [TODO]: Consider making this a Texture Array over a Cube.
+    //		
+    /// @brief : A Texture Cube is a group of 6 images that can be used for graphical applications like a
+    ///     skybox.
+    //----------------------------------------------------------------------------------------------------
+    class TextureCube final : public Texture
+    {
+        NES_DEFINE_TYPE_INFO(TextureCube)
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Load the Texture Cube from a file.
+        //----------------------------------------------------------------------------------------------------
+        virtual ELoadResult LoadFromFile(const std::filesystem::path& path) override;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Load the Skybox from the YAML file.
+        //----------------------------------------------------------------------------------------------------
+        ELoadResult         LoadFromYAML(const YAML::Node& node);
+    };
+
+    static_assert(ValidAssetType<TextureCube>);
 }
 
     

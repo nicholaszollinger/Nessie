@@ -1,0 +1,10 @@
+# Skybox Shader
+Shader:
+  Name: "Skybox"
+  Modules:
+  - Stage: 2 # Vertex
+    Path: "Skybox.vert.spv"
+    EntryPoint: "main"
+  - Stage: 128 # Fragment
+    Path: "Skybox.frag.spv"
+    EntryPoint: "main"

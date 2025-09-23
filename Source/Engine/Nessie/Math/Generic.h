@@ -230,6 +230,12 @@ namespace nes::math
         return value < static_cast<Type>(0)? -value : value;
     }
 
+    template <FloatingPointType Type>
+    constexpr int32 Sign(const Type value)
+    {
+        return value == static_cast<Type>(0)? 0 : (value < -static_cast<Type>(0) ? -1 : 1);
+    }
+
     //----------------------------------------------------------------------------------------------------
     ///		@brief : Returns the square root of the value, clamping the value to 0 if it is negative.
     //----------------------------------------------------------------------------------------------------

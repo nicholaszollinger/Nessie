@@ -4,6 +4,7 @@
 #include "RenderDevice.h"
 #include "PipelineLayout.h"
 #include "Renderer.h"
+#include "ShaderModule.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 
 namespace nes
@@ -55,35 +56,46 @@ namespace nes
         
         // Shaders
         const auto& descShaders = desc.m_shaderStages;
-        std::vector<vk::PipelineShaderStageCreateInfo> stages(descShaders.size());
-        
-        std::vector<vk::raii::ShaderModule> shaderModules;
-        shaderModules.reserve(descShaders.size());
-        
-        for (size_t i = 0; i < descShaders.size(); ++i)
-        {
-            shaderModules.emplace_back(nullptr);
-            auto& stage = stages[i];
-            NES_GRAPHICS_MUST_PASS(device, SetupShaderStage(descShaders[i], stage, shaderModules[i]));
-        }
+        std::vector<vk::PipelineShaderStageCreateInfo> stages;
 
+        #define TRY_ADD_STAGE(pModule)  \
+        if (pModule)            \
+        { \
+            vk::PipelineShaderStageCreateInfo info; \
+            SetupShaderStage(*(pModule), info); \
+            stages.emplace_back(info); \
+        }
+        
+        TRY_ADD_STAGE(descShaders.m_vertex);
+        TRY_ADD_STAGE(descShaders.m_fragment);
+        TRY_ADD_STAGE(descShaders.m_geometry);
+        TRY_ADD_STAGE(descShaders.m_tessControl);
+        TRY_ADD_STAGE(descShaders.m_tessEval);
+        TRY_ADD_STAGE(descShaders.m_meshControl);
+        TRY_ADD_STAGE(descShaders.m_meshEval);
+        
+        #undef TRY_ADD_STAGE
+        
         // Vertex Input
         std::vector<vk::VertexInputAttributeDescription> vertexAttributes(desc.m_vertexInput.m_attributes.size());
         std::vector<vk::VertexInputBindingDescription> vertexBindings(desc.m_vertexInput.m_streams.size());
-        
         vk::PipelineVertexInputStateCreateInfo vertexInputState = vk::PipelineVertexInputStateCreateInfo()
             .setPVertexAttributeDescriptions(vertexAttributes.data())
-            .setVertexAttributeDescriptionCount(desc.m_vertexInput.m_attributes.size())
             .setPVertexBindingDescriptions(vertexBindings.data())
+            .setVertexAttributeDescriptionCount(desc.m_vertexInput.m_attributes.size())
             .setVertexBindingDescriptionCount(desc.m_vertexInput.m_streams.size());
 
+        VertexStreamDesc const* pStreams = desc.m_vertexInput.m_streams.data();
+        VertexAttributeDesc const* pAttributes = desc.m_vertexInput.m_attributes.data();
+        
         // Fill out attributes:
         for (uint32 i = 0; i < desc.m_vertexInput.m_attributes.size(); ++i)
         {
-            const auto& attribute = *(desc.m_vertexInput.m_attributes.begin() + i);
+            const auto& attribute = pAttributes[i];
             auto& vkAttribute = vertexAttributes[i];
 
-            vkAttribute.setFormat(GetVkFormat(attribute.m_format))
+            vkAttribute = vk::VertexInputAttributeDescription()
+                .setFormat(GetVkFormat(attribute.m_format))
                 .setOffset(attribute.m_offset)
                 .setBinding(attribute.m_streamIndex)
                 .setLocation(attribute.m_location);
@@ -92,14 +104,15 @@ namespace nes
         // Fill out bindings:
         for (uint32 i = 0; i < desc.m_vertexInput.m_streams.size(); ++i)
         {
-            const auto& stream = *(desc.m_vertexInput.m_streams.begin() + i);
+            const VertexStreamDesc& stream = pStreams[i];
             auto& vkBinding = vertexBindings[i];
 
-            vkBinding.setBinding(stream.m_bindingIndex)
-                .setStride(stream.m_stride)
-                .setInputRate(stream.m_stepRate == EVertexStreamStepRate::PerVertex? vk::VertexInputRate::eVertex : vk::VertexInputRate::eInstance);
+            vkBinding = vk::VertexInputBindingDescription();
+            vkBinding.binding = stream.m_bindingIndex;
+            vkBinding.stride = stream.m_stride;
+            vkBinding.inputRate = stream.m_stepRate == EVertexStreamStepRate::PerVertex? vk::VertexInputRate::eVertex : vk::VertexInputRate::eInstance;
         }
-
+        
         // Input Assembly:
         const auto& descInputAssembly = desc.m_inputAssembly;
         vk::PipelineInputAssemblyStateCreateInfo inputAssemblyState = vk::PipelineInputAssemblyStateCreateInfo()
@@ -164,37 +177,37 @@ namespace nes
         
         // Viewport State (will be dynamic).
         vk::PipelineViewportStateCreateInfo viewportState = vk::PipelineViewportStateCreateInfo()
-            .setViewportCount(1)
-            .setScissorCount(1);
+            .setViewportCount(0)
+            .setScissorCount(0);
 
         // Depth-Stencil
-        // const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
-        // const StencilAttachmentDesc& stencil = desc.m_outputMerger.m_stencil;
-        //
-        // vk::StencilOpState front = vk::StencilOpState()
-        //     .setPassOp(GetVkStencilOp(stencil.m_front.m_passOp))
-        //     .setFailOp(GetVkStencilOp(stencil.m_front.m_failOp))
-        //     .setDepthFailOp(GetVkStencilOp(stencil.m_front.m_depthFailOp))
-        //     .setCompareMask(stencil.m_front.m_compareMask)
-        //     .setWriteMask(stencil.m_front.m_writeMask);
-        //
-        // vk::StencilOpState back = vk::StencilOpState()
-        //     .setPassOp(GetVkStencilOp(stencil.m_back.m_passOp))
-        //     .setFailOp(GetVkStencilOp(stencil.m_back.m_failOp))
-        //     .setDepthFailOp(GetVkStencilOp(stencil.m_back.m_depthFailOp))
-        //     .setCompareMask(stencil.m_back.m_compareMask)
-        //     .setWriteMask(stencil.m_back.m_writeMask);
-        //
-        // vk::PipelineDepthStencilStateCreateInfo depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
-        //     .setDepthTestEnable(depth.m_compareOp != ECompareOp::None)
-        //     .setDepthWriteEnable(depth.m_enableWrite)
-        //     .setDepthCompareOp(GetVkCompareOp(depth.m_compareOp))
-        //     .setDepthBoundsTestEnable(depth.m_enableBoundsTest)
-        //     .setStencilTestEnable((stencil.m_front.m_compareOp == ECompareOp::None && stencil.m_back.m_compareOp != ECompareOp::None)? vk::False : vk::True)
-        //     .setMinDepthBounds(0.f)
-        //     .setMaxDepthBounds(1.f)
-        //     .setFront(front)
-        //     .setBack(back);
+        const DepthAttachmentDesc& depth = desc.m_outputMerger.m_depth;
+        const StencilAttachmentDesc& stencil = desc.m_outputMerger.m_stencil;
+        
+        vk::StencilOpState front = vk::StencilOpState()
+            .setPassOp(GetVkStencilOp(stencil.m_front.m_passOp))
+            .setFailOp(GetVkStencilOp(stencil.m_front.m_failOp))
+            .setDepthFailOp(GetVkStencilOp(stencil.m_front.m_depthFailOp))
+            .setCompareMask(stencil.m_front.m_compareMask)
+            .setWriteMask(stencil.m_front.m_writeMask);
+        
+        vk::StencilOpState back = vk::StencilOpState()
+            .setPassOp(GetVkStencilOp(stencil.m_back.m_passOp))
+            .setFailOp(GetVkStencilOp(stencil.m_back.m_failOp))
+            .setDepthFailOp(GetVkStencilOp(stencil.m_back.m_depthFailOp))
+            .setCompareMask(stencil.m_back.m_compareMask)
+            .setWriteMask(stencil.m_back.m_writeMask);
+        
+        vk::PipelineDepthStencilStateCreateInfo depthStencilState = vk::PipelineDepthStencilStateCreateInfo()
+            .setDepthTestEnable(depth.m_compareOp != ECompareOp::None)
+            .setDepthWriteEnable(depth.m_enableWrite)
+            .setDepthCompareOp(GetVkCompareOp(depth.m_compareOp))
+            //.setDepthBoundsTestEnable(depth.m_enableBoundsTest)
+            //.setStencilTestEnable((stencil.m_front.m_compareOp == ECompareOp::None && stencil.m_back.m_compareOp != ECompareOp::None)? vk::False : vk::True)
+            .setMinDepthBounds(0.f)
+            .setMaxDepthBounds(1.f)
+            .setFront(front)
+            .setBack(back);
 
         // Blending
         const auto& descOutputMerger = desc.m_outputMerger;
@@ -217,7 +230,7 @@ namespace nes
         }
         
         vk::PipelineColorBlendStateCreateInfo colorBlendState = vk::PipelineColorBlendStateCreateInfo()
-            .setLogicOpEnable(desc.m_outputMerger.m_logicOp != ELogicOp::None)
+            .setLogicOpEnable(desc.m_outputMerger.m_logicOp != ELogicOp::None) // This requires a feature to be enabled!
             .setLogicOp(GetVkLogicOp(desc.m_outputMerger.m_logicOp))
             .setAttachments(colorAttachments);
         
@@ -240,8 +253,8 @@ namespace nes
         // Dynamic State
         uint32 dynamicStateCount = 0;
         std::array<vk::DynamicState, 16> dynamicStates;
-        dynamicStates[dynamicStateCount++] = vk::DynamicState::eViewport; // [TODO]: WithCount
-        dynamicStates[dynamicStateCount++] = vk::DynamicState::eScissor;  // [TODO]: WithCount
+        dynamicStates[dynamicStateCount++] = vk::DynamicState::eViewportWithCount; 
+        dynamicStates[dynamicStateCount++] = vk::DynamicState::eScissorWithCount;
 
         if (vertexInputState.pVertexAttributeDescriptions)
             dynamicStates[dynamicStateCount++] = vk::DynamicState::eVertexInputBindingStride;
@@ -272,15 +285,14 @@ namespace nes
         vk::GraphicsPipelineCreateInfo info = vk::GraphicsPipelineCreateInfo()
             .setPNext(&pipelineRenderingInfo)
             .setFlags(flags)
-            .setStageCount(static_cast<uint32>(descShaders.size()))
-            .setPStages(stages.data())
+            .setStages(stages)
             .setPVertexInputState(&vertexInputState)
             .setPInputAssemblyState(&inputAssemblyState)
             .setPTessellationState(&tessellationState)
             .setPViewportState(&viewportState)
             .setPRasterizationState(&rasterizationState)
             .setPMultisampleState(&multisampleState)
-            //.setPDepthStencilState(&depthStencilState)
+            .setPDepthStencilState(&depthStencilState)
             .setPColorBlendState(&colorBlendState)
             .setPDynamicState(&dynamicState)
             .setLayout(layout.GetVkPipelineLayout())
@@ -316,24 +328,13 @@ namespace nes
         m_pDevice->SetDebugNameVkObject(GetNativeVkObject(), name);
     }
 
-    EGraphicsResult Pipeline::SetupShaderStage(const ShaderDesc& desc, vk::PipelineShaderStageCreateInfo& outStage, vk::raii::ShaderModule& outModule)
+    EGraphicsResult Pipeline::SetupShaderStage(const ShaderModule& module, vk::PipelineShaderStageCreateInfo& outStage)
     {
-        vk::ShaderModuleCreateInfo createInfo = vk::ShaderModuleCreateInfo()
-            .setCodeSize(desc.m_size)
-            .setPCode(static_cast<const uint32_t*>(desc.m_pByteCode));
-        
-        auto& device = DeviceManager::GetRenderDevice();
-        outModule = vk::raii::ShaderModule(device, createInfo);
-
+        auto& desc = module.GetDesc();
         outStage = vk::PipelineShaderStageCreateInfo()
             .setStage(GetVkShaderStageFlagBits(desc.m_stage))
-            .setModule(outModule);
-
-
-        // Entry Point:
-        // [TODO]: This is only valid for glsl; slang is based on stage, "vertMain", "fragMain", etc.
-        // - I should handle this within the Shader Desc / Shader itself.
-        outStage.pName = desc.m_entryPointName == nullptr ? "main" : desc.m_entryPointName;
+            .setModule(*module.GetVkShaderModule())
+            .setPName(desc.m_entryPointName.c_str());
         
         return EGraphicsResult::Success;
     }

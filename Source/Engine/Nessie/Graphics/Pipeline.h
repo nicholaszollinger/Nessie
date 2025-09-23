@@ -65,7 +65,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initializes a shader stage's create info and shader module based on the shader description. 
         //----------------------------------------------------------------------------------------------------
-        EGraphicsResult             SetupShaderStage(const ShaderDesc& desc, vk::PipelineShaderStageCreateInfo& outStage, vk::raii::ShaderModule& outModule);
+        EGraphicsResult             SetupShaderStage(const ShaderModule& module, vk::PipelineShaderStageCreateInfo& outStage);
         
     private:
         RenderDevice*               m_pDevice = nullptr;

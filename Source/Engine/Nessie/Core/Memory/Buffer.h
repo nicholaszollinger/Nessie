@@ -11,13 +11,13 @@ namespace nes
         Buffer() = default;
         Buffer(const uint64 size);
         Buffer(void* pData, const uint64 size = 0) : m_pData(static_cast<uint8*>(pData)), m_size(size) {}
-        Buffer(const Buffer& buffer) = default;
-        Buffer(Buffer&& buffer) noexcept = default;
+        Buffer(const Buffer& buffer) = delete;
+        Buffer(Buffer&& other) noexcept;
         virtual ~Buffer() = default;
         
         /// Operators
-        Buffer&             operator=(const Buffer& buffer) = default;
-        Buffer&             operator=(Buffer&& buffer) noexcept = default;
+        Buffer&             operator=(const Buffer& buffer) = delete;
+        Buffer&             operator=(Buffer&& other) noexcept;
         explicit            operator bool() const { return m_pData != nullptr; }
         uint8&              operator[](const uint64 index);
         uint8               operator[](const uint64 index) const;

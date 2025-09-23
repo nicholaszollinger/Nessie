@@ -15,7 +15,7 @@ namespace nes
         {
             pImageInfos[i].imageView = nullptr;
             pImageInfos[i].imageLayout = vk::ImageLayout::eUndefined;
-            pImageInfos[i].sampler = updateDesc.m_pDescriptors[i].GetVkSampler();
+            pImageInfos[i].sampler = updateDesc.m_pDescriptors[i]->GetVkSampler();
         }
         writeDescriptorSet.pImageInfo = pImageInfos;
     }
@@ -27,8 +27,8 @@ namespace nes
 
         for (uint32 i = 0; i < updateDesc.m_descriptorCount; ++i)
         {
-            pImageInfos[i].imageView = updateDesc.m_pDescriptors[i].GetVkImageView();
-            pImageInfos[i].imageLayout = updateDesc.m_pDescriptors[i].GetImageDesc().m_imageLayout;
+            pImageInfos[i].imageView = updateDesc.m_pDescriptors[i]->GetVkImageView();
+            pImageInfos[i].imageLayout = updateDesc.m_pDescriptors[i]->GetImageDesc().m_imageLayout;
             pImageInfos[i].sampler = nullptr;
         }
         writeDescriptorSet.pImageInfo = pImageInfos;
@@ -41,7 +41,7 @@ namespace nes
 
         for (uint32 i = 0; i < updateDesc.m_descriptorCount; ++i)
         {
-            pBufferInfos[i] = updateDesc.m_pDescriptors[i].GetVkBufferInfo();
+            pBufferInfos[i] = updateDesc.m_pDescriptors[i]->GetVkBufferInfo();
         }
         writeDescriptorSet.pBufferInfo = pBufferInfos;
     }
@@ -53,7 +53,7 @@ namespace nes
 
         for (uint32 i = 0; i < updateDesc.m_descriptorCount; ++i)
         {
-            pBufferViews[i] = updateDesc.m_pDescriptors[i].GetVkBufferView();
+            pBufferViews[i] = updateDesc.m_pDescriptors[i]->GetVkBufferView();
         }
         writeDescriptorSet.pTexelBufferView = pBufferViews;
     }
@@ -76,10 +76,11 @@ namespace nes
                 return WriteAccelerationStructures;
 
             case EDescriptorType::Buffer:
-            case EDescriptorType::StorageBuffer:
+            case EDescriptorType::StorageTexelBuffer:
                 return WriteTypedBuffers;
 
             case EDescriptorType::UniformBuffer:
+            case EDescriptorType::StorageBuffer:
                 return WriteBuffers;
 
             case EDescriptorType::Image:
@@ -154,15 +155,14 @@ namespace nes
                 }
 
                 case EDescriptorType::UniformBuffer:
-                //case EDescriptorType::StructuredBuffer
-                //case EDescriptorType::StorageStructuredBuffer
+                case EDescriptorType::StorageBuffer:
                 {
                     scratchSize += sizeof(vk::DescriptorBufferInfo) * updateDesc.m_descriptorCount;
                     break;
                 }
 
                 case EDescriptorType::Buffer:
-                case EDescriptorType::StorageBuffer:
+                case EDescriptorType::StorageTexelBuffer:
                 {
                     scratchSize += sizeof(vk::BufferView) * updateDesc.m_descriptorCount;
                     break;

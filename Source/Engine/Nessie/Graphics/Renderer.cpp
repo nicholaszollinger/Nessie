@@ -264,6 +264,7 @@ namespace nes
 
     void Renderer::BeginHeadlessFrame()
     {
+        // Prepare to signal the next frame.
         PrepareFrameToSignal(kHeadlessFramesInFlight);
 
         // Reset the command pool and buffer to begin recording commands.
@@ -359,10 +360,10 @@ namespace nes
         for (uint32 i = 0; i < numFramesInFlight; ++i)
         {
             auto& frame = m_frames[i];
-            // Track the index for synchronization.
-            frame.m_frameNumber = i;
+            frame.m_frameNumber = i; // Track the index for synchronization.
             frame.m_commandPool = CommandPool(m_device, *m_pRenderQueue);
             frame.m_commandBuffer = frame.m_commandPool.CreateCommandBuffer();
+            frame.m_commandBuffer.SetDebugName(fmt::format("Frame Command Buffer ({})", i));
         }
         
         // Create the Resource Free Queues
@@ -384,12 +385,11 @@ namespace nes
         // End Recording commands for the frame.
         frame.m_commandBuffer.End();
         
-        // Add timeline semaphore to signal when GPU completes this frame
-        // The color attachment output stage is used since that's when the frame is fully rendered.
+        // Add timeline semaphore to signal when GPU completes this frame.
         m_signalSemaphores.push_back(vk::SemaphoreSubmitInfo()
             .setSemaphore(m_frameTimelineSemaphore)
             .setValue(frame.m_frameNumber)
-            .setStageMask(vk::PipelineStageFlagBits2::eBottomOfPipe)); // Wait until everything is completed.
+            .setStageMask(vk::PipelineStageFlagBits2::eBottomOfPipe));
         
         // Adding the command buffer of the frame to the list of command buffers to submit
         // Note: extra command buffers could have been added to the list from other parts of the render frame.
@@ -397,12 +397,9 @@ namespace nes
             .setCommandBuffer(frame.m_commandBuffer.GetVkCommandBuffer()));
 
         const vk::SubmitInfo2 submitInfo = vk::SubmitInfo2()
-            .setWaitSemaphoreInfoCount(static_cast<uint32>(m_waitSemaphores.size()))
-            .setPWaitSemaphoreInfos(m_waitSemaphores.data())
-            .setCommandBufferInfoCount(static_cast<uint32>(m_commandBuffers.size()))
-            .setPCommandBufferInfos(m_commandBuffers.data())
-            .setSignalSemaphoreInfoCount(static_cast<uint32>(m_signalSemaphores.size()))
-            .setPSignalSemaphoreInfos(m_signalSemaphores.data());
+            .setWaitSemaphoreInfos(m_waitSemaphores)
+            .setCommandBufferInfos(m_commandBuffers)
+            .setSignalSemaphoreInfos(m_signalSemaphores);
 
         m_pRenderQueue->GetVkQueue().submit2(submitInfo, nullptr);
     }

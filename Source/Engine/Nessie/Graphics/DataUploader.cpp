@@ -55,28 +55,28 @@ namespace nes
         m_copyBufferDescs.emplace_back(copyDesc);
     }
 
-    void DataUploader::AppendUploadImage(const ImageUploadDesc& desc, const SemaphoreValue& semaphoreState)
+    void DataUploader::AppendUploadImage(const UploadImageDesc& desc, const SemaphoreValue& semaphoreState)
     {
         NES_ASSERT(desc.m_pImage != nullptr);
+        NES_ASSERT(desc.m_pSrcData != nullptr);
         
-        if (desc.m_uploadSize == 0)
+        if (desc.m_layerCount == 0)
             return;
-
-        DeviceImage& image = *(desc.m_pImage);
-
-        // Get the actual upload size of the image.
-        uint64 size = desc.m_uploadSize;
-        const uint64 imageSize = image.GetPixelCount() * image.GetPixelSize();
-        if (desc.m_uploadSize == graphics::kWholeSize)
-        {
-            size = imageSize;
-        }
         
-        NES_ASSERT(desc.m_uploadOffset + size <= imageSize);
+        DeviceImage& image = *(desc.m_pImage);
+        ImageDesc& imageDesc = image.m_desc;
+
+        // Number of layers we are going to upload to.
+        const uint32 layerCount = math::Max(1u, math::Min(desc.m_layerCount, imageDesc.m_layerCount));
+        
+        // Size of the image.
+        const uint64 imageSize = image.GetPixelCount() * image.GetPixelSize();
+        
+        //NES_ASSERT(desc.m_uploadOffset + size <= imageSize);
         NES_ASSERT(image.m_image != nullptr);
 
-        // Create the Staging Buffer
-        const DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pPixelData, size, semaphoreState);
+        // Create the Staging Buffer - Room for each layer we are uploading to.
+        const DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pSrcData, imageSize * layerCount, semaphoreState);
 
         // Transition the top mip level from an unknown state to the copy destination state:
         ImageBarrierDesc preBarrier;
@@ -84,6 +84,7 @@ namespace nes
         preBarrier.m_before = AccessLayoutStage::UnknownState();
         preBarrier.m_after = AccessLayoutStage::CopyDestinationState();
         preBarrier.m_mipCount = image.m_desc.m_mipCount;
+        preBarrier.m_layerCount = image.m_desc.m_layerCount;
         m_preBarriers.m_imageBarriers.emplace_back(preBarrier);
 
         // Transition from the copy destination state to the final upload layout.
@@ -92,6 +93,7 @@ namespace nes
         postBarrier.m_before = AccessLayoutStage::CopyDestinationState();
         postBarrier.m_after.m_layout = desc.m_newLayout;
         postBarrier.m_mipCount = image.m_desc.m_mipCount;
+        postBarrier.m_layerCount = image.m_desc.m_layerCount;
 
         // [TODO]: If we are on a separate staging queue, then we need to transition ownership to the render queue.
         
@@ -104,7 +106,9 @@ namespace nes
         copyDesc.m_imageOffset = {0, 0, 0};
         copyDesc.m_srcBuffer = stagingRange.GetBuffer();
         copyDesc.m_srcOffset = stagingRange.GetOffset();
-        copyDesc.m_size = size;
+        copyDesc.m_size = imageSize * layerCount;
+        copyDesc.m_layerCount = layerCount;
+        copyDesc.m_planes = desc.m_planes;
         m_copyBufferToImageDescs.emplace_back(copyDesc);
     }
 

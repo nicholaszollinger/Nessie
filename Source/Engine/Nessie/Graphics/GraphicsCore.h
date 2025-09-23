@@ -40,7 +40,8 @@ namespace nes
     struct  SwapchainDesc;
     class   ShaderLibrary;
     class   Shader;
-    struct  ShaderDesc;
+    class   ShaderModule;
+    struct  ShaderModuleDesc;
     class   DeviceImage;
     class   Texture;
     struct  ImageDesc;
@@ -54,6 +55,7 @@ namespace nes
     class   DescriptorPool;
     class   Pipeline;
     class   PipelineLayout;
+    class   GBuffer;
     
     
     //----------------------------------------------------------------------------------------------------

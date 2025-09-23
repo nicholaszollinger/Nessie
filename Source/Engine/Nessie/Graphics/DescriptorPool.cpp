@@ -65,8 +65,8 @@ namespace nes
         AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eSampledImage, desc.m_imageMaxNum);
         AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eStorageImage, desc.m_storageImageMaxNum);
         AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eUniformTexelBuffer, desc.m_bufferMaxNum);
-        AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eStorageTexelBuffer, desc.m_storageBufferMaxNum);
-        AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eStorageBuffer, desc.m_structuredBufferMaxNum + desc.m_storageStructuredBufferMaxNum);
+        AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eStorageTexelBuffer, desc.m_storageTexelBufferMaxNum);
+        AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eStorageBuffer, desc.m_storageBufferMaxNum);
         AddDescriptorPoolSize(poolSizes, poolSizeCount, vk::DescriptorType::eAccelerationStructureKHR, desc.m_accelerationStructureMaxNum);
 
         vk::DescriptorPoolCreateFlags flags = vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet;

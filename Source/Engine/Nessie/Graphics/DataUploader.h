@@ -16,13 +16,13 @@ namespace nes
         uint64              m_uploadOffset = 0;                     // Byte offset into the destination buffer to begin uploading to.
         // Access after?
     };
-
-    struct ImageUploadDesc
+    
+    struct UploadImageDesc
     {
         DeviceImage*        m_pImage = nullptr;                     // Device Image that we are uploading to.
-        const void*         m_pPixelData = nullptr;                 // Pointer to the data to upload.
-        uint64              m_uploadSize = graphics::kWholeSize;    // Size, in bytes, of the data to upload. If left to kWholeSize, then the entire image is used.
-        uint64              m_uploadOffset = 0;                     // Byte offset into the image to begin uploading to.
+        const void*         m_pSrcData = nullptr;                   // Array of pixel data to upload to m_layerCount number of layers in the image. The size of each layer is expected to be the image size.
+        uint32              m_layerCount = 1;                       // Number of layers to upload. Must be at least 1.
+        EImagePlaneBits     m_planes = EImagePlaneBits::Color;      // Which planes to upload to.
         EImageLayout        m_newLayout = EImageLayout::Undefined;  // Destination Layout for the image. 
     };
 
@@ -49,7 +49,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a staging buffer to copy the image data into the destination image.
         //----------------------------------------------------------------------------------------------------
-        void                                AppendUploadImage(const ImageUploadDesc& desc, const SemaphoreValue& semaphoreState = {});
+        void                                AppendUploadImage(const UploadImageDesc& desc, const SemaphoreValue& semaphoreState = {});
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Records all pending upload operations into the command buffer,

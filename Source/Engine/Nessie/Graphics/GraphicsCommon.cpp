@@ -1,6 +1,7 @@
 ﻿// GraphicsCommon.cpp
 #include "GraphicsCommon.h"
 #include "DeviceBuffer.h"
+#include "DeviceImage.h"
 
 namespace nes
 {
@@ -51,10 +52,11 @@ namespace nes
 #pragma region [ Pipline Stages and Barriers ]
 //============================================================================================================================================================================================
 
-    ImageBarrierDesc& ImageBarrierDesc::SetImage(DeviceImage* pImage)
+    ImageBarrierDesc& ImageBarrierDesc::SetImage(DeviceImage* pImage, const EImagePlaneBits planes)
     {
         NES_ASSERT(pImage != nullptr);
         m_pImage = pImage;
+        m_planes = planes;
         return *this;
     }
 
@@ -310,8 +312,9 @@ namespace nes
         NES_ASSERT(stride > 0);
     }
 
-    IndexBufferRange::IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const EIndexType type, const uint64 bufferOffset)
+    IndexBufferRange::IndexBufferRange(DeviceBuffer* pBuffer, const uint64 indexCount, const uint32 firstIndex, const EIndexType type, const uint64 bufferOffset)
         : DeviceBufferRange(pBuffer, bufferOffset, indexCount * (type == EIndexType::U16 ? sizeof(uint16) : sizeof(uint32)))
+        , m_firstIndex(firstIndex)
         , m_indexCount(static_cast<uint32>(indexCount))
         , m_indexType(type)
     {
@@ -330,39 +333,43 @@ namespace nes
         return *this;
     }
 
-    RenderTargetsDesc& RenderTargetsDesc::SetDepthStencilTargets(const Descriptor* depthStencil)
+    RenderTargetsDesc& RenderTargetsDesc::SetDepthStencilTarget(const Descriptor* depthStencil)
     {
         m_pDepthStencil = depthStencil;
         return *this;
     }
 
-    ClearDesc& ClearDesc::SetColorValue(const vk::ClearColorValue& color, const uint32 attachmentIndex)
+    ClearDesc ClearDesc::Color(const LinearColor color, const uint32 attachmentIndex)
     {
-        m_clearValue.color = color;
-        m_aspect |= vk::ImageAspectFlagBits::eColor;
-        m_colorAttachmentIndex = attachmentIndex;
-        return *this;
+        ClearDesc result;
+        result.m_clearValue = ClearColorValue(color.r, color.g, color.b, color.a);
+        result.m_colorAttachmentIndex = attachmentIndex;
+        result.m_planes = EImagePlaneBits::Color;
+        return result;
     }
 
-    ClearDesc& ClearDesc::SetDepthValue(const float depth)
+    ClearDesc ClearDesc::Depth(const float depth)
     {
-        m_clearValue.depthStencil.depth = depth;
-        m_aspect |= vk::ImageAspectFlagBits::eDepth;
-        return *this;
+        ClearDesc result{};
+        result.m_clearValue = ClearDepthStencilValue(depth);
+        result.m_planes = EImagePlaneBits::Depth;
+        return result;
     }
 
-    ClearDesc& ClearDesc::SetStencilValue(const uint32 stencil)
+    ClearDesc ClearDesc::Stencil(const uint32 stencil)
     {
-        m_clearValue.depthStencil.stencil = stencil;
-        m_aspect |= vk::ImageAspectFlagBits::eStencil;
-        return *this;
+        ClearDesc result{};
+        result.m_clearValue = ClearDepthStencilValue(1.f, stencil);
+        result.m_planes = EImagePlaneBits::Stencil;
+        return result;
     }
 
-    ClearDesc& ClearDesc::SetDepthStencilValue(const float depth, const uint32 stencil)
+    ClearDesc ClearDesc::DepthStencil(const float depth, const uint32 stencil)
     {
-        SetDepthValue(depth);
-        SetStencilValue(stencil);
-        return *this;
+        ClearDesc result{};
+        result.m_clearValue = ClearDepthStencilValue(depth, stencil);
+        result.m_planes = EImagePlaneBits::Depth | EImagePlaneBits::Stencil;
+        return result;
     }
 
 #pragma endregion
@@ -371,9 +378,9 @@ namespace nes
 #pragma region [ Pipelines ]
 //============================================================================================================================================================================================
 
-    GraphicsPipelineDesc& GraphicsPipelineDesc::SetShaderStages(const std::vector<ShaderDesc>& shaderStages)
+    GraphicsPipelineDesc& GraphicsPipelineDesc::SetShaderStages(const GraphicsPipelineShaders& shaders)
     {
-        m_shaderStages = shaderStages;
+        m_shaderStages = shaders;
         return *this;
     }
 
@@ -430,7 +437,7 @@ namespace nes
     }
 
     DrawIndexedDesc::DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex, const uint32 firstVertex, const uint32 numInstances, const uint32 firstInstance)
-        : m_firstVertex(firstVertex)
+        : m_vertexOffset(firstVertex)
         , m_indexCount(numIndices)
         , m_firstIndex(firstIndex)
         , m_instanceCount(numInstances)

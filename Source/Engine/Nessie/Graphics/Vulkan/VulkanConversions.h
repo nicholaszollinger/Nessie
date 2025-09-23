@@ -584,6 +584,9 @@ namespace nes
         if (type == EImage2DViewType::ShaderResource2DArray || type == EImage2DViewType::ShaderResourceStorage2DArray)
             return vk::ImageViewType::e2DArray;
 
+        if (type == EImage2DViewType::ShaderResourceCube || (type == EImage2DViewType::ShaderResource2D && numLayers == 6))
+            return vk::ImageViewType::eCube;
+
         if (type == EImage2DViewType::ShaderResourceCubeArray)
             return vk::ImageViewType::eCubeArray;
 
