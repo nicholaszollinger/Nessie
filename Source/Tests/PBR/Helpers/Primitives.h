@@ -216,4 +216,55 @@ namespace helpers
 
         CalculateTangentSpace(outVertices, outIndices, outMesh);
     }
+
+    static inline void AppendPlaneData(std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh)
+    {
+        outMesh.m_firstVertex = static_cast<uint32>(outVertices.size());
+        outMesh.m_firstIndex = static_cast<uint32>(outIndices.size());
+        
+        static constexpr uint32 kSubdivisionsX = 10;
+        static constexpr uint32 kSubdivisionsY = 10;
+        static constexpr float kWidth = 10.f;
+        static constexpr float kHeight = 10.f;
+
+        for (uint32 y = 0; y <= kSubdivisionsY; ++y)
+        {
+            const float yTexCoord = static_cast<float>(y) / static_cast<float>(kSubdivisionsY);
+            const float yVertPos = static_cast<float>(y) / static_cast<float>(kSubdivisionsY) * kHeight - (kHeight * 0.5f);
+            
+            for (uint32 x = 0; x <= kSubdivisionsX; ++x)
+            {
+                Vertex vertex{};
+                vertex.m_position = nes::Vec3(
+                    static_cast<float>(x) / static_cast<float>(kSubdivisionsX) * kWidth - (kWidth * 0.5f),
+                    0.f,
+                    yVertPos);
+
+                vertex.m_normal = nes::Vec3::AxisY();
+                vertex.m_tangent = nes::Vec3::AxisX();
+                vertex.m_bitangent = nes::Vec3::AxisZ();
+                NES_ASSERT(nes::Vec3::IsLeftHanded(vertex.m_tangent, vertex.m_bitangent, vertex.m_normal));
+                vertex.m_texCoord = nes::Vec2(static_cast<float>(x) / static_cast<float>(kSubdivisionsX), yTexCoord);
+                outVertices.emplace_back(vertex);
+
+                // Add indices for two triangles of the quad.
+                if (y < kSubdivisionsY && x < kSubdivisionsX)
+                {
+                    const uint32 topLeft = y * (kSubdivisionsX + 1) + x;            // 0
+                    const uint32 topRight = topLeft + 1;                            // 1
+                    const uint32 bottomLeft = (y + 1) * (kSubdivisionsX + 1) + x;   // 2
+                    const uint32 bottomRight = bottomLeft + 1;                      // 3
+
+                    outIndices.insert(outIndices.end(), {
+                        topLeft, topRight, bottomLeft,                  // 0, 1, 2
+                        topRight, bottomRight, bottomLeft});            // 1, 3, 2
+                }
+            }
+        }
+
+        outMesh.m_indexCount = static_cast<uint32>(outIndices.size()) - outMesh.m_firstIndex;
+        outMesh.m_vertexCount = static_cast<uint32>(outVertices.size()) - outMesh.m_firstVertex;
+        
+        //CalculateTangentSpace(outVertices, outIndices, outMesh);
+    }
 }

@@ -109,7 +109,7 @@ namespace nes
 
             // Allocate the image
             nes::AllocateImageDesc allocDesc;
-            allocDesc.m_desc = imageDesc;
+            allocDesc.m_imageDesc = imageDesc;
             allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
             m_colorImageAndViews[i].m_image = nes::DeviceImage(device, allocDesc);
 
@@ -138,7 +138,7 @@ namespace nes
 
             // Allocate the image
             nes::AllocateImageDesc allocDesc;
-            allocDesc.m_desc = imageDesc;
+            allocDesc.m_imageDesc = imageDesc;
             allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
             m_depthImageAndView.m_image = nes::DeviceImage(device, allocDesc);
 

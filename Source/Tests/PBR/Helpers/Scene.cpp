@@ -138,6 +138,11 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
         // [TODO]: Create the Mesh Asset?
         helpers::AppendSphereMeshData(outScene.m_vertices, outScene.m_indices, defaultMesh);
         outScene.m_meshes.emplace_back(defaultMesh);
+
+        // Plane Mesh:
+        // [TODO]: Create the Mesh Asset?
+        helpers::AppendPlaneData(outScene.m_vertices, outScene.m_indices, defaultMesh);
+        outScene.m_meshes.emplace_back(defaultMesh);
         
         // [TODO]: Load Meshes in the Scene file.
     }
@@ -219,7 +224,7 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
     {
         // Red Light.
         PointLight light{};
-        light.m_position = nes::Float3(-1.5f, 0.f, 0.f);
+        light.m_position = nes::Float3(0.0f, 0.05f, 0.f);
         light.m_color = nes::Float3(1.0f, 0.0f, 0.0f); //nes::Float3(1.0f, 0.9f, 0.8f);
         light.m_intensity = 80000.f; // in lumens.
         light.m_radius = 10.f; // In Meters
@@ -229,15 +234,23 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
     // Objects:
     // [TODO]: These instances would be created from the PBR Mesh Components being created.
     {
+        // Gold Sphere
         ObjectUBO object = ObjectUBO()
-            .SetTransform(nes::Vec3(0.f, 0.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
+            .SetTransform(nes::Vec3(1.f, 1.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
             .SetMesh(1)
             .SetMaterial(1);
         outScene.m_objects.emplace_back(object);
 
-        object.SetTransform(nes::Vec3(0.f, 2.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
+        // Copper Sphere
+        object.SetTransform(nes::Vec3(-1.f, 1.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
             .SetMesh(1)
             .SetMaterial(2);
+        outScene.m_objects.emplace_back(object);
+
+        // Plane
+        object.SetTransform(nes::Vec3(0.f, 0.f, 0.f), nes::Quat::Identity(), nes::Vec3(1.f, 1.f, 1.f))
+            .SetMesh(2)
+            .SetMaterial(0);
         outScene.m_objects.emplace_back(object);
     }
 
@@ -248,6 +261,7 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
         outConfig.m_skyboxShaderID = config["SkyboxShaderID"].as<uint64>();
         outConfig.m_pbrShaderID = config["PBRShaderID"].as<uint64>();
         outConfig.m_skyboxTextureID = config["SkyboxTextureID"].as<uint64>();
+        outConfig.m_shadowShaderID = config["ShadowShaderID"].as<uint64>();
     }
     
     return true;

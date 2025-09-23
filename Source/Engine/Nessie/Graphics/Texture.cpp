@@ -95,7 +95,7 @@ namespace nes
         // Allocation description. 
         const AllocateImageDesc allocDesc
         {
-            .m_desc = textureDesc,
+            .m_imageDesc = textureDesc,
             .m_memoryLocation = EMemoryLocation::Device,
             .m_isDedicated = true,
         };
@@ -201,7 +201,7 @@ namespace nes
         
         // Create the Device Image:
         nes::AllocateImageDesc allocDesc{};
-        allocDesc.m_desc = imageDesc;
+        allocDesc.m_imageDesc = imageDesc;
         allocDesc.m_memoryLocation = EMemoryLocation::Device;
         allocDesc.m_isDedicated = true;
         

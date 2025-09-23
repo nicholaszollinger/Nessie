@@ -611,7 +611,7 @@ namespace nes
     struct AllocateImageDesc
     {
         // Image Description, including usage and dimensions.
-        ImageDesc           m_desc{};
+        ImageDesc           m_imageDesc{};
         
         // Defines where the image will be allocated, which changes its access for the CPU.
         // See EMemoryLocation for more info.
@@ -856,7 +856,7 @@ namespace nes
         float               m_mipMax;       // Maximum level of detail (mip level) to use.
         AddressModes        m_addressModes;
         ECompareOp          m_compareOp;
-        ClearColorValue          m_borderColor;
+        ClearColorValue     m_borderColor;
         bool                m_isInteger;
     };
 

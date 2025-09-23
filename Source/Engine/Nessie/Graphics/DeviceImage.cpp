@@ -78,7 +78,7 @@ namespace nes
     void DeviceImage::AllocateResource(const RenderDevice& device, const AllocateImageDesc& allocDesc)
     {
         // Fill out the ImageCreateInfo object. 
-        const auto& imageDesc = allocDesc.m_desc;
+        const auto& imageDesc = allocDesc.m_imageDesc;
         
         vk::ImageCreateFlags flags = vk::ImageCreateFlagBits::eMutableFormat | vk::ImageCreateFlagBits::eExtendedUsage;
         
@@ -126,7 +126,7 @@ namespace nes
         // We own this image.
         m_ownsNativeObjects = true;
         m_image = vkImage;
-        m_desc = allocDesc.m_desc;
+        m_desc = allocDesc.m_imageDesc;
         m_desc.Validate();
     }
 
