@@ -25,7 +25,7 @@ namespace nes
         static constexpr uint32 kUseRemaining = std::numeric_limits<uint32>::max();
 
         /// Special value to use if you want to use the entire device buffer's range.
-        static constexpr uint64 kWholeSize = std::numeric_limits<uint64>::max();
+        static constexpr uint64 kWholeSize = std::numeric_limits<uint64_t>::max();
     }
     
     //----------------------------------------------------------------------------------------------------

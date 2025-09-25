@@ -8,14 +8,14 @@ namespace helpers
     {
         std::vector<nes::Vec3> tangents(mesh.m_vertexCount, nes::Vec3::Zero());
         std::vector<nes::Vec3> bitangents(mesh.m_vertexCount, nes::Vec3::Zero());
-
+        
         for (uint32 i = 0; i < mesh.m_vertexCount; ++i)
         {
             const uint32 vertexIndex = i + mesh.m_firstVertex;
             outVertices[vertexIndex].m_tangent = nes::Vec3::Zero();
             outVertices[vertexIndex].m_bitangent = nes::Vec3::Zero();
         }
-
+        
         for (size_t j = 0; j < mesh.m_indexCount; j += 3)
         {
             const size_t indexOffset = mesh.m_firstIndex + j;
@@ -23,23 +23,23 @@ namespace helpers
             const uint32 i0 = indices[indexOffset];
             const uint32 i1 = indices[indexOffset + 1];
             const uint32 i2 = indices[indexOffset + 2];
-
+        
             Vertex& v0 = outVertices[mesh.m_firstVertex + i0];
             Vertex& v1 = outVertices[mesh.m_firstVertex + i1];
             Vertex& v2 = outVertices[mesh.m_firstVertex + i2];
-
+        
             // Normals
             nes::Vec3 n0(v0.m_normal);
             nes::Vec3 n1(v1.m_normal);
             nes::Vec3 n2(v2.m_normal);
-
+        
             // Calculate triangle edges in position and UV space
             const nes::Vec3 edge1 = v1.m_position - v0.m_position;
             const nes::Vec3 edge2 = v2.m_position - v0.m_position;
         
             const nes::Vec2 deltaUV10 = v1.m_texCoord - v0.m_texCoord;
             const nes::Vec2 deltaUV20 = v2.m_texCoord - v0.m_texCoord;
-
+        
             const float r = 1.0f / (deltaUV10.x * deltaUV20.y - deltaUV10.y * deltaUV20.x);
             nes::Vec3 tangent;
             nes::Vec3 bitangent;
@@ -66,7 +66,7 @@ namespace helpers
             bitangents[i1] += bitangent;
             bitangents[i2] += bitangent;
         }
-
+        
         // Normalize and orthogonalize
         for (uint32 j = 0; j < mesh.m_vertexCount; ++j)
         {

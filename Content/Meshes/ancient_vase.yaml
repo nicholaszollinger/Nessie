@@ -1,0 +1,3 @@
+Mesh:
+ InvertWinding: false
+ Path: "Meshes\\ancient_vase_gltf\\scene.gltf"

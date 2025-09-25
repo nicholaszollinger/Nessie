@@ -1,6 +1,7 @@
 ﻿// Scene.h
 #pragma once
 #include "Primitives.h"
+#include "DefaultAssets.h"
 #include "LightTypes.h"
 
 //----------------------------------------------------------------------------------------------------
@@ -13,11 +14,13 @@ struct alignas(64) MaterialUBO
     nes::Float3                 m_emissionScale             = nes::Float3(1.f);
     float                       m_roughnessScale            = 1.f; 
     float                       m_normalScale               = 1.f;
+
+    // These map indices are local to the Scene's array of textures.
     
-    uint32                      m_baseColorIndex            = static_cast<uint32>(EDefaultTextures::White);
-    uint32                      m_normalIndex               = static_cast<uint32>(EDefaultTextures::FlatNormal);
-    uint32                      m_roughnessMetallicIndex    = static_cast<uint32>(EDefaultTextures::White);
-    uint32                      m_emissionIndex             = static_cast<uint32>(EDefaultTextures::White);
+    uint32                      m_baseColorIndex            = static_cast<uint32>(EDefaultTextureType::White);
+    uint32                      m_normalIndex               = static_cast<uint32>(EDefaultTextureType::FlatNormal);
+    uint32                      m_roughnessMetallicIndex    = static_cast<uint32>(EDefaultTextureType::White);
+    uint32                      m_emissionIndex             = static_cast<uint32>(EDefaultTextureType::White);
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -59,6 +62,7 @@ struct Scene
     using AssetIDToIndexMap = std::unordered_map<nes::AssetID, uint32, nes::UUIDHasher>;
     AssetIDToIndexMap                   m_idToTextureIndex{};
     AssetIDToIndexMap                   m_idToMaterialIndex{};
+    AssetIDToIndexMap                   m_idToMeshIndex{};
 };
 
 namespace helpers

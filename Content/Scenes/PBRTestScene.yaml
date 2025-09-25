@@ -9,7 +9,9 @@ Assets:
   #
   # Default Textures:
   #   AssetID: 10 == "Error Texture"
-  #   AssetID: 11 == "White Texture"
+  #   AssetID: 11 == "Black Texture"
+  #   AssetID: 12 == "White Texture"
+  #   AssetID: 13 == "FlatNormal Texture"
 
   Textures:
   # Reserved Textures - Loaded in a specific order.
@@ -48,6 +50,10 @@ Assets:
   - AssetID: 1002
     Path: "PBRShader.yaml"
 
+  Meshes:
+  - AssetID: 3000
+    Path: "Meshes\\ancient_vase.yaml"
+
   Materials:
   - AssetID: 5000
     Path: "Materials\\DefaultMaterial.yaml"
@@ -63,4 +69,47 @@ Assets:
    SkyboxTextureID: 500
    SkyboxShaderID: 1001
    PBRShaderID: 1002
-    
+
+  DirectionalLights:
+   - Direction: [0.1, -1.0, 0.1]
+     Intensity: 120000.0
+     Color: [1.0, 1.0, 0.95]
+
+  PointLights:
+    - Position: [0.0, 0.05, 0.0]
+      Intensity: 80000.0
+      Color: [1.0, 0.0, 0.0]
+      Radius: 10.0
+
+  Objects:
+    # Gold Sphere
+    - Transform:
+        Position: [1.0, 1.0, 0.0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      Mesh: 3
+      Material: 5001
+
+    # Copper Sphere
+    - Transform:
+        Position: [-1.0, 1.0, 0.0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      Mesh: 3
+      Material: 5002
+
+    # Plane
+    - Transform:
+        Position: [0.0, 0.0, 0.0]
+        Rotation: [0, 0, 0]
+        Scale: [1, 1, 1]
+      Mesh: 2
+      Material: 18446744073709551615 # Invalid to use the Mesh's default material.
+
+    # Vase
+    - Transform:
+        Position: [-2.0, 1.0, 0.0]
+        Rotation: [90, 0, 0]
+        Scale: [1.5, 1.5, 1.5]
+      Mesh: 3000
+      Material: 18446744073709551615 # Invalid to use the Mesh's default material.
