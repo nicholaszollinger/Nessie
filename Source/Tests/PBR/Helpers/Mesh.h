@@ -38,12 +38,25 @@ class MeshAsset final : public nes::AssetBase
     NES_DEFINE_TYPE_INFO(MeshAsset)
 
 public:
+    MeshAsset() = default;
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create a Mesh Asset from data. Must be manually added to Asset Manager. 
+    //----------------------------------------------------------------------------------------------------
+    MeshAsset(const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, const nes::AssetID defaultMaterialID);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create a Mesh Asset from data. Must be manually added to Asset Manager. 
+    //----------------------------------------------------------------------------------------------------
+    MeshAsset(Vertex* pVertices, const uint32 vertexCount, uint32* indices, const uint32 indexCount, const nes::AssetID defaultMaterialID);
+    
     const std::vector<Vertex>&  GetVertices() const  { return m_vertices; }
     const std::vector<uint32>&  GetIndices() const   { return m_indices; }
+    nes::AssetID                GetDefaultMaterialID() const  { return m_defaultMaterialID; }
 
 private:
     virtual nes::ELoadResult    LoadFromFile(const std::filesystem::path& path) override;
-    //nes::ELoadResult            LoadFromYAML(const YAML::Node& node);
+    nes::ELoadResult            LoadFromYAML(const YAML::Node& node);
 
 private:
     std::vector<Vertex>         m_vertices{};

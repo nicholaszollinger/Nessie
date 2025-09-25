@@ -132,9 +132,62 @@ namespace nes
             id = GenerateAssetID();
         }
         
-        // Create the new Asset:
-        AssetBase* pAsset = NES_NEW(Type(std::forward<Type>(asset)));
-        assetManager.ProcessLoadedAsset(pAsset, Type::GetStaticTypeID(), id, ELoadResult::Success);
+        if (IsMainThread())
+        {
+            // Create the new asset.
+            AssetBase* pAsset = NES_NEW(Type(std::forward<Type>(asset)));
+            assetManager.ProcessLoadedAsset(pAsset, Type::GetStaticTypeID(), id, ELoadResult::Success);
+        }
+        else
+        {
+            NES_ASSERT(IsAssetThread());
+
+            // New memory asset that will be added to our buffer.
+            LoadedMemoryAsset memoryAsset
+            {
+                .m_pAsset = nullptr,
+                .m_id = id,
+                .m_typeID = Type::GetStaticTypeID(),
+                .m_requestID = kInvalidRequestID, // Sub-load operations do not affect the Request's progress. 
+                .m_result = ELoadResult::Pending,
+            };
+
+            // Check if we can set this asset:
+            bool canAddAsset = false;
+            {
+                for (;;)
+                {
+                    if (!assetManager.ThreadCanProceed(id, Type::GetStaticTypeID(), memoryAsset.m_result, canAddAsset))
+                    {
+                        std::this_thread::sleep_for(std::chrono::microseconds(100));
+                        continue;
+                    }
+
+                    break;
+                }
+            }
+
+            // Add if necessary.
+            if (canAddAsset)
+            {
+                // Create the asset on the heap.
+                memoryAsset.m_pAsset = NES_NEW(Type(std::forward<Type>(asset)));
+                memoryAsset.m_result = ELoadResult::Success;
+            
+                // Set the result of the load in the map.
+                std::lock_guard lock(assetManager.m_threadInfoMapMutex);
+            
+                auto& info = assetManager.m_threadInfoMap.at(id); 
+                info.m_loadResult = memoryAsset.m_result;
+                info.m_state = EAssetState::Loaded;
+            }
+
+            // Add to the array of memory assets:
+            {
+                std::lock_guard lock(assetManager.m_threadMemoryAssetsMutex);
+                assetManager.m_threadMemoryAssets.emplace_back(memoryAsset);
+            }
+        }
 
         return ELoadResult::Success;
     }

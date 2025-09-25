@@ -4,15 +4,15 @@
 #include "Nessie/Asset/AssetManager.h"
 #include <yaml-cpp/yaml.h>
 
-namespace helpers
-{
-    static constexpr uint32 kInvalidIndex = std::numeric_limits<uint32>::max();
-    static constexpr uint8  kMinSRGBValue = 30;
-    static constexpr uint8  kMaxSRGBValue = 240;
-    static constexpr float  kMinLinearColorValue = kMinSRGBValue / 255.0f;
-    static constexpr float  kMaxLinearColorValue = kMaxSRGBValue / 255.0f;
-}
-
+//----------------------------------------------------------------------------------------------------
+// [CONSIDER]: A flags value can be paired with an AssetID to make the use of materials more generic.
+//  - The material can have a function that takes in a set of flags and tries to find a texture map of that
+//    type. Material data layouts are different from different sources (the UE gold material split metallic & roughness, whereas
+//    some mesh assets that I have found keep them combined). Having the flags would allow me to have
+//    more textures if necessary. Then again, I should probably have a "import" step that codifies the layout that I need.
+//		
+/// @brief : Flags that describe what a texture is used for in a material. 
+//----------------------------------------------------------------------------------------------------
 enum class ETextureMapBits : uint8
 {
     None        = 0,
@@ -24,13 +24,14 @@ enum class ETextureMapBits : uint8
 };
 NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ETextureMapBits)
 
-enum class EDefaultTextures : uint32
+namespace helpers
 {
-    Error,      // Magenta and Black Checkerboard
-    Black,      // All pixels Black
-    White,      // All pixels White
-    FlatNormal, // All pixels = (127, 127, 255)
-};
+    static constexpr uint32 kInvalidIndex = std::numeric_limits<uint32>::max();
+    static constexpr uint8  kMinSRGBValue = 30;
+    static constexpr uint8  kMaxSRGBValue = 240;
+    static constexpr float  kMinLinearColorValue = kMinSRGBValue / 255.0f;
+    static constexpr float  kMaxLinearColorValue = kMaxSRGBValue / 255.0f;
+}
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : Material Data for a PBR Material Asset. 
