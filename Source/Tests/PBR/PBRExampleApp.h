@@ -11,7 +11,6 @@
 #include "Nessie/Graphics/GBuffer.h"
 #include "Helpers/Scene.h"
 #include "Helpers/Camera.h"
-#include "Helpers/LightTypes.h."
 
 struct CameraState
 {
@@ -60,19 +59,19 @@ private:
     struct FrameData
     {
         // Buffers & Resource Views:
-        nes::Descriptor             m_cameraUBOView = nullptr;              // Camera UBO view.
-        nes::Descriptor             m_lightCountUBOView = nullptr;          // LightCount UBO view.
-        nes::Descriptor             m_pointLightsView = nullptr;            // Point Lights SSBO view.
-        nes::Descriptor             m_directionalLightsView = nullptr;      // Directional Lights SSBO view.
-        nes::Descriptor             m_materialUBOView = nullptr;              // ObjectUBO view.
-        nes::DeviceBuffer           m_materialUBOBuffer = nullptr;           // ObjectUBO device buffer.
+        nes::Descriptor             m_cameraUBOView = nullptr;              // View of the Camera info for this frame.
+        nes::Descriptor             m_lightCountUBOView = nullptr;          // View of the Light Counts for this frame.
+        nes::Descriptor             m_pointLightsView = nullptr;            // View of the Storage Buffer of Point Lights.
+        nes::Descriptor             m_directionalLightsView = nullptr;      // View of the Storage Buffer of Directional Lights.
+        nes::Descriptor             m_materialUBOView = nullptr;            // View of the MaterialUBO buffer.
+        nes::DeviceBuffer           m_materialUBOBuffer = nullptr;          // Device Buffer containing Material parameters.
         nes::DeviceBuffer           m_pointLightsBuffer = nullptr;          // Point Lights SSBO buffer.
         nes::DeviceBuffer           m_directionalLightsBuffer = nullptr;    // Directional Lights SSBO buffer.
 
         // Descriptor Set Values:
         nes::DescriptorSet          m_cameraSet = nullptr;                  // Value for the CameraUBO
         nes::DescriptorSet          m_lightDataSet = nullptr;               // Value for LightCount and Light Array values.
-        nes::DescriptorSet          m_materialDataSet = nullptr;              // Value for the ObjectBuffer.
+        nes::DescriptorSet          m_materialDataSet = nullptr;            // Value for the ObjectBuffer.
         
         uint64                      m_cameraBufferOffset = 0;               // Byte offset in the Global buffer for the CameraUBO for this frame. 
         uint64                      m_lightCountOffset  = 0;                // Byte offset in the Global buffer for the LightCountUBO for this frame. 

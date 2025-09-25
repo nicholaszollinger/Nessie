@@ -262,7 +262,7 @@ void RectangleApp::CreateMSAAImage(nes::RenderDevice& device, const uint32 width
 
     // Allocate the image
     nes::AllocateImageDesc allocDesc;
-    allocDesc.m_desc = imageDesc;
+    allocDesc.m_imageDesc = imageDesc;
     allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
     m_msaaImage = nes::DeviceImage(device, allocDesc);
 
