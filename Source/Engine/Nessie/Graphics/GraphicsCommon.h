@@ -1479,7 +1479,7 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct MultisampleDesc
     {
-        uint32          m_sampleMask;
+        uint32          m_sampleMask{};
         uint32          m_sampleCount = 0;
         bool            m_alphaToCoverage = false;
         bool            m_sampleLocations = false;
@@ -1746,17 +1746,17 @@ namespace nes
         /// @brief : Set the one or more color targets for a series of render commands.
         //----------------------------------------------------------------------------------------------------
         RenderTargetsDesc&          SetColorTargets(const vk::ArrayProxy<const Descriptor*>& colors);
-
+    
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set an optional depth image target. Depth information will be written to this image.
         //----------------------------------------------------------------------------------------------------
         RenderTargetsDesc&          SetDepthStencilTarget(const Descriptor* depthStencil);
-
+    
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns whether any attachments have been set.
         //----------------------------------------------------------------------------------------------------
         bool                        HasTargets() const { return (!m_colors.empty()) || m_pDepthStencil != nullptr; }
-
+    
         vk::ArrayProxy<const Descriptor*> m_colors{};
         const Descriptor*           m_pDepthStencil = nullptr;  // Optional depth image.
     };
@@ -1775,12 +1775,18 @@ namespace nes
         static ClearDesc        Color(const LinearColor color, const uint32 attachmentIndex = 0);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the clear value for depth.
+        /// @brief : Set the color that will be used to clear an image's pixels.
+        /// @note : By setting the color value, this cannot be used for depth clear values as well!
+        //----------------------------------------------------------------------------------------------------
+        static ClearDesc        Color(const ClearValue color, const uint32 attachmentIndex = 0);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates a clear value for just depth plane.
         //----------------------------------------------------------------------------------------------------
         static ClearDesc        Depth(const float depth);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Set the clear for the stencil.
+        /// @brief : Creates a clear value for just stencil plane.
         //----------------------------------------------------------------------------------------------------
         static ClearDesc        Stencil(const uint32 stencil);
 
@@ -1788,6 +1794,11 @@ namespace nes
         /// @brief : Set both the depth and stencil clear values.
         //----------------------------------------------------------------------------------------------------
         static ClearDesc        DepthStencil(const float depth, const uint32 stencil);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the depth/stencil clear values.
+        //----------------------------------------------------------------------------------------------------
+        static ClearDesc        DepthStencil(const ClearValue depthStencilValue);
 
         ClearValue              m_clearValue{};
         EImagePlaneBits         m_planes = EImagePlaneBits::All; 

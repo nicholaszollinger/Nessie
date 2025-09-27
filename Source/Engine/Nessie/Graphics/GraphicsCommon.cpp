@@ -332,7 +332,7 @@ namespace nes
         m_colors = colors;
         return *this;
     }
-
+    
     RenderTargetsDesc& RenderTargetsDesc::SetDepthStencilTarget(const Descriptor* depthStencil)
     {
         m_pDepthStencil = depthStencil;
@@ -343,6 +343,15 @@ namespace nes
     {
         ClearDesc result;
         result.m_clearValue = ClearColorValue(color.r, color.g, color.b, color.a);
+        result.m_colorAttachmentIndex = attachmentIndex;
+        result.m_planes = EImagePlaneBits::Color;
+        return result;
+    }
+
+    ClearDesc ClearDesc::Color(const ClearValue color, const uint32 attachmentIndex)
+    {
+        ClearDesc result;
+        result.m_clearValue = color;
         result.m_colorAttachmentIndex = attachmentIndex;
         result.m_planes = EImagePlaneBits::Color;
         return result;
@@ -368,6 +377,14 @@ namespace nes
     {
         ClearDesc result{};
         result.m_clearValue = ClearDepthStencilValue(depth, stencil);
+        result.m_planes = EImagePlaneBits::Depth | EImagePlaneBits::Stencil;
+        return result;
+    }
+
+    ClearDesc ClearDesc::DepthStencil(const ClearValue depthStencilValue)
+    {
+        ClearDesc result{};
+        result.m_clearValue = depthStencilValue;
         result.m_planes = EImagePlaneBits::Depth | EImagePlaneBits::Stencil;
         return result;
     }

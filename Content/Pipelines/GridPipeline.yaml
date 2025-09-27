@@ -1,0 +1,74 @@
+# Grid Pipeline
+GraphicsPipeline:
+  DebugName: "Grid Graphics Pipeline"
+
+  # Pipeline Layout
+  Layout:
+    ShaderStages: 130         # EPipelineStageBits::VertexShader | EPipelineStageBits::FragmentShader
+    DescriptorSets:
+    # Camera
+    - Bindings:
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 6   # EDescriptorType::UniformBuffer
+        Stages: 130         # EPipelineStageBits::VertexShader | EPipelineStageBits::FragmentShader
+    PushConstants:
+
+  # Shader Stages
+  Shader: 1000
+
+  # Vertex Input
+  VertexInputState:
+    Attributes:
+    Streams:
+
+  # Input Assembly
+  InputAssembly:
+    Topology: 3             # ETopology::TriangleList
+    TesselationPointCount: 0
+    PrimitiveRestart: 0     # EPrimitiveRestart::Disabled
+
+  # Rasterization
+  Rasterization:
+    CullMode: 0             # ECullMode::None
+    EnableDepthClamp: false 
+    FillMode: 0             # EFillMode::Solid
+    FrontFace: 1            # EFrontFaceWinding::CounterClockwise
+
+  # Multisample:
+  Multisample:
+    Enabled: true
+
+  # Output Merger
+  OutputMerger:
+    ColorAttachments:
+    - RenderTarget: "Color"
+      EnableBlend: true
+      ColorBlend:
+        SrcFactor: 6          # EBlendFactor::SrcAlpha
+        DstFactor: 7          # EBlendFactor::OneMinusSrcAlpha
+        BlendOp: 0                 # EBlendOp::Add
+      AlphaBlend:
+        SrcFactor: 1          # EBlendFactor::One
+        DstFactor: 0          # EBlendFactor::Zero
+        BlendOp: 0                 # EBlendOp::Add
+      ColorWriteMask: 15      # EColorComponentBits::RGBA
+    DepthAttachment:
+      RenderTarget: "Depth"
+      CompareOp: 5            # ECompareOp::Less
+      EnableWrite: false
+    StencilAttachment:
+      Front:
+        CompareOp: 0          # ECompareOp::None
+        FailOp: 0             # EStencilOp::Keep
+        PassOp: 0             # EStencilOp::Keep
+        DepthFailOp: 0        # EStencilOp::Keep
+        WriteMask: 0        
+        CompareMask: 0
+      Back:
+        CompareOp: 0          # ECompareOp::None
+        FailOp: 0             # EStencilOp::Keep
+        PassOp: 0             # EStencilOp::Keep
+        DepthFailOp: 0        # EStencilOp::Keep
+        WriteMask: 0        
+        CompareMask: 0

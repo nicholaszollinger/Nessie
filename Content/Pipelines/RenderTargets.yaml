@@ -1,0 +1,20 @@
+# Render Settings for the PBR Application.
+# - Render targets, Pipelines.
+RenderTargets:
+  Color:
+    Format: 0       # Unknown to use supported Swapchain format.
+    SampleCount: 0  # Zero to use the max supported by the format.
+    ClearColor: [0.01, 0.01, 0.01, 1.0]
+    Size: [0, 0]    # Zero size to use the swapchain dimensions.
+  Depth:
+    FormatMinBits: 24
+    FormatRequireStencil: true  
+    SampleCount: 0      # Zero to use the max supported by depth format.
+    ClearDepth: 1.0
+    ClearStencil: 0
+    Size: [0, 0]        # Zero size to use the swapchain dimensions.
+
+Pipelines:
+  Grid: "Pipelines\\GridPipeline.yaml"
+  Skybox: "Pipelines\\SkyboxPipeline.yaml"
+  PBR: "Pipelines\\PBRPipeline.yaml"

@@ -1,0 +1,150 @@
+# PBR Pipeline
+GraphicsPipeline:
+  DebugName: "PBR Graphics Pipeline"
+
+  # Pipeline Layout
+  Layout:
+    ShaderStages: 130         # EPipelineStageBits::VertexShader | EPipelineStageBits::FragmentShader
+    DescriptorSets:
+    # Camera
+    - Bindings:
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 6   # EDescriptorType::UniformBuffer
+        Stages: 130         # EPipelineStageBits::VertexShader | EPipelineStageBits::FragmentShader
+    # Material SSBO
+    - Bindings:
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 7   # EDescriptorType::StorageBuffer
+        Stages: 128         # EPipelineStageBits::FragmentShader
+    # Lighting
+    - Bindings:
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 6   # EDescriptorType::UniformBuffer
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      - Index: 1
+        DescriptorCount: 1
+        DescriptorType: 7   # EDescriptorType::StorageBuffer
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      - Index: 2
+        DescriptorCount: 1
+        DescriptorType: 7   # EDescriptorType::StorageBuffer
+        Stages: 128         # EPipelineStageBits::FragmentShader
+
+    # Sampler and Texture Maps
+    - Bindings:
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 0   # EDescriptorType::Sampler
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      - Index: 1
+        DescriptorCount: 1
+        DescriptorType: 2   # EDescriptorType::Image
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      - Index: 2
+        DescriptorCount: 1
+        DescriptorType: 2   # EDescriptorType::Image
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      - Index: 3
+        DescriptorCount: 1
+        DescriptorType: 2   # EDescriptorType::Image
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      - Index: 4
+        DescriptorCount: 1
+        DescriptorType: 2   # EDescriptorType::Image
+        Stages: 128         # EPipelineStageBits::FragmentShader
+
+    PushConstants:
+    # Instance Data
+    - Offset: 0
+      Size: 192             # Sizeof ObjectUBO
+      ShaderStages: 130     # EPipelineStageBits::VertexShader | EPipelineStageBits::FragmentShader
+  
+  # Shader Stages
+  Shader: 1002
+
+  # Vertex Input
+  VertexInputState:
+    Attributes:
+    # Vertex::m_position
+    - Location: 0
+      Offset: 0
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    # Vertex::m_normal
+    - Location: 1
+      Offset: 16
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    # Vertex::m_texCoord
+    - Location: 2
+      Offset: 32
+      Format: 36  # RG32_SFLOAT
+      Stream: 0
+    # Vertex::m_tangent
+    - Location: 3
+      Offset: 48
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    # Vertex::m_bitangent
+    - Location: 4
+      Offset: 64
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    Streams:
+    - Stride: 80
+      BindingIndex: 0
+      StepRate: 0             # 0=PerVertex 1=PerInstance
+
+  # Input Assembly
+  InputAssembly:
+    Topology: 3               # ETopology::TriangleList
+    TesselationPointCount: 0
+    PrimitiveRestart: 0       # EPrimitiveRestart::Disabled
+
+  # Rasterization
+  Rasterization:
+    CullMode: 2               # ECullMode::Back
+    EnableDepthClamp: false 
+    FillMode: 0               # EFillMode::Solid
+    FrontFace: 1              # EFrontFaceWinding::CounterClockwise
+
+  # Multisample:
+  Multisample:
+    Enabled: true
+
+  # Output Merger
+  OutputMerger:
+    ColorAttachments:
+    - RenderTarget: "Color"
+      EnableBlend: false
+      ColorBlend:
+        SrcFactor: 6          # EBlendFactor::SrcAlpha
+        DstFactor: 7          # EBlendFactor::OneMinusSrcAlpha
+        BlendOp: 0                 # EBlendOp::Add
+      AlphaBlend:
+        SrcFactor: 1          # EBlendFactor::One
+        DstFactor: 0          # EBlendFactor::Zero
+        BlendOp: 0                 # EBlendOp::Add
+      ColorWriteMask: 15      # EColorComponentBits::RGBA
+    DepthAttachment:
+      RenderTarget: "Depth"
+      CompareOp: 5            # ECompareOp::Less
+      EnableWrite: true
+    StencilAttachment:
+      Front:
+        CompareOp: 0          # ECompareOp::None
+        FailOp: 0             # EStencilOp::Keep
+        PassOp: 0             # EStencilOp::Keep
+        DepthFailOp: 0        # EStencilOp::Keep
+        WriteMask: 0        
+        CompareMask: 0
+      Back:
+        CompareOp: 0          # ECompareOp::None
+        FailOp: 0             # EStencilOp::Keep
+        PassOp: 0             # EStencilOp::Keep
+        DepthFailOp: 0        # EStencilOp::Keep
+        WriteMask: 0        
+        CompareMask: 0

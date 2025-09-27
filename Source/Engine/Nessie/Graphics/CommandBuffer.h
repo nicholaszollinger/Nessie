@@ -2,6 +2,7 @@
 #pragma once
 #include "DeviceObject.h"
 #include "GraphicsCommon.h"
+#include "RenderTarget.h"
 
 namespace nes
 {

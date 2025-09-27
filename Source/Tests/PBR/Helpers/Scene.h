@@ -55,9 +55,10 @@ struct Scene
     std::vector<Mesh>                   m_meshes{};             // Array of meshes that can be used by instances.
     std::vector<ObjectUBO>              m_objects{};            // Each entry is an object that is rendered in the scene.
     std::vector<MaterialUBO>            m_materials{};          // Each element contains information to render and instance.
-    std::vector<PointLight>             m_pointLights{};        // Array of point light info for the scene.
-    std::vector<DirectionalLight>       m_directionalLights{};  // Array of directional light info for the scene.
-    std::vector<nes::Descriptor>        m_textures{};       
+    std::vector<PointLight>             m_pointLights{};        // Array of point lights for the scene.
+    std::vector<DirectionalLight>       m_directionalLights{};  // Array of directional lights for the scene.
+    std::vector<nes::Descriptor>        m_textures{};
+    nes::AssetID                        m_skyboxTextureID = nes::kInvalidAssetID;
     
     using AssetIDToIndexMap = std::unordered_map<nes::AssetID, uint32, nes::UUIDHasher>;
     AssetIDToIndexMap                   m_idToTextureIndex{};
@@ -68,18 +69,7 @@ struct Scene
 namespace helpers
 {
     //----------------------------------------------------------------------------------------------------
-    /// @brief : HACK. I need to know specific AssetIDs when loading the scene. 
+    /// @brief : [TODO]: A Scene will not be loaded from data, the world will be. But for now, I am going to load the scene.
     //----------------------------------------------------------------------------------------------------
-    struct SceneConfig
-    {
-        nes::AssetID m_gridShaderID = nes::kInvalidAssetID;
-        nes::AssetID m_skyboxShaderID = nes::kInvalidAssetID;
-        nes::AssetID m_skyboxTextureID = nes::kInvalidAssetID;
-        nes::AssetID m_pbrShaderID = nes::kInvalidAssetID;
-    };
-    
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : HACK. A Scene will not be loaded from data, the world will be. But for now, I am going to load the scene.
-    //----------------------------------------------------------------------------------------------------
-    bool LoadScene(const std::filesystem::path& assetPath, nes::RenderDevice& device, Scene& outScene, std::vector<nes::AssetID>& outLoadedAssets, SceneConfig& outConfig);
+    bool LoadScene(const std::filesystem::path& assetPath, nes::RenderDevice& device, Scene& outScene, std::vector<nes::AssetID>& outLoadedAssets);
 }

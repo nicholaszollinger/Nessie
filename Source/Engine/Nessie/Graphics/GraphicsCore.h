@@ -55,8 +55,7 @@ namespace nes
     class   DescriptorPool;
     class   Pipeline;
     class   PipelineLayout;
-    class   GBuffer;
-    
+    class   RenderTarget;
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Result type returned from many critical functions in the graphics api. 
