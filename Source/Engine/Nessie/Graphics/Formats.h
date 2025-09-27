@@ -37,7 +37,7 @@ namespace nes
     //                                         |  |  |  |  |  |  |  |  |  |
     //                                         |    FormatSupportBits     | 
     //----------------------------------------------------------------------------------------------------
-    enum class EFormat
+    enum class EFormat : uint32
     {
         Unknown,                            // -  -  -  -  -  -  -  -  -  -
 

@@ -1513,7 +1513,7 @@ namespace nes
         if (GetFormatFeatures(EFormat::D32_SFLOAT_S8_UINT_X24) & EFormatFeatureBits::DepthStencilAttachment)
             return EFormat::D32_SFLOAT_S8_UINT_X24;
 
-        NES_ASSERT(false, "No available depth format with bit and stencil requirements!");
+        NES_ASSERT(false, "No available depth format with bit count and stencil requirements!");
         return EFormat::Unknown;
     }
 

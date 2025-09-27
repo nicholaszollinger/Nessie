@@ -10,7 +10,7 @@
 // world instance, including the entities and components. But this is the quick and dirty version for now as I
 // build this architecture up.
 
-bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevice& device, Scene& outScene, std::vector<nes::AssetID>& outLoadedAssets, SceneConfig& outConfig)
+bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevice& device, Scene& outScene, std::vector<nes::AssetID>& outLoadedAssets)
 {
     // Load the YAML file.
     YAML::Node file = YAML::LoadFile(assetPath.string());
@@ -503,13 +503,10 @@ bool helpers::LoadScene(const std::filesystem::path& assetPath, nes::RenderDevic
         }
     }
 
-    // Scene Config
+    // Scene Settings
     {
-        auto config = assetsNode["SceneConfig"];
-        outConfig.m_gridShaderID = config["GridShaderID"].as<uint64>();
-        outConfig.m_skyboxShaderID = config["SkyboxShaderID"].as<uint64>();
-        outConfig.m_pbrShaderID = config["PBRShaderID"].as<uint64>();
-        outConfig.m_skyboxTextureID = config["SkyboxTextureID"].as<uint64>();
+        auto settings = file["Settings"];
+        outScene.m_skyboxTextureID = settings["SkyboxTextureID"].as<uint64>();
     }
     
     return true;

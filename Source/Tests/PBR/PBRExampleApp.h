@@ -8,7 +8,7 @@
 #include "Nessie/Graphics/Pipeline.h"
 #include "Nessie/Graphics/PipelineLayout.h"
 #include "Nessie/Graphics/DescriptorPool.h"
-#include "Nessie/Graphics/GBuffer.h"
+#include "Nessie/Graphics/RenderTarget.h"
 #include "Helpers/Scene.h"
 #include "Helpers/Camera.h"
 
@@ -78,25 +78,18 @@ private:
     };
 
 private:
+    using RenderTargetRegistry = std::unordered_map<std::string, nes::RenderTarget*>;
+    
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Loads and creates the sets of images that can be rendered to, and creates the pipelines
+    ///     based on configuration data.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device);
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the global constants buffer and the vertex/index buffers for all geometry.
     //----------------------------------------------------------------------------------------------------
     void                            CreateBuffersAndImages(nes::RenderDevice& device);
-    
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Create the pipeline to render the grid plane.
-    //----------------------------------------------------------------------------------------------------
-    void                            CreateGridPipeline(nes::RenderDevice& device);
-    
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Create the pipeline to render the Skybox.
-    //----------------------------------------------------------------------------------------------------
-    void                            CreateSkyboxPipeline(nes::RenderDevice& device);
-
-    //----------------------------------------------------------------------------------------------------
-    /// @brief : Create the pipeline to render 3D geometry.
-    //----------------------------------------------------------------------------------------------------
-    void                            CreateGeometryPipeline(nes::RenderDevice& device);
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the Descriptor Pool that will allow us to allocate DescriptorSets.
@@ -110,10 +103,9 @@ private:
     void                            CreateDescriptorSets(nes::RenderDevice& device);
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Create the MSAA and Depth images and descriptors that we will be rendering to before resolve to the
-    ///     swapchain's image.
+    /// @brief : Resizes the Color and Depth targets to match the swapchain dimensions.
     //----------------------------------------------------------------------------------------------------
-    void                            UpdateGBuffer(nes::RenderDevice& device, const uint32 width, const uint32 height);
+    void                            ResizeRenderTargets(const uint32 width, const uint32 height);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Update this frame's uniform buffers.
@@ -144,16 +136,20 @@ private:
     /// @brief : Set the input movement and rotation vector. 
     //----------------------------------------------------------------------------------------------------
     void                            ProcessInput();
+    
+    nes::RenderTarget               LoadColorRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
+    nes::RenderTarget               LoadDepthRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
+    void                            LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
 
 private:
-    std::vector<nes::AssetID>       m_loadedAssets;
+    
+    // Render Targets
+    nes::RenderTarget               m_colorTarget = nullptr;
+    nes::RenderTarget               m_depthTarget = nullptr;
+    RenderTargetRegistry            m_renderTargetRegistry{};
     
     // Assets:
-    nes::AssetID                    m_skyboxTexture = nes::kInvalidAssetID;
-    nes::AssetID                    m_skyboxShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_gridShader = nes::kInvalidAssetID;
-    nes::AssetID                    m_pbrShader = nes::kInvalidAssetID;
-    nes::GBuffer                    m_gBuffer = nullptr;                        // Color and depth render targets.
+    std::vector<nes::AssetID>       m_loadedAssets;
     nes::DescriptorPool             m_descriptorPool = nullptr;
 
     // Geometry Pipeline
@@ -173,15 +169,12 @@ private:
     Scene                           m_scene{};
     nes::Descriptor                 m_sampler = nullptr;
     std::vector<FrameData>          m_frames{};
+
+    // Buffers
     nes::DeviceBuffer               m_indicesBuffer = nullptr;              // Index Data
     nes::DeviceBuffer               m_verticesBuffer = nullptr;             // Vertex Data
-
-    // [TODO]: Combine the Light Count and Camera data into a single buffer?
-    //      - They are both small, and will only have 1 per frame.
-    
-    nes::DeviceBuffer               m_globalsBuffer = nullptr;               // Contains the Camera information and  
+    nes::DeviceBuffer               m_globalsBuffer = nullptr;              // Contains the Camera information and  
     std::vector<nes::DescriptorSet> m_materialDescriptorSets{};
-    nes::EFormat                    m_depthFormat = nes::EFormat::Unknown;
     
     // Camera Data:
     CameraState                     m_camera{};

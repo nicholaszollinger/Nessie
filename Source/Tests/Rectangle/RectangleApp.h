@@ -8,6 +8,7 @@
 #include "Nessie/Graphics/PipelineLayout.h"
 #include "Nessie/Graphics/Descriptor.h"
 #include "Nessie/Graphics/DescriptorPool.h"
+#include "Nessie/Graphics/RenderTarget.h"
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : This example application renders a Rectangle to the screen, and uses multisampling.
@@ -60,7 +61,7 @@ private:
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the MSAA image and descriptor that we will be rendering to. 
     //----------------------------------------------------------------------------------------------------
-    void                            CreateMSAAImage(nes::RenderDevice& device, const uint32 width, const uint32 height);
+    void                            ResizeMSAAImage(const uint32 width, const uint32 height);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the pipeline object use to render the Rectangle.
@@ -86,7 +87,7 @@ private:
 private:
     nes::AssetID                    m_shaderID = nes::kInvalidAssetID;
     nes::AssetID                    m_textureID = nes::kInvalidAssetID;
-    nes::DeviceImage                m_msaaImage = nullptr;
+    nes::RenderTarget               m_msaaTarget = nullptr;
     nes::PipelineLayout             m_pipelineLayout = nullptr;
     nes::Pipeline                   m_pipeline = nullptr;
     nes::DeviceBuffer               m_geometryBuffer = nullptr;
@@ -95,7 +96,6 @@ private:
     nes::DeviceBuffer               m_uniformBuffer = nullptr; 
     nes::DescriptorPool             m_descriptorPool = nullptr;
     std::vector<FrameData>          m_frames{};
-    nes::Descriptor                 m_msaaImageView = nullptr;
     nes::Descriptor                 m_imageView = nullptr;          // View of our texture.
     nes::Descriptor                 m_sampler = nullptr;            // Sampler for our texture.
 };

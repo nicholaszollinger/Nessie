@@ -200,14 +200,14 @@ namespace nes
         m_renderLayerCount = deviceDesc.m_dimensions.m_maxAttachmentLayerCount;
         m_renderWidth = deviceDesc.m_dimensions.m_maxDimensionAttachment;
         m_renderHeight = deviceDesc.m_dimensions.m_maxDimensionAttachment;
-
+    
         // Color Attachments:
         std::vector<vk::RenderingAttachmentInfo> colors(targetsDesc.m_colors.size());
         for (uint32_t i = 0; i < targetsDesc.m_colors.size(); ++i)
         {
             const Descriptor& descriptor = *(*(targetsDesc.m_colors.begin() + i));
             const DescriptorImageDesc& desc = descriptor.GetImageDesc();
-
+    
             vk::RenderingAttachmentInfo& color = colors[i];
             color.setImageView(descriptor.GetVkImageView())
                 .setImageLayout(desc.m_imageLayout)
@@ -217,10 +217,10 @@ namespace nes
                 .setLoadOp(vk::AttachmentLoadOp::eLoad)
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue({});
-
+    
             const uint32 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
             const uint32 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
-
+    
             m_renderLayerCount = math::Min(m_renderLayerCount, desc.m_layerCount);
             m_renderWidth = math::Min(m_renderWidth, width);
             m_renderHeight = math::Min(m_renderHeight, height);
@@ -233,7 +233,7 @@ namespace nes
         {
             const Descriptor& descriptor = *targetsDesc.m_pDepthStencil;
             const DescriptorImageDesc& desc = descriptor.GetImageDesc();
-
+    
             depthStencil.setImageView(descriptor.GetVkImageView())
                 .setImageLayout(desc.m_imageLayout)
                 .setResolveMode(vk::ResolveModeFlagBits::eNone)
@@ -242,17 +242,17 @@ namespace nes
                 .setLoadOp(vk::AttachmentLoadOp::eLoad)
                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                 .setClearValue({});
-
+    
             const uint32 width = desc.m_pImage->GetDimensionSize(0, desc.m_mipOffset);
             const uint32 height = desc.m_pImage->GetDimensionSize(1, desc.m_mipOffset);
             
             m_renderLayerCount = math::Min(m_renderLayerCount, desc.m_layerCount);
             m_renderWidth = math::Min(m_renderWidth, width);
             m_renderHeight = math::Min(m_renderHeight, height);
-
+    
             const FormatProps& props = GetFormatProps(desc.m_pImage->GetDesc().m_format);
             hasStencil = props.m_isStencil != 0;
-
+    
             m_depthStencil = &descriptor;
         }
         else
@@ -264,7 +264,7 @@ namespace nes
         
         if (!targetsDesc.HasTargets())
             m_renderLayerCount = 1;
-
+    
         vk::RenderingInfo renderingInfo = vk::RenderingInfo()
             .setFlags({}) // No flags.
             .setRenderArea({ {0, 0}, {m_renderWidth, m_renderHeight}})
@@ -274,13 +274,13 @@ namespace nes
             .setPColorAttachments(colors.data())
             .setPDepthAttachment(targetsDesc.m_pDepthStencil ? &depthStencil : nullptr)
             .setPStencilAttachment(hasStencil ? &depthStencil : nullptr);
-
+    
         // [TODO]: Add optional Shading Rate Attachment
         // if (attachments.pShadingRate)
         //     renderingInfo.pNext = &shadingRate;
-
+    
         m_buffer.beginRendering(renderingInfo);
-
+    
         // [TODO]: Set the view mask.
         //m_viewMask = attachments.m_viewMask; 
     }

@@ -62,14 +62,6 @@ Assets:
   - AssetID: 5002
     Path: "Materials\\CopperRockMaterial.yaml"
 
-  # Hack for now: I need to know these specific asset ids to setup the pipeline.
-  # - I need to find a better solution for this.
-  SceneConfig:
-   GridShaderID: 1000
-   SkyboxTextureID: 500
-   SkyboxShaderID: 1001
-   PBRShaderID: 1002
-
   DirectionalLights:
    - Direction: [0.1, -1.0, 0.1]
      Intensity: 120000.0
@@ -113,3 +105,7 @@ Assets:
         Scale: [1.5, 1.5, 1.5]
       Mesh: 3000
       Material: 18446744073709551615 # Invalid to use the Mesh's default material.
+
+# Scene Settings
+Settings:
+  SkyboxTextureID: 500
