@@ -84,7 +84,7 @@ private:
     /// @brief : Loads and creates the sets of images that can be rendered to, and creates the pipelines
     ///     based on configuration data.
     //----------------------------------------------------------------------------------------------------
-    void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device);
+    void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file);
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the global constants buffer and the vertex/index buffers for all geometry.

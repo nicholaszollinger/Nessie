@@ -101,7 +101,7 @@ namespace nes
         virtual bool        IsValidNode(const LayerHandle& handle) const override;
 
         void                RegisterEventHandler(const EventHandler& handler);
-        void                RegisterMesh(MeshComponent* pMesh);
+        //void                RegisterMesh(MeshComponent* pMesh);
         //GraphicsPipelinePtr GetDefaultMeshRenderPipeline() const;
         
     private:
