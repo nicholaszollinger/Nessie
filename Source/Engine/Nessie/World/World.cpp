@@ -118,29 +118,29 @@ namespace nes
         m_eventHandlers.push_back(handler);
     }
 
-    //----------------------------------------------------------------------------------------------------
-    //		NOTES:
-    //      [TODO]: This should return a handle. 
-    //		
-    ///		@brief : Register a Mesh for drawing. 
-    //----------------------------------------------------------------------------------------------------
-    void World::RegisterMesh(MeshComponent* pMesh)
-    {
-        NES_ASSERT(pMesh != nullptr);
-
-        auto pMaterial = pMesh->GetMaterial();
-        if (!pMaterial)
-        {
-            NES_WARN(kWorldLogTag, "Attempted to register a Mesh with an invalid Material!");
-            return;
-        }
-
-        // // Register the Mesh to the appropriate array.
-        // if (pMaterial->IsTransparent())
-        //     m_transparentMeshes.push_back(pMesh);
-        // else
-        //     m_opaqueMeshes.push_back(pMesh);
-    }
+    // //----------------------------------------------------------------------------------------------------
+    // //		NOTES:
+    // //      [TODO]: This should return a handle. 
+    // //		
+    // ///		@brief : Register a Mesh for drawing. 
+    // //----------------------------------------------------------------------------------------------------
+    // void World::RegisterMesh(MeshComponent* pMesh)
+    // {
+    //     NES_ASSERT(pMesh != nullptr);
+    //
+    //     auto pMaterial = pMesh->GetMaterial();
+    //     if (!pMaterial)
+    //     {
+    //         NES_WARN(kWorldLogTag, "Attempted to register a Mesh with an invalid Material!");
+    //         return;
+    //     }
+    //
+    //     // // Register the Mesh to the appropriate array.
+    //     // if (pMaterial->IsTransparent())
+    //     //     m_transparentMeshes.push_back(pMesh);
+    //     // else
+    //     //     m_opaqueMeshes.push_back(pMesh);
+    // }
 
     // //----------------------------------------------------------------------------------------------------
     // ///		@brief : Get the current Default Geometry Pipeline.  
@@ -492,22 +492,22 @@ namespace nes
                     pFreeCam->SetEnabled(isEnabled);
                 }
 
-                // MeshComponent
-                if (componentName == MeshComponent::GetStaticTypename())
-                {
-                    auto meshNode = componentNode.second;
-                    const StringID name = meshNode["Name"].as<std::string>();
-                    StrongPtr<MeshComponent> pMeshComponent = pEntity->AddComponent<MeshComponent>(name);
-
-                    // [Hack] Setting the default pipeline for now.
-                    //pMeshComponent->SetPipeline(GetDefaultMeshRenderPipeline());
-
-                    // // [TODO]: Set the mesh from an index/id.
-                    // pMeshComponent->SetMesh(m_meshAssets[0]);
-                    //
-                    // // [TODO]: Set the material from an index/id.
-                    // pMeshComponent->SetMaterial(m_materialAssets[0]);
-                }
+                // // MeshComponent
+                // if (componentName == MeshComponent::GetStaticTypename())
+                // {
+                //     auto meshNode = componentNode.second;
+                //     const StringID name = meshNode["Name"].as<std::string>();
+                //     StrongPtr<MeshComponent> pMeshComponent = pEntity->AddComponent<MeshComponent>(name);
+                //
+                //     // [Hack] Setting the default pipeline for now.
+                //     //pMeshComponent->SetPipeline(GetDefaultMeshRenderPipeline());
+                //
+                //     // // [TODO]: Set the mesh from an index/id.
+                //     // pMeshComponent->SetMesh(m_meshAssets[0]);
+                //     //
+                //     // // [TODO]: Set the material from an index/id.
+                //     // pMeshComponent->SetMaterial(m_materialAssets[0]);
+                // }
             }
         }
 
@@ -787,18 +787,18 @@ namespace nes
                     break;
                 }
 
-                case MeshComponent::GetStaticTypeID():
-                {
-                    auto pMeshComp = Cast<MeshComponent>(pComponent);
-                    auto pMaterial = pMeshComp->GetMaterial();
-
-                    // // Just Base Color for now.
-                    // LinearColor baseColor = pMaterial->m_baseColor;
-                    // if (EditorDrawPropertyLinearColor("Base Color", baseColor))
-                    //     pMaterial->m_baseColor = baseColor;
-                    //
-                    // break;
-                }
+                // case MeshComponent::GetStaticTypeID():
+                // {
+                //     auto pMeshComp = Cast<MeshComponent>(pComponent);
+                //     auto pMaterial = pMeshComp->GetMaterial();
+                //
+                //     // // Just Base Color for now.
+                //     // LinearColor baseColor = pMaterial->m_baseColor;
+                //     // if (EditorDrawPropertyLinearColor("Base Color", baseColor))
+                //     //     pMaterial->m_baseColor = baseColor;
+                //     //
+                //     // break;
+                // }
             
                 default:
                 {

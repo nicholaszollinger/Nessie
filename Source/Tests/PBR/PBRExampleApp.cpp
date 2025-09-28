@@ -15,6 +15,7 @@
 bool PBRExampleApp::Internal_AppInit()
 {
     auto& device = nes::DeviceManager::GetRenderDevice();
+    m_frames.resize(nes::Renderer::GetMaxFramesInFlight());
     
     // Load the Scene, and all assets.
     {
@@ -27,14 +28,41 @@ bool PBRExampleApp::Internal_AppInit()
         
         NES_LOG("Scene Loaded.");
     }
-    
-    // Initial Camera Position:
-    m_camera.m_position = nes::Vec3(-10.f, 5.f, -10.f);
-    m_camera.m_rotation = nes::Rotation(20.f, 45.f, 0.f);
-    m_camera.m_FOVY = nes::math::ToRadians(65.f);
-    m_frames.resize(nes::Renderer::GetMaxFramesInFlight());
 
-    CreateRenderTargetsAndPipelines(device);
+    // Load Application Settings
+    std::filesystem::path path = NES_CONFIG_DIR;
+    path /= "PBRAppSettings.yaml";
+
+    YAML::Node file = YAML::LoadFile(path.string());
+    if (!file)
+    {
+        NES_ERROR("Failed to load Application Settings!");
+        return false;
+    }
+
+    // Camera Settings:
+    {
+        auto cameraSettings = file["CameraSettings"];
+
+        auto position = cameraSettings["Position"];
+        m_camera.m_position.x = position[0].as<float>(0.f);
+        m_camera.m_position.y = position[1].as<float>(0.f);
+        m_camera.m_position.z = position[2].as<float>(0.f);
+
+        auto rotation = cameraSettings["Rotation"];
+        m_camera.m_rotation.m_pitch = rotation[0].as<float>(0.f);
+        m_camera.m_rotation.m_yaw = rotation[1].as<float>(0.f);
+        m_camera.m_rotation.m_roll = rotation[2].as<float>(0.f);
+        
+        m_camera.m_FOVY = nes::math::ToRadians(cameraSettings["FOV"].as<float>(65.f));
+        m_cameraMoveSpeed = cameraSettings["MoveSpeed"].as<float>(50.f);
+        m_cameraSensitivity = cameraSettings["Sensitivity"].as<float>(1.0f);
+        m_cameraAperture = cameraSettings["Aperture"].as<float>(1.0f);
+        m_cameraShutterSpeed = 1.f / cameraSettings["ShutterSpeedSeconds"].as<float>(125.f);
+        m_cameraISO = cameraSettings["ISO"].as<float>(100.f);
+    }
+    
+    CreateRenderTargetsAndPipelines(device, file);
     CreateBuffersAndImages(device);
     CreateDescriptorPool(device);
     CreateDescriptorSets(device);
@@ -185,23 +213,12 @@ void PBRExampleApp::Internal_AppShutdown()
     m_descriptorPool = nullptr;
 }
 
-void PBRExampleApp::CreateRenderTargetsAndPipelines(nes::RenderDevice& device)
+void PBRExampleApp::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file)
 {
     const auto swapchainColorFormat = nes::Renderer::GetSwapchainFormat();
     const auto swapchainExtent = nes::Renderer::GetSwapchainExtent();
-    
-    // [TODO]: This should probably be in an Application Settings file.
-    // Load the Render Targets from a YAML file.
-    std::filesystem::path path = NES_CONTENT_DIR;
-    path /= "Pipelines\\RenderTargets.yaml";
 
-    YAML::Node file = YAML::LoadFile(path.string());
-    if (!file)
-    {
-        NES_ERROR("Failed to load Application's Render Target information!");
-        return;
-    }
-
+    // Load Render Targets:
     auto renderTargets = file["RenderTargets"];
     NES_ASSERT(renderTargets);
     NES_ASSERT(renderTargets.size() > 0);
@@ -216,6 +233,8 @@ void PBRExampleApp::CreateRenderTargetsAndPipelines(nes::RenderDevice& device)
         m_renderTargetRegistry.emplace(m_depthTarget.GetName(), &m_depthTarget);
     }
 
+    // Load Pipelines:
+    std::filesystem::path path{};
     auto pipelines = file["Pipelines"];
     NES_ASSERT(pipelines);
 

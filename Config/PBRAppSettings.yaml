@@ -1,5 +1,14 @@
-# Render Settings for the PBR Application.
-# - Render targets, Pipelines.
+# PBR Application Settings
+CameraSettings:
+  Position: [-10, 5, -10]
+  Rotation: [20, 45, 0]
+  FOV: 65 # Degrees
+  MoveSpeed: 50.0
+  Sensitivity: 1.25
+  Aperture: 8.0
+  ShutterSpeedSeconds: 125.0
+  ISO: 100.0
+
 RenderTargets:
   Color:
     Format: 0       # Unknown to use supported Swapchain format.
