@@ -100,13 +100,19 @@ namespace nes
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns information about the image resource.
-        /// @note : Only valid if the Descriptor is a texture type. 
+        /// @note : Only valid if the Descriptor is an image type. 
         //----------------------------------------------------------------------------------------------------
         const DescriptorImageDesc&  GetImageDesc() const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns information about the image resource.
+        /// @note : Only valid if the Descriptor is an image type. 
+        //----------------------------------------------------------------------------------------------------
+        DescriptorImageDesc&        GetImageDesc();
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Returns the vulkan image view handle.
-        /// @note : Only valid if the Descriptor is a texture type. 
+        /// @note : Only valid if the Descriptor is an image type. 
         //----------------------------------------------------------------------------------------------------
         vk::ImageView               GetVkImageView() const;
 
@@ -129,13 +135,13 @@ namespace nes
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the texture allows depth write operations.
-        /// @note : Only valid if the Descriptor is a texture type. 
+        /// @note : Only valid if the Descriptor is an image type. 
         //----------------------------------------------------------------------------------------------------
         bool                        IsDepthWritable() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the texture allows depth stencil write operations.
-        /// @note : Only valid if the Descriptor is a texture type. 
+        /// @note : Only valid if the Descriptor is an image type. 
         //----------------------------------------------------------------------------------------------------
         bool                        IsStencilWritable() const;
         

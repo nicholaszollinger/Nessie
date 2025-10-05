@@ -34,6 +34,7 @@ layout(location = 1) out vec3 outWorldNormal;
 layout(location = 2) out vec2 outTexCoord;
 layout(location = 3) out vec3 outWorldTangent;
 layout(location = 4) out vec3 outWorldBitangent;
+layout(location = 5) out vec3 outViewPos; // Vertex Position in View Space.
 
 void main()
 {
@@ -45,6 +46,7 @@ void main()
     outWorldNormal = normalize(normalMatrix * inNormal);
     outWorldTangent = normalize(normalMatrix * inTangent);
     outWorldBitangent = cross(outWorldNormal, outWorldTangent);
+    outViewPos = (u_camera.view * worldPosition).xyz;
     
     gl_Position = u_camera.viewProj * worldPosition;
 }

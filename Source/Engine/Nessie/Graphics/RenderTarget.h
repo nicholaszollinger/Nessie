@@ -10,9 +10,10 @@ namespace nes
         std::string     m_name{};
         uint32          m_sampleCount = 1;
         EFormat         m_format = EFormat::Unknown;
+        EImageUsageBits m_usage{};                          // Defines how the image resource will be used. A Descriptor is created with either ColorAttachment or DepthStencilAttachment usage, but if the image needs to be sampled in a shader, you can set those additinal flags as well.
         EImagePlaneBits m_planes = EImagePlaneBits::Color;  // Can be equal to either of: Color, Depth, Stencil, or Depth|Stencil.
         ClearValue      m_clearValue{};
-        UInt2           m_size{};                           // Current size of the image.   
+        UInt2           m_size{};                           // Current size of the image.
     };
 
     //----------------------------------------------------------------------------------------------------

@@ -1,0 +1,101 @@
+# Shadow Pipeline
+GraphicsPipeline:
+  DebugName: "Shadow Pass Pipeline"
+
+  # Pipeline Layout
+  Layout:
+    ShaderStages: 2         # EPipelineStageBits::VertexShader
+    DescriptorSets:
+    # Shadow UBO
+    - Bindings:
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 6   # EDescriptorType::UniformBuffer
+        Stages: 2           # EPipelineStageBits::VertexShader
+
+    PushConstants:
+    # Object Position and Cascade Index
+    - Offset: 0
+      Size: 80
+      ShaderStages: 2       # EPipelineStageBits::VertexShader
+  
+  # Shader Stages
+  Shader: 1003
+
+  # Vertex Input
+  VertexInputState:
+    Attributes:
+    # Vertex::m_position
+    - Location: 0
+      Offset: 0
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    # Vertex::m_normal
+    - Location: 1
+      Offset: 16
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    # Vertex::m_texCoord
+    - Location: 2
+      Offset: 32
+      Format: 36  # RG32_SFLOAT
+      Stream: 0
+    # Vertex::m_tangent
+    - Location: 3
+      Offset: 48
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    # Vertex::m_bitangent
+    - Location: 4
+      Offset: 64
+      Format: 39  # RGB32_SFLOAT
+      Stream: 0
+    Streams:
+    - Stride: 80
+      BindingIndex: 0
+      StepRate: 0             # 0=PerVertex 1=PerInstance
+
+  # Input Assembly
+  InputAssembly:
+    Topology: 3               # ETopology::TriangleList
+    TesselationPointCount: 0
+    PrimitiveRestart: 0       # EPrimitiveRestart::Disabled
+
+  # Rasterization
+  Rasterization:
+    CullMode: 0               # ECullMode::None - All faces contribute to shadows.
+    EnableDepthClamp: false 
+    FillMode: 0               # EFillMode::Solid
+    FrontFace: 1              # EFrontFaceWinding::CounterClockwise
+    DepthBias:
+      Constant: 0.0
+      Clamp: 0.0
+      Slope: 0.0
+      Enabled: true
+
+  # Multisample:
+  Multisample:
+    Enabled: false
+
+  # Output Merger
+  OutputMerger:
+    ColorAttachments:
+    DepthAttachment:
+      RenderTarget: "Shadow"
+      CompareOp: 5            # ECompareOp::Less
+      EnableWrite: true
+    StencilAttachment:
+      Front:
+        CompareOp: 0          # ECompareOp::None
+        FailOp: 0             # EStencilOp::Keep
+        PassOp: 0             # EStencilOp::Keep
+        DepthFailOp: 0        # EStencilOp::Keep
+        WriteMask: 0        
+        CompareMask: 0
+      Back:
+        CompareOp: 0          # ECompareOp::None
+        FailOp: 0             # EStencilOp::Keep
+        PassOp: 0             # EStencilOp::Keep
+        DepthFailOp: 0        # EStencilOp::Keep
+        WriteMask: 0        
+        CompareMask: 0

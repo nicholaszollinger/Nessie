@@ -49,6 +49,8 @@ Assets:
     Path: "SkyboxShader.yaml"
   - AssetID: 1002
     Path: "PBRShader.yaml"
+  - AssetID: 1003
+    Path: "ShadowPass.yaml"
 
   Meshes:
   - AssetID: 3000
@@ -84,11 +86,19 @@ Assets:
 
     # Copper Sphere
     - Transform:
-        Position: [-1.0, 1.0, 0.0]
+        Position: [-1.0, 0.5, 0.0] # -1.0, 1.0, 0.0
         Rotation: [0, 0, 0]
         Scale: [1, 1, 1]
       Mesh: 3
       Material: 5002
+
+    # Vase
+    - Transform:
+        Position: [-2.0, 0, 0.0]
+        Rotation: [90, 0, 0]
+        Scale: [1.5, 1.5, 1.5]
+      Mesh: 3000
+      Material: 18446744073709551615 # Invalid to use the Mesh's default material.
 
     # Plane
     - Transform:
@@ -96,14 +106,6 @@ Assets:
         Rotation: [0, 0, 0]
         Scale: [1, 1, 1]
       Mesh: 2
-      Material: 18446744073709551615 # Invalid to use the Mesh's default material.
-
-    # Vase
-    - Transform:
-        Position: [-2.0, 1.0, 0.0]
-        Rotation: [90, 0, 0]
-        Scale: [1.5, 1.5, 1.5]
-      Mesh: 3000
       Material: 18446744073709551615 # Invalid to use the Mesh's default material.
 
 # Scene Settings

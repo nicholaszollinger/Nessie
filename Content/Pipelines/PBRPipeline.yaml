@@ -18,39 +18,75 @@ GraphicsPipeline:
         DescriptorCount: 1
         DescriptorType: 7   # EDescriptorType::StorageBuffer
         Stages: 128         # EPipelineStageBits::FragmentShader
-    # Lighting
+
+    # Lighting Set
     - Bindings:
+      # LightCount
       - Index: 0
         DescriptorCount: 1
         DescriptorType: 6   # EDescriptorType::UniformBuffer
         Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Directional Lights
       - Index: 1
-        DescriptorCount: 1
-        DescriptorType: 7   # EDescriptorType::StorageBuffer
-        Stages: 128         # EPipelineStageBits::FragmentShader
-      - Index: 2
         DescriptorCount: 1
         DescriptorType: 7   # EDescriptorType::StorageBuffer
         Stages: 128         # EPipelineStageBits::FragmentShader
 
-    # Sampler and Texture Maps
+      # Point Lights
+      - Index: 2
+        DescriptorCount: 1
+        DescriptorType: 7   # EDescriptorType::StorageBuffer
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      
+    # Shadow Set:
     - Bindings:
+      # Shadow Map Sampler
       - Index: 0
         DescriptorCount: 1
         DescriptorType: 0   # EDescriptorType::Sampler
         Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Shadow Map Image
       - Index: 1
         DescriptorCount: 1
         DescriptorType: 2   # EDescriptorType::Image
         Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Shadow Data Uniform
+      - Index: 2
+        DescriptorCount: 1
+        DescriptorType: 6   # EDescriptorType::UniformBuffer
+        Stages: 128         # EPipelineStageBits::FragmentShader
+      
+
+    # Sampler and Texture Maps
+    - Bindings:
+      # Texture Sampler
+      - Index: 0
+        DescriptorCount: 1
+        DescriptorType: 0   # EDescriptorType::Sampler
+        Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Base Color Map Image
+      - Index: 1
+        DescriptorCount: 1
+        DescriptorType: 2   # EDescriptorType::Image
+        Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Normal Map Image
       - Index: 2
         DescriptorCount: 1
         DescriptorType: 2   # EDescriptorType::Image
         Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Roughness/Metallic Map Image
       - Index: 3
         DescriptorCount: 1
         DescriptorType: 2   # EDescriptorType::Image
         Stages: 128         # EPipelineStageBits::FragmentShader
+
+      # Emissive Map Image
       - Index: 4
         DescriptorCount: 1
         DescriptorType: 2   # EDescriptorType::Image

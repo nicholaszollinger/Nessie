@@ -14,8 +14,8 @@ namespace nes
     {
     public:
         Plane() = default;
-        explicit    Plane(const Vec4& normalAndConstant);
-        Plane(const Vec3 normal, const float constant);
+        Plane(const Vec4& normalAndConstant) : m_normalAndConstant(normalAndConstant) {}
+        Plane(const Vec3 normal, const float constant) : m_normalAndConstant(normal, constant) {}
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Construct a plane from a point and normal. 
@@ -90,7 +90,7 @@ namespace nes
         /// @brief : Returns the intersection point between 3 planes. Returns false if there is no single
         ///     intersection point.
         //----------------------------------------------------------------------------------------------------
-        static inline bool  IntersectPlanes(const Plane& plane1, const Plane& plane2, const Plane& plane3, Vec3& outPoint);
+        static bool         IntersectPlanes(const Plane& plane1, const Plane& plane2, const Plane& plane3, Vec3& outPoint);
         
     private:
         Vec4                m_normalAndConstant; /// XYZ = normal, W = constant. Point X is on the plane: x.Dot(normal) + constant = 0.

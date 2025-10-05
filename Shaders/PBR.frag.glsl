@@ -7,6 +7,35 @@ const float kEpsilon = 1e-6;
 const float kSmallEpsilon = 1e-15;
 const float kRf0Dialectrics = 0.04;
 
+const mat4 kShadowBiasMatrix = mat4
+(
+    0.5, 0.0, 0.0, 0.0,
+    0.0, 0.5, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.5, 0.5, 0.0, 1.0
+);
+
+// Poisson disk samples for smoother shadows with fewer samples
+const vec2 poissonDisk[16] = vec2[]
+(
+    vec2(-0.94201624, -0.39906216),
+    vec2(0.94558609, -0.76890725),
+    vec2(-0.094184101, -0.92938870),
+    vec2(0.34495938, 0.29387760),
+    vec2(-0.91588581, 0.45771432),
+    vec2(-0.81544232, -0.87912464),
+    vec2(-0.38277543, 0.27676845),
+    vec2(0.97484398, 0.75648379),
+    vec2(0.44323325, -0.97511554),
+    vec2(0.53742981, -0.47373420),
+    vec2(-0.26496911, -0.41893023),
+    vec2(0.79197514, 0.19090188),
+    vec2(-0.24188840, 0.99706507),
+    vec2(-0.81409955, 0.91437590),
+    vec2(0.19984126, 0.78641367),
+    vec2(0.14383161, -0.14100790)
+);
+
 struct PointLight
 {
     vec3 position;
@@ -22,6 +51,8 @@ struct DirectionalLight
     float intensity;    // Lux (lumens per m^2).
     vec3 color;         // Color
 };
+
+#define DEFAULT_SHADOW_AMBIENT 0.025
 
 //-----------------------------------
 // Set 0: Camera UBO
@@ -78,17 +109,30 @@ layout (set = 2, binding = 2) readonly buffer PointLightSSBO
     PointLight u_pointLights[];
 };
 
-// [TODO]: Spot Lights, Area Lights. 
+// [TODO]: Spot Lights, Area Lights.
 
 //-----------------------------------
-// Set 3: Sampler and Material Maps
+// Set 3: Shadow Data
 //-----------------------------------
-layout (set = 3, binding = 0) uniform sampler       u_sampler;
-layout (set = 3, binding = 1) uniform texture2D     u_baseColorMap;
-layout (set = 3, binding = 2) uniform texture2D     u_normalMap;
-layout (set = 3, binding = 3) uniform texture2D     u_roughnessMetallicMap;
-layout (set = 3, binding = 4) uniform texture2D     u_emissionMap;
+layout (set = 3, binding = 0) uniform sampler           u_shadowSampler;
+layout (set = 3, binding = 1) uniform texture2DArray    u_shadowMap;
+layout (set = 3, binding = 2) uniform ShadowUBO
+{
+    mat4    cascadeViewProjMatrices[4];
+    vec4    splitDepths;
+    uint    numCascades;
+    float   bias;
+} u_shadow;
 
+//-----------------------------------
+// Set 4: Sampler and Material Maps
+//-----------------------------------
+layout (set = 4, binding = 0) uniform sampler       u_sampler;
+layout (set = 4, binding = 1) uniform texture2D     u_baseColorMap;
+layout (set = 4, binding = 2) uniform texture2D     u_normalMap;
+layout (set = 4, binding = 3) uniform texture2D     u_roughnessMetallicMap;
+layout (set = 4, binding = 4) uniform texture2D     u_emissionMap;
+              
 //------------------------------------
 // Push Constants
 //------------------------------------
@@ -106,6 +150,7 @@ layout (location = 1) in vec3 inWorldNormal;
 layout (location = 2) in vec2 inTexCoord;
 layout (location = 3) in vec3 inWorldTangent;
 layout (location = 4) in vec3 inWorldBitangent;
+layout (location = 5) in vec3 inViewPosition;
 
 // Fragment Output:
 layout (location = 0) out vec4 outColor;
@@ -427,6 +472,114 @@ vec3 GetNormalFromMap(MaterialUBO material)
     return normalize(TBN * tangentNormal);
 }
 
+// Get the Shadow Cascade index for the given position in view space. 
+uint GetCascadeIndex(float viewPositionZ)
+{
+    // ViewPositionZ is negative for objects in front of camera
+    // SplitDepths are negative and ordered from near (less negative) to far (more negative)
+    uint result = 0;
+    
+    for (uint i = 0; i < u_shadow.numCascades; ++i)
+    {
+        if (viewPositionZ < u_shadow.splitDepths[i])
+        {
+            return i;
+        }
+    }
+    
+    return u_shadow.numCascades - 1;
+}
+
+// Samples the shadow map given the position in light space.
+float GetShadowFactor(vec4 lightSpacePos, vec2 offset, uint cascadeIndex)
+{
+    float shadow = 1.0;
+
+    // Convert from NDC [-1, 1] to texture coordinates [0, 1]
+    vec3 projCoords = lightSpacePos.xyz * 0.5 + 0.5;
+
+    // Clamp to valid texture range
+    projCoords.xy = clamp(projCoords.xy, 0.0, 1.0);
+    
+    // Bounds check:
+    if (projCoords.z > 0.0 && projCoords.z < 1.0)
+    {
+        // Here, the cascade index acts as the layer of the shadow map.
+        float dist = texture(sampler2DArray(u_shadowMap, u_shadowSampler), vec3(projCoords.xy + offset, cascadeIndex)).r;
+
+        // If current depth (minus bias) is GREATER than stored depth, it's in shadow
+        if (lightSpacePos.w > 0 && lightSpacePos.z - u_shadow.bias > dist)
+        {
+            shadow = DEFAULT_SHADOW_AMBIENT;
+        }
+    }
+    return shadow;
+}
+
+// Samples and averages surrounding texels in a grid pattern to get a smoother transition.  
+float GetShadowFactorPCF(vec4 lightSpacePos, uint cascadeIndex)
+{
+    ivec3 textureDimensions = textureSize(sampler2DArray(u_shadowMap, u_shadowSampler), 0);
+    const float scale = 1.0;
+    float texelSizeX = scale * 1.0 / float(textureDimensions.x);
+    float texelSizeY = scale * 1.0 / float(textureDimensions.y);
+    
+    // Determines the number of samples to take.
+    // [-range -> range] in width and height.
+    const int range = 2; 
+    
+    float shadowFactor = 0.0;
+    int count = 0;
+    
+    // Sample 9 pixels, the center being this pixel
+    for (int x = -range; x <= range; ++x)
+    {
+        for (int y = -range; y <= range; ++y)
+        {
+            shadowFactor += GetShadowFactor(lightSpacePos, vec2(texelSizeX * x, texelSizeY * y), cascadeIndex);
+            count++;
+        }
+    }
+    
+    return shadowFactor / count;
+}
+
+// Uses a poisson disk to sample the surrounding area of texels to create a softer edge.
+float GetShadowFactorPoisson(vec4 lightSpacePos, uint cascadeIndex)
+{
+    ivec3 textureDimensions = textureSize(sampler2DArray(u_shadowMap, u_shadowSampler), 0);
+    const float scale = 1.0;
+    vec2 texelSize = vec2(scale * 1.0 / float(textureDimensions.x), scale * 1.0 / float(textureDimensions.y));
+    
+    float shadowFactor = 0.0;
+    const float spread = 3.0; // Adjust this to control shadow softness (1.0 to 5.0)
+
+    // Use the Poisson Disk to sample from
+    for (int i = 0; i < 16; ++i)
+    {
+        vec2 offset = poissonDisk[i] * texelSize * spread;
+        shadowFactor += GetShadowFactor(lightSpacePos, offset, cascadeIndex);
+    }
+    shadowFactor /= 16.0;
+
+    return shadowFactor;
+}
+
+float CalculateShadow(vec3 worldPosition, vec3 N, vec3 L, float viewPositionZ)
+{
+    uint cascadeIndex = GetCascadeIndex(viewPositionZ);
+    vec4 lightSpacePos = (u_shadow.cascadeViewProjMatrices[cascadeIndex]) * vec4(worldPosition, 1.0);
+    
+    // Perform perspective division:
+    lightSpacePos.xyz /= lightSpacePos.w;
+    
+    //float shadow = GetShadowFactor(lightSpacePos, vec2(0.0), cascadeIndex);
+    //float shadow = GetShadowFactorPCF(lightSpacePos, cascadeIndex);
+    float shadow = GetShadowFactorPoisson(lightSpacePos, cascadeIndex);
+    
+    return shadow;
+}
+
 void main()
 {
     MaterialUBO material = u_materials[u_instance.materialIndex];
@@ -445,22 +598,28 @@ void main()
     // Albedo / Rf0.
     vec3 albedo = texture(sampler2D(u_baseColorMap, u_sampler), inTexCoord).rgb * material.baseColorScale;
     vec3 Rf0 = mix(vec3(kRf0Dialectrics), albedo, metallic);
-
+    
     // Calculate Lighting:
     vec3 lightSum = vec3(0.0);
 
     // DIRECTIONAL LIGHTS
-    // - Shadow work goes here:
     for (uint i = 0; i < u_lightCounts.directional; ++i)
     {
         DirectionalLight light = u_directionalLights[i];
         vec3 L = -light.direction;
         float NoL = Saturate(dot(N, L));
         
+        // Skip if the surface doesn't face the light.
+        if (NoL <= 0.0)
+            continue;
+        
         // Convert illuminance (lux) to radiance
         vec3 radiance = light.color * light.intensity / kPi;
         
-        lightSum += BRDF(N, V, L, albedo, metallic, roughness, Rf0) * radiance;
+        // Calculate Shadow (directional lights are assumed to be shadow casting).
+        float shadow = CalculateShadow(inWorldPosition, N, L, inViewPosition.z);
+        
+        lightSum += BRDF(N, V, L, albedo, metallic, roughness, Rf0) * radiance * (NoL * shadow);
     }
     
     // POINT LIGHTS
@@ -470,7 +629,7 @@ void main()
         vec3 L = light.position - inWorldPosition;
         float distance = length(L);
         L /= distance;
-        
+
         float luminousIntensity = light.intensity / (4.0 * kPi);
 
         float attenuation = GetPhotometricAtt(distance, light.radius);
@@ -482,24 +641,42 @@ void main()
     // [TODO]: SPOT LIGHTS
 
     // [TODO]: AREA LIGHTS
-    
+
     // [TODO]: IMAGE BASED LIGHTING (IBL) - Environmental Lighting
     // - When you add IBL, replace the simple ambient below with proper environment lighting
-    
-    // Sky Ambient Light (separate from directional light.
+
+    // Sky Ambient Light (separate from directional light)
     //const vec3 skyColor = vec3(0.4, 0.7, 1.0);
     //const float skyIntensity = 8000.0; // lux
     //vec3 ambient = albedo * skyColor * (skyIntensity / kPi);
-    
+
     // Simple Ambient:
     // This ensures the base color is always visible
     vec3 ambient = albedo * 0.03; // 3% ambient contribution
 
-    // Resulting color:
-    // "Color = Direct Lighting + Indirect Lighting + Emissive"
+    // Resulting color = Direct Lighting + Indirect Lighting + Emissive
     vec3 color = lightSum + ambient + emissive;
-    
+
+    // Convert to linear color:
     color = HDRToLinear(color * u_camera.exposureFactor);
 
     outColor = vec4(color, 1.0);
+    
+//    // Debug Visualize Cascade Index
+//    uint cascadeIndex = GetCascadeIndex(inViewPosition.z);
+//    switch (cascadeIndex) 
+//    {
+//        case 0 :
+//            outColor.rgb *= vec3(1.0f, 0.25f, 0.25f);
+//            break;
+//        case 1 :
+//            outColor.rgb *= vec3(0.25f, 1.0f, 0.25f);
+//            break;
+//        case 2 :
+//            outColor.rgb *= vec3(0.25f, 0.25f, 1.0f);
+//            break;
+//        case 3:
+//            outColor.rgb *= vec3(1.0f, 1.0f, 0.25f);
+//            break;
+//    }
 }

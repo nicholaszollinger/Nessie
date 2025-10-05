@@ -160,6 +160,14 @@ namespace nes
         void                    ResolveImage(const DeviceImage& srcImage, const ImageRegionDesc& srcRegion, DeviceImage& dstImage, const ImageRegionDesc& dstRegion);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the dynamic depth bias values for the current pipeline.
+        ///	@param constant : Value that is always applied.
+        ///	@param slope : Value applied based on the polygon's slope.
+        ///	@param clamp : If non-zero, the bias will be clamped to this min or max value.
+        //----------------------------------------------------------------------------------------------------
+        void                    SetDepthBias(const float constant, const float slope, const float clamp = 0.f) const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Vulkan command buffer type.
         //----------------------------------------------------------------------------------------------------
         const vk::raii::CommandBuffer& GetVkCommandBuffer() const { return m_buffer; }
