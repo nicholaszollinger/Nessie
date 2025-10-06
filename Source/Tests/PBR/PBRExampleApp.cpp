@@ -12,6 +12,8 @@
 #include "Nessie/Graphics/Texture.h"
 #include "Nessie/Input/InputManager.h"
 
+#define ANIMATE_SUN 1
+
 bool PBRExampleApp::Internal_AppInit()
 {
     auto& device = nes::DeviceManager::GetRenderDevice();
@@ -76,6 +78,7 @@ void PBRExampleApp::Internal_AppUpdate(const float timeStep)
 {
     UpdateCamera(timeStep);
 
+#if ANIMATE_SUN
     // Simulate the Sun
     static constexpr float kDayDuration = 20.f;
     
@@ -110,6 +113,7 @@ void PBRExampleApp::Internal_AppUpdate(const float timeStep)
     m_scene.m_directionalLights[0].m_direction = nes::Float3(lightDir.x, lightDir.y, lightDir.z);
     m_scene.m_directionalLights[0].m_color = nes::Float3(color.x, color.y, color.z);
     m_scene.m_directionalLights[0].m_intensity = intensity;
+#endif
 }
 
 void PBRExampleApp::OnEvent(nes::Event& e)

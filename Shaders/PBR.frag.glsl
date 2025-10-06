@@ -53,6 +53,7 @@ struct DirectionalLight
 };
 
 #define DEFAULT_SHADOW_AMBIENT 0.025
+#define SHOW_CASCADES 0 
 
 //-----------------------------------
 // Set 0: Camera UBO
@@ -662,21 +663,23 @@ void main()
 
     outColor = vec4(color, 1.0);
     
-//    // Debug Visualize Cascade Index
-//    uint cascadeIndex = GetCascadeIndex(inViewPosition.z);
-//    switch (cascadeIndex) 
-//    {
-//        case 0 :
-//            outColor.rgb *= vec3(1.0f, 0.25f, 0.25f);
-//            break;
-//        case 1 :
-//            outColor.rgb *= vec3(0.25f, 1.0f, 0.25f);
-//            break;
-//        case 2 :
-//            outColor.rgb *= vec3(0.25f, 0.25f, 1.0f);
-//            break;
-//        case 3:
-//            outColor.rgb *= vec3(1.0f, 1.0f, 0.25f);
-//            break;
-//    }
+#if SHOW_CASCADES
+    // Debug Visualize Cascade Index
+    uint cascadeIndex = GetCascadeIndex(inViewPosition.z);
+    switch (cascadeIndex) 
+    {
+        case 0 :
+            outColor.rgb *= vec3(1.0f, 0.25f, 0.25f);
+            break;
+        case 1 :
+            outColor.rgb *= vec3(0.25f, 1.0f, 0.25f);
+            break;
+        case 2 :
+            outColor.rgb *= vec3(0.25f, 0.25f, 1.0f);
+            break;
+        case 3:
+            outColor.rgb *= vec3(1.0f, 1.0f, 0.25f);
+            break;
+    }
+#endif
 }
