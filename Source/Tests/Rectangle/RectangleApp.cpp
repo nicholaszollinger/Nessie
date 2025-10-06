@@ -52,6 +52,7 @@ bool RectangleApp::Internal_AppInit()
         desc.m_format = nes::Renderer::GetSwapchainFormat();
         desc.m_sampleCount = 0; // Leaving as zero sets it to the maximum.
         desc.m_planes = nes::EImagePlaneBits::Color;
+        desc.m_usage = nes::EImageUsageBits::ColorAttachment;
         desc.m_size.x = swapchainExtent.width;
         desc.m_size.y = swapchainExtent.height;
         desc.m_clearValue = nes::ClearColorValue(0.01f, 0.01f, 0.01f, 1.0f);

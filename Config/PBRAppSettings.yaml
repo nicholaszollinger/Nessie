@@ -1,7 +1,9 @@
 # PBR Application Settings
 CameraSettings:
-  Position: [-10, 5, -10]
-  Rotation: [20, 45, 0]
+  Position: [-0.12, 1.14, -2.25]
+  Rotation: [17.0, 7.0, 0.0]
+  NearPlane: 0.01
+  FarPlane: 1000.0
   FOV: 65 # Degrees
   MoveSpeed: 50.0
   Sensitivity: 1.25
@@ -15,6 +17,7 @@ RenderTargets:
     SampleCount: 0  # Zero to use the max supported by the format.
     ClearColor: [0.01, 0.01, 0.01, 1.0]
     Size: [0, 0]    # Zero size to use the swapchain dimensions.
+    Usage: 4        # EImageUsageBits::ColorAttachment (4)
   Depth:
     FormatMinBits: 24
     FormatRequireStencil: true  
@@ -22,6 +25,17 @@ RenderTargets:
     ClearDepth: 1.0
     ClearStencil: 0
     Size: [0, 0]        # Zero size to use the swapchain dimensions.
+    Usage: 8            # EImageUsageBits::DepthStencilAttachment (8)
+
+ShadowSettings:
+  DepthShader: 1003
+  FormatMinBits: 32
+  NumCascades: 4            # How many cascades to generate. [1, 4]
+  MaxShadowDistance: 100.0  # Objects past this distance from the camera will not have shadows.
+  ImageResolution: 4096       # WxH of the first cascade.
+  CascadeSplitLambda: 0.5
+  DepthBiasConstant: 0.0
+  DepthBiasSlope: 0.0
 
 Pipelines:
   Grid: "Pipelines\\GridPipeline.yaml"

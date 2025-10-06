@@ -10,7 +10,9 @@ namespace nes
         , m_view(std::move(other.m_view))
         , m_desc(std::move(other.m_desc))
     {
-        //
+        // The image pointer is invalidated due to the move above.
+        // We have to reset that pointer.
+        m_view.GetImageDesc().m_pImage = &m_image;
     }
 
     RenderTarget& RenderTarget::operator=(std::nullptr_t)
@@ -28,6 +30,11 @@ namespace nes
             m_pDevice = other.m_pDevice;
             m_image = std::move(other.m_image);
             m_view = std::move(other.m_view);
+
+            // The image pointer is invalidated due to the move above.
+            // We have to reset that pointer.
+            m_view.GetImageDesc().m_pImage = &m_image;
+            
             m_desc = std::move(other.m_desc);
 
             other.m_pDevice = nullptr;
@@ -44,7 +51,7 @@ namespace nes
     RenderTarget::RenderTarget(RenderDevice& device, const RenderTargetDesc& desc)
         : m_pDevice(&device)
         , m_desc(desc)
-    {   
+    {
         // Ensure that the sample count is valid.
         if (desc.m_sampleCount == 0)
             SetMaxSupportedSampleCount();
@@ -60,7 +67,7 @@ namespace nes
         FreeResources();
 
         const bool isColor = (m_desc.m_planes & EImagePlaneBits::Color) != 0;
-
+        
         // Create the image desc:
         nes::ImageDesc imageDesc{};
         imageDesc.m_mipCount = 1;
@@ -68,7 +75,7 @@ namespace nes
         imageDesc.m_layerCount = 1;
         imageDesc.m_sampleCount = m_desc.m_sampleCount;
         imageDesc.m_type = nes::EImageType::Image2D;
-        imageDesc.m_usage = isColor? EImageUsageBits::ColorAttachment : EImageUsageBits::DepthStencilAttachment;
+        imageDesc.m_usage = m_desc.m_usage;
         imageDesc.m_width = width;
         imageDesc.m_height = height;
         imageDesc.m_depth = 1;
@@ -79,7 +86,7 @@ namespace nes
         allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
         m_image = nes::DeviceImage(*m_pDevice, allocDesc);
 
-        // Create the image descriptor (image view):
+        // Create the attachment view.
         nes::Image2DViewDesc imageViewDesc{};
         imageViewDesc.m_format = m_desc.m_format;
         imageViewDesc.m_pImage = &m_image;

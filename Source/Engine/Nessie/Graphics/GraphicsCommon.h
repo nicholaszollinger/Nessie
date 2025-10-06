@@ -1425,16 +1425,13 @@ namespace nes
     //     bias = min(bias, clamp)
     // else if (clamp < 0)
     //     bias = max(bias, clamp)
-    // 
-    // enabled if constant != 0 or slope != 0
     //----------------------------------------------------------------------------------------------------
     struct DepthBiasDesc
     {
-        float           m_constant  = 0.f;
-        float           m_clamp     = 0.f;
-        float           m_slope     = 0.f;
-
-        bool            IsEnabled() const { return m_constant != 0.f || m_slope != 0.f; }
+        float           m_constant  = 0.f;      // Always applied.
+        float           m_clamp     = 0.f;      // If non-zero, clamps the bias value to either a minimum or maximum.
+        float           m_slope     = 0.f;      // Applied based on the polygon's slope.
+        bool            m_enabled   = false;    // If enabled, the Depth Bias values are expected to be set dynamically in the frame (CommandBuffer::SetDepthBias()).
     };
 
     //----------------------------------------------------------------------------------------------------

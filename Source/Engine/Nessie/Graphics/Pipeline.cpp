@@ -152,7 +152,7 @@ namespace nes
             .setPolygonMode(GetVkPolygonMode(descRasterizer.m_fillMode))
             .setCullMode(GetVkCullMode(descRasterizer.m_cullMode))
             .setFrontFace(GetVkFrontFace(descRasterizer.m_frontFace))
-            .setDepthBiasEnable(descRasterizer.m_depthBias.IsEnabled())
+            .setDepthBiasEnable(descRasterizer.m_depthBias.m_enabled)
             .setDepthBiasClamp(descRasterizer.m_depthBias.m_clamp)
             .setDepthBiasConstantFactor(descRasterizer.m_depthBias.m_constant)
             .setDepthBiasSlopeFactor(descRasterizer.m_depthBias.m_slope)
@@ -258,10 +258,9 @@ namespace nes
 
         if (vertexInputState.pVertexAttributeDescriptions)
             dynamicStates[dynamicStateCount++] = vk::DynamicState::eVertexInputBindingStride;
-
-        // [TODO]:
-        // if (rasterizationState.depthBiasEnable)
-        //     dynamicStates[dynamicStateCount++] = vk::DynamicState::eDepthBias;
+        
+        if (rasterizationState.depthBiasEnable)
+            dynamicStates[dynamicStateCount++] = vk::DynamicState::eDepthBias;
         // if (depthStencilState.depthBoundsTestEnable)
         //     dynamicStates[dynamicStateCount++] = vk::DynamicState::eDepthBounds;
         // if (depthStencilState.stencilTestEnable)
