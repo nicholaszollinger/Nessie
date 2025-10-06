@@ -25,12 +25,12 @@ Download the git repository and use the following build scripts:
 # What I am Working On:
 ### Immediate:
 This Fall, the aim is finish rendering features and create the Editor UI!
-- Renderer Refactor - Vulkan Abstraction ⌛
-    - PBR Pipeline ✅
-    - Shadows ⌛
-- ECS refactor - wrapping Entt.
+- PBR Pipeline ✅
+- Cascaded Shadow Mapping ✅
+- ECS refactor - wrapping Entt. ⌛
 - Editor UI - using ImGui.
-- 3D Demo Scene showing off features!
+- Height Map Terrain
+- Grass Renderer
 
 ### Next Year (Unless I can get to these sooner):
 - Full Jolt Physics Integration
