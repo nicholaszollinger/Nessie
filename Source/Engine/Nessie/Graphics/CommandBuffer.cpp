@@ -533,6 +533,11 @@ namespace nes
         m_buffer.resolveImage2(info);
     }
 
+    void CommandBuffer::SetDepthBias(const float constant, const float slope, const float clamp) const
+    {
+        m_buffer.setDepthBias(constant, clamp, slope);
+    }
+
     NativeVkObject CommandBuffer::GetNativeVkObject() const
     {
         return NativeVkObject(*m_buffer, vk::ObjectType::eCommandBuffer);

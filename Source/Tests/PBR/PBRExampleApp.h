@@ -11,12 +11,15 @@
 #include "Nessie/Graphics/RenderTarget.h"
 #include "Helpers/Scene.h"
 #include "Helpers/Camera.h"
+#include "Helpers/LightSpace.h"
 
 struct CameraState
 {
     nes::Vec3       m_position;         // Position of the camera.
     nes::Rotation   m_rotation{};       // Rotation of the camera.
     float           m_FOVY;             // Field of view in radians in the up direction.
+    float           m_nearPlane = 0.1f; 
+    float           m_farPlane = 1000.f; 
 };
 
 //----------------------------------------------------------------------------------------------------
@@ -40,7 +43,7 @@ private:
     //----------------------------------------------------------------------------------------------------
     /// @brief : Struct containing the number of lights per type in the variable sized storage buffers. 
     //----------------------------------------------------------------------------------------------------
-    struct alignas (64) LightCountUBO
+    struct alignas(64) LightCountUBO
     {
         static constexpr uint32     kMaxPointLights = 1024;
         static constexpr uint32     kMaxDirectionalLights = 4;
@@ -53,14 +56,24 @@ private:
         uint32                      m_areaCount = 0;
     };
 
-    // Both CameraUBO and LightUBO are 64-byte aligned.
-    static constexpr uint32         kGlobalUBOElementSize = sizeof(CameraUBO) + sizeof(LightCountUBO);
-
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Push constants for a single depth pass. 
+    //----------------------------------------------------------------------------------------------------
+    struct DepthPassPushConstants
+    {
+        nes::Mat44                  m_model;            // Object model matrix.
+        uint32                      m_cascadeIndex = 0; // The cascade index for this depth pass.
+    };
+    
+    // All types in the buffer are 64-byte aligned.
+    static constexpr uint32         kGlobalUBOElementSize = sizeof(CameraUBO) + sizeof(LightCountUBO) + sizeof(helpers::CascadedShadowMapsUBO);
+    
     struct FrameData
     {
         // Buffers & Resource Views:
         nes::Descriptor             m_cameraUBOView = nullptr;              // View of the Camera info for this frame.
         nes::Descriptor             m_lightCountUBOView = nullptr;          // View of the Light Counts for this frame.
+        nes::Descriptor             m_shadowUBOView = nullptr;              // View of the Shadow data for this frame.
         nes::Descriptor             m_pointLightsView = nullptr;            // View of the Storage Buffer of Point Lights.
         nes::Descriptor             m_directionalLightsView = nullptr;      // View of the Storage Buffer of Directional Lights.
         nes::Descriptor             m_materialUBOView = nullptr;            // View of the MaterialUBO buffer.
@@ -72,9 +85,12 @@ private:
         nes::DescriptorSet          m_cameraSet = nullptr;                  // Value for the CameraUBO
         nes::DescriptorSet          m_lightDataSet = nullptr;               // Value for LightCount and Light Array values.
         nes::DescriptorSet          m_materialDataSet = nullptr;            // Value for the ObjectBuffer.
+        nes::DescriptorSet          m_shadowPassDataSet = nullptr;          // Value for the Shadow Pass.
+        nes::DescriptorSet          m_sampledShadowDataSet = nullptr;       // Value for shadow data used in the PBR pipeline.
         
         uint64                      m_cameraBufferOffset = 0;               // Byte offset in the Global buffer for the CameraUBO for this frame. 
         uint64                      m_lightCountOffset  = 0;                // Byte offset in the Global buffer for the LightCountUBO for this frame. 
+        uint64                      m_shadowDataOffset  = 0;                // Byte offset in the Global buffer for the ShadowUBO for this frame. 
     };
 
 private:
@@ -85,6 +101,11 @@ private:
     ///     based on configuration data.
     //----------------------------------------------------------------------------------------------------
     void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file);
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Create the depth images (1 per cascade), and the shadow pipeline.
+    //----------------------------------------------------------------------------------------------------
+    void                            CreateDepthPassResources(nes::RenderDevice& device, const nes::AssetID& shaderID);
     
     //----------------------------------------------------------------------------------------------------
     /// @brief : Create the global constants buffer and the vertex/index buffers for all geometry.
@@ -112,6 +133,12 @@ private:
     //----------------------------------------------------------------------------------------------------
     void                            UpdateUniformBuffers(const nes::RenderFrameContext& context);
 
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Renders the scene from the perspective of the directional light, storing the depth data in
+    ///     the ShadowTarget's image.
+    //----------------------------------------------------------------------------------------------------
+    void                            RenderShadows(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render the skybox.
     //----------------------------------------------------------------------------------------------------
@@ -142,7 +169,6 @@ private:
     void                            LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
 
 private:
-    
     // Render Targets
     nes::RenderTarget               m_colorTarget = nullptr;
     nes::RenderTarget               m_depthTarget = nullptr;
@@ -150,7 +176,19 @@ private:
     
     // Assets:
     std::vector<nes::AssetID>       m_loadedAssets;
-    nes::DescriptorPool             m_descriptorPool = nullptr;
+
+    // Shadow Pipeline
+    nes::PipelineLayout             m_shadowPipelineLayout = nullptr;
+    nes::Pipeline                   m_shadowPipeline = nullptr;
+    nes::DeviceImage                m_shadowMap = nullptr;
+    std::vector<nes::Descriptor>    m_shadowImageViews{};
+    nes::EFormat                    m_shadowImageFormat = nes::EFormat::D32_SFLOAT;
+    uint32                          m_shadowCascadeCount = 1;
+    uint32                          m_shadowMapResolution = 4096;
+    float                           m_shadowMaxDistance = 100.f;
+    float                           m_shadowCascadeSplitLambda = 0.5f;
+    float                           m_shadowDepthBiasConstant = 1.25f;
+    float                           m_shadowDepthBiasSlope = 1.75f;
 
     // Geometry Pipeline
     nes::PipelineLayout             m_pbrPipelineLayout = nullptr;
@@ -167,13 +205,16 @@ private:
 
     // Scene Data:
     Scene                           m_scene{};
-    nes::Descriptor                 m_sampler = nullptr;
+    nes::DescriptorPool             m_descriptorPool = nullptr;
+    nes::Descriptor                 m_textureSampler = nullptr;
+    nes::Descriptor                 m_depthSampler = nullptr;
+    nes::Descriptor                 m_shadowSampledImageView = nullptr;
     std::vector<FrameData>          m_frames{};
 
     // Buffers
     nes::DeviceBuffer               m_indicesBuffer = nullptr;              // Index Data
     nes::DeviceBuffer               m_verticesBuffer = nullptr;             // Vertex Data
-    nes::DeviceBuffer               m_globalsBuffer = nullptr;              // Contains the Camera information and  
+    nes::DeviceBuffer               m_globalsBuffer = nullptr;              // Contains the Camera, LightCount and Shadow Data for each frame.  
     std::vector<nes::DescriptorSet> m_materialDescriptorSets{};
     
     // Camera Data:

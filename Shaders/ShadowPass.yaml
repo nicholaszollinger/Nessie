@@ -1,0 +1,7 @@
+# Shadow Pass Shader
+Shader:
+  Name: "ShadowPass"
+  Modules:
+  - Stage: 2 # Vertex
+    Path: "ShadowPass.vert.spv"
+    EntryPoint: "main"

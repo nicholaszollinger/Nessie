@@ -1,8 +1,10 @@
 ﻿// Frustum.h
 #pragma once
-
 #include "Nessie/Geometry/AABox.h"
 #include "Nessie/Geometry/Plane.h"
+
+#undef near
+#undef far
 
 namespace nes
 {
@@ -80,6 +82,35 @@ namespace nes
             }
 
             return true;
+        }
+
+        inline void GetBounds(nes::Vec3& outMinBounds, nes::Vec3& outMaxBounds) const
+        {
+            outMinBounds = nes::Vec3(FLT_MAX);
+            outMaxBounds = nes::Vec3(-FLT_MAX);
+            
+            using PlaneCombo = std::array<int, 3>;
+            static constexpr std::array<PlaneCombo, 8> kCornerCombos = 
+            {
+                PlaneCombo{0, 3, 1}, // Near-Left-Top
+                PlaneCombo{0, 3, 2}, // Near-Left-Bottom
+                PlaneCombo{0, 4, 1}, // Near-Right-Top
+                PlaneCombo{0, 4, 2}, // Near-Right-Bottom
+                PlaneCombo{5, 3, 1}, // Far-Left-Top
+                PlaneCombo{5, 3, 2}, // Far-Left-Bottom
+                PlaneCombo{5, 4, 1}, // Far-Right-Top
+                PlaneCombo{5, 4, 2}, // Far-Right-Bottom
+            };
+
+            for (const auto& combo : kCornerCombos)
+            {
+                nes::Vec3 corner;
+                if (Plane::IntersectPlanes(m_planes[combo[0]], m_planes[combo[1]], m_planes[combo[2]], corner))
+                {
+                    outMinBounds = nes::Vec3::Min(outMinBounds, corner);
+                    outMaxBounds = nes::Vec3::Max(outMaxBounds, corner);
+                }
+            }
         }
         
     private:

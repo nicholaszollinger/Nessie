@@ -38,7 +38,6 @@ namespace nes
     class   CommandBuffer;
     class   Swapchain;
     struct  SwapchainDesc;
-    class   ShaderLibrary;
     class   Shader;
     class   ShaderModule;
     struct  ShaderModuleDesc;

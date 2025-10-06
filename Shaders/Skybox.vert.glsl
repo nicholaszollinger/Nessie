@@ -27,5 +27,9 @@ void main()
     
     // We are removing the 4th column from the viewMatrix because we don't want the translation 
     // from the view Matrix, but we do want the 4th column of the projection matrix to be applied
-    gl_Position = u_camera.proj * mat4(mat3(u_camera.view)) * vec4(inVertPosition, 1.f);
+    vec4 position = u_camera.proj * mat4(mat3(u_camera.view)) * vec4(inVertPosition, 1.f);
+    
+    // Force the skybox at maximum depth
+    // By setting z = w, after perspective division (z/w) we get z = 1.0
+    gl_Position = position.xyww;
 }

@@ -312,6 +312,12 @@ namespace nes
         return m_imageDesc;
     }
 
+    DescriptorImageDesc& Descriptor::GetImageDesc()
+    {
+        NES_ASSERT(IsImageType());
+        return m_imageDesc;
+    }
+
     vk::ImageView Descriptor::GetVkImageView() const
     {
         NES_ASSERT(IsImageType());

@@ -12,6 +12,8 @@
 #include "Nessie/Graphics/Texture.h"
 #include "Nessie/Input/InputManager.h"
 
+#define ANIMATE_SUN 1
+
 bool PBRExampleApp::Internal_AppInit()
 {
     auto& device = nes::DeviceManager::GetRenderDevice();
@@ -60,6 +62,8 @@ bool PBRExampleApp::Internal_AppInit()
         m_cameraAperture = cameraSettings["Aperture"].as<float>(1.0f);
         m_cameraShutterSpeed = 1.f / cameraSettings["ShutterSpeedSeconds"].as<float>(125.f);
         m_cameraISO = cameraSettings["ISO"].as<float>(100.f);
+        m_camera.m_nearPlane = cameraSettings["NearPlane"].as<float>(0.1f);
+        m_camera.m_farPlane = cameraSettings["FarPlane"].as<float>(100.f);
     }
     
     CreateRenderTargetsAndPipelines(device, file);
@@ -73,6 +77,43 @@ bool PBRExampleApp::Internal_AppInit()
 void PBRExampleApp::Internal_AppUpdate(const float timeStep)
 {
     UpdateCamera(timeStep);
+
+#if ANIMATE_SUN
+    // Simulate the Sun
+    static constexpr float kDayDuration = 20.f;
+    
+    const float dayProgress = nes::math::ModF(static_cast<float>(GetTimeSinceStartup()), kDayDuration) / kDayDuration;
+    const float angle = dayProgress * 2.f * nes::math::Pi(); // [0, 2pi]
+    
+    // Horizontal rotation (east to west)
+    const float azimuth = angle;
+    
+    // Vertical arc (sun goes below horizon)
+    const float elevation = (nes::math::Sin(angle) - 0.2f) * 1.2f;
+    
+    // Convert spherical coordinates to direction vector
+    nes::Vec3 lightDir = nes::Vec3
+    (
+        nes::math::Cos(azimuth) * nes::math::Cos(elevation)
+        , -nes::math::Sin(elevation)
+        ,nes::math::Sin(azimuth) * nes::math::Cos(elevation)
+    );
+    lightDir.Normalize();
+    
+    // Calculate Intensity based on height
+    static constexpr float kSunMaxLux = 120000.f;
+    float sunHeight = -lightDir.y; // 1.0 = straight down, -1.0 = straight up
+    const float intensity = nes::math::ClampNormalized(sunHeight * 2.f) * kSunMaxLux;
+    
+    // Add Warmer colors at sunrise/sunset.
+    const float horizonFactor = 1.0f - nes::math::Abs(sunHeight);
+    // Cool night light: (0.7f, 0.8f, 1.f)
+    nes::Vec3 color = nes::Vec3::Lerp(nes::Vec3(1.f, 1.f, 0.95f), nes::Vec3(1.0f, 0.6f, 0.3f), horizonFactor);
+    
+    m_scene.m_directionalLights[0].m_direction = nes::Float3(lightDir.x, lightDir.y, lightDir.z);
+    m_scene.m_directionalLights[0].m_color = nes::Float3(color.x, color.y, color.z);
+    m_scene.m_directionalLights[0].m_intensity = intensity;
+#endif
 }
 
 void PBRExampleApp::OnEvent(nes::Event& e)
@@ -107,6 +148,9 @@ void PBRExampleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const 
 {
     // Update our uniform buffer:
     UpdateUniformBuffers(context);
+
+    // Shadow Pass
+    RenderShadows(commandBuffer, context);
 
     // We render to this higher sampled image - we will resolve this with the swapchain image at the end of the frame.
     auto& msaaImage = m_colorTarget.GetImage();
@@ -195,6 +239,13 @@ void PBRExampleApp::Internal_AppShutdown()
     m_depthTarget = nullptr;
     m_frames.clear();
 
+    m_textureSampler = nullptr;
+    m_depthSampler = nullptr;
+    
+    m_shadowPipelineLayout = nullptr;
+    m_shadowPipeline = nullptr;
+    m_shadowSampledImageView = nullptr;
+
     m_verticesBuffer = nullptr;
     m_indicesBuffer = nullptr;
     
@@ -227,7 +278,7 @@ void PBRExampleApp::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, c
         
         m_colorTarget = LoadColorRenderTarget(renderTargets["Color"], "Color", device,  swapchainColorFormat, swapchainSize);
         m_depthTarget = LoadDepthRenderTarget(renderTargets["Depth"], "Depth", device, swapchainSize);
-
+        
         // Add to the registry:
         m_renderTargetRegistry.emplace(m_colorTarget.GetName(), &m_colorTarget);
         m_renderTargetRegistry.emplace(m_depthTarget.GetName(), &m_depthTarget);
@@ -273,11 +324,145 @@ void PBRExampleApp::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, c
         NES_ASSERT(graphicsPipeline);
         LoadGraphicsPipeline(graphicsPipeline, device, m_pbrPipelineLayout, m_pbrPipeline);
     }
+    
+    {
+        auto shadowSettings = file["ShadowSettings"];
+        uint32 minBits = shadowSettings["FormatMinBits"].as<uint32>(32);
+        m_shadowImageFormat = device.GetSupportedDepthFormat(minBits, false);
+        m_shadowMapResolution = shadowSettings["ImageResolution"].as<uint32>(2048);
+        m_shadowCascadeCount = shadowSettings["NumCascades"].as<uint32>(1);
+        m_shadowMaxDistance = shadowSettings["MaxShadowDistance"].as<float>(100.f);
+        m_shadowCascadeSplitLambda = shadowSettings["CascadeSplitLambda"].as<float>(0.5f);
+        m_shadowDepthBiasConstant = shadowSettings["DepthBiasConstant"].as<float>(1.25f);
+        m_shadowDepthBiasSlope = shadowSettings["DepthBiasSlope"].as<float>(1.75f);
+
+        auto shaderID = shadowSettings["DepthShader"].as<uint64>(nes::kInvalidAssetID.GetValue());
+        CreateDepthPassResources(device, shaderID);
+    }
+}
+
+void PBRExampleApp::CreateDepthPassResources(nes::RenderDevice& device, const nes::AssetID& shaderID)
+{
+    // Allocate the Depth Image, with each layer being a new cascade.
+    {
+        nes::ImageDesc imageDesc{};
+        imageDesc.m_type = nes::EImageType::Image2D;
+        imageDesc.m_usage = nes::EImageUsageBits::DepthStencilAttachment | nes::EImageUsageBits::ShaderResource;
+        imageDesc.m_format = m_shadowImageFormat;
+        imageDesc.m_width = m_shadowMapResolution;
+        imageDesc.m_height = m_shadowMapResolution;
+        imageDesc.m_depth = 1;
+        imageDesc.m_sampleCount = 1;
+        imageDesc.m_layerCount = m_shadowCascadeCount;
+        imageDesc.m_clearValue = nes::ClearDepthStencilValue(1.0, 0);
+        
+        nes::AllocateImageDesc allocDesc{};
+        allocDesc.m_imageDesc = imageDesc;
+        allocDesc.m_memoryLocation = nes::EMemoryLocation::Device;
+        m_shadowMap = nes::DeviceImage(device, allocDesc);
+    }
+
+    // Full depth map view (all layers)
+    {
+        nes::Image2DViewDesc imageViewDesc{};
+        imageViewDesc.m_layerCount = m_shadowCascadeCount;
+        imageViewDesc.m_pImage = &m_shadowMap;
+        imageViewDesc.m_viewType = nes::EImage2DViewType::ShaderResource2DArray;
+        imageViewDesc.m_format = m_shadowImageFormat;
+        m_shadowSampledImageView = nes::Descriptor(device, imageViewDesc);
+    }
+
+    // Image View Per Cascade for the depth pass
+    {
+        for (uint32 i = 0; i < m_shadowCascadeCount; ++i)
+        {
+            nes::Image2DViewDesc imageViewDesc{};
+            imageViewDesc.m_baseLayer = i;
+            imageViewDesc.m_layerCount = 1;
+            imageViewDesc.m_pImage = &m_shadowMap;
+            imageViewDesc.m_viewType = nes::EImage2DViewType::DepthStencilAttachment;
+            imageViewDesc.m_format = m_shadowImageFormat;
+            m_shadowImageViews.emplace_back(device, imageViewDesc);
+        }
+    }
+    
+    // Shadow Pipeline Layout
+    {
+        nes::DescriptorBindingDesc binding = nes::DescriptorBindingDesc()
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader)
+            .SetBindingIndex(0)
+            .SetDescriptorType(nes::EDescriptorType::UniformBuffer);
+        
+        nes::DescriptorSetDesc descriptorSetDesc = nes::DescriptorSetDesc()
+            .SetBindings(&binding, 1);
+
+        nes::PushConstantDesc pushConstantDesc{};
+        pushConstantDesc.m_offset = 0;
+        pushConstantDesc.m_size = sizeof(DepthPassPushConstants);
+        pushConstantDesc.m_shaderStages = nes::EPipelineStageBits::VertexShader;
+        
+        nes::PipelineLayoutDesc pipelineLayoutDesc = nes::PipelineLayoutDesc()
+            .SetDescriptorSets(descriptorSetDesc)
+            .SetPushConstants(pushConstantDesc)
+            .SetShaderStages(nes::EPipelineStageBits::VertexShader);
+
+        m_shadowPipelineLayout = nes::PipelineLayout(device, pipelineLayoutDesc);
+    }
+
+    // Shadow Pipeline
+    {
+        // Shader Stages:
+        nes::AssetPtr<nes::Shader> shader = nes::AssetManager::GetAsset<nes::Shader>(shaderID);
+        NES_ASSERT(shader, "Failed to create Pipeline! Shader not present!");
+        auto shaderStages = shader->GetGraphicsShaderStages();
+
+        // Vertex Input
+        auto vertexAttributes = Vertex::GetBindingDescs();
+
+        nes::VertexStreamDesc vertexStreamDesc = nes::VertexStreamDesc()
+            .SetBinding(0)
+            .SetStepRate(nes::EVertexStreamStepRate::PerVertex)
+            .SetStride(sizeof(Vertex));
+        
+        nes::VertexInputDesc vertexInputDesc = nes::VertexInputDesc()
+            .SetAttributes(vertexAttributes)
+            .SetStreams(vertexStreamDesc);
+
+        // Input Assembly
+        nes::InputAssemblyDesc inputAssemblyDesc{};
+        inputAssemblyDesc.m_topology = nes::ETopology::TriangleList;
+
+        // Rasterizer:
+        nes::RasterizationDesc rasterDesc = {};
+        rasterDesc.m_cullMode = nes::ECullMode::None;
+        rasterDesc.m_enableDepthClamp = false;
+        rasterDesc.m_fillMode = nes::EFillMode::Solid;
+        rasterDesc.m_frontFace = nes::EFrontFaceWinding::CounterClockwise;
+        rasterDesc.m_depthBias.m_enabled = true;
+
+        // Output Merger
+        nes::OutputMergerDesc outputMergerDesc{};
+        outputMergerDesc.m_colorCount = 0;
+        outputMergerDesc.m_pColors = nullptr;
+        outputMergerDesc.m_depth.m_compareOp = nes::ECompareOp::Less;
+        outputMergerDesc.m_depth.m_enableWrite = true;
+        outputMergerDesc.m_depthStencilFormat = m_shadowImageFormat;
+
+        // Create the pipeline:
+        nes::GraphicsPipelineDesc pipelineDesc = nes::GraphicsPipelineDesc()
+            .SetShaderStages(shaderStages)
+            .SetVertexInput(vertexInputDesc)
+            .SetInputAssemblyDesc(inputAssemblyDesc)
+            .SetRasterizationDesc(rasterDesc)
+            .SetOutputMergerDesc(outputMergerDesc);
+
+        m_shadowPipeline = nes::Pipeline(device, m_shadowPipelineLayout, pipelineDesc);
+    }
 }
 
 void PBRExampleApp::CreateBuffersAndImages(nes::RenderDevice& device)
 {
-    // Globals Buffer: Contains CameraUBO + LightCountUBO. 
+    // Globals Buffer: Contains CameraUBO + LightCountUBO + ShadowUBO. 
     {
         nes::AllocateBufferDesc desc;
         desc.m_size = static_cast<uint64>(kGlobalUBOElementSize) * nes::Renderer::GetMaxFramesInFlight();
@@ -419,15 +604,30 @@ void PBRExampleApp::CreateDescriptorPool(nes::RenderDevice& device)
 
 void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
 {
-    nes::Descriptor* pDefaultSampler = &m_sampler;
-    // Sampler Descriptor
+    nes::Descriptor* pTextureSampler = &m_textureSampler;
+    
+    // Texture Sampler Descriptor
     {
         nes::SamplerDesc samplerDesc{};
         samplerDesc.m_addressModes = {nes::EAddressMode::ClampToEdge, nes::EAddressMode::ClampToEdge, nes::EAddressMode::ClampToEdge};
         samplerDesc.m_filters = {nes::EFilterType::Linear, nes::EFilterType::Linear, nes::EFilterType::Linear};
         samplerDesc.m_anisotropy = static_cast<uint8>(device.GetDesc().m_other.m_maxSamplerAnisotropy);
         samplerDesc.m_mipMax = 16.f;
-        m_sampler = nes::Descriptor(device, samplerDesc);
+        m_textureSampler = nes::Descriptor(device, samplerDesc);
+    }
+
+    // Depth Sampler Descriptor
+    {
+        nes::SamplerDesc samplerDesc{};
+        samplerDesc.m_addressModes = {nes::EAddressMode::ClampToEdge, nes::EAddressMode::ClampToEdge, nes::EAddressMode::ClampToEdge};
+        samplerDesc.m_filters = {nes::EFilterType::Linear, nes::EFilterType::Linear, nes::EFilterType::Linear};
+        samplerDesc.m_anisotropy = static_cast<uint8>(1.f);
+        samplerDesc.m_mipMin = 0.f;
+        samplerDesc.m_mipMax = 1.f;
+        samplerDesc.m_mipBias = 0.f;
+        samplerDesc.m_compareOp = nes::ECompareOp::None;
+        samplerDesc.m_borderColor = nes::ClearColorValue(1.f, 1.f, 1.f, 1.f);
+        m_depthSampler = nes::Descriptor(device, samplerDesc);
     }
     
     // Camera Descriptors
@@ -441,6 +641,11 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
     lightCountView.m_viewType = nes::EBufferViewType::Uniform;
     lightCountView.m_pBuffer = &m_globalsBuffer;
     lightCountView.m_size = sizeof(LightCountUBO);
+
+    nes::BufferViewDesc shadowDataView{};
+    shadowDataView.m_viewType = nes::EBufferViewType::Uniform;
+    shadowDataView.m_pBuffer = &m_globalsBuffer;
+    shadowDataView.m_size = sizeof(helpers::CascadedShadowMapsUBO);
 
     // Object Descriptors
     nes::BufferViewDesc objectViewDesc{};
@@ -460,18 +665,21 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
     {
         auto& frame = m_frames[i];
 
-        // Global Buffer: CameraUBO + LightCountUBO
+        // Global Buffer: CameraUBO + LightCountUBO + ShadowUBO for each frame.
         {
             // Set the offsets in the globals buffer.
-            // - Both are 64 byte aligned.
+            // - All are 64 byte aligned.
             cameraView.m_offset = i * kGlobalUBOElementSize; 
             lightCountView.m_offset = cameraView.m_offset + sizeof(CameraUBO);
+            shadowDataView.m_offset = lightCountView.m_offset + sizeof(LightCountUBO);
             frame.m_cameraBufferOffset = cameraView.m_offset; 
             frame.m_lightCountOffset = lightCountView.m_offset;
+            frame.m_shadowDataOffset = shadowDataView.m_offset;
 
             // Create the views:
             frame.m_cameraUBOView = nes::Descriptor(device, cameraView);
             frame.m_lightCountUBOView = nes::Descriptor(device, lightCountView);
+            frame.m_shadowUBOView = nes::Descriptor(device, shadowDataView);
         }
 
         // Materials View
@@ -525,7 +733,33 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
                 //nes::DescriptorBindingUpdateDesc(&pAreaLights, 1),
             };
             
-            frame.m_lightDataSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32_t>(updateDescs.size()));
+            frame.m_lightDataSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
+        }
+
+        // Shadow Pass Data Set: Used only by the Shadow pass.
+        {
+            m_descriptorPool.AllocateDescriptorSets(m_shadowPipelineLayout, 0, &m_frames[i].m_shadowPassDataSet);
+            
+            nes::Descriptor* pShadowUBO = &frame.m_shadowUBOView;
+            nes::DescriptorBindingUpdateDesc updateDesc(&pShadowUBO, 1);
+            frame.m_shadowPassDataSet.UpdateBindings(&updateDesc, 0, 1);
+        }
+
+        // PBR Shadow Data Set: Used only in the fragment shader. Used to sample the shadow map.
+        {
+            m_descriptorPool.AllocateDescriptorSets(m_pbrPipelineLayout, 3, &m_frames[i].m_sampledShadowDataSet);
+            
+            nes::Descriptor* pDepthSampler = &m_depthSampler;
+            nes::Descriptor* pShadowMapImage = &m_shadowSampledImageView;
+            nes::Descriptor* pShadowData = &frame.m_shadowUBOView; 
+            
+            std::array shadowUpdateDescs
+            {
+                nes::DescriptorBindingUpdateDesc(&pDepthSampler, 1),
+                nes::DescriptorBindingUpdateDesc(&pShadowMapImage, 1),
+                nes::DescriptorBindingUpdateDesc(&pShadowData, 1),
+            };
+            frame.m_sampledShadowDataSet.UpdateBindings(shadowUpdateDescs.data(), 0, static_cast<uint32>(shadowUpdateDescs.size()));
         }
     }
     
@@ -541,7 +775,7 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
 
         std::array updateDescs =
         {
-            nes::DescriptorBindingUpdateDesc(&pDefaultSampler, 1),
+            nes::DescriptorBindingUpdateDesc(&pTextureSampler, 1),
             nes::DescriptorBindingUpdateDesc(&pSkyboxTexture, 1),
         };
         m_skyboxDescriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
@@ -557,7 +791,7 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
             const auto& material = m_scene.m_materials[i];
 
             m_materialDescriptorSets.emplace_back(nullptr);
-            m_descriptorPool.AllocateDescriptorSets(m_pbrPipelineLayout, 3, &m_materialDescriptorSets[i], 1);
+            m_descriptorPool.AllocateDescriptorSets(m_pbrPipelineLayout, 4, &m_materialDescriptorSets[i], 1);
             
             nes::Descriptor* materialTextures[] =
             {
@@ -569,7 +803,7 @@ void PBRExampleApp::CreateDescriptorSets(nes::RenderDevice& device)
 
             std::array updateDescs =
             {
-                nes::DescriptorBindingUpdateDesc(&pDefaultSampler, 1),
+                nes::DescriptorBindingUpdateDesc(&pTextureSampler, 1),
                 nes::DescriptorBindingUpdateDesc(materialTextures, 4),
             };
 
@@ -582,21 +816,25 @@ void PBRExampleApp::UpdateUniformBuffers(const nes::RenderFrameContext& context)
 {
     auto& frame = m_frames[context.GetFrameIndex()];
     
+    CameraUBO cameraConstants;
+    const auto viewport = context.GetSwapchainViewport();
+    const float aspectRatio = viewport.m_extent.x / viewport.m_extent.y;
+    nes::Vec3 forward;
+    nes::Vec3 up;
+    
     // Update the Camera:
     {
-        CameraUBO cameraConstants;
         cameraConstants.m_exposureFactor = helpers::CalculateExposureFactor(m_cameraAperture, m_cameraShutterSpeed, m_cameraISO);
         
         // Set the world position.
         cameraConstants.m_position = nes::Float3(m_camera.m_position.x, m_camera.m_position.y, m_camera.m_position.z);
 
         // Calculate the View and Projection Matrices:
-        const nes::Vec3 forward = m_camera.m_rotation.RotatedVector(nes::Vec3::Forward());
-        const nes::Vec3 up = m_camera.m_rotation.RotatedVector(nes::Vec3::Up());
-    
-        const auto viewport = context.GetSwapchainViewport();
+        forward = m_camera.m_rotation.RotatedVector(nes::Vec3::Forward());
+        up = m_camera.m_rotation.RotatedVector(nes::Vec3::Up());
+        
         cameraConstants.m_view = nes::Mat44::LookAt(m_camera.m_position, m_camera.m_position + forward, up);
-        cameraConstants.m_projection = nes::Mat44::Perspective(m_camera.m_FOVY, viewport.m_extent.x / viewport.m_extent.y, 0.1f, 1000.f);
+        cameraConstants.m_projection = nes::Mat44::Perspective(m_camera.m_FOVY, aspectRatio, m_camera.m_nearPlane, m_camera.m_farPlane);
 
         // Flip the Y projection.
         cameraConstants.m_projection[1][1] *= -1.f;
@@ -608,7 +846,7 @@ void PBRExampleApp::UpdateUniformBuffers(const nes::RenderFrameContext& context)
         m_globalsBuffer.CopyToMappedMemory(&cameraConstants, frame.m_cameraBufferOffset, sizeof(CameraUBO));
     }
 
-    // Update Lighting Information:
+    // Update Lighting Data:
     {
         LightCountUBO lightCounts{};
         lightCounts.m_pointCount = static_cast<uint32>(m_scene.m_pointLights.size());
@@ -624,16 +862,127 @@ void PBRExampleApp::UpdateUniformBuffers(const nes::RenderFrameContext& context)
         // Point Lights
         if (!m_scene.m_pointLights.empty())
         {
-            frame.m_pointLightsBuffer.CopyToMappedMemory(m_scene.m_pointLights.data());
+            frame.m_pointLightsBuffer.CopyToMappedMemory(m_scene.m_pointLights.data(), 0, m_scene.m_pointLights.size() * sizeof(PointLight));
         }
 
         // [TODO]: Spot Lights, Area Lights.
+    }
+
+    // Update Shadow Cascades:
+    {
+        NES_ASSERT(!m_scene.m_directionalLights.empty());
+
+        helpers::GenShadowCascadesDesc desc;
+        desc.m_shadowMapResolution = static_cast<float>(m_shadowMapResolution);
+        desc.m_cameraNear = 0.5f;//m_camera.m_nearPlane;
+        desc.m_cameraFar = m_shadowMaxDistance;
+        desc.m_cameraView = cameraConstants.m_view;
+
+        // Projection matrix with altered near/far plane:
+        desc.m_cameraProj = nes::Mat44::Perspective(nes::math::ToRadians(45.f), aspectRatio, desc.m_cameraNear, desc.m_cameraFar);
+        desc.m_numCascades = m_shadowCascadeCount;
+        desc.m_splitLambda = m_shadowCascadeSplitLambda;
+        helpers::CascadedShadowMapsUBO csm = helpers::GenerateShadowCascadesForLight(m_scene.m_directionalLights[0], desc);
+
+        m_globalsBuffer.CopyToMappedMemory(&csm, frame.m_shadowDataOffset, sizeof(helpers::CascadedShadowMapsUBO));
     }
     
     // Update Material Data:
     if (!m_scene.m_materials.empty())
     {
         frame.m_materialUBOBuffer.CopyToMappedMemory(m_scene.m_materials.data());
+    }
+}
+
+void PBRExampleApp::RenderShadows(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+{
+    auto& depthImage = m_shadowMap;
+    
+    // Transition the Shadow Target's image to the DepthStencilAttachment.
+    {
+        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+            .SetImage(&depthImage, nes::EImagePlaneBits::Depth)
+            .SetRegion(nes::EImagePlaneBits::Depth, 0, 1, 0, m_shadowCascadeCount)
+            .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::DepthStencilAttachment)
+            .SetBarrierStage(nes::EPipelineStageBits::None, nes::EPipelineStageBits::DepthStencilAttachment)
+            .SetAccess(nes::EAccessBits::None, nes::EAccessBits::DepthStencilAttachmentWrite);
+
+        nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+            .SetImageBarriers({ imageBarrier } );
+        
+        commandBuffer.SetBarriers(barrierGroup);
+    }
+    
+    auto& frame = m_frames[context.GetFrameIndex()];
+
+    // Render the scene into the depth image layer
+    for (uint32 i = 0; i < m_shadowCascadeCount; ++i)
+    {
+        // Set the Shadow Image as our depth target.
+        nes::RenderTargetsDesc renderTargetsDesc = nes::RenderTargetsDesc()
+             .SetDepthStencilTarget(&m_shadowImageViews[i]);
+
+        // Record Render Commands:
+        commandBuffer.BeginRendering(renderTargetsDesc);
+        {
+            // Clear the Color and Depth Targets:
+            const nes::ClearDesc depthClear = nes::ClearDesc::DepthStencil(depthImage.GetDesc().m_clearValue);
+            commandBuffer.ClearRenderTargets({ depthClear });
+
+            // Set the viewport and scissor to encompass the Shadow Map Image:
+            const nes::Viewport viewport(m_shadowMapResolution, m_shadowMapResolution);
+            const nes::Scissor scissor(viewport);
+            commandBuffer.SetViewports(viewport);
+            commandBuffer.SetScissors(scissor);
+
+            // Bind the Shadow data:
+            commandBuffer.BindPipelineLayout(m_shadowPipelineLayout);
+            commandBuffer.BindPipeline(m_shadowPipeline);
+            commandBuffer.BindDescriptorSet(0, frame.m_shadowPassDataSet);
+            commandBuffer.SetDepthBias(m_shadowDepthBiasConstant, m_shadowDepthBiasSlope, 0.f);
+            
+            DepthPassPushConstants pushConstants{};
+            pushConstants.m_cascadeIndex = i;
+
+            // Bind the index buffer for the entire range:
+            nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, m_scene.m_indices.size(), 0);
+            commandBuffer.BindIndexBuffer(indexBuffer);
+        
+            for (auto& object : m_scene.m_objects)
+            {
+                // Push the object's position and the cascade index:
+                pushConstants.m_model = object.m_model;
+                commandBuffer.SetPushConstant(0, &pushConstants, sizeof(DepthPassPushConstants));
+            
+                // Bind Mesh Vertex Buffer.
+                const Mesh& mesh = m_scene.m_meshes[object.m_meshIndex];
+                nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
+                commandBuffer.BindVertexBuffers({ meshVertexBuffer}, 0);
+
+                // Draw
+                nes::DrawIndexedDesc drawDesc{};
+                drawDesc.m_firstIndex = mesh.m_firstIndex;
+                drawDesc.m_indexCount = mesh.m_indexCount;
+                commandBuffer.DrawIndexed(drawDesc);
+            }
+
+            // Finish.
+            commandBuffer.EndRendering();
+        }
+    }
+
+    // Transition the Shadow Target's image to be accessed by the geometry shader. 
+    {
+        nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+            .SetImage(&depthImage, nes::EImagePlaneBits::Depth)
+            .SetRegion(nes::EImagePlaneBits::Depth, 0, 1, 0, m_shadowCascadeCount)
+            .SetLayout(nes::EImageLayout::DepthStencilAttachment, nes::EImageLayout::ShaderResource)
+            .SetAccess(nes::EAccessBits::DepthStencilAttachmentWrite, nes::EAccessBits::ShaderResourceRead);
+
+        nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+            .SetImageBarriers(imageBarrier);
+        
+        commandBuffer.SetBarriers(barrierGroup);
     }
 }
 
@@ -677,6 +1026,7 @@ void PBRExampleApp::RenderInstances(nes::CommandBuffer& commandBuffer, const nes
     commandBuffer.BindDescriptorSet(0, frame.m_cameraSet);
     commandBuffer.BindDescriptorSet(1, frame.m_materialDataSet);
     commandBuffer.BindDescriptorSet(2, frame.m_lightDataSet);
+    commandBuffer.BindDescriptorSet(3, frame.m_sampledShadowDataSet);
 
     // Bind the index buffer for the entire range:
     nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, m_scene.m_indices.size(), 0);
@@ -688,7 +1038,7 @@ void PBRExampleApp::RenderInstances(nes::CommandBuffer& commandBuffer, const nes
         commandBuffer.SetPushConstant(0, &object, sizeof(ObjectUBO));
 
         // Bind Material Textures:
-        commandBuffer.BindDescriptorSet(3, m_materialDescriptorSets[object.m_materialIndex]);
+        commandBuffer.BindDescriptorSet(4, m_materialDescriptorSets[object.m_materialIndex]);
         
         // Bind Mesh Vertex Buffer.
         const Mesh& mesh = m_scene.m_meshes[object.m_meshIndex];
@@ -802,6 +1152,10 @@ nes::RenderTarget PBRExampleApp::LoadColorRenderTarget(const YAML::Node& targetN
     if (desc.m_format == nes::EFormat::Unknown)
         desc.m_format = swapchainFormat;
 
+    // Usage
+    desc.m_usage = static_cast<nes::EImageUsageBits>(targetNode["Usage"].as<uint32>(0));
+    desc.m_usage |= nes::EImageUsageBits::ColorAttachment;
+
     // Sample Count
     desc.m_sampleCount = targetNode["SampleCount"].as<uint32>(1);
 
@@ -836,12 +1190,16 @@ nes::RenderTarget PBRExampleApp::LoadDepthRenderTarget(const YAML::Node& targetN
     const bool requireStencil = targetNode["FormatRequireStencil"].as<bool>(false);
     desc.m_format = device.GetSupportedDepthFormat(minBits, requireStencil);
     NES_ASSERT(desc.m_format != nes::EFormat::Unknown);
-        
+
+    // Usage
+    desc.m_usage = static_cast<nes::EImageUsageBits>(targetNode["Usage"].as<uint32>(0));
+    desc.m_usage |= nes::EImageUsageBits::DepthStencilAttachment;
+    
     // Image Planes based on the Format
     desc.m_planes = nes::EImagePlaneBits::Depth;
     if (requireStencil)
         desc.m_planes |= nes::EImagePlaneBits::Stencil;
-        
+    
     // Sample Count
     desc.m_sampleCount = targetNode["SampleCount"].as<uint32>(1);
 
@@ -859,7 +1217,7 @@ nes::RenderTarget PBRExampleApp::LoadDepthRenderTarget(const YAML::Node& targetN
     // If either dimension is zero, use the swapchain extent.
     if (desc.m_size.x == 0 || desc.m_size.y == 0)
         desc.m_size = swapchainExtent;
-
+    
     return nes::RenderTarget(device, desc);
 }
 
@@ -987,10 +1345,17 @@ void PBRExampleApp::LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::Re
         
         rasterState.m_cullMode = static_cast<nes::ECullMode>(rasterizationNode["CullMode"].as<uint32>(kDefaultCullMode));
         rasterState.m_fillMode = static_cast<nes::EFillMode>(rasterizationNode["FillMode"].as<uint32>(kDefaultFillMode));
-        // [TODO]: DepthBias
         rasterState.m_enableDepthClamp = rasterizationNode["EnableDepthClamp"].as<bool>(false);
         rasterState.m_frontFace = static_cast<nes::EFrontFaceWinding>(rasterizationNode["FrontFace"].as<uint32>(kDefaultFrontFace));
         rasterState.m_lineWidth = rasterizationNode["LineWidth"].as<float>(1.0f);
+
+        if (auto depthBiasNode = rasterizationNode["DepthBias"])
+        {
+            rasterState.m_depthBias.m_constant = depthBiasNode["Constant"].as<float>(0.f);
+            rasterState.m_depthBias.m_clamp = depthBiasNode["Clamp"].as<float>(0.f);
+            rasterState.m_depthBias.m_slope = depthBiasNode["Slope"].as<float>(0.f);
+            rasterState.m_depthBias.m_enabled = depthBiasNode["Enabled"].as<bool>(false);
+        }
     }
 
     // Output Merger
