@@ -69,8 +69,13 @@ namespace nes::internal
     private:
         /// Private Ctor.
         RefCounter() = default;
+        
     public:
-        explicit            RefCounter(Type*&& pObject) : m_pObject(std::move(pObject)) { }
+        //----------------------------------------------------------------------------------------------------
+        /// @note : IMPORTANT! The pointer parameter will be set to null by this constructor! This is taking
+        ///     ownership of the memory!
+        //----------------------------------------------------------------------------------------------------
+        explicit            RefCounter(Type*& pObject) : m_pObject(pObject) { pObject = nullptr; }
 
         template <typename To>
         RefCounter<To>*     GetAs();
