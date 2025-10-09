@@ -175,15 +175,16 @@ namespace nes
 
     void Platform::RunMainLoop()
     {
+        // Set the initial frame time.
+        m_timer.Start();
+        UpdateFrameTime();
+        
         // Headless loop: iterates through m_headlessFrameCount number of frames, then exits.
         if (m_pApp->GetDesc().m_isHeadless)
         {
             RunHeadlessLoop();
             return;
         }
-
-        // Main loop, with a window.
-        m_timer.Start();
     
         while (!m_pWindow->ShouldClose() && !m_pApp->ShouldQuit())
         {
@@ -334,8 +335,6 @@ namespace nes
     {
         const auto& appDesc = m_pApp->GetDesc();
         const uint32 numFrames = appDesc.m_headlessFrameCount;
-
-        m_timer.Start();
         
         for (uint32 frameID = 0; frameID < numFrames && !m_pApp->ShouldQuit(); ++frameID)
         {
@@ -359,7 +358,7 @@ namespace nes
     void Platform::UpdateFrameTime()
     {
         const double deltaTimeMs = m_timer.Tick<Timer::Milliseconds>();
-        m_timeStep = math::Min(static_cast<float>(deltaTimeMs), m_minTimeStepMs) / 1000.f;
+        m_timeStep = math::Max(static_cast<float>(deltaTimeMs), m_minTimeStepMs) / 1000.f;
         m_performanceInfo.m_timeSinceStartup += deltaTimeMs / 1000.f;
         m_performanceInfo.m_lastFrameTime = deltaTimeMs;
         m_performanceInfo.m_fps = 1.f / static_cast<float>(deltaTimeMs) / 1000.f;
