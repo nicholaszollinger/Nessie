@@ -27,6 +27,19 @@ namespace nes
         StrongPtr&                          operator=(const StrongPtr& other);
         StrongPtr&                          operator=(StrongPtr&& other) noexcept;
 
+        /// Conversion Constructors and Assignment operators.
+        template <typename OtherType>
+        StrongPtr(const StrongPtr<OtherType>& other);
+
+        template <typename OtherType>
+        StrongPtr(StrongPtr<OtherType>&& other) noexcept;
+        
+        template <typename OtherType>
+        StrongPtr&                          operator=(const StrongPtr<OtherType>& pOther);
+        
+        template <typename OtherType>
+        StrongPtr&                          operator=(StrongPtr<OtherType>&& pOther) noexcept;
+
         /// Operators
         [[nodiscard]] inline                operator Type*() const                      { return Get(); }
         [[nodiscard]] inline                operator bool() const                       { return Get() != nullptr; }
@@ -107,6 +120,19 @@ namespace nes
         ConstStrongPtr&                     operator=(ConstStrongPtr&& other) noexcept;
         ConstStrongPtr&                     operator=(const StrongPtr<Type>& other);
         ConstStrongPtr&                     operator=(StrongPtr<Type>&& other) noexcept;
+
+        /// Conversion Constructors and Assignment operators.
+        template <typename OtherType>
+        ConstStrongPtr(const ConstStrongPtr<OtherType>& other);
+
+        template <typename OtherType>
+        ConstStrongPtr(ConstStrongPtr<OtherType>&& other) noexcept;
+        
+        template <typename OtherType>
+        ConstStrongPtr&                          operator=(const ConstStrongPtr<OtherType>& pOther);
+        
+        template <typename OtherType>
+        ConstStrongPtr&                          operator=(ConstStrongPtr<OtherType>&& pOther) noexcept;
 
         /// Operators
         [[nodiscard]] inline                operator const Type*() const                    { return Get(); }

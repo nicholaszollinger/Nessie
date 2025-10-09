@@ -20,7 +20,7 @@ namespace nes
     template <typename Type>
     StrongPtr<Type>::StrongPtr(Type* ptr)// requires nes::TypeIsDerivedFrom<Type, RefTarget<Type>>
     {
-        static_assert(IsRefTargetType<Type>, "Only Types that inherit from RefTarget can assign a raw pointer to a StrongPtr, because they"
+        static_assert(IsRefTargetType<Type>, "Only Types that inherit from RefTarget can assign a raw pointer to a StrongPtr, because they "
                                                                      "manage their ref count on the object itself.");
         m_pRefCounter = ptr;
         AddRef();
@@ -57,6 +57,112 @@ namespace nes
             other.m_pRefCounter = nullptr;
         }
 
+        return *this;
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    StrongPtr<Type>::StrongPtr(const StrongPtr<OtherType>& other)
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between StrongPtr Types!");
+        
+        if constexpr (IsRefTargetType<OtherType>)
+        {
+            auto* pCastedType = checked_cast<Type*>(other.m_pRefCounter);
+            
+            m_pRefCounter = pCastedType;
+            pCastedType->AddRef();
+        }
+
+        else
+        {
+            internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+            m_pRefCounter = pCastedCounter;
+            pCastedCounter->AddRef();
+        }
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    StrongPtr<Type>::StrongPtr(StrongPtr<OtherType>&& other) noexcept
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between StrongPtr Types!");
+        
+        if constexpr (IsRefTargetType<OtherType>)
+        {
+            auto* pCastedType = checked_cast<Type*>(other.m_pRefCounter);
+            
+            m_pRefCounter = pCastedType;
+            other = nullptr;
+        }
+
+        else
+        {
+            internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+            m_pRefCounter = pCastedCounter;
+            other = nullptr;
+        }
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    StrongPtr<Type>& StrongPtr<Type>::operator=(const StrongPtr<OtherType>& other)
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between StrongPtr Types!");
+        
+        if (this != &other)
+        {
+            if constexpr (IsRefTargetType<OtherType>)
+            {
+                auto* pCastedType = checked_cast<Type*>(other.m_pRefCounter);
+            
+                m_pRefCounter = pCastedType;
+                pCastedType->AddRef();
+            }
+
+            else
+            {
+                internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+                m_pRefCounter = pCastedCounter;
+                pCastedCounter->AddRef();
+            }
+        }
+        
+        return *this;
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    StrongPtr<Type>& StrongPtr<Type>::operator=(StrongPtr<OtherType>&& other) noexcept
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between StrongPtr Types!");
+        
+        if (this != &other)
+        {
+            if constexpr (IsRefTargetType<OtherType>)
+            {
+                auto* pCastedType = checked_cast<Type*>(other.m_pRefCounter);
+            
+                m_pRefCounter = pCastedType;
+                other = nullptr;
+            }
+
+            else
+            {
+                internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+                m_pRefCounter = pCastedCounter;
+                other = nullptr;
+            }
+        }
+        
         return *this;
     }
 
@@ -191,6 +297,112 @@ namespace nes
     }
 
     template <typename Type>
+    template <typename OtherType>
+    ConstStrongPtr<Type>::ConstStrongPtr(const ConstStrongPtr<OtherType>& other)
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between ConstStrongPtr Types!");
+        
+        if constexpr (IsRefTargetType<OtherType>)
+        {
+            auto* pCastedType = checked_cast<const Type*>(other.m_pRefCounter);
+            
+            m_pRefCounter = pCastedType;
+            m_pRefCounter->AddRef();
+        }
+
+        else
+        {
+            const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+            m_pRefCounter = pCastedCounter;
+            m_pRefCounter->AddRef();
+        }
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    ConstStrongPtr<Type>::ConstStrongPtr(ConstStrongPtr<OtherType>&& other) noexcept
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between ConstStrongPtr Types!");
+        
+        if constexpr (IsRefTargetType<OtherType>)
+        {
+            auto* pCastedType = checked_cast<const Type*>(other.m_pRefCounter);
+            
+            m_pRefCounter = pCastedType;
+            other = nullptr;
+        }
+
+        else
+        {
+            const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+            m_pRefCounter = pCastedCounter;
+            other = nullptr;
+        }
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    ConstStrongPtr<Type>& ConstStrongPtr<Type>::operator=(const ConstStrongPtr<OtherType>& other)
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between ConstStrongPtr Types!");
+        
+        if (this != &other)
+        {
+            if constexpr (IsRefTargetType<OtherType>)
+            {
+                auto* pCastedType = checked_cast<const Type*>(other.m_pRefCounter);
+            
+                m_pRefCounter = pCastedType;
+                m_pRefCounter->AddRef();
+            }
+
+            else
+            {
+                const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+                m_pRefCounter = pCastedCounter;
+                m_pRefCounter->AddRef();
+            }
+        }
+
+        return *this;
+    }
+
+    template <typename Type>
+    template <typename OtherType>
+    ConstStrongPtr<Type>& ConstStrongPtr<Type>::operator=(ConstStrongPtr<OtherType>&& other) noexcept
+    {
+        static_assert(TypeIsBaseOrDerived<Type, OtherType>, "Cannot convert between ConstStrongPtr Types!");
+        
+        if (this != &other)
+        {
+            if constexpr (IsRefTargetType<OtherType>)
+            {
+                auto* pCastedType = checked_cast<const Type*>(other.m_pRefCounter);
+            
+                m_pRefCounter = pCastedType;
+                other = nullptr;
+            }
+
+            else
+            {
+                const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
+            
+                m_pRefCounter = pCastedCounter;
+                other = nullptr;
+            }
+        }
+
+        return *this;
+    }
+
+    template <typename Type>
     const Type* ConstStrongPtr<Type>::Get() const
     {
         if (m_pRefCounter != nullptr)
@@ -245,7 +457,7 @@ namespace nes
         {
             // Create the external RefCounter and give it the object pointer.
             if (pObject != nullptr)
-                result.m_pRefCounter = NES_NEW(internal::RefCounter<ObjectType>(std::move(pObject)));
+                result.m_pRefCounter = NES_NEW(internal::RefCounter<ObjectType>(pObject));
         }
 
         result.AddRef();
