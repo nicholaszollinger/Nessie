@@ -80,6 +80,9 @@ namespace nes::internal
         template <typename To>
         RefCounter<To>*     GetAs();
 
+        template <typename To>
+        RefCounter<To>*     TryGetAs();
+
     private:
         virtual void*       GetObject() override                { return m_pObject; }
         virtual const void* GetObject() const override          { return m_pObject; }

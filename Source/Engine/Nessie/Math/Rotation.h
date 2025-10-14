@@ -59,12 +59,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Apply this rotation to the Vector. 
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE void             RotateVector(Vec3& vector);
+        NES_INLINE void             RotateVector(Vec3& vector) const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the resulting vector with the rotation applied.
         //----------------------------------------------------------------------------------------------------
-        NES_INLINE Vec3             RotatedVector(const Vec3& vector);
+        NES_INLINE Vec3             RotatedVector(const Vec3& vector) const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Returns the vector representation of the rotation. Axis values will be normalized.

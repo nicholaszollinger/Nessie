@@ -45,7 +45,7 @@ namespace nes
         NormalizeAxis(m_yaw);
     }
     
-    void Rotation::RotateVector(Vec3& vector)
+    void Rotation::RotateVector(Vec3& vector) const
     {
         vector = ToQuat().Rotate(vector);
     }
@@ -70,7 +70,7 @@ namespace nes
         return Vec3(normalized.m_pitch, normalized.m_yaw, normalized.m_roll);
     }
     
-    Vec3 Rotation::RotatedVector(const Vec3& vector)
+    Vec3 Rotation::RotatedVector(const Vec3& vector) const
     {
         Vec3 result(vector);
         RotateVector(result);

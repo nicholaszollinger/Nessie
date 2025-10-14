@@ -76,7 +76,7 @@ namespace nes
 
         else
         {
-            internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
             internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
             m_pRefCounter = pCastedCounter;
@@ -100,7 +100,7 @@ namespace nes
 
         else
         {
-            internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
             internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
             m_pRefCounter = pCastedCounter;
@@ -126,7 +126,7 @@ namespace nes
 
             else
             {
-                internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
                 internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
                 m_pRefCounter = pCastedCounter;
@@ -155,7 +155,7 @@ namespace nes
 
             else
             {
-                internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<internal::RefCounter<OtherType>*>(other.m_pRefCounter);
                 internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
                 m_pRefCounter = pCastedCounter;
@@ -312,7 +312,7 @@ namespace nes
 
         else
         {
-            const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            const internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
             const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
             m_pRefCounter = pCastedCounter;
@@ -336,7 +336,7 @@ namespace nes
 
         else
         {
-            const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+            const internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
             const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
             m_pRefCounter = pCastedCounter;
@@ -355,14 +355,13 @@ namespace nes
             if constexpr (IsRefTargetType<OtherType>)
             {
                 auto* pCastedType = checked_cast<const Type*>(other.m_pRefCounter);
-            
                 m_pRefCounter = pCastedType;
                 m_pRefCounter->AddRef();
             }
 
             else
             {
-                const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                const internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
                 const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
                 m_pRefCounter = pCastedCounter;
@@ -384,14 +383,13 @@ namespace nes
             if constexpr (IsRefTargetType<OtherType>)
             {
                 auto* pCastedType = checked_cast<const Type*>(other.m_pRefCounter);
-            
                 m_pRefCounter = pCastedType;
                 other = nullptr;
             }
 
             else
             {
-                const internal::RefCounter<OtherType>* pFromRefCounter = checked_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
+                const internal::RefCounter<OtherType>* pFromRefCounter = reinterpret_cast<const internal::RefCounter<OtherType>*>(other.m_pRefCounter);
                 const internal::RefCounter<Type>* pCastedCounter = pFromRefCounter->template GetAs<Type>();
             
                 m_pRefCounter = pCastedCounter;
@@ -473,7 +471,9 @@ namespace nes
 
         if constexpr (IsRefTargetType<From>)
         {
-            auto* pCastedType = checked_cast<To*>(ptr.m_pRefCounter);
+            auto* pCastedType = dynamic_cast<To*>(ptr.m_pRefCounter);
+            if (pCastedType == nullptr)
+                return nullptr;
             
             StrongPtr<To> result;
             result.m_pRefCounter = pCastedType;
@@ -483,8 +483,16 @@ namespace nes
 
         else
         {
-            internal::RefCounter<From>* pFromRefCounter = checked_cast<internal::RefCounter<From>*>(ptr.m_pRefCounter);
-            internal::RefCounter<To>* pCastedCounter = pFromRefCounter->template GetAs<To>();
+            using FromRefCounterType = internal::RefCounter<From>;
+            using ToRefCounterType = internal::RefCounter<To>;
+            
+            // reinterpret_cast from internal::RefCounterBase* -> internal::RefCounter<From*>
+            FromRefCounterType* pRefCounter = reinterpret_cast<FromRefCounterType*>(ptr.m_pRefCounter);
+
+            // Then, try to cast to the correct RefCounter type.
+            ToRefCounterType* pCastedCounter = pRefCounter->template TryGetAs<To>();
+            if (pCastedCounter == nullptr)
+                return nullptr;
 
             StrongPtr<To> result;
             result.m_pRefCounter = pCastedCounter;
@@ -501,7 +509,9 @@ namespace nes
 
         if constexpr (IsRefTargetType<From>)
         {
-            const auto* pCastedType = checked_cast<const To*>(ptr.m_pRefCounter);
+            const auto* pCastedType = dynamic_cast<const To*>(ptr.m_pRefCounter);
+            if (pCastedType == nullptr)
+                return nullptr;
             
             ConstStrongPtr<To> result;
             result.m_pRefCounter = pCastedType;
@@ -511,8 +521,16 @@ namespace nes
 
         else
         {
-            internal::RefCounter<From>* pFromRefCounter = checked_cast<internal::RefCounter<From>*>(ptr.m_pRefCounter);
-            internal::RefCounter<To>* pCastedCounter = pFromRefCounter->template GetAs<To>();
+            using FromRefCounterType = internal::RefCounter<From>;
+            using ToRefCounterType = internal::RefCounter<To>;
+            
+            // reinterpret_cast from internal::RefCounterBase* -> internal::RefCounter<From*>
+            FromRefCounterType* pRefCounter = reinterpret_cast<FromRefCounterType*>(ptr.m_pRefCounter);
+
+            // Then, try to cast to the correct RefCounter type.
+            ToRefCounterType* pCastedCounter = pRefCounter->template TryGetAs<To>();
+            if (pCastedCounter == nullptr)
+                return nullptr;
 
             ConstStrongPtr<To> result;
             result.m_pRefCounter = pCastedCounter;
