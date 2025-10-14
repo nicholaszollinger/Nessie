@@ -30,6 +30,18 @@ namespace nes::internal
         NES_ASSERT((m_pObject == nullptr) || (checked_cast<To*>(m_pObject) != nullptr));
         return reinterpret_cast<RefCounter<To>*>(this);
     }
+
+    template <typename Type>
+    template <typename To>
+    inline RefCounter<To>* RefCounter<Type>::TryGetAs()
+    {
+        NES_ASSERT(m_pObject != nullptr);
+
+        if (dynamic_cast<To*>(m_pObject) != nullptr)
+            return reinterpret_cast<RefCounter<To>*>(this);
+
+        return nullptr;
+    }
     
     template <typename Type>
     inline void RefCounter<Type>::ReleaseObject() const
