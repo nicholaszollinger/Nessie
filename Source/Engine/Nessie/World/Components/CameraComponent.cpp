@@ -1,99 +1,57 @@
-﻿// Camera.cpp
+﻿// CameraComponent.cpp
 #include "CameraComponent.h"
-#include "Nessie/Application/Application.h"
-#include "Nessie/Scene/Scene.h"
-#include "Nessie/World/Entity3D.h"
 
 namespace nes
 {
-    bool CameraComponent::Init()
+    Mat44 CameraComponent::CalculateProjectionMatrix(const uint32 width, const uint32 height, const bool flipAxis) const
     {
-        if (!Entity3DComponent::Init())
+        Mat44 projection;
+        
+        if (m_projectionType == EProjectionType::Perspective)
         {
-            return false;
+            projection = Mat44::Perspective(m_perspectiveFOV, static_cast<float>(width), static_cast<float>(height), m_nearPlane, m_farPlane);
         }
+        else
+        {
+            const float aspect = static_cast<float>(width) / static_cast<float>(height);
+            const float orthoHalfHeight = m_orthographicSize * 0.5f;
+            const float orthoHalfWidth = orthoHalfHeight * aspect;
+            projection = Mat44::Orthographic(-orthoHalfWidth, orthoHalfWidth, -orthoHalfHeight, orthoHalfHeight, m_nearPlane, m_farPlane);
+        }
+        
+        if (flipAxis)
+            projection[1][1] *= -1.f;
 
+        return projection;
+    }
+
+    float CameraComponent::CalculateExposureFactor() const
+    {
+        // Calculate exposure value (EV) - standard photographic formula
+        const float ev = std::log2((m_aperture * m_aperture) / m_shutterSpeed);
+
+        // Convert to exposure adjustment factor
+        // ISO 100 is baseline, higher ISO = more sensitive (brighter)
+        const float isoAdjustment = m_iso / 100.f;
+
+        // Exposure factor combines EV and ISO
+        return isoAdjustment * std::pow(2.f, -ev);
+    }
+
+    void CameraComponent::Serialize(YAML::Emitter&, const CameraComponent&)
+    {
         // [TODO]: 
-        //const auto windowExtent = Application::Get().GetWindow().GetResolution();
-        //m_camera.UpdateViewport(windowExtent.m_width, windowExtent.m_height);
-        
-        // [TODO]: Subscribe to WindowResize events...
-        return true;
     }
 
-    void CameraComponent::SetAsActiveCamera() const
+    void CameraComponent::Deserialize(const YAML::Node& in, CameraComponent& component)
     {
-        Scene* pScene = GetOwner()->GetScene();
-        NES_ASSERT(pScene);
-        pScene->SetActiveCamera(&m_camera);
-    }
-
-    void CameraComponent::SetActiveOnEnabled(const bool setActiveOnEnable)
-    {
-        m_setActiveOnEnable = setActiveOnEnable;
-    }
-
-    Camera& CameraComponent::GetCamera()
-    {
-        return m_camera;
-    }
-
-    const Camera& CameraComponent::GetCamera() const
-    {
-        return m_camera;
-    }
-    
-    bool CameraComponent::IsActiveCamera() const
-    {
-        Scene* pScene = GetOwner()->GetScene();
-        NES_ASSERT(pScene);
-        return pScene->GetActiveCamera() == &m_camera;
-    }
-
-    void CameraComponent::UpdateCameraViewBasedOnActorTransform()
-    {
-        // Set the ViewMatrix of the Camera to look toward the position in front of the camera.
-        const auto& worldTransformMatrix = GetOwner()->GetWorldTransformMatrix();
-        const Mat44 orientationMatrix = worldTransformMatrix.GetRotation();
-        
-        const auto cameraForward = orientationMatrix.TransformVector(Vec3::Forward());
-        const auto cameraUp = orientationMatrix.TransformVector(Vec3::Up());
-        const Vec3 cameraPosition = worldTransformMatrix.GetTranslation(); 
-        m_camera.LookAt(cameraPosition, cameraPosition + cameraForward, cameraUp);
-    }
-
-    void CameraComponent::OnEnabled()
-    {
-        if (m_setActiveOnEnable)
-            SetAsActiveCamera();
-
-        // Perform initial view update.
-        UpdateCameraViewBasedOnActorTransform();
-
-        // Listen for Actor Transform updates:
-        GetOwner()->OnWorldTransformUpdated().AddListener(this, [this]()
-        {
-            UpdateCameraViewBasedOnActorTransform();
-        });
-    }
-
-    void CameraComponent::OnDisabled()
-    {
-        // [Consider] Should this just be an error, and/or assert?
-        // If this is currently the Active Camera, we need to disable it.
-        if (IsActiveCamera())
-        {
-            if (!GetOwner()->GetLayer()->IsBeingDestroyed())
-            {
-                NES_WARN("Disabling active Camera in World!!!");
-            }
-
-            Scene* pScene = GetOwner()->GetScene();
-            NES_ASSERT(pScene);
-            pScene->SetActiveCamera(nullptr);
-        }
-
-        // Stop listening to Actor transform updates.
-        GetOwner()->OnWorldTransformUpdated().RemoveListener(this);
+        component.m_nearPlane = in["NearPlane"].as<float>(0.1f);
+        component.m_farPlane = in["FarPlane"].as<float>(1000.f);
+        component.m_perspectiveFOV = in["PerspectiveFOV"].as<float>(60.f) * math::DegreesToRadians();
+        component.m_orthographicSize = in["OrthographicSize"].as<float>(10.f);
+        component.m_aperture = in["Aperture"].as<float>(8.f);
+        component.m_shutterSpeed = 1.f / in["ShutterSpeed"].as<float>(125.f);
+        component.m_iso = in["ISO"].as<float>(100.f);
+        component.m_projectionType = static_cast<EProjectionType>(in["ProjectionType"].as<uint8>(static_cast<uint8>(0)));
     }
 }
