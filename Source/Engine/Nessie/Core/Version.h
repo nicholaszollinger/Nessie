@@ -2,7 +2,6 @@
 #pragma once
 #include "Nessie/Core/Config.h"
 #include <string>
-#include "Nessie/Resources/Serializer_Member.h"
 
 namespace nes
 {
@@ -39,20 +38,8 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         std::string     ToString() const;
 
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Deserialize a Version from YAML.
-        //----------------------------------------------------------------------------------------------------
-        bool            Deserialize(const YAML::Node& node);
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Serialize a Version to YAML
-        //----------------------------------------------------------------------------------------------------
-        bool            Serialize(YAML::Node& node) const;
-
     private:
         /// Combined value containing Major, Minor and Patch values.
         uint32          m_value{};
     };
-
-    NES_DEFINE_MEMBER_SERIALIZER(Version);
 }

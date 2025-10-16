@@ -4,6 +4,7 @@
 #include "Nessie/Core/Memory/RefCounter.h"
 #include "Nessie/Core/TypeInfo.h"
 #include "Nessie/Random/UUID.h"
+#include "yaml-cpp/yaml.h"
 
 namespace nes
 {

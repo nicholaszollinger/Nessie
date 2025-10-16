@@ -61,6 +61,7 @@ function p.ConfigureProject(dependencyInjector)
     dependencyInjector.AddFilesToProject("stb");
     dependencyInjector.AddFilesToProject("fmt");
     dependencyInjector.AddFilesToProject("Vulkan");
+    dependencyInjector.AddFilesToProject("entt");
     dependencyInjector.Include("Assimp");
     dependencyInjector.Link("glfw");
     dependencyInjector.Link("yaml_cpp");
@@ -84,6 +85,7 @@ function p.SetIncludeThirdPartyDirs()
     dependencyInjector.Include("fmt");
     dependencyInjector.Include("glfw");
     dependencyInjector.Include("Vulkan");
+    dependencyInjector.Include("entt");
 end
 
 function p.Include()

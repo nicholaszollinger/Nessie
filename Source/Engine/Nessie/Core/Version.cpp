@@ -52,23 +52,4 @@ namespace nes
 
         return versionString;
     }
-
-    bool Version::Serialize(YAML::Node& node) const
-    {
-        node.push_back((m_value >> kMajorOffset) & 0x3FF);
-        node.push_back((m_value >> kMinorOffset) & 0x3FF);
-        node.push_back((m_value >> kPatchOffset) & 0xFFF);
-        return true;
-    }
-
-    bool Version::Deserialize(const YAML::Node& node)
-    {
-        if (!node.IsSequence() || node.size() != 3)
-        {
-            return false;
-        }
-
-        m_value = MakeVersion(0, node[0].as<uint32_t>(), node[1].as<uint32_t>(), node[2].as<uint32_t>());
-        return true;
-    }
 }

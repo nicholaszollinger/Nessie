@@ -15,27 +15,52 @@ namespace nes
             id = GenerateAssetIDFromPath(path);
         }
 
-#ifdef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
-        ThreadLoadFunc func = [&id, path]()
-        {
-            return AssetManager::LoadSync<Type>(id, path);
-        };
-#else
-        // If we don't have an entry already, create one.
-        if (!m_pAssetManager->GetAssetInfo(id))
-        {
-            m_pAssetManager->m_infoMap[id] = AssetInfo(kInvalidLoadIndex, Type::GetStaticTypeID(), EAssetState::Loading, ELoadResult::Pending);
-        }
-        
-        AssetManager* pAssetManager = m_pAssetManager;
-        LoadRequestID requestId = m_requestId;
-        ThreadLoadFunc func = [pAssetManager, requestId, &id, path]()
-        {
-            return pAssetManager->ThreadLoadSync<Type>(id, path, requestId);  
-        };
-#endif  
+        const TypeID typeID = Type::GetStaticTypeID();
 
-        AddJob(func);
+        // Register if not already:
+        if (!m_pAssetManager->IsTypeRegistered(typeID))
+        {
+            AssetManager::RegisterAssetType<Type>(StripNamespaceFromTypename(Type::GetStaticTypename()));
+        }
+
+        // Create the metadata for the asset.
+        AssetMetadata metadata;
+        metadata.m_assetID = id;
+        metadata.m_path = path;
+        metadata.m_typeID = typeID;
+
+        AppendLoad(metadata);
+    }
+
+    template <ValidAssetType Type>
+    void AssetManager::RegisterAssetType(const std::string& name)
+    {
+        auto& assetManager = GetInstance();
+        
+        // Locked check if the type is registered:
+        if (assetManager.IsTypeRegistered(Type::GetStaticTypeID()))
+            return;
+
+        AssetTypeDesc typeDesc;
+        typeDesc.m_type = Type::GetStaticTypeID();
+        typeDesc.m_typename = name;
+        
+        typeDesc.m_createNewAsset = []() -> AssetBase*
+        {
+            return NES_NEW(Type());            
+        };
+
+        typeDesc.m_createNewAssetMove = [](AssetBase&& rValue) -> AssetBase*
+        {
+            return NES_NEW(Type(std::move(static_cast<Type&&>(rValue))));
+        };
+        
+        typeDesc.m_isRegistered = true;
+
+        // Set the type desc.
+        assetManager.SetTypeDesc(std::move(typeDesc));
+        
+        NES_LOG(kAssetLogTag, "Registered Asset Type: '{}'", name);
     }
 
     template <ValidAssetType Type>
@@ -49,27 +74,39 @@ namespace nes
         
         AssetManager& instance = GetInstance();
 
-#ifdef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
-        return instance.MainLoadSync<Type>(id, path);
-#else
+        // Register if not already:
+        if (!instance.IsTypeRegistered(Type::GetStaticTypeID()))
+        {
+            RegisterAssetType<Type>(StripNamespaceFromTypename(Type::GetStaticTypename()));
+        }
+
+        // Create the metadata
+        AssetMetadata metadata;
+        metadata.m_path = path;
+        metadata.m_assetID = id;
+        metadata.m_typeID = Type::GetStaticTypeID();
+
+    #ifdef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
+        return instance.MainLoadSync(metadata);
+    #else
         if (IsMainThread())
-            return instance.MainLoadSync<Type>(id, path);
+            return instance.MainLoadSync(metadata);
 
         // Asset Thread:
-        return instance.ThreadLoadSync<Type>(id, path);
-#endif
+        return instance.ThreadLoadSync(metadata);
+    #endif
     }
     
     template <ValidAssetType Type>
     void AssetManager::LoadAsync(AssetID& id, const std::filesystem::path& path, const LoadRequest::OnAssetLoaded& onComplete)
     {
-#ifdef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
+    #ifdef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
         const ELoadResult result = LoadSync<Type>(id, std::filesystem::path(path));
         if (onComplete)
         {
             onComplete(result);
         }
-#else
+    #else
         // Make sure this is the main thread.
         NES_ASSERT(IsMainThread(), "LoadAsync() can only be called on the Main thread! You should call LoadSync() in an Asset's Load function, because it is a synchronous operation on the Asset Thread");
 
@@ -82,20 +119,20 @@ namespace nes
         AssetManager& instance = GetInstance();
         
         // Determine if we need to perform the load:
-        if (AssetInfo* pInfo = instance.GetAssetInfo(id))
+        if (LoadedAssetDesc* pDesc = instance.GetAssetDesc(id))
         {
-            switch (pInfo->m_state)
+            switch (pDesc->m_state)
             {
                 // We have finished or if we were freeing the asset, mark it as Loaded (this will make sure it isn't freed)
                 // and call the OnComplete callback immediately. 
                 case EAssetState::Loaded:
                 case EAssetState::Freeing:
                 {
-                    pInfo->m_state = EAssetState::Loaded;
+                    pDesc->m_state = EAssetState::Loaded;
 
                     if (onComplete)
                     {
-                        const AsyncLoadResult result(id, *pInfo, 1.f);
+                        const AsyncLoadResult result(*pDesc, 1.f);
                         onComplete(result);
                     }
                     return;
@@ -115,7 +152,7 @@ namespace nes
         request.SetOnAssetLoadedCallback(onComplete);
         request.AppendLoad<Type>(id, path);
         SubmitLoadRequest(std::move(request));
-#endif
+    #endif
     }
 
     template <ValidAssetType Type>
@@ -131,65 +168,21 @@ namespace nes
         {
             id = GenerateAssetID();
         }
-        
-        if (IsMainThread())
+
+        const TypeID typeID = Type::GetStaticTypeID();
+
+        // Register the type if not already:
+        if (!assetManager.IsTypeRegistered(typeID))
         {
-            // Create the new asset.
-            AssetBase* pAsset = NES_NEW(Type(std::forward<Type>(asset)));
-            assetManager.ProcessLoadedAsset(pAsset, Type::GetStaticTypeID(), id, ELoadResult::Success);
-        }
-        else
-        {
-            NES_ASSERT(IsAssetThread());
-
-            // New memory asset that will be added to our buffer.
-            LoadedMemoryAsset memoryAsset
-            {
-                .m_pAsset = nullptr,
-                .m_id = id,
-                .m_typeID = Type::GetStaticTypeID(),
-                .m_requestID = kInvalidRequestID, // Sub-load operations do not affect the Request's progress. 
-                .m_result = ELoadResult::Pending,
-            };
-
-            // Check if we can set this asset:
-            bool canAddAsset = false;
-            {
-                for (;;)
-                {
-                    if (!assetManager.ThreadCanProceed(id, Type::GetStaticTypeID(), memoryAsset.m_result, canAddAsset))
-                    {
-                        std::this_thread::sleep_for(std::chrono::microseconds(100));
-                        continue;
-                    }
-
-                    break;
-                }
-            }
-
-            // Add if necessary.
-            if (canAddAsset)
-            {
-                // Create the asset on the heap.
-                memoryAsset.m_pAsset = NES_NEW(Type(std::forward<Type>(asset)));
-                memoryAsset.m_result = ELoadResult::Success;
-            
-                // Set the result of the load in the map.
-                std::lock_guard lock(assetManager.m_threadInfoMapMutex);
-            
-                auto& info = assetManager.m_threadInfoMap.at(id); 
-                info.m_loadResult = memoryAsset.m_result;
-                info.m_state = EAssetState::Loaded;
-            }
-
-            // Add to the array of memory assets:
-            {
-                std::lock_guard lock(assetManager.m_threadMemoryAssetsMutex);
-                assetManager.m_threadMemoryAssets.emplace_back(memoryAsset);
-            }
+            AssetManager::RegisterAssetType<Type>(StripNamespaceFromTypename(Type::GetStaticTypename()));
         }
 
-        return ELoadResult::Success;
+        // Create the metadata - memory assets have no path.
+        AssetMetadata metadata;
+        metadata.m_assetID = id;
+        metadata.m_typeID = typeID;
+
+        return assetManager.AddMemoryAsset(metadata, std::move(asset));
     }
 
     template <ValidAssetType Type>
@@ -198,157 +191,36 @@ namespace nes
         NES_ASSERT(IsMainThread(), "Assets can only be accessed on the Main Thread!");
         
         AssetManager& assetManager = GetInstance();
-        if (auto it = assetManager.m_infoMap.find(id); it != assetManager.m_infoMap.end())
+        if (auto it = assetManager.m_loadedAssetMap.find(id); it != assetManager.m_loadedAssetMap.end())
         {
-            auto& info = it->second;
-            NES_ASSERT(info.m_typeID == Type::GetStaticTypeID(), "Tried to get a loaded asset that is not the requested type!\n\tRequested type: {}", Type::GetStaticTypename());
+            auto& desc = it->second;
+            NES_ASSERT(desc.m_metadata.m_typeID == Type::GetStaticTypeID(), "Tried to get a loaded asset that is not the requested type!\n\tRequested type: {}", Type::GetStaticTypename());
 
             // If we are queued to free, but requested, cancel the free operation.
             // Because we only get assets from the main thread, we won't be freeing an asset while
             // changing this flag.
-            if (info.m_state == EAssetState::Freeing)
+            if (desc.m_state == EAssetState::Freeing)
             {
-                info.m_state = EAssetState::Loaded;
+                desc.m_state = EAssetState::Loaded;
             }
             
             // If not loaded, then return nullptr.
-            else if (info.m_state != EAssetState::Loaded)
+            else if (desc.m_state != EAssetState::Loaded)
             {
                 return nullptr;
             }
 
-            NES_ASSERT(info.m_loadedIndex < assetManager.m_loadedAssets.size());
-            NES_ASSERT(assetManager.m_loadedAssets[info.m_loadedIndex] != nullptr);
-            NES_ASSERT(assetManager.m_loadedAssets[info.m_loadedIndex]->GetTypeID() == Type::GetStaticTypeID());
+            NES_ASSERT(desc.m_loadedIndex < assetManager.m_loadedAssets.size());
+            NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex] != nullptr);
+            NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex]->GetTypeID() == Type::GetStaticTypeID());
 
             // Otherwise, return a pointer to the asset.
-            return AssetPtr<Type>(checked_cast<Type*>(assetManager.m_loadedAssets[info.m_loadedIndex]));
+            return AssetPtr<Type>(checked_cast<Type*>(assetManager.m_loadedAssets[desc.m_loadedIndex]));
         }
 
         return nullptr;
     }
 
-    template <ValidAssetType Type>
-    ELoadResult AssetManager::MainLoadSync(const AssetID& id, const std::filesystem::path& path)
-    {
-        // Should be valid at this point.
-        NES_ASSERT(id != kInvalidAssetID);
-        NES_ASSERT(IsMainThread());
-        
-        // Determine if we need to perform the load:
-        if (AssetInfo* pInfo = GetAssetInfo(id))
-        {
-            switch (pInfo->m_state)
-            {
-                // We have finished, return the previous result.
-                case EAssetState::Loaded:
-                {
-                    return pInfo->m_loadResult;    
-                }
-                
-                // If we were freeing the asset, mark it as Loaded (this will make sure it isn't freed), and return success.
-                case EAssetState::Freeing:
-                {
-                    pInfo->m_state = EAssetState::Loaded;
-                    return ELoadResult::Success;
-                }
-
-                // If the Asset Thread was tasked with loading the Asset, perform the load now.
-                // - The Asset Thread will also perform the load; the duplicate asset will be destroyed on Frame Sync.
-                case EAssetState::Loading:
-                // If Invalid or Freed, perform the load.
-                case EAssetState::Invalid:
-                case EAssetState::Freed:
-                    break;
-
-                // Should not occur on the main thread. This state is only used on the Asset Thread, to denote that
-                // it is actively being loaded. 
-                case EAssetState::ThreadLoading:
-                {
-                    NES_ASSERT(false, "Main thread AssetState should never have 'ThreadLoading' set!");
-                    break;
-                }
-            }
-        }
-
-        else
-        {
-            // Create a new entry:
-            m_infoMap[id] = AssetInfo(kInvalidLoadIndex, Type::GetStaticTypeID(), EAssetState::Loading, ELoadResult::Pending);
-        }
-        
-        m_threadInfoMapNeedsSync = true;
-        
-        // Load the Asset: 
-        AssetBase* pAsset = NES_NEW(Type());
-        const ELoadResult result = pAsset->LoadFromFile(path);
-
-        // Process the loaded result.
-        ProcessLoadedAsset(pAsset, Type::GetStaticTypeID(), id, result);
-
-        // A synchronous load operation must have a completed result.
-        NES_ASSERT(result != ELoadResult::Pending);
-        return result;
-    }
-
-    template <ValidAssetType Type>
-    ELoadResult AssetManager::ThreadLoadSync(const AssetID& id, const std::filesystem::path& path, const LoadRequestID requestID)
-    {
-        NES_ASSERT(IsAssetThread());
-
-        // New memory asset that will be added to our buffer. Even if we don't need to perform a load operation,
-        // this memory asset will be used to notify the load request.
-        LoadedMemoryAsset memoryAsset
-        {
-            .m_pAsset = nullptr, // Only created if we need to perform the load.
-            .m_id = id,
-            .m_typeID = Type::GetStaticTypeID(),
-            .m_requestID = requestID,
-            .m_result = ELoadResult::Pending,
-        };
-
-        // Check if we need to perform a load:
-        bool needsToLoad = false;
-        {
-            for (;;)
-            {
-                if (!ThreadCanProceed(id, Type::GetStaticTypeID(), memoryAsset.m_result, needsToLoad))
-                {
-                    std::this_thread::sleep_for(std::chrono::microseconds(100));
-                    continue;
-                }
-
-                break;
-            }
-        }
-
-        // Perform the load if necessary:
-        if (needsToLoad)
-        {
-            // Create the asset on the heap and load:
-            memoryAsset.m_pAsset = NES_NEW(Type());
-            memoryAsset.m_result = memoryAsset.m_pAsset->LoadFromFile(path);
-            
-            // Set the result of the load in the map.
-            std::lock_guard lock(m_threadInfoMapMutex);
-            
-            auto& info = m_threadInfoMap.at(id); 
-            info.m_loadResult = memoryAsset.m_result;
-            info.m_state = EAssetState::Loaded;
-        }
-
-        // Add the loaded memory asset to thread's buffer to be synced with the main thread.
-        // The asset memory will be freed if it failed to load.
-        // Note: Even if the Asset was previously loaded, we still add a memory asset object (it's value will be null, but the result can be Success).
-        // This ensures that separate requests for the same asset have their callbacks invoked correctly. 
-        {
-            std::lock_guard lock(m_threadMemoryAssetsMutex);
-            m_threadMemoryAssets.emplace_back(memoryAsset);
-        }
-
-        return memoryAsset.m_result;
-    }
-    
     template <ValidAssetType Type>
     AssetPtr<Type>::AssetPtr(const AssetPtr& other)
         : m_pAsset(other.m_pAsset)

@@ -108,6 +108,16 @@ namespace nes
 
 namespace nes
 {
+    inline std::string StripNamespaceFromTypename(const std::string_view fullName)
+    {
+        const size_t lastColon = fullName.find_last_of(':');
+        if (lastColon != std::string_view::npos)
+        {
+            return std::string(fullName.substr(lastColon + 1));
+        }
+        return std::string(fullName);
+    }
+    
     // template <typename Type>
     // concept OutStreamType = requires(std::ostream out, Type type)
     // {

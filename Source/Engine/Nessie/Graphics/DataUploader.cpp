@@ -4,6 +4,8 @@
 #include "DeviceImage.h"
 #include "Vulkan/VmaUsage.h"
 #include "RenderDevice.h"
+#include "Renderer.h"
+#include "Nessie/Asset/AssetManager.h"
 
 namespace nes
 {
@@ -95,7 +97,12 @@ namespace nes
         postBarrier.m_mipCount = image.m_desc.m_mipCount;
         postBarrier.m_layerCount = image.m_desc.m_layerCount;
 
-        // [TODO]: If we are on a separate staging queue, then we need to transition ownership to the render queue.
+        // If we are on a separate staging queue, then we need to transition ownership to the render queue.
+        if (AssetManager::IsAssetThread())
+        {
+            postBarrier.m_pSrcQueue = Renderer::GetTransferQueue();
+            postBarrier.m_pDstQueue = Renderer::GetRenderQueue();
+        }
         
         m_postBarriers.m_imageBarriers.emplace_back(postBarrier);
 
