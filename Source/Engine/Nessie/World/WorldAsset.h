@@ -2,6 +2,7 @@
 #pragma once
 #include "EntityRegistry.h"
 #include "Nessie/Asset/AssetBase.h"
+#include "Nessie/Asset/AssetPack.h"
 
 namespace nes
 {
@@ -16,7 +17,10 @@ namespace nes
         WorldAsset() = default;
         WorldAsset(WorldAsset&& other) noexcept;
         WorldAsset& operator=(WorldAsset&& other) noexcept;
-        EntityRegistry&         GetRegistry() { return m_entityRegistry; }
+
+        AssetPack&              GetAssetPack()          { return m_assetPack; }
+        const AssetPack&        GetAssetPack() const    { return m_assetPack; }
+        EntityRegistry&         GetRegistry()           { return m_entityRegistry; }
         
     protected:
         virtual ELoadResult     LoadFromFile(const std::filesystem::path& path) override;
@@ -24,9 +28,7 @@ namespace nes
         
     private:
         EntityRegistry          m_entityRegistry{};
-
-        // [TODO]: Assets that need to be loaded.
-        //std::vector<AssetID>    m_requiredAssets{}; // All assets that must be loaded for the world 
+        AssetPack               m_assetPack{};
     };
     
     static_assert(ValidAssetType<WorldAsset>);

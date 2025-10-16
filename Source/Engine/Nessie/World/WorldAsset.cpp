@@ -31,17 +31,27 @@ namespace nes
         }
 
         auto world = file["World"];
-
-        // [TODO]: Load Assets IDs/Paths, to be loaded later.
+        NES_ASSERT(world);
         
-        // Load Entities:
+        auto assets = world["Assets"];
+        if (!assets)
+        {
+            NES_ERROR("Failed to load World! Missing 'Asset' table!\n- Path: {}", path.string());
+            return ELoadResult::Failure;
+        }
+        
         auto entities = world["Entities"];
         if (!entities)
         {
             NES_ERROR("Failed to load World! Missing 'Entities' table!\n- Path: {}", path.string());
-            return ELoadResult::InvalidArgument;
+            return ELoadResult::Failure;
         }
-        
+
+        // Load the Assets
+        if (!AssetPack::LoadFromYAML(assets, m_assetPack))
+            return ELoadResult::Failure;
+
+        // Load the Entities:
         if (!LoadEntities(entities))
             return ELoadResult::Failure;
 

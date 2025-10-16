@@ -120,7 +120,17 @@ namespace nes
         /// @brief : Get the current swapchain extent.
         //----------------------------------------------------------------------------------------------------
         static vk::Extent2D         GetSwapchainExtent();
-    
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Device Queue used to issue Render Commands on the main thread.
+        //----------------------------------------------------------------------------------------------------
+        static DeviceQueue*         GetRenderQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the Transfer Queue used to process commands on the Asset thread.
+        //----------------------------------------------------------------------------------------------------
+        static DeviceQueue*         GetTransferQueue();
+        
     public:
         /* Constructor */           Renderer(RenderDevice& device);
         /* Destructor */            ~Renderer();

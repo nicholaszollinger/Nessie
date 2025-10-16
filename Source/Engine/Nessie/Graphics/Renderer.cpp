@@ -132,6 +132,16 @@ namespace nes
         return GetChecked()->m_swapchain.GetExtent();
     }
 
+    DeviceQueue* Renderer::GetRenderQueue()
+    {
+        return GetChecked()->m_pRenderQueue;
+    }
+
+    DeviceQueue* Renderer::GetTransferQueue()
+    {
+        return GetChecked()->m_pTransferQueue;
+    }
+
     bool Renderer::Init(ApplicationWindow* pWindow, const RendererDesc& /*rendererDesc*/)
     {
         m_pWindow = pWindow;
