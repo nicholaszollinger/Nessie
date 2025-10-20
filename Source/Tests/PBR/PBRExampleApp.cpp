@@ -67,7 +67,7 @@ bool PBRExampleApp::Internal_AppInit()
 
 void PBRExampleApp::Internal_AppUpdate(const float timeStep)
 {
-    if (m_pWorld)
+    if (m_pWorld && m_pWorld->GetRegistry().GetNumEntities() > 0)
         m_pWorld->Tick(timeStep);
 }
 
