@@ -76,7 +76,7 @@ namespace nes
         return tempBuffer;
     }
 
-    void Renderer::SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer)
+    void Renderer::SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer, const std::vector<vk::Semaphore>& signalSemaphores, const std::vector<ImageBarrierDesc>& acquireBarriers)
     {
         NES_ASSERT(g_pRenderer != nullptr);
 
@@ -84,11 +84,15 @@ namespace nes
         cmdBuffer.End();
 
         // Get the Queue to submit to:
-        DeviceQueue* pQueue = nullptr;
+        DeviceQueue* pQueue;
         if (AssetManager::IsAssetThread())
+        {
             pQueue = g_pRenderer->m_pTransferQueue;
+        }
         else
+        {
             pQueue = g_pRenderer->m_pRenderQueue;
+        }
         NES_ASSERT(pQueue != nullptr);
 
         // Submit to the Queue
@@ -98,12 +102,22 @@ namespace nes
         constexpr vk::FenceCreateInfo fenceInfo = vk::FenceCreateInfo();
         vk::Fence fence = (*vkDevice).createFence(fenceInfo, g_pRenderer->m_device.GetVkAllocationCallbacks());
 
+        // Build semaphore submit infos
+        std::vector<vk::SemaphoreSubmitInfo> signalInfos;
+        for (auto semaphore : signalSemaphores)
+        {
+            signalInfos.push_back(vk::SemaphoreSubmitInfo()
+                .setSemaphore(semaphore)
+                .setStageMask(vk::PipelineStageFlagBits2::eTransfer));
+        }
+        
         // Submit
         const vk::CommandBufferSubmitInfo cmdBufferInfo = vk::CommandBufferSubmitInfo()
             .setCommandBuffer(cmdBuffer.GetVkCommandBuffer());
 
         const vk::SubmitInfo2 submitInfo = vk::SubmitInfo2()
-            .setCommandBufferInfos(cmdBufferInfo);
+            .setCommandBufferInfos(cmdBufferInfo)
+            .setSignalSemaphoreInfos(signalInfos);
         
         pQueue->GetVkQueue().submit2(submitInfo, fence);
 
@@ -112,6 +126,19 @@ namespace nes
         
         // Clean up.
         (*vkDevice).destroyFence(fence, g_pRenderer->m_device.GetVkAllocationCallbacks());
+
+        // NOW that transfer has completed and signaled semaphores,
+        // add the acquire barriers for the render thread
+        if (AssetManager::IsAssetThread() && !acquireBarriers.empty())
+        {
+            NES_LOG("Signaled a Release Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(signalSemaphores[0])));
+            
+            std::lock_guard lock(g_pRenderer->m_transferMutex);
+            for (const auto& barrier : acquireBarriers)
+            {
+                g_pRenderer->m_acquireImageBarriers.emplace_back(barrier);
+            }
+        }
     }
 
     RenderCommandQueue& Renderer::GetRenderResourceReleaseQueue(const uint32 index)
@@ -140,6 +167,30 @@ namespace nes
     DeviceQueue* Renderer::GetTransferQueue()
     {
         return GetChecked()->m_pTransferQueue;
+    }
+
+    vk::Semaphore Renderer::AcquireTransferSemaphore()
+    {
+        auto* pRenderer = GetChecked();
+        
+        std::lock_guard lock(pRenderer->m_transferMutex);
+
+        for (auto& semaphore : pRenderer->m_transferSemaphores)
+        {
+            if (!semaphore.m_inUse)
+            {
+                NES_LOG("Acquired Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(*semaphore.m_semaphore)));
+                
+                semaphore.m_inUse = true;
+                return semaphore.m_semaphore;
+            }
+        }
+
+        // Create a new one.
+        vk::SemaphoreCreateInfo binaryInfo = {};
+        pRenderer->m_transferSemaphores.emplace_back(vk::raii::Semaphore(pRenderer->m_device, binaryInfo), true);
+        NES_LOG("Acquired NEW Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(*pRenderer->m_transferSemaphores.back().m_semaphore)));
+        return pRenderer->m_transferSemaphores.back().m_semaphore;
     }
 
     bool Renderer::Init(ApplicationWindow* pWindow, const RendererDesc& /*rendererDesc*/)
@@ -185,7 +236,8 @@ namespace nes
         {
             CreateFrameSubmissionResources(kHeadlessFramesInFlight);
         }
-        
+
+        m_transferSemaphores.reserve(16);
         return true;
     }
 
@@ -203,6 +255,9 @@ namespace nes
         // Cleanup frame data:
         m_frames.clear();
         m_frameTimelineSemaphore = nullptr;
+
+        // Free transfer semaphores
+        m_transferSemaphores.clear();
 
         // Destroy the swapchain and command pool.
         m_swapchain = nullptr;
@@ -241,6 +296,9 @@ namespace nes
         // Clear the semaphores and command buffers submitted last frame.
         ClearPreviousFrameSubmissionData();
 
+        // Record commands for acquiring resources loaded on the Asset Thread.
+        RecordAcquireResources();
+
         return true;
     }
 
@@ -248,14 +306,15 @@ namespace nes
     {
         // Add Swapchain semaphores to the list of semaphores to wait for and signal:
         // First add the swapchain semaphore to wait for the image to be available
-        m_waitSemaphores.push_back
+        m_renderSubmissionDesc.m_waitSemaphores.push_back
         (
             vk::SemaphoreSubmitInfo()
                 .setSemaphore(m_swapchain.GetImageAvailableSemaphore())
                 .setStageMask(vk::PipelineStageFlagBits2::eColorAttachmentOutput)
         );
+        
         // Then add the signal for the swapchain to present once everything else is done.
-        m_signalSemaphores.push_back
+        m_renderSubmissionDesc.m_signalSemaphores.push_back
         (
          vk::SemaphoreSubmitInfo()
                 .setSemaphore(m_swapchain.GetRenderFinishedSemaphore())
@@ -282,6 +341,9 @@ namespace nes
 
         // Clear the semaphores and command buffers submitted last frame.
         ClearPreviousFrameSubmissionData();
+
+        // Record commands for acquiring resources loaded on the Asset Thread.
+        RecordAcquireResources();
     }
 
     void Renderer::EndHeadlessFrame()
@@ -302,6 +364,27 @@ namespace nes
     {
         auto& freeQueue = m_resourceFreeQueues[m_currentFrameIndex];
         freeQueue.Execute();
+        
+        // Release the used transfer semaphores.
+        auto& frame = m_frames[m_currentFrameIndex];
+        std::lock_guard lock(m_transferMutex);
+        
+        for (auto semaphore : frame.m_transferSemaphoresToRelease)
+        {
+            for (auto& ts : m_transferSemaphores)
+            {
+                if (*ts.m_semaphore == semaphore)
+                {
+                    NES_ASSERT(ts.m_inUse);
+
+                    NES_LOG("Releasing Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(semaphore)));
+
+                    ts.m_inUse = false;
+                    break;
+                }
+            }
+        }
+        frame.m_transferSemaphoresToRelease.clear();
     }
 
     void Renderer::BeginCommandRecording()
@@ -382,9 +465,51 @@ namespace nes
 
     void Renderer::ClearPreviousFrameSubmissionData()
     {
-        m_waitSemaphores.clear();
-        m_signalSemaphores.clear();
-        m_commandBuffers.clear();
+        m_renderSubmissionDesc.m_waitSemaphores.clear();
+        m_renderSubmissionDesc.m_signalSemaphores.clear();
+        m_renderSubmissionDesc.m_commandBuffers.clear();
+    }
+
+    void Renderer::RecordAcquireResources()
+    {
+        // Add all pending barriers and 
+        std::lock_guard lock(m_transferMutex);
+
+        if (m_acquireImageBarriers.empty())
+            return;
+
+        NES_LOG("RecordAcquireResources: Recording {} barriers for frame {}.", m_acquireImageBarriers.size(), m_currentFrameIndex);
+        
+        BarrierGroupDesc barriers{};
+        std::vector<vk::Semaphore> semaphoresToRelease{}; 
+        for (auto& acquireImageBarrier : m_acquireImageBarriers)
+        {
+            if (acquireImageBarrier.m_transferSemaphore != nullptr)
+            {
+                barriers.m_imageBarriers.emplace_back(acquireImageBarrier);
+                
+                // Add the wait semaphore to the specific barrier:
+                vk::SemaphoreSubmitInfo waitInfo = vk::SemaphoreSubmitInfo()
+                    .setSemaphore(acquireImageBarrier.m_transferSemaphore)
+                    .setStageMask(vk::PipelineStageFlagBits2::eTopOfPipe);
+                
+                m_renderSubmissionDesc.m_waitSemaphores.emplace_back(waitInfo);
+
+                NES_LOG("Waiting for Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(waitInfo.semaphore)));
+                NES_LOG(" Image: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkImage>(acquireImageBarrier.m_pImage->GetVkImage())));
+
+                // Track for cleanup.
+                semaphoresToRelease.emplace_back(acquireImageBarrier.m_transferSemaphore);
+            }
+        }
+        
+        auto& commandBuffer = m_frames[m_currentFrameIndex].m_commandBuffer;
+        commandBuffer.SetBarriers(barriers);
+
+        m_frames[m_currentFrameIndex].m_transferSemaphoresToRelease = std::move(semaphoresToRelease);
+
+        // Clear the barriers.
+        m_acquireImageBarriers.clear();
     }
 
     void Renderer::SubmitFrameCommands()
@@ -396,20 +521,20 @@ namespace nes
         frame.m_commandBuffer.End();
         
         // Add timeline semaphore to signal when GPU completes this frame.
-        m_signalSemaphores.push_back(vk::SemaphoreSubmitInfo()
+        m_renderSubmissionDesc.m_signalSemaphores.push_back(vk::SemaphoreSubmitInfo()
             .setSemaphore(m_frameTimelineSemaphore)
             .setValue(frame.m_frameNumber)
             .setStageMask(vk::PipelineStageFlagBits2::eBottomOfPipe));
         
         // Adding the command buffer of the frame to the list of command buffers to submit
         // Note: extra command buffers could have been added to the list from other parts of the render frame.
-        m_commandBuffers.push_back(vk::CommandBufferSubmitInfo()
+        m_renderSubmissionDesc.m_commandBuffers.push_back(vk::CommandBufferSubmitInfo()
             .setCommandBuffer(frame.m_commandBuffer.GetVkCommandBuffer()));
 
         const vk::SubmitInfo2 submitInfo = vk::SubmitInfo2()
-            .setWaitSemaphoreInfos(m_waitSemaphores)
-            .setCommandBufferInfos(m_commandBuffers)
-            .setSignalSemaphoreInfos(m_signalSemaphores);
+            .setWaitSemaphoreInfos(m_renderSubmissionDesc.m_waitSemaphores)
+            .setCommandBufferInfos(m_renderSubmissionDesc.m_commandBuffers)
+            .setSignalSemaphoreInfos(m_renderSubmissionDesc.m_signalSemaphores);
 
         m_pRenderQueue->GetVkQueue().submit2(submitInfo, nullptr);
     }

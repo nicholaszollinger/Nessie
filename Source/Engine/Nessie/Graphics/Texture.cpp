@@ -123,7 +123,7 @@ namespace nes
             // a base level and count at the beginning of the binary file.
             
             // Submit commands:
-            Renderer::SubmitAndWaitTempCommands(cmdBuffer);
+            Renderer::SubmitAndWaitTempCommands(cmdBuffer, dataUploader.GetSignalSemaphores(), dataUploader.GetAcquireBarriers());
         }
         
         return ELoadResult::Success;

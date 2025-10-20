@@ -58,6 +58,17 @@ namespace nes
         void                                RecordCommands(CommandBuffer& buffer);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get all barriers that need to be sent to the Renderer to acquire resources loaded on the
+        ///     Asset Thread.
+        //----------------------------------------------------------------------------------------------------
+        const std::vector<ImageBarrierDesc>& GetAcquireBarriers() const { return m_pendingAcquireBarriers; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get all semaphores that need to be signaled release. Used for resources that are loaded on the Asset Thread
+        //----------------------------------------------------------------------------------------------------
+        const std::vector<vk::Semaphore>&   GetSignalSemaphores() const { return m_signalSemaphores; }
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Check if there are any pending upload operations.
         //----------------------------------------------------------------------------------------------------
         bool                                IsEmpty() const;
@@ -96,12 +107,14 @@ namespace nes
             DeviceBuffer                    m_buffer = nullptr;             // Staging Buffer.
             SemaphoreValue                  m_semaphoreState = nullptr;     // Synchronization semaphore.
         };
-
+        
         BarrierGroupDesc                    m_preBarriers;                  // Memory Barriers to apply before the upload commands.
         BarrierGroupDesc                    m_postBarriers;                 // Memory Barriers to apply after the upload commands.
         std::vector<CopyBufferDesc>         m_copyBufferDescs{};
         std::vector<CopyBufferToImageDesc>  m_copyBufferToImageDescs{};
         std::vector<StagingResource>        m_stagingResources{};
+        std::vector<ImageBarrierDesc>       m_pendingAcquireBarriers{};
+        std::vector<vk::Semaphore>          m_signalSemaphores{};   
         RenderDevice*                       m_pDevice = nullptr;
         size_t                              m_stagingResourcesSize = 0;     // Total size of all staging buffers.
     };

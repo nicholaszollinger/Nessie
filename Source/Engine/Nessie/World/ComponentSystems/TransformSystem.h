@@ -21,7 +21,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's world orientation. 
         //----------------------------------------------------------------------------------------------------
-        Rotation                GetWorldRotation() const        { return Rotation(m_worldMatrix.GetRotation().ToQuaternion().ToEulerAngles() * math::RadiansToDegrees()); }
+        Rotation                GetWorldRotation() const;
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's total world scale. 

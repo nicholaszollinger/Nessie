@@ -15,18 +15,18 @@ namespace nes
         float m_roll = 0.f;     /// Rotation about the forward axis (Z-Axis). Tilting your head. (0 = straight, +CounterClockwise, -Clockwise)
         
         /// Constructors
-        constexpr                   Rotation() = default;
+                                    Rotation() = default;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create a rotation, with passed in values expected to be in degrees.
         //----------------------------------------------------------------------------------------------------
-        constexpr                   Rotation(const float pitch, const float yaw, const float roll) : m_pitch(pitch), m_yaw(yaw), m_roll(roll) {}
+        NES_INLINE                  Rotation(float pitch, float yaw, float roll);
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Create a Rotation from a set of euler angles. The angles are expected to be stored in
         ///     degrees, with x = pitch, y = yaw, z = roll.
         //----------------------------------------------------------------------------------------------------
-                                    Rotation(const Vec3& eulerAngles) : m_pitch(eulerAngles.x) , m_yaw(eulerAngles.y), m_roll(eulerAngles.z) {}
+        NES_INLINE                  Rotation(const Vec3& eulerAngles) : Rotation(eulerAngles.x, eulerAngles.y, eulerAngles.z) {}
 
         /// Operators
         NES_INLINE Rotation         operator+(const Rotation other) const;
@@ -89,7 +89,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@returns : Returns a Rotation object with each of pitch, yaw and roll set to zero.
         //----------------------------------------------------------------------------------------------------
-        static constexpr Rotation   Zero()        { return Rotation(0, 0, 0); }
+        static Rotation             Zero()        { return Rotation(0, 0, 0); }
     };
 }
 

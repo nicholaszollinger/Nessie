@@ -87,7 +87,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the maximum number of frames in flight.
         //----------------------------------------------------------------------------------------------------
-        static uint32               GetMaxFramesInFlight();    
+        static uint32               GetMaxFramesInFlight();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Creates a temporary command buffer, records the given commands and submits them to the
@@ -104,7 +104,7 @@ namespace nes
         /// @brief : Submits a temporary command buffer created with BeginTempCommands(). This will block until
         /// complete.
         //----------------------------------------------------------------------------------------------------
-        static void                 SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer);
+        static void                 SubmitAndWaitTempCommands(CommandBuffer& cmdBuffer, const std::vector<vk::Semaphore>& signalSemaphores = {}, const std::vector<ImageBarrierDesc>& acquireBarriers = {});
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the RenderCommandQueue of a specific frame used to release render resources. 
@@ -130,6 +130,11 @@ namespace nes
         /// @brief : Get the Transfer Queue used to process commands on the Asset thread.
         //----------------------------------------------------------------------------------------------------
         static DeviceQueue*         GetTransferQueue();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advance use. Obtain a semaphore that can be used to signal that a transfer operation is complete.
+        //----------------------------------------------------------------------------------------------------
+        static vk::Semaphore        AcquireTransferSemaphore();
         
     public:
         /* Constructor */           Renderer(RenderDevice& device);
@@ -259,6 +264,11 @@ namespace nes
         void                        ClearPreviousFrameSubmissionData();
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : For Assets loaded on the Asset Thread, this will 
+        //----------------------------------------------------------------------------------------------------
+        void                        RecordAcquireResources();
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Submit the current frame's command buffer to the Submission Queue. 
         //----------------------------------------------------------------------------------------------------
         void                        SubmitFrameCommands();
@@ -272,8 +282,6 @@ namespace nes
         static constexpr uint32                 kHeadlessFramesInFlight = 5;
         
         //----------------------------------------------------------------------------------------------------
-        // [TODO]: In the future, I might have multiple command pools/buffers for each required device queue?
-        //         I am thinking about a dedicated compute queue or dedicated transfer queue.
         /// @brief : Contains a dedicated command pool and buffer for rendering commands.
         //----------------------------------------------------------------------------------------------------
         struct FrameData
@@ -281,6 +289,32 @@ namespace nes
             CommandPool                         m_commandPool = nullptr;                    // The Command Pool used for recording commands for this frame.
             CommandBuffer                       m_commandBuffer = nullptr;                  // The Command Buffer that contains this frame's rendering commands.
             uint64                              m_frameNumber = 0;                          // Timeline value for synchronization (increases each frame).
+            std::vector<vk::Semaphore>          m_transferSemaphoresToRelease{};
+        };
+
+        //----------------------------------------------------------------------------------------------------
+        // [TODO]: Queue Timeline object to wrap this.
+        //
+        /// @brief : Parameters submitted to a Queue to process commands in a specific order. 
+        //----------------------------------------------------------------------------------------------------
+        struct QueueSubmissionDesc
+        {
+            std::vector<vk::SemaphoreSubmitInfo>      m_waitSemaphores;                     // Set of semaphores to wait for a signal.
+            std::vector<vk::SemaphoreSubmitInfo>      m_signalSemaphores;                   // Set of semaphores that will be signaled.
+            std::vector<vk::CommandBufferSubmitInfo>  m_commandBuffers;                     // Set of command buffers to submit.
+        };
+
+        struct AcquireImageBarrierDesc
+        {
+            ImageBarrierDesc    m_barrier{};
+            vk::Semaphore       m_transferSemaphore = nullptr;
+            uint32              m_transferSemaphoreIndex = 0;
+        };
+
+        struct TransferSemaphore
+        {
+            vk::raii::Semaphore m_semaphore = nullptr;
+            bool                m_inUse = false;
         };
         
         RenderDevice&                           m_device;                                   // Device to create graphics resources.
@@ -295,11 +329,12 @@ namespace nes
         std::vector<FrameData>                  m_frames{};                                 // Collection of per-frame resources to support multiple frames in flight.
         vk::raii::Semaphore                     m_frameTimelineSemaphore = nullptr;         // Timeline semaphore used to synchronize CPU submission and GPU completion.
         uint32                                  m_currentFrameIndex = 0;                    // The current frame index in the frame data array (cycles through like a ring).
+        
+        std::vector<ImageBarrierDesc>           m_acquireImageBarriers{};                        
+        std::mutex                              m_transferMutex{};                   
 
-        // [TODO]: Queue Timeline object to handle these:
-        std::vector<vk::SemaphoreSubmitInfo>      m_waitSemaphores;                         // Possible extra wait semaphores.
-        std::vector<vk::SemaphoreSubmitInfo>      m_signalSemaphores;                       // Possible extra frame signal semaphores.
-        std::vector<vk::CommandBufferSubmitInfo>  m_commandBuffers;                         // Possible extra frame command buffers.
+        QueueSubmissionDesc                     m_renderSubmissionDesc{};
+        std::vector<TransferSemaphore>          m_transferSemaphores{};
         
         // Performance Values
         float                                   m_renderThreadWorkTime;                     // The amount of time the render thread was processing commands (ms).

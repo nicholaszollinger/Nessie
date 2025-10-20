@@ -91,13 +91,14 @@ namespace nes
         return *this;
     }
 
-    ImageBarrierDesc& ImageBarrierDesc::SetQueueAccess(DeviceQueue* pSrcQueue, DeviceQueue* pDstQueue)
+    ImageBarrierDesc& ImageBarrierDesc::SetQueueAccess(DeviceQueue* pSrcQueue, DeviceQueue* pDstQueue, const EBarrierQueueOp op)
     {
         NES_ASSERT(pSrcQueue != nullptr);
         NES_ASSERT(pDstQueue != nullptr);
         
         m_pSrcQueue = pSrcQueue;
         m_pDstQueue = pDstQueue;
+        m_queueOp = op;
         return *this;
     }
 

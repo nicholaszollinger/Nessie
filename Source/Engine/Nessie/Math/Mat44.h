@@ -73,6 +73,21 @@ namespace nes
         /// @brief : Set the translation component of this matrix (XYZ components of the 4th column). 
         //----------------------------------------------------------------------------------------------------
         NES_INLINE void         SetTranslation(const Vec3& translation)                 { m_columns[3] = Vec4(translation, 1.f); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the normalized forward vector for this matrix.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE Vec3         GetForward() const                                      { return GetColumn3(2).Normalized(); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the normalized up vector for this matrix.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE Vec3         GetUp() const                                           { return GetColumn3(1).Normalized(); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the normalized right vector for this matrix.
+        //----------------------------------------------------------------------------------------------------
+        NES_INLINE Vec3         GetRight() const                                        { return GetColumn3(0).Normalized(); }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Test if two matrices are close to one another, testing each column.
@@ -80,7 +95,7 @@ namespace nes
         NES_INLINE bool         IsClose(const Mat44& other, const float maxSqrDist = 1.0e-12f) const;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Multiply a vector only by the 3x3 part of the matrix. 
+        /// @brief : Multiply a vector only by the 3x3 part of the matrix.
         //----------------------------------------------------------------------------------------------------
         NES_INLINE Vec3         Multiply3x3(const Vec3& vec) const;
 

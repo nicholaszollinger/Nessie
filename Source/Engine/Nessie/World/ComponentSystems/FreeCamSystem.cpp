@@ -6,8 +6,20 @@
 
 namespace nes
 {
+    void FreeCamMovementComponent::Serialize(YAML::Emitter&, const FreeCamMovementComponent&)
+    {
+        // [TODO]: 
+    }
+
+    void FreeCamMovementComponent::Deserialize(const YAML::Node& in, FreeCamMovementComponent& component)
+    {
+        component.m_moveSpeed = in["MoveSpeed"].as<float>(50.f);
+        component.m_sensitivity = in["Sensitivity"].as<float>(1.25f);
+    }
+
     bool FreeCamSystem::Init()
     {
+        m_rotationEnabled = false;
         m_pTransformSystem = GetWorld().GetSystem<TransformSystem>();
         if (!m_pTransformSystem)
         {
@@ -72,26 +84,27 @@ namespace nes
 
             // Delta Rotation:
             const float heading = inputRotation.y * freeCam.m_sensitivity;
-            const float pitch = nes::math::Clamp(inputRotation.x * freeCam.m_sensitivity, -0.49f * nes::math::Pi(), 0.49f * nes::math::Pi());
-            const nes::Vec3 deltaPitchYawRoll = nes::Vec3(pitch, heading, 0.f);
+            const float pitch = math::Clamp(inputRotation.x * freeCam.m_sensitivity, -0.49f * math::Pi(), 0.49f * math::Pi());
+            const Vec3 deltaPitchYawRoll = Vec3(pitch, heading, 0.f);
 
             // Delta Movement.
-            const nes::Vec3 deltaMovement = inputMovement * speed;
+            const Vec3 deltaMovement = inputMovement * speed;
 
             // If there is enough change:
             if (deltaPitchYawRoll.LengthSqr() > 0.f || deltaMovement.LengthSqr() > 0.f)
             {
                 // calculate local rotation:
-                nes::Rotation localRotation = transform.GetLocalRotation();
+                Rotation localRotation = transform.GetLocalRotation();
                 if (deltaPitchYawRoll.LengthSqr() > 0.f)
                 {
-                    const nes::Rotation deltaRotation(deltaPitchYawRoll);
+                    const Rotation deltaRotation(deltaPitchYawRoll);
                     localRotation += deltaRotation;
+                    localRotation.m_roll = 0.f;
                 }
 
                 // Calculate local position:
-                nes::Vec3 localPosition = transform.GetLocalPosition();
-                localPosition += localRotation.RotatedVector(nes::Vec3(deltaMovement.x, 0.f, deltaMovement.z));
+                Vec3 localPosition = transform.GetLocalPosition();
+                localPosition += localRotation.RotatedVector(Vec3(deltaMovement.x, 0.f, deltaMovement.z));
                 localPosition.y += deltaMovement.y;
 
                 // Apply the transformation:
@@ -102,37 +115,37 @@ namespace nes
 
     void FreeCamSystem::ProcessInput(Vec3& outInputMovement, Vec2& outInputRotation, bool& outShiftDown) const
     {
-        outShiftDown = nes::InputManager::IsKeyDown(nes::EKeyCode::LeftShift) || nes::InputManager::IsKeyDown(nes::EKeyCode::RightShift);
+        outShiftDown = InputManager::IsKeyDown(EKeyCode::LeftShift) || InputManager::IsKeyDown(EKeyCode::RightShift);
         
-        outInputMovement = nes::Vec3::Zero();
-        outInputRotation = nes::Vec2::Zero();
+        outInputMovement = Vec3::Zero();
+        outInputRotation = Vec2::Zero();
 
         // Process Movement:
-        if (nes::InputManager::IsKeyDown(nes::EKeyCode::W))
+        if (InputManager::IsKeyDown(EKeyCode::W))
             outInputMovement.z += 1.f;
             
-        if (nes::InputManager::IsKeyDown(nes::EKeyCode::S))
+        if (InputManager::IsKeyDown(EKeyCode::S))
             outInputMovement.z -= 1.f;
             
-        if (nes::InputManager::IsKeyDown(nes::EKeyCode::A))
+        if (InputManager::IsKeyDown(EKeyCode::A))
             outInputMovement.x -= 1.f;
         
-        if (nes::InputManager::IsKeyDown(nes::EKeyCode::D))
+        if (InputManager::IsKeyDown(EKeyCode::D))
             outInputMovement.x += 1.f;
         
-        if (nes::InputManager::IsKeyDown(nes::EKeyCode::Space))
+        if (InputManager::IsKeyDown(EKeyCode::Space))
             outInputMovement.y += 1.f;  
             
-        if (nes::InputManager::IsKeyDown(nes::EKeyCode::LeftControl) || nes::InputManager::IsKeyDown(nes::EKeyCode::RightControl))
+        if (InputManager::IsKeyDown(EKeyCode::LeftControl) || InputManager::IsKeyDown(EKeyCode::RightControl))
             outInputMovement.y -= 1.f;
 
         // Normalize movement vector
-        outInputMovement.NormalizedOr(nes::Vec3::Zero());
+        outInputMovement.NormalizedOr(Vec3::Zero());
 
         // Process Rotation:
         if (m_rotationEnabled)
         {
-            const nes::Vec2 delta = nes::InputManager::GetCursorDelta();
+            const Vec2 delta = InputManager::GetCursorDelta();
             outInputRotation.x = delta.y;
             outInputRotation.y = delta.x;
             outInputRotation.Normalize();

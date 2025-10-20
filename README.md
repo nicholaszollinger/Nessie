@@ -27,8 +27,8 @@ Download the git repository and use the following build scripts:
 This Fall, the aim is finish rendering features and create the Editor UI!
 - PBR Pipeline ✅
 - Cascaded Shadow Mapping ✅
-- ECS refactor - wrapping Entt. ⌛
-- Editor UI - using ImGui.
+- ECS refactor - wrapping Entt. ✅
+- Editor UI - using ImGui. ⌛
 - Height Map Terrain
 - Grass Renderer
 
@@ -38,4 +38,4 @@ This Fall, the aim is finish rendering features and create the Editor UI!
 - Proper Serialization - utilizing a binary format.
 - UI System.
 - Audio System.
-- Scripting, in python (lower priority, as I will be the solo dev for this engine).
+- Scripting, in Python or Lua (lower priority, as I will be the solo dev for this engine).

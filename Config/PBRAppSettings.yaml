@@ -1,15 +1,49 @@
 # PBR Application Settings
-CameraSettings:
-  Position: [-0.12, 1.14, -2.25]
-  Rotation: [17.0, 7.0, 0.0]
-  NearPlane: 0.01
-  FarPlane: 1000.0
-  FOV: 65 # Degrees
-  MoveSpeed: 50.0
-  Sensitivity: 1.25
-  Aperture: 8.0
-  ShutterSpeedSeconds: 125.0
-  ISO: 100.0
+
+# Asset Pack for all Shaders and Default Assets.
+Assets:
+  # Shaders:
+- AssetID: 1000
+  TypeID: 3541022837009731048
+  Path: "GridShader.yaml"
+- AssetID: 1001
+  TypeID: 3541022837009731048
+  Path: "SkyboxShader.yaml"
+- AssetID: 1002
+  TypeID: 3541022837009731048
+  Path: "PBRShader.yaml"
+- AssetID: 1003
+  TypeID: 3541022837009731048
+  Path: "ShadowPass.yaml"
+  # Textures
+- AssetID: 10
+  TypeID: 2829778445906215252
+  Path: "Images\\ErrorTexture.png"
+- AssetID: 11
+  TypeID: 2829778445906215252
+  Path: "Images\\BlackTexture.png"
+- AssetID: 12
+  TypeID: 2829778445906215252
+  Path: "Images\\WhiteTexture.png"
+- AssetID: 13
+  TypeID: 2829778445906215252
+  Path: "Images\\FlatNormalTexture.png"
+  # Default Skybox
+- AssetID: 500
+  TypeID: 17573926464023591641
+  Path: "Skybox\\Skybox.yaml"
+  # Materials
+- AssetID: 5000
+  TypeID: 14967253334840397702
+  Path: "Materials\\DefaultMaterial.yaml"
+
+DefaultAssetIDs:
+  ErrorTextureID: 10
+  BlackTextureID: 11
+  WhiteTextureID: 12
+  FlatNormalTextureID: 13
+  DefaultSkyboxID: 500
+  DefaultMaterialID: 5000
 
 RenderTargets:
   Color:
@@ -41,3 +75,4 @@ Pipelines:
   Grid: "Pipelines\\GridPipeline.yaml"
   Skybox: "Pipelines\\SkyboxPipeline.yaml"
   PBR: "Pipelines\\PBRPipeline.yaml"
+

@@ -43,6 +43,7 @@ namespace nes
         auto handle = m_registry.create();
         auto& idComp = m_registry.emplace<IDComponent>(handle, name);
         m_registry.emplace<PendingInitialization>(handle);
+        m_registry.emplace<PendingEnable>(handle);
 
         // Add to the map:
         m_entityMap.emplace(idComp.GetID(), handle);
@@ -56,6 +57,7 @@ namespace nes
         auto handle = m_registry.create();
         m_registry.emplace<IDComponent>(handle, id, name);
         m_registry.emplace<PendingInitialization>(handle);
+        m_registry.emplace<PendingEnable>(handle);
         
         // Add to the map:
         m_entityMap.emplace(id, handle);
