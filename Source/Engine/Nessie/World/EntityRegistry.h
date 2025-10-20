@@ -216,6 +216,11 @@ namespace nes
         /// @brief : Checks to see if the Entity exists in the registry, and contains an IDComponent.
         //----------------------------------------------------------------------------------------------------
         bool                        IsValidEntity(const EntityID id) const;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the number of entities in the registry.
+        //----------------------------------------------------------------------------------------------------
+        size_t                      GetNumEntities() const { return m_entityMap.size(); }
     
     private:
         friend class ComponentRegistry;
