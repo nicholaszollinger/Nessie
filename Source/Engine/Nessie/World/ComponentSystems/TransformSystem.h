@@ -21,7 +21,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's world orientation. 
         //----------------------------------------------------------------------------------------------------
-        Rotation                GetWorldRotation() const;
+        Rotation                GetWorldRotation() const        { return m_worldRotation; }
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's total world scale. 
@@ -64,13 +64,14 @@ namespace nes
     private:
         friend class TransformSystem;
         
-        Mat44                   m_worldMatrix = Mat44::Identity(); // Transforms a world position to this entity's space.
-        Mat44                   m_localMatrix = Mat44::Identity(); // Transforms from parent space to the entity's space.
-        Vec3                    m_localPosition = Vec3::Zero();    // Position relative to its Parent.
-        Rotation                m_localRotation = Vec3::Zero();    // Rotation relative to its Parent.
-        Vec3                    m_localScale = Vec3::One();        // Scale relative to its Parent.
-        uint32                  m_hierarchyDepth = 0;                   // 0 = Root node.
-        bool                    m_isDirty = false;                      // If true, then both the local and world matrices are out of date.
+        Mat44                   m_worldMatrix = Mat44::Identity();  // Transforms a world position to this entity's space.
+        Mat44                   m_localMatrix = Mat44::Identity();  // Transforms from parent space to the entity's space.
+        Vec3                    m_localPosition = Vec3::Zero();     // Position relative to its Parent.
+        Vec3                    m_localScale = Vec3::One();         // Scale relative to its Parent.
+        Rotation                m_localRotation = Rotation::Zero(); // Rotation relative to its Parent.
+        Rotation                m_worldRotation = Rotation::Zero(); // Cached world rotation in Rotation form, because converting from Matrix/Quat->Euler angles can result in bad results.
+        uint32                  m_hierarchyDepth = 0;               // 0 = Root node.
+        bool                    m_isDirty = false;                  // If true, then both the local and world matrices are out of date.
     };
 
     //----------------------------------------------------------------------------------------------------
