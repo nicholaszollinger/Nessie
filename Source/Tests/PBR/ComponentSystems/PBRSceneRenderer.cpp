@@ -118,7 +118,6 @@ namespace pbr
                     // Default Material if none present:
                     if (meshComp.m_materialID == nes::kInvalidAssetID)
                         meshComp.m_materialID = GetDefaultMaterialID();
-                    
                 }
 
                 // Register a new Material data if not already:

@@ -4,12 +4,6 @@
 
 namespace nes
 {
-    Rotation TransformComponent::GetWorldRotation() const
-    {
-        const Vec3 euler = m_worldMatrix.GetRotation().ToQuaternion().ToEulerAngles() * math::RadiansToDegrees();
-        return Rotation(euler);
-    }
-
     void TransformComponent::Serialize(YAML::Emitter&, const TransformComponent&)
     {
         // [TODO]: 
@@ -43,6 +37,7 @@ namespace nes
 
         component.m_localMatrix = Mat44::ComposeTransform(component.m_localPosition, component.m_localRotation, component.m_localScale);
         component.m_worldMatrix = component.m_localMatrix;
+        component.m_worldRotation = component.m_localRotation;
         component.m_isDirty = true;
     }
 
@@ -62,7 +57,6 @@ namespace nes
         
         for (auto entity : view)
         {
-            //auto& idComp = view.get<IDComponent>(entity);
             m_needsRebuild = true;
 
             // Ensure that this entity has a NodeComponent.
@@ -70,13 +64,6 @@ namespace nes
             {
                 registry.AddComponent<NodeComponent>(entity);
             }
-
-            // Set parent information.
-            // else
-            // {
-            //     //auto& node = registry.GetComponent<NodeComponent>(entity);
-            //     //SetParent(idComp.GetID(), node.m_parentID);
-            // }
         }
     }
 
@@ -438,14 +425,7 @@ namespace nes
             const Mat44 parentInverse = parentTransform.m_worldMatrix.Inversed();
             
             transform.m_localPosition = parentInverse.TransformPoint(position);
-            
-            // Rotation: Need to use quaternions
-            const Quat worldQuat = rotation.ToQuat();
-            const Quat parentQuat = parentTransform.m_localRotation.ToQuat(); // Or extract from parent world matrix
-            const Quat localQuat = parentQuat.Inverse() * worldQuat;
-            transform.m_localRotation = Rotation(localQuat.ToEulerAngles() * math::RadiansToDegrees());
-            //transform.m_localRotation = (rotation - parentTransform.GetWorldRotation()).Normalized();
-            
+            transform.m_localRotation = (parentTransform.m_worldRotation - rotation).Normalized();
             transform.m_localScale = scale / parentTransform.GetWorldScale();
         }
         
@@ -489,9 +469,10 @@ namespace nes
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         auto& node = registry.GetComponent<NodeComponent>(entity);
 
-        // If no parent, then world rotation = local rotation
+        // Update the local rotation: 
         if (node.m_parentID == kInvalidEntityID)
         {
+            // If no parent, then world rotation = local rotation
             transform.m_localRotation = rotation;
             MarkDirty(entity);
         }
@@ -500,13 +481,7 @@ namespace nes
             // Convert to local space.
             EntityHandle parent = GetRegistry().GetEntity(node.m_parentID);
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
-            
-            // Rotation: Need to use quaternions
-            const Quat worldQuat = rotation.ToQuat();
-            const Quat parentQuat = parentTransform.m_localRotation.ToQuat(); // Or extract from parent world matrix
-            const Quat localQuat = parentQuat.Inverse() * worldQuat;
-            transform.m_localRotation = Rotation(localQuat.ToEulerAngles() * math::RadiansToDegrees());
-            //transform.m_localRotation = (rotation - parentTransform.GetWorldRotation()).Normalized();
+            transform.m_localRotation = (parentTransform.m_worldRotation - rotation).Normalized();
         }
 
         MarkDirty(entity);
@@ -637,16 +612,19 @@ namespace nes
             {
                 const auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
                 transform.m_worldMatrix = parentTransform.m_worldMatrix * transform.m_localMatrix;
+                transform.m_worldRotation = (parentTransform.m_worldRotation + transform.m_localRotation).Normalized();
             }
             else
             {
                 transform.m_worldMatrix = transform.m_localMatrix;
+                transform.m_worldRotation = transform.m_localRotation;
             }
         }
         else
         {
             // This is a root:
             transform.m_worldMatrix = transform.m_localMatrix;
+            transform.m_worldRotation = transform.m_localRotation;
         }
 
         // Transform is updated.
