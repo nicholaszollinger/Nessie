@@ -5,8 +5,6 @@
 #include "Nessie/Graphics/Texture.h"
 #include "Nessie/Graphics/Shader.h"
 
-#define LOAD_MULTITHREADED 0
-
 void PBRExampleApp::OnEvent(nes::Event& e)
 {
     if (m_pWorld)
@@ -43,8 +41,7 @@ bool PBRExampleApp::Internal_AppInit()
     NES_ASSERT(pWorldAsset);
     auto& assetPack = pWorldAsset->GetAssetPack();
 
-    // Load the World Assets:
-#if (LOAD_MULTITHREADED) && defined(NES_DEBUG)
+    // Load the World's Assets, asynchronously:
     auto onComplete = [this](const bool succeeded)
     {
         if (succeeded)
@@ -64,15 +61,6 @@ bool PBRExampleApp::Internal_AppInit()
     };
     
     nes::AssetManager::LoadAssetPackAsync(assetPack, onComplete);
-#else
-    if (nes::AssetManager::LoadAssetPackSync(assetPack) != nes::ELoadResult::Success)
-    {
-        NES_ERROR("Failed to load World!");
-        return false;   
-    }
-    
-    m_pWorld->MergeWorld(*pWorldAsset);
-#endif
     
     return true;
 }

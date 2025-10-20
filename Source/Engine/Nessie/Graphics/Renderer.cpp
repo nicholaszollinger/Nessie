@@ -131,8 +131,6 @@ namespace nes
         // add the acquire barriers for the render thread
         if (AssetManager::IsAssetThread() && !acquireBarriers.empty())
         {
-            NES_LOG("Signaled a Release Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(signalSemaphores[0])));
-            
             std::lock_guard lock(g_pRenderer->m_transferMutex);
             for (const auto& barrier : acquireBarriers)
             {
@@ -179,8 +177,6 @@ namespace nes
         {
             if (!semaphore.m_inUse)
             {
-                NES_LOG("Acquired Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(*semaphore.m_semaphore)));
-                
                 semaphore.m_inUse = true;
                 return semaphore.m_semaphore;
             }
@@ -189,7 +185,6 @@ namespace nes
         // Create a new one.
         vk::SemaphoreCreateInfo binaryInfo = {};
         pRenderer->m_transferSemaphores.emplace_back(vk::raii::Semaphore(pRenderer->m_device, binaryInfo), true);
-        NES_LOG("Acquired NEW Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(*pRenderer->m_transferSemaphores.back().m_semaphore)));
         return pRenderer->m_transferSemaphores.back().m_semaphore;
     }
 
@@ -376,9 +371,6 @@ namespace nes
                 if (*ts.m_semaphore == semaphore)
                 {
                     NES_ASSERT(ts.m_inUse);
-
-                    NES_LOG("Releasing Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(semaphore)));
-
                     ts.m_inUse = false;
                     break;
                 }
@@ -477,8 +469,6 @@ namespace nes
 
         if (m_acquireImageBarriers.empty())
             return;
-
-        NES_LOG("RecordAcquireResources: Recording {} barriers for frame {}.", m_acquireImageBarriers.size(), m_currentFrameIndex);
         
         BarrierGroupDesc barriers{};
         std::vector<vk::Semaphore> semaphoresToRelease{}; 
@@ -494,9 +484,6 @@ namespace nes
                     .setStageMask(vk::PipelineStageFlagBits2::eTopOfPipe);
                 
                 m_renderSubmissionDesc.m_waitSemaphores.emplace_back(waitInfo);
-
-                NES_LOG("Waiting for Semaphore: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkSemaphore>(waitInfo.semaphore)));
-                NES_LOG(" Image: 0x{:x}", reinterpret_cast<uint64>(static_cast<VkImage>(acquireImageBarrier.m_pImage->GetVkImage())));
 
                 // Track for cleanup.
                 semaphoresToRelease.emplace_back(acquireImageBarrier.m_transferSemaphore);

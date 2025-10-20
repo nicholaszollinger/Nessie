@@ -107,9 +107,12 @@ namespace nes
             m_signalSemaphores.emplace_back(Renderer::AcquireTransferSemaphore());
 
             // Acquire barrier run on the graphics queue.
+            // "A layout transition which happens as part of an ownership transfer needs to be specified twice; one for the release, and once for the acquisition."
+            // - https://docs.vulkan.org/guide/latest/synchronization_examples.html
+            // Importantly, the barrier needs to match the 
             ImageBarrierDesc acquireBarrier;
             acquireBarrier.m_pImage = &image;
-            acquireBarrier.m_before.m_layout = desc.m_newLayout; // ShaderResource
+            acquireBarrier.m_before.m_layout = EImageLayout::CopyDestination;
             acquireBarrier.m_before.m_access = EAccessBits::None;
             acquireBarrier.m_before.m_stages = EPipelineStageBits::TopOfPipe;
             
@@ -122,8 +125,6 @@ namespace nes
             acquireBarrier.SetQueueAccess(Renderer::GetTransferQueue(), Renderer::GetRenderQueue(), EBarrierQueueOp::Acquire);
             acquireBarrier.m_transferSemaphore = m_signalSemaphores.back();
             m_pendingAcquireBarriers.emplace_back(acquireBarrier);
-
-            //NES_LOG("Processing image: 0x{:x}", reinterpret_cast<uint64>(postBarrier.m_pImage));
         }
 
         else
