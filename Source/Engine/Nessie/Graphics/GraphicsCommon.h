@@ -138,8 +138,8 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     enum class EPipelineStageBits : uint32
     {
-        All                     = 0,
-        None                    = 0x7FFFFFFF,
+        All                     = vk::PipelineStageFlagBits2::eAllCommands,
+        None                    = vk::PipelineStageFlagBits2::eNone,
 
         // Graphics
         IndexInput              = NES_BIT(0),   // Index buffer consumption
@@ -174,6 +174,10 @@ namespace nes
 
         // Modifiers
         Indirect                = NES_BIT(22), // Invoked by "Indirect" commands (used in addition to other bits)
+
+        // Top and Bottom
+        TopOfPipe               = NES_BIT(23),
+        BottomOfPipe            = NES_BIT(24),
 
         // Grouped Stages
         TessellationShaders     = TessControlShader | TessEvaluationShader,
@@ -302,7 +306,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : State for an image that is a copy destination.
         //----------------------------------------------------------------------------------------------------
-        static constexpr AccessLayoutStage CopyDestinationState()   { return { EAccessBits::CopyDestination, EImageLayout::CopyDestination, EPipelineStageBits::All}; }
+        static constexpr AccessLayoutStage CopyDestinationState()   { return { EAccessBits::CopyDestination, EImageLayout::CopyDestination, EPipelineStageBits::Copy}; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : State for an image in an unknown state. Common to use as a "before" state.
@@ -318,6 +322,20 @@ namespace nes
         DeviceBuffer*       m_pBuffer = nullptr;            // The Device Buffer that we are changing access for.
         AccessStage         m_before{};                     // The Access and Layout that the buffer is in before the transition.
         AccessStage         m_after{};                      // The Access and Layout that the buffer will be after the transition.
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : The type of queue operation that needs to be performed for this barrier. When a resource
+    /// changes Queue ownership, it must be 'released' by the first queue and then 'acquired' by the receiving
+    /// queue.
+    ///     - Release: Giving ownership of a resource to another DeviceQueue.
+    ///     - Acquire: Taking ownership of a resource from another DeviceQueue.
+    //----------------------------------------------------------------------------------------------------
+    enum class EBarrierQueueOp : uint8
+    {
+        None = 0,
+        Release,    // Giving ownership of a resource to another DeviceQueue.
+        Acquire,    // Taking ownership of a resource from another DeviceQueue.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -362,7 +380,7 @@ namespace nes
         ///     This is only needed for exclusive access images.
         // @see : https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#synchronization-queue-transfers
         //----------------------------------------------------------------------------------------------------
-        ImageBarrierDesc&   SetQueueAccess(DeviceQueue* pSrcQueue, DeviceQueue* pDstQueue);
+        ImageBarrierDesc&   SetQueueAccess(DeviceQueue* pSrcQueue, DeviceQueue* pDstQueue, const EBarrierQueueOp op);
         
         DeviceImage*        m_pImage = nullptr;                 // Device Image that we are transitioning.
         AccessLayoutStage   m_before = {};                      // The Access, Layout and PipelineStages that the image is in before the transition.
@@ -374,6 +392,11 @@ namespace nes
         DeviceQueue*        m_pSrcQueue = nullptr;              // If not null, the queue that currently owns the Image.
         DeviceQueue*        m_pDstQueue = nullptr;              // If not null, the queue that will own the Image.
         EImagePlaneBits     m_planes = EImagePlaneBits::Color;  // The planes of the image are we addressing.
+        EBarrierQueueOp     m_queueOp = EBarrierQueueOp::None;  // Must be either set to Release or Acquire if queue ownership is changing. See EBarrierQueueOp for details
+
+        // [TODO]: I don't want to have this here, but I am trying to solve an issue with the transfer of
+        // resources between threads and queues.
+        vk::Semaphore       m_transferSemaphore = nullptr;
     };
 
     //----------------------------------------------------------------------------------------------------

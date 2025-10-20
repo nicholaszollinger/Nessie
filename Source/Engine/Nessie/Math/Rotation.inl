@@ -3,20 +3,38 @@
 
 namespace nes
 {
+    inline Rotation::Rotation(float pitch, float yaw, float roll)
+    {
+        // Normalize to preferred representation (avoid the 180° flips)
+        if (pitch > 90.f)
+        {
+            pitch = 180.f - pitch;
+            yaw += 180.f;
+            roll += 180.f;
+        }
+        else if (pitch < -90.f)
+        {
+            pitch = -180.f - pitch;
+            yaw += 180.f;
+            roll += 180.f;
+        }
+
+        NormalizeAxis(yaw);
+        NormalizeAxis(roll);
+
+        m_pitch = pitch;
+        m_yaw = yaw;
+        m_roll = roll;
+    }
+    
     Rotation Rotation::operator+(const Rotation other) const
     {
-        return Rotation(
-            m_pitch + other.m_pitch
-            , m_yaw + other.m_yaw
-            , m_roll + other.m_roll);
+        return Rotation(m_pitch + other.m_pitch, m_yaw + other.m_yaw, m_roll + other.m_roll);
     }
     
     Rotation Rotation::operator-(const Rotation other) const
     {
-        return Rotation(
-            m_pitch - other.m_pitch
-            , m_yaw - other.m_yaw
-            , m_roll - other.m_roll);
+        return Rotation(m_pitch - other.m_pitch, m_yaw - other.m_yaw, m_roll + other.m_roll);
     }
     
     Rotation& Rotation::operator+=(const Rotation& other)

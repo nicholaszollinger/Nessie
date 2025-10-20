@@ -794,6 +794,12 @@ namespace nes
 
         vk::PipelineStageFlags2 flags = {};
 
+        if (stages & EPipelineStageBits::TopOfPipe)
+            flags |= vk::PipelineStageFlagBits2::eTopOfPipe;
+
+        if (stages & EPipelineStageBits::BottomOfPipe)
+            flags |= vk::PipelineStageFlagBits2::eBottomOfPipe;
+
         if (stages & EPipelineStageBits::IndexInput)
             flags |= vk::PipelineStageFlagBits2::eIndexInput;
 
@@ -841,6 +847,12 @@ namespace nes
 
         if (stages & EPipelineStageBits::MicroMap)
             flags |= vk::PipelineStageFlagBits2::eMicromapBuildEXT;
+
+        if (stages & EPipelineStageBits::TopOfPipe)
+            flags |= vk::PipelineStageFlagBits2::eTopOfPipe;
+
+        if (stages & EPipelineStageBits::BottomOfPipe)
+            flags |= vk::PipelineStageFlagBits2::eBottomOfPipe;
         
         return flags;
     }
@@ -943,6 +955,70 @@ namespace nes
 
         NES_ASSERT(false, "Failed to find specific Shader stage!");
         return vk::ShaderStageFlagBits::eVertex;
+    }
+
+    constexpr vk::AccessFlags2 GetVkAccessFlags(const EAccessBits access)
+    {
+        vk::AccessFlags2 flags = vk::AccessFlagBits2::eNone;
+        
+        if (access & EAccessBits::None)
+            return flags;
+
+        if (access & EAccessBits::IndexBuffer)
+            flags |= vk::AccessFlagBits2::eIndexRead;
+
+        if (access & EAccessBits::VertexBuffer)
+            flags |= vk::AccessFlagBits2::eVertexAttributeRead;
+
+        if (access & EAccessBits::UniformBuffer)
+            flags |= vk::AccessFlagBits2::eUniformRead;
+
+        if (access & EAccessBits::ArgumentBuffer)
+            flags |= vk::AccessFlagBits2::eIndirectCommandRead;
+
+        if (access & EAccessBits::ScratchBuffer)
+            flags |= vk::AccessFlagBits2::eAccelerationStructureReadKHR | vk::AccessFlagBits2::eAccelerationStructureWriteKHR;
+
+        if (access & EAccessBits::ColorAttachment)
+            flags |= vk::AccessFlagBits2::eColorAttachmentRead | vk::AccessFlagBits2::eColorAttachmentWrite;
+
+        if (access & EAccessBits::ShadingRateAttachment)
+            flags |= vk::AccessFlagBits2::eFragmentShadingRateAttachmentReadKHR;
+
+        if (access & EAccessBits::DepthStencilAttachmentRead)
+            flags |= vk::AccessFlagBits2::eDepthStencilAttachmentRead;
+
+        if (access & EAccessBits::DepthStencilAttachmentWrite)
+            flags |= vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+
+        if (access & EAccessBits::AccelerationStructureRead)
+            flags |= vk::AccessFlagBits2::eAccelerationStructureReadKHR;
+
+        if (access & EAccessBits::AccelerationStructureWrite)
+            flags |= vk::AccessFlagBits2::eAccelerationStructureWriteKHR;
+
+        if (access & EAccessBits::MicromapRead)
+            flags |= vk::AccessFlagBits2::eMicromapReadEXT;
+
+        if (access & EAccessBits::MicromapWrite)
+            flags |= vk::AccessFlagBits2::eMicromapWriteEXT;
+
+        if (access & EAccessBits::ShaderBindingTable)
+            flags |= vk::AccessFlagBits2::eShaderBindingTableReadKHR;
+
+        if (access & EAccessBits::ShaderResourceRead)
+            flags |= vk::AccessFlagBits2::eShaderRead;
+
+        if (access & EAccessBits::ShaderResourceStorage)
+            flags |= vk::AccessFlagBits2::eShaderRead | vk::AccessFlagBits2::eShaderWrite;
+
+        if (access & (EAccessBits::CopySource | EAccessBits::ResolveSource))
+            flags |= vk::AccessFlagBits2::eTransferRead;
+
+        if (access & (EAccessBits::CopyDestination | EAccessBits::ResolveDestination))
+            flags |= vk::AccessFlagBits2::eTransferWrite;
+        
+        return flags;
     }
 
     constexpr vk::DescriptorType GetVkDescriptorType(const EDescriptorType type)

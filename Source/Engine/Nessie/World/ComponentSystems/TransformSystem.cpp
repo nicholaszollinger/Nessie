@@ -4,6 +4,12 @@
 
 namespace nes
 {
+    Rotation TransformComponent::GetWorldRotation() const
+    {
+        const Vec3 euler = m_worldMatrix.GetRotation().ToQuaternion().ToEulerAngles() * math::RadiansToDegrees();
+        return Rotation(euler);
+    }
+
     void TransformComponent::Serialize(YAML::Emitter&, const TransformComponent&)
     {
         // [TODO]: 
@@ -432,7 +438,14 @@ namespace nes
             const Mat44 parentInverse = parentTransform.m_worldMatrix.Inversed();
             
             transform.m_localPosition = parentInverse.TransformPoint(position);
-            transform.m_localRotation = (rotation - parentTransform.GetWorldRotation()).Normalized();
+            
+            // Rotation: Need to use quaternions
+            const Quat worldQuat = rotation.ToQuat();
+            const Quat parentQuat = parentTransform.m_localRotation.ToQuat(); // Or extract from parent world matrix
+            const Quat localQuat = parentQuat.Inverse() * worldQuat;
+            transform.m_localRotation = Rotation(localQuat.ToEulerAngles() * math::RadiansToDegrees());
+            //transform.m_localRotation = (rotation - parentTransform.GetWorldRotation()).Normalized();
+            
             transform.m_localScale = scale / parentTransform.GetWorldScale();
         }
         
@@ -486,9 +499,14 @@ namespace nes
         {
             // Convert to local space.
             EntityHandle parent = GetRegistry().GetEntity(node.m_parentID);
-
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
-            transform.m_localRotation = (rotation - parentTransform.GetWorldRotation()).Normalized();
+            
+            // Rotation: Need to use quaternions
+            const Quat worldQuat = rotation.ToQuat();
+            const Quat parentQuat = parentTransform.m_localRotation.ToQuat(); // Or extract from parent world matrix
+            const Quat localQuat = parentQuat.Inverse() * worldQuat;
+            transform.m_localRotation = Rotation(localQuat.ToEulerAngles() * math::RadiansToDegrees());
+            //transform.m_localRotation = (rotation - parentTransform.GetWorldRotation()).Normalized();
         }
 
         MarkDirty(entity);

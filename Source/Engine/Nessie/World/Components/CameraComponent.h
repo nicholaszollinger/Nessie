@@ -50,7 +50,7 @@ namespace nes
         /// @brief : Calculates the projection matrix, which will be either Perspective or Orthographic depending
         ///     on the current projection type.
         //----------------------------------------------------------------------------------------------------
-        Mat44           CalculateProjectionMatrix(const uint32 width, const uint32 height, const bool flipAxis) const;    
+        Mat44           CalculateProjectionMatrix(const uint32 width, const uint32 height, const bool flipAxis = true) const;    
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : The Exposure Factor is the combined EV value and the ISO adjustment that is applied to

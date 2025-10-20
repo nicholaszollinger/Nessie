@@ -171,22 +171,32 @@ namespace nes
 
     Vec3 Quat::ToEulerAngles() const
     {
-        const float ySqr = GetY() * GetY();
-
-        // X
-        const float t0 = 2.f * (GetW() * GetX() + GetY() * GetZ());
-        const float t1 = 1.0f - 2.0f * (GetX() * GetX() + ySqr);
-
-        // Y
-        float t2 = 2.0f * (GetW() * GetY() - GetZ() * GetX());
-        t2 = t2 > 1.0f? 1.0f : t2;
-        t2 = t2 < -1.0f? -1.0f : t2;
-
-        // Z
-        const float t3 = 2.0f * (GetW() * GetZ() + GetX() * GetY());
-        const float t4 = 1.0f - 2.0f * (ySqr + GetZ() * GetZ());
-
-        return Vec3(math::ATan2(t0, t1), math::ASin(t2), math::ATan2(t3, t4));
+        const float x = GetX();
+        const float y = GetY();
+        const float z = GetZ();
+        const float w = GetW();
+    
+        const float xSqr = x * x;
+        const float ySqr = y * y;
+        const float zSqr = z * z;
+    
+        // Pitch (X-axis rotation)
+        const float t0 = 2.f * (w * x + y * z);
+        const float t1 = 1.0f - 2.0f * (xSqr + ySqr);
+        const float pitch = math::ATan2(t0, t1);
+    
+        // Yaw (Y-axis rotation)
+        float t2 = 2.0f * (w * y - z * x);
+        t2 = t2 > 1.0f ? 1.0f : t2;
+        t2 = t2 < -1.0f ? -1.0f : t2;
+        const float yaw = math::ASin(t2);
+    
+        // Roll (Z-axis rotation)
+        const float t3 = 2.f * (w * z + x * y);
+        const float t4 = 1.0f - 2.0f * (ySqr + zSqr);
+        const float roll = math::ATan2(t3, t4);
+    
+        return Vec3(pitch, yaw, roll);
     }
 
     Quat& Quat::Normalize()

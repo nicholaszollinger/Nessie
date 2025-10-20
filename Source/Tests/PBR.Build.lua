@@ -17,6 +17,11 @@ function p.ConfigureProject(dependencyInjector)
     dependencyInjector.Link("Vulkan");
 
     filter {}
+    
+    includedirs
+    {
+        projectDir;
+    }
 
     disablewarnings
     {

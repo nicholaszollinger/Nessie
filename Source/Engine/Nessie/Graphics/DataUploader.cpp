@@ -2,7 +2,6 @@
 #include "DataUploader.h"
 
 #include "DeviceImage.h"
-#include "Vulkan/VmaUsage.h"
 #include "RenderDevice.h"
 #include "Renderer.h"
 #include "Nessie/Asset/AssetManager.h"
@@ -100,11 +99,38 @@ namespace nes
         // If we are on a separate staging queue, then we need to transition ownership to the render queue.
         if (AssetManager::IsAssetThread())
         {
-            postBarrier.m_pSrcQueue = Renderer::GetTransferQueue();
-            postBarrier.m_pDstQueue = Renderer::GetRenderQueue();
+            // Release the resource to the Graphics Queue
+            postBarrier.SetQueueAccess(Renderer::GetTransferQueue(), Renderer::GetRenderQueue(), EBarrierQueueOp::Release);
+            m_postBarriers.m_imageBarriers.emplace_back(postBarrier);
+
+            // Create a new semaphore that will need to be signaled for transfer ownership.
+            m_signalSemaphores.emplace_back(Renderer::AcquireTransferSemaphore());
+
+            // Acquire barrier run on the graphics queue.
+            ImageBarrierDesc acquireBarrier;
+            acquireBarrier.m_pImage = &image;
+            acquireBarrier.m_before.m_layout = desc.m_newLayout; // ShaderResource
+            acquireBarrier.m_before.m_access = EAccessBits::None;
+            acquireBarrier.m_before.m_stages = EPipelineStageBits::TopOfPipe;
+            
+            acquireBarrier.m_after.m_layout = desc.m_newLayout;  // ShaderResource
+            acquireBarrier.m_after.m_access = EAccessBits::ShaderResourceRead;
+            acquireBarrier.m_after.m_stages = EPipelineStageBits::FragmentShader;
+            
+            acquireBarrier.m_mipCount = image.m_desc.m_mipCount;
+            acquireBarrier.m_layerCount = image.m_desc.m_layerCount;
+            acquireBarrier.SetQueueAccess(Renderer::GetTransferQueue(), Renderer::GetRenderQueue(), EBarrierQueueOp::Acquire);
+            acquireBarrier.m_transferSemaphore = m_signalSemaphores.back();
+            m_pendingAcquireBarriers.emplace_back(acquireBarrier);
+
+            //NES_LOG("Processing image: 0x{:x}", reinterpret_cast<uint64>(postBarrier.m_pImage));
         }
-        
-        m_postBarriers.m_imageBarriers.emplace_back(postBarrier);
+
+        else
+        {
+            // If we are on the main thread, just emplace the barrier as normal.
+            m_postBarriers.m_imageBarriers.emplace_back(postBarrier);
+        }
 
         // Add the copy description to use when recording commands.
         CopyBufferToImageDesc copyDesc;
@@ -190,6 +216,11 @@ namespace nes
         m_copyBufferToImageDescs.clear();
         m_preBarriers.m_imageBarriers.clear();
         m_postBarriers.m_imageBarriers.clear();
+
+        // [TODO]: If the Data Uploader remains in scope past the submission, I need
+        // to set up a release behavior similar to Release Staging Buffers - they need to not be in use anymore. 
+        //m_pendingAcquireBarriers.clear();
+        //m_signalSemaphores.clear();
     }
 
     void DataUploader::ReleaseStagingBuffers(const bool forceAll)

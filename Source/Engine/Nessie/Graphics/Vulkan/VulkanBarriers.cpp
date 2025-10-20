@@ -198,36 +198,82 @@ namespace nes
         if (desc.m_pSrcQueue)
         {
             NES_ASSERT(desc.m_pDstQueue);
+            NES_ASSERT(desc.m_queueOp != EBarrierQueueOp::None, "Must have a valid EBarrerQueueOp for queue transfer operation!");
             result.setSrcQueueFamilyIndex(desc.m_pSrcQueue->GetFamilyIndex());
             result.setDstQueueFamilyIndex(desc.m_pDstQueue->GetFamilyIndex());
+
+            if (desc.m_queueOp == EBarrierQueueOp::Release)
+            {
+                // Release: use m_before for src, ignore dst
+                result.setSrcStageMask(GetVkPipelineStageFlags(desc.m_before.m_stages));
+                result.setSrcAccessMask(GetVkAccessFlags(desc.m_before.m_access));
+
+                if (desc.m_after.m_stages == graphics::kInferPipelineStage)
+                {
+                    vk::PipelineStageFlags2 inferredStage;
+                    vk::AccessFlags2 inferredAccess;
+                    InferPipelineStageAccess(result.newLayout, inferredStage, inferredAccess);
+                    result.setDstStageMask(inferredStage);
+                }
+                else
+                {
+                    result.setDstStageMask(GetVkPipelineStageFlags(desc.m_after.m_stages));
+                }
+
+                // Can be zero for
+                result.setDstAccessMask(vk::AccessFlagBits2::eNone);
+            }
+            else if (desc.m_queueOp == EBarrierQueueOp::Acquire)
+            {
+                // Acquire: ignore src, use m_after for dst
+                result.setSrcStageMask(vk::PipelineStageFlagBits2::eTopOfPipe);
+                result.setSrcAccessMask(vk::AccessFlagBits2::eNone);
+                result.setDstStageMask(GetVkPipelineStageFlags(desc.m_after.m_stages));
+                result.setDstAccessMask(GetVkAccessFlags(desc.m_after.m_access));
+            }
         }
         else
         {
             result.setSrcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
             result.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
-        }
+
+            // Source Access:
+            if (desc.m_before.m_stages == graphics::kInferPipelineStage && desc.m_before.m_access == graphics::kInferAccess)
+            {
+                InferPipelineStageAccess(result.oldLayout, result.srcStageMask, result.srcAccessMask);
+            }
+            else if (desc.m_before.m_access == graphics::kInferAccess)
+            {
+                NES_ASSERT(desc.m_before.m_stages != graphics::kInferPipelineStage);
+                result.srcAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_before.m_stages), true);
+            }
         
-        // Source Access:
-        if (desc.m_before.m_stages == graphics::kInferPipelineStage && desc.m_before.m_access == graphics::kInferAccess)
-        {
-            InferPipelineStageAccess(result.oldLayout, result.srcStageMask, result.srcAccessMask);
-        }
-        else if (desc.m_before.m_access == graphics::kInferAccess)
-        {
-            NES_ASSERT(desc.m_before.m_stages != graphics::kInferPipelineStage);
-            result.srcAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_before.m_stages), false);
+            // Destination Access:
+            if (desc.m_after.m_stages == graphics::kInferPipelineStage && desc.m_after.m_access == graphics::kInferAccess)
+            {
+                InferPipelineStageAccess(result.newLayout, result.dstStageMask, result.dstAccessMask);
+            }
+            else if (desc.m_after.m_access == graphics::kInferAccess)
+            {
+                NES_ASSERT(desc.m_after.m_stages != graphics::kInferPipelineStage);
+                result.dstAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_after.m_stages), false);
+            }
         }
 
-        // Destination Access:
-        if (desc.m_after.m_stages == graphics::kInferPipelineStage && desc.m_after.m_access == graphics::kInferAccess)
-        {
-            InferPipelineStageAccess(result.newLayout, result.dstStageMask, result.dstAccessMask);
-        }
-        else if (desc.m_after.m_access == graphics::kInferAccess)
-        {
-            NES_ASSERT(desc.m_after.m_stages != graphics::kInferPipelineStage);
-            result.dstAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_after.m_stages), false);
-        }
+        // if (result.srcQueueFamilyIndex != VK_QUEUE_FAMILY_IGNORED)
+        // {
+        //     // At the end, before returning:
+        //     NES_LOG("Created barrier:");
+        //     NES_LOG("  oldLayout={}, newLayout={}", static_cast<int>(result.oldLayout), static_cast<int>(result.newLayout));
+        //     NES_LOG("  srcStage=0x{:x}, dstStage=0x{:x}", static_cast<uint64_t>(result.srcStageMask), static_cast<uint64_t>(result.dstStageMask));
+        //     NES_LOG("  srcAccess=0x{:x}, dstAccess=0x{:x}", static_cast<uint64_t>(result.srcAccessMask), static_cast<uint64_t>(result.dstAccessMask));
+        //     NES_LOG("  srcQueue={}, dstQueue={}", result.srcQueueFamilyIndex, result.dstQueueFamilyIndex);
+        //     NES_LOG("  subresource: baseMip={}, mipCount={}, baseLayer={}, layerCount={}", 
+        //      result.subresourceRange.baseMipLevel,
+        //      result.subresourceRange.levelCount,
+        //      result.subresourceRange.baseArrayLayer,
+        //      result.subresourceRange.layerCount);
+        // }
         
         return result;
     }
