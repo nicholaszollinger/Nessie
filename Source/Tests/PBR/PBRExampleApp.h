@@ -11,17 +11,17 @@
 class PBRExampleApp final : public nes::Application
 {
 public:
-    explicit PBRExampleApp(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
-
-    // Application Interface:
-    virtual void                    OnEvent(nes::Event& e) override;
-    virtual bool                    Internal_AppInit() override;
-    virtual void                    Internal_AppUpdate(const float timeStep) override;
-    virtual void                    Internal_OnResize(const uint32 width, const uint32 height) override;
-    virtual void                    Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
-    virtual void                    Internal_AppShutdown() override;
-
+    PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc);
+    
 private:
+    // Application Interface:
+    virtual void                        PushEvent(nes::Event& e) override;
+    virtual bool                        Init() override;
+    virtual void                        OnResize(const uint32 width, const uint32 height) override;
+    virtual void                        PreShutdown() override;
+    virtual void                        Update(const float deltaTime) override;
+    virtual void                        Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
+
     nes::StrongPtr<pbr::PBRExampleWorld> m_pWorld = nullptr;
     nes::AssetID                        m_worldAssetID = nes::kInvalidAssetID;
     bool                                m_worldLoaded = false;

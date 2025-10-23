@@ -14,7 +14,6 @@ namespace nes
     class Swapchain;
     class RendererContext;
     struct RendererDesc;
-    class Platform;
     struct ApplicationDesc;
 
     enum class EWindowMode
@@ -166,10 +165,10 @@ namespace nes
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Window. Returns false on failure.
-        ///	@param platform : The platform that has created this window.
+        ///	@param app : The Application that has created this window.
         ///	@param desc : Window properties requested by the Application.
         //----------------------------------------------------------------------------------------------------
-        virtual bool            Internal_Init(Platform& platform, const WindowDesc& desc);
+        virtual bool            Internal_Init(Application& app, WindowDesc&& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Process window events. Must be called every frame, when all threads are synced. 

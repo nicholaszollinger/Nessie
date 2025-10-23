@@ -188,7 +188,7 @@ namespace nes
         return pRenderer->m_transferSemaphores.back().m_semaphore;
     }
 
-    bool Renderer::Init(ApplicationWindow* pWindow, const RendererDesc& /*rendererDesc*/)
+    bool Renderer::Init(ApplicationWindow* pWindow, RendererDesc&& /*rendererDesc*/)
     {
         m_pWindow = pWindow;
 

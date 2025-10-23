@@ -2,7 +2,6 @@
 #include "Texture.h"
 
 #include <stb_image.h>
-
 #include "DataUploader.h"
 #include "RenderDevice.h"
 #include "Renderer.h"
@@ -38,7 +37,7 @@ namespace nes
 
     Texture::~Texture()
     {
-        NES_ASSERT(Platform::IsMainThread());
+        NES_ASSERT(Application::IsMainThread());
 
         m_image = nullptr;
         m_imageData.Free();

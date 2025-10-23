@@ -11,7 +11,7 @@
 #include "Nessie/Graphics/Shader.h"
 #include "Nessie/Graphics/Texture.h"
 
-bool RectangleApp::Internal_AppInit()
+bool RectangleApp::Init()
 {
     // Load the Simple Shader
     {
@@ -68,18 +68,18 @@ bool RectangleApp::Internal_AppInit()
     return true;
 }
 
-void RectangleApp::Internal_AppUpdate([[maybe_unused]] const float timeStep)
+void RectangleApp::Update([[maybe_unused]] const float timeStep)
 {
     // nothing to do.
 }
 
-void RectangleApp::Internal_OnResize(const uint32 width, const uint32 height)
+void RectangleApp::OnResize(const uint32 width, const uint32 height)
 {
     // Resize the MSAA image.
     ResizeMSAAImage(width, height);
 }
 
-void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+void RectangleApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
     // Update our uniform buffer:
     UpdateUniformBuffer(context);
@@ -170,7 +170,7 @@ void RectangleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const n
     }
 }
 
-void RectangleApp::Internal_AppShutdown()
+void RectangleApp::PreShutdown()
 {
     m_msaaTarget = nullptr;
     m_imageView = nullptr;
@@ -465,22 +465,25 @@ void RectangleApp::UpdateUniformBuffer(const nes::RenderFrameContext& context)
     m_uniformBuffer.CopyToMappedMemory(&ubo, m_frames[context.GetFrameIndex()].m_uniformBufferViewOffset, sizeof(UniformBufferObject));
 }
 
-std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outAppDesc, WindowDesc& outWindowDesc, RendererDesc& outRendererDesc)
+std::unique_ptr<nes::Application> nes::CreateApplication(const CommandLineArgs& args)
 {
-    outAppDesc.SetApplicationName("Rectangle")
+    ApplicationDesc appDesc = ApplicationDesc(args)
+        .SetApplicationName("Rectangle")
         .SetIsHeadless(false);
        
-    outWindowDesc.SetResolution(720, 720)
+    WindowDesc windowDesc = WindowDesc()
+        .SetResolution(720, 720)
         .SetLabel("Rectangle")
         .SetWindowMode(EWindowMode::Windowed)
         .EnableResize(true)
         .EnableVsync(false);
 
-    outRendererDesc.EnableValidationLayer()
+    RendererDesc rendererDesc = RendererDesc()
+        .EnableValidationLayer()
         .RequireQueueType(EQueueType::Graphics)
         .RequireQueueType(EQueueType::Transfer);
 
-    return std::make_unique<RectangleApp>(outAppDesc);
+    return std::make_unique<RectangleApp>(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc));
 }
 
 NES_MAIN()

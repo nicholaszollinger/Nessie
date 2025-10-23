@@ -150,7 +150,7 @@ namespace nes
         /// @brief : Initialize the Renderer. If the window is nullptr, then no presenting will be allowed,
         ///     and the swapchain will not be created.
         //----------------------------------------------------------------------------------------------------
-        bool                        Init(ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
+        bool                        Init(ApplicationWindow* pWindow, RendererDesc&& rendererDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Shutdown the renderer, cleaning up all resources. 

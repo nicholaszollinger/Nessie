@@ -5,13 +5,19 @@
 #include "Nessie/Graphics/Texture.h"
 #include "Nessie/Graphics/Shader.h"
 
-void PBRExampleApp::OnEvent(nes::Event& e)
+PBRExampleApp::PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc)
+    : nes::Application(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc))
+{
+    //
+}
+
+void PBRExampleApp::PushEvent(nes::Event& e)
 {
     if (m_pWorld)
         m_pWorld->OnEvent(e);
 }
 
-bool PBRExampleApp::Internal_AppInit()
+bool PBRExampleApp::Init()
 {
     NES_REGISTER_ASSET_TYPE(nes::Shader);
     NES_REGISTER_ASSET_TYPE(nes::Texture);
@@ -65,19 +71,19 @@ bool PBRExampleApp::Internal_AppInit()
     return true;
 }
 
-void PBRExampleApp::Internal_AppUpdate(const float timeStep)
+void PBRExampleApp::Update(const float deltaTime)
 {
     if (m_pWorld && m_pWorld->GetRegistry().GetNumEntities() > 0)
-        m_pWorld->Tick(timeStep);
+        m_pWorld->Tick(deltaTime);
 }
 
-void PBRExampleApp::Internal_OnResize(const uint32 width, const uint32 height)
+void PBRExampleApp::OnResize(const uint32 width, const uint32 height)
 {
     if (m_pWorld)
         m_pWorld->OnResize(width, height);
 }
 
-void PBRExampleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+void PBRExampleApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
     if (m_pWorld)
         m_pWorld->Render(commandBuffer, context);
@@ -96,7 +102,7 @@ void PBRExampleApp::Internal_AppRender(nes::CommandBuffer& commandBuffer, const 
     }
 }
 
-void PBRExampleApp::Internal_AppShutdown()
+void PBRExampleApp::PreShutdown()
 {
     if (m_pWorld)
     {
@@ -105,22 +111,25 @@ void PBRExampleApp::Internal_AppShutdown()
     }
 }
 
-std::unique_ptr<nes::Application> nes::CreateApplication(ApplicationDesc& outAppDesc, WindowDesc& outWindowDesc, RendererDesc& outRendererDesc)
+std::unique_ptr<nes::Application> nes::CreateApplication(const nes::CommandLineArgs& args)
 {
-    outAppDesc.SetApplicationName("PBRExampleApp")
+    ApplicationDesc appDesc(args);
+    appDesc.SetApplicationName("PBRExampleApp")
         .SetIsHeadless(false);
-       
-    outWindowDesc.SetResolution(1920, 1080)
+
+    WindowDesc windowDesc = WindowDesc()
+        .SetResolution(1920, 1080)
         .SetLabel("PBR Example")
         .SetWindowMode(EWindowMode::Windowed)
         .EnableResize(true)
         .EnableVsync(false);
 
-    outRendererDesc.EnableValidationLayer()
+    RendererDesc rendererDesc = nes::RendererDesc()
+        .EnableValidationLayer()
         .RequireQueueType(EQueueType::Graphics)
         .RequireQueueType(EQueueType::Transfer);
     
-    return std::make_unique<PBRExampleApp>(outAppDesc);
+    return std::make_unique<PBRExampleApp>(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc));
 }
 
 NES_MAIN()

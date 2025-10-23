@@ -16,14 +16,14 @@
 class RectangleApp final : public nes::Application
 {
 public:
-    explicit RectangleApp(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
+    explicit RectangleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc) : nes::Application(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc)) {}
 
     // Application Interface: 
-    virtual bool                    Internal_AppInit() override;
-    virtual void                    Internal_AppUpdate(const float timeStep) override;
-    virtual void                    Internal_OnResize(const uint32 width, const uint32 height) override;
-    virtual void                    Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
-    virtual void                    Internal_AppShutdown() override;
+    virtual bool                    Init() override;
+    virtual void                    Update(const float timeStep) override;
+    virtual void                    OnResize(const uint32 width, const uint32 height) override;
+    virtual void                    Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
+    virtual void                    PreShutdown() override;
 
 private:
     struct Vertex

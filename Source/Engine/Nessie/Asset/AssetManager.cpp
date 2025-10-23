@@ -1,6 +1,6 @@
 ﻿// AssetManager.cpp
 #include "AssetManager.h"
-#include "Nessie/Application/Platform.h"
+#include "Nessie/Application/Application.h"
 
 namespace nes
 {
@@ -454,7 +454,7 @@ namespace nes
 
     bool AssetManager::IsMainThread()
     {
-        return Platform::IsMainThread();
+        return Application::IsMainThread();
     }
 
     AssetManager::LoadedAssetDesc* AssetManager::GetAssetDesc(const AssetID& id)
