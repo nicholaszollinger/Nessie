@@ -455,7 +455,7 @@ namespace nes
     }
 
     DrawIndexedDesc::DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex, const uint32 firstVertex, const uint32 numInstances, const uint32 firstInstance)
-        : m_vertexOffset(firstVertex)
+        : m_firstVertex(firstVertex)
         , m_indexCount(numIndices)
         , m_firstIndex(firstIndex)
         , m_instanceCount(numInstances)

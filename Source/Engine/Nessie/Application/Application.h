@@ -140,7 +140,7 @@ namespace nes
         ///	@param context : The current frame context, including the swapchain image that will be rendered to.
         //----------------------------------------------------------------------------------------------------
         virtual void                        Render(CommandBuffer& commandBuffer, const RenderFrameContext& context) = 0;
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Start up the Application. Creates the window and all manager classes.
         //----------------------------------------------------------------------------------------------------
@@ -162,7 +162,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                                RunHeadlessLoop();
 
-    private:
+    protected:
         ApplicationDesc                     m_desc;
         std::unique_ptr<DeviceManager>      m_pDeviceManager;
         std::unique_ptr<ApplicationWindow>  m_pWindow;

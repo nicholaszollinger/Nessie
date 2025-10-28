@@ -148,6 +148,14 @@ namespace nes
         }
     }
 
+    inline void Logger::AddTarget(const LogTargetPtr& pTarget)
+    {
+        if (pTarget != nullptr)
+        {
+            m_targets.push_back(pTarget);
+        }
+    }
+
     inline void Logger::LogMessage(const internal::LogMessage& message, const bool levelIsEnabled, [[maybe_unused]] const bool tracebackEnabled)
     {
         if (levelIsEnabled)

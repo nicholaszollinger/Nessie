@@ -1,0 +1,28 @@
+Editor:
+  DefaultLayout: "Default"
+  Windows:
+    - Name: "Viewport"
+    - Name: "Hierarchy"
+    - Name: "Inspector"
+    - Name: "Console"
+  Layouts:
+    - Name: "Default"
+      DockSplits:
+        - SplitNode: -1
+          SplitDir: 0
+          SplitRatio: 0.200000003
+        - SplitNode: -1
+          SplitDir: 1
+          SplitRatio: 0.25
+        - SplitNode: -1
+          SplitDir: 3
+          SplitRatio: 0.300000012
+      Windows:
+        - Name: "Viewport"
+          DockIndex: -1
+        - Name: "Hierarchy"
+          DockIndex: 0
+        - Name: "Inspector"
+          DockIndex: 1
+        - Name: "Console"
+          DockIndex: 2

@@ -2005,7 +2005,7 @@ namespace nes
         DrawIndexedDesc() = default;
         DrawIndexedDesc(const uint32 numIndices, const uint32 firstIndex = 0, const uint32 firstVertex = 0, const uint32 numInstances = 1, const uint32 firstInstance = 0);
         
-        uint64  m_vertexOffset = 0;     // Byte offset to the first vertex in the vertex buffer range. With a value == 0, this will start at the first vertex in the range.                   
+        uint64  m_firstVertex = 0;     // Byte offset to the first vertex in the vertex buffer range. With a value == 0, this will start at the first vertex in the range.                   
         uint32  m_indexCount = 0;       // Number of indices to submit.   
         uint32  m_firstIndex = 0;       // First index in the index buffer.                       
         uint32  m_instanceCount = 1;    // Used for instance rendering. Use 1 if you aren't using that.
@@ -2035,17 +2035,18 @@ namespace nes
     };
 
     //----------------------------------------------------------------------------------------------------
-    // [TODO]: Right now, I am forcing the Color Aspect, Buffer Row Length & Buffer image Height == 0
+    // [TODO]: Right now, Buffer Row Length & Buffer image Height == 0
     //
     /// @brief : Parameters to copy a buffer's data to a Device Image.
     //----------------------------------------------------------------------------------------------------
     struct CopyBufferToImageDesc
     {
-        DeviceImage*        m_dstImage = nullptr;                           // 
-        Int3                m_imageOffset = {0, 0, 0};                // Extent offset in the image to begin copying.
+        DeviceImage*        m_dstImage = nullptr;
+        ImageRegionDesc     m_dstRegion{};
+        //UInt3               m_imageOffset = {0, 0, 0};                 // Extent offset in the image to begin copying.
+        //EImagePlaneBits     m_planes = EImagePlaneBits::Color;
         uint32              m_layerCount = 1;
         EImageLayout        m_dstImageLayout = EImageLayout::CopyDestination;    // The layout that the image will be in at the time of the copy.
-        EImagePlaneBits     m_planes = EImagePlaneBits::Color;
         const DeviceBuffer* m_srcBuffer = nullptr;
         uint64              m_srcOffset = 0;
         uint64              m_size = graphics::kWholeSize;

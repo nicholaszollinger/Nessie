@@ -125,7 +125,7 @@ namespace nes
 
                 // Update input state.
                 m_pInputManager->Update(m_timeStep);
-
+                
                 // Update the Application frame.
                 Update(m_timeStep);
             
@@ -261,14 +261,14 @@ namespace nes
 
     void Application::Internal_Shutdown()
     {
-        // Allow the Application to respond.
-        PreShutdown();
-        
         if (m_pRenderer)
         {
             m_pRenderer->WaitUntilAllFramesCompleted();
         }
-
+        
+        // Allow the Application to respond.
+        PreShutdown();
+        
         // Shutdown the renderer.
         if (m_pRenderer != nullptr)
         {
