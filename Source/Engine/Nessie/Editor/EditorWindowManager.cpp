@@ -226,6 +226,13 @@ namespace nes
                 nodeID = splitIDs[dockWindow.m_splitIndex];
             }
             ImGui::DockBuilderDockWindow(dockWindow.m_windowName.c_str(), nodeID);
+
+            // Open the window:
+            auto pWindow = GetWindow<EditorWindow>(dockWindow.m_windowName);
+            if (pWindow != nullptr)
+            {
+                pWindow->SetOpen(true);
+            }
         }
 
         // Finish.

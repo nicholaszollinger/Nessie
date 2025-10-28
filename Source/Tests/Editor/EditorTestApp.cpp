@@ -33,15 +33,11 @@ void EditorTestApp::PushEvent(nes::Event& event)
 
 bool EditorTestApp::Init()
 {
-    std::filesystem::path iniSettingsPath = NES_CONFIG_DIR;
-    iniSettingsPath /= "imgui.ini";
-    
     nes::ImGuiDesc desc{};
     desc.m_pRenderQueue = nes::Renderer::GetRenderQueue();
     desc.m_pWindow = &GetWindow();
     desc.m_swapchainFormat = nes::Renderer::GetSwapchainFormat();
     desc.m_framesInFlight = nes::Renderer::GetMaxFramesInFlight();
-    desc.m_iniSettingsPath = iniSettingsPath;
     m_imgui = nes::ImGuiRenderer(nes::Renderer::GetDevice(), desc);
 
     // Register Editor Window Types:

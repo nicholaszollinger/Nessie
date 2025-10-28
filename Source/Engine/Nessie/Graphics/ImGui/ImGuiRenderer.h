@@ -22,7 +22,6 @@ namespace nes
         uint32              m_framesInFlight = 2;
         uint32              m_descriptorPoolSize = 0;
         EFormat             m_swapchainFormat = EFormat::BGRA8_SRGB;
-        std::filesystem::path m_iniSettingsPath = "imgui.ini";
     };
     
     //----------------------------------------------------------------------------------------------------

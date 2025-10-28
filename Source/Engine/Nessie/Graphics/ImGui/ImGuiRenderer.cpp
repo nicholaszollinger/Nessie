@@ -49,7 +49,6 @@ namespace nes
 
     ImGuiRenderer::ImGuiRenderer(RenderDevice& device, const ImGuiDesc& desc)
         : m_pDevice(&device)
-        , m_iniSettingsPath(desc.m_iniSettingsPath.string())
     {
         CreateDescriptorPool(device, desc);
         InitializeImGui(device, desc);
@@ -113,7 +112,6 @@ namespace nes
         ImGuiIO& io = ImGui::GetIO();
         (void)io;
         
-        io.IniFilename = m_iniSettingsPath.c_str();
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
