@@ -10,7 +10,7 @@ namespace nes
         
     public:
         EditorConsole();
-        virtual ~EditorConsole() override { Clear(); }
+        virtual ~EditorConsole() override;
         
         virtual void    RenderImGui() override;
         void            PostToConsole(const LogMemoryBuffer& message);

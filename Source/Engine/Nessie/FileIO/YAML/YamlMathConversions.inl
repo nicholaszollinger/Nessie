@@ -1,6 +1,5 @@
-﻿// YamlConversions.cpp
-
-#include "YamlConversions.h"
+﻿// YamlMathConversions.inl
+#pragma once
 #include "Nessie/Math/Math.h"
 
 //--------------------------------------------------------------------------------------------------
@@ -30,6 +29,12 @@ struct YAML::convert<nes::Vec2>
     }
 };
 
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const nes::Vec2& v)
+{
+    out << YAML::Flow << YAML::BeginSeq << v.x << v.y << YAML::EndSeq;
+    return out;
+}
+
 template <>
 struct YAML::convert<nes::Vec3>
 {
@@ -54,6 +59,15 @@ struct YAML::convert<nes::Vec3>
         return true;
     }
 };
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const nes::Vec3& v)
+{
+    out << YAML::Flow << YAML::BeginSeq << v.x << v.y << v.z << YAML::EndSeq;
+    return out;
+}
+
+static_assert(nes::YamlReadableType<nes::Vec3>, "nes::Vec3 cannot be read from YAML!");
+static_assert(nes::YamlWriteableType<nes::Vec3>, "nes::Vec3 cannot be written to YAML!");
 
 template <>
 struct YAML::convert<nes::Vec4>
@@ -81,6 +95,12 @@ struct YAML::convert<nes::Vec4>
         return true;
     }
 };
+
+inline YAML::Emitter& operator<<(YAML::Emitter& out, const nes::Vec4& v)
+{
+    out << YAML::Flow << YAML::BeginSeq << v.x << v.y << v.z << v.w << YAML::EndSeq;
+    return out;
+}
 
 #pragma endregion
 //--------------------------------------------------------------------------------------------------

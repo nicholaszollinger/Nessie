@@ -4,6 +4,10 @@
 #include <filesystem>
 #include <fstream>
 #include "imgui_internal.h"
+#include "Nessie/FileIO/YAML/YamlReader.h"
+#include "Nessie/FileIO/YAML/YamlWriter.h"
+
+NES_YAML_DEFINE_ENUM_CONVERTER(ImGuiDir);
 
 namespace nes
 {
@@ -12,51 +16,55 @@ namespace nes
         // Load the Editor Config:
         std::filesystem::path path = NES_CONFIG_DIR;
         path /= "EditorConfig.yaml";
-        YAML::Node file = YAML::LoadFile(path.string());
-        if (!file)
+
+        YamlReader reader(path);
+        if (!reader.IsOpen())
         {
             NES_ERROR("Failed to load Editor config file!");
             return false;
         }
 
-        auto editor = file["Editor"];
-        auto windows = editor["Windows"];
-
+        YamlNode root = reader.GetRoot();
+        YamlNode editor = root["Editor"];
+        YamlNode windows = editor["Windows"];
+        
         // Load open windows:
         std::string windowName = {};
         for (auto windowNode : windows)
         {
-            windowName = windowNode["Name"].as<std::string>();
+            // [TODO]: This should create an instance, rather than getting one.
+            windowNode["Name"].Read(windowName);
             auto pWindow = GetWindow<EditorWindow>(windowName);
             if (pWindow)
             {
+                pWindow->Deserialize(windowNode);
                 pWindow->SetOpen();
             }
         }
-
-        // Load Editor Layouts:
-        m_defaultLayout = editor["DefaultLayout"].as<std::string>();
         
-        auto layouts = editor["Layouts"];
+        // Load Editor Layouts:
+        editor["DefaultLayout"].Read(m_defaultLayout);
+
+        YamlNode layouts = editor["Layouts"];
         for (auto layoutNode : layouts)
         {
             EditorWindowLayout layout;
-            layout.m_name = layoutNode["Name"].as<std::string>();
-
+            layoutNode["Name"].Read(layout.m_name);
+            
             auto dockSplitsNode = layoutNode["DockSplits"];
             for (auto dockSplitNode : dockSplitsNode)
             {
                 LayoutDockSplit dockSplit;
-                dockSplit.m_direction = static_cast<ImGuiDir>(dockSplitNode["SplitDir"].as<int>(-1));
-                dockSplit.m_ratio = dockSplitNode["SplitRatio"].as<float>(0.25f);
+                dockSplitNode["SplitDir"].Read(dockSplit.m_direction, ImGuiDir_None);
+                dockSplitNode["SplitRatio"].Read(dockSplit.m_ratio, 0.25f);
                 layout.m_splits.emplace_back(dockSplit);
             }
 
             for (auto windowNode : layoutNode["Windows"])
             {
                 LayoutDockWindow window;
-                window.m_windowName = windowNode["Name"].as<std::string>();
-                window.m_splitIndex = windowNode["DockIndex"].as<int>(-1); // -1 means the main dock space.
+                windowNode["Name"].Read(window.m_windowName);
+                windowNode["DockIndex"].Read(window.m_splitIndex, -1);
                 layout.m_windows.emplace_back(std::move(window));
             }
 
@@ -74,71 +82,64 @@ namespace nes
         std::ofstream stream(path.string());
         if (!stream.is_open())
         {
-            // [TODO]: Create the file.
+            // [TODO]: Create the file if not present.
             return;
         }
 
-        YAML::Emitter emitter(stream);
+        YamlWriter writer(path, stream);
+        writer.BeginMap("Editor");
 
-        emitter << YAML::BeginMap << YAML::Key << "Editor" << YAML::BeginMap;
-        
-        // Default Layout:
-        emitter << YAML::Key << "DefaultLayout" << YAML::Value << YAML::DoubleQuoted << m_defaultLayout;
+        // Default Layout
+        writer.Write("DefaultLayout", m_defaultLayout);
 
-        // Save the Windows:
+        // Save the open windows:
+        writer.BeginSequence("Windows");
+        for (auto& window : m_windows)
         {
-            emitter << YAML::Key << "Windows" << YAML::Value << YAML::BeginSeq;
-            for (auto& window : m_windows)
-            {
-                if (!window->IsOpen())
-                    continue;
-            
-                emitter << YAML::BeginMap;
-                emitter << YAML::Key << "Name" << YAML::Value << YAML::DoubleQuoted << window->GetName();
-                emitter << YAML::EndMap;
-            }
-            emitter << YAML::EndSeq;
+            writer.BeginMap();
+            window->Serialize(writer);
+            writer.EndMap();
         }
+        writer.EndSequence();
 
         // Save the Layouts:
+        writer.BeginSequence("Layouts");
+        for (const auto& [name, layout] : m_layouts)
         {
-            emitter << YAML::Key << "Layouts" << YAML::Value << YAML::BeginSeq;
-            for (const auto& [name, layout] : m_layouts)
+            writer.BeginMap();
+            writer.Write("Name", name);
+
+            // DockSplits:
+            writer.BeginSequence("DockSplits");
+            for (const auto& dockSplit : layout.m_splits)
             {
-                emitter << YAML::BeginMap;
-                emitter << YAML::Key << "Name" << YAML::Value << YAML::DoubleQuoted << name;
-            
-                // DockSplits
-                emitter << YAML::Key << "DockSplits" << YAML::Value << YAML::BeginSeq;
-                for (const auto& dockSplit : layout.m_splits)
-                {
-                    emitter << YAML::BeginMap;
-                    emitter << YAML::Key << "SplitNode" << YAML::Value << dockSplit.m_splitNode;
-                    emitter << YAML::Key << "SplitDir" << YAML::Value << static_cast<int>(dockSplit.m_direction);
-                    emitter << YAML::Key << "SplitRatio" << YAML::Value << dockSplit.m_ratio;
-                    emitter << YAML::EndMap;
-                }
-                emitter << YAML::EndSeq;
-
-                // Windows
-                emitter << YAML::Key << "Windows" << YAML::Value << YAML::BeginSeq;
-                for (const auto& dockWindow : layout.m_windows)
-                {
-                    emitter << YAML::BeginMap;
-                    emitter << YAML::Key << "Name" << YAML::Value << YAML::DoubleQuoted << dockWindow.m_windowName;
-                    emitter << YAML::Key << "DockIndex" << YAML::Value << dockWindow.m_splitIndex;
-                    emitter << YAML::EndMap;
-                }
-                emitter << YAML::EndSeq;
-                emitter << YAML::EndMap; // End this layout.
+                writer.BeginMap();
+                writer.Write("SplitNode", dockSplit.m_splitNode);
+                writer.Write("SplitDir", dockSplit.m_direction);
+                writer.Write("SplitRatio", dockSplit.m_ratio);
+                writer.EndMap();
             }
+            writer.EndSequence();
 
-            // End the layouts array
-            emitter << YAML::EndSeq;
+            // Windows:
+            writer.BeginSequence("Windows");
+            for (const auto& dockWindow : layout.m_windows)
+            {
+                writer.BeginMap();
+                writer.Write("Name", dockWindow.m_windowName);
+                writer.Write("DockIndex", dockWindow.m_splitIndex);
+                writer.EndMap();
+            }
+            writer.EndSequence();
+
+            writer.EndMap(); // Ends the layout
         }
+        writer.EndSequence(); // Ends the array of layouts
         
-        emitter << YAML::EndMap; // End the Editor Map
-        emitter << YAML::EndMap; // End the Root Map
+        writer.EndMap(); // End the Editor Map.
+        
+        // Clear the windows instances.
+        m_windows.clear();
     }
 
     void EditorWindowManager::SetupMainWindowAndDockSpace()

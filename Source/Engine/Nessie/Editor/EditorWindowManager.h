@@ -64,12 +64,13 @@ namespace nes
         /// @brief : Register an Editor Window type so that it can be opened and used.
         //----------------------------------------------------------------------------------------------------
         template <typename Type>
-        void RegisterWindow()
+        std::shared_ptr<Type> RegisterWindow()
         {
             // Naive approach for now, assuming that we aren't adding duplicate window types, and single instances.
             std::shared_ptr<Type> pWindow = std::make_shared<Type>();
             m_windows.emplace_back(pWindow);
             m_nameToIndexMap[pWindow->GetName()] = m_windows.size() - 1;
+            return pWindow;
         }
 
         //----------------------------------------------------------------------------------------------------

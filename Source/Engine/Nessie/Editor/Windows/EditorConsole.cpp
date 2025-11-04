@@ -22,6 +22,28 @@ namespace nes
         Clear();
     }
 
+    EditorConsole::~EditorConsole()
+    {
+        Clear();
+
+        // Remove the EditorConsole Target from the Logger.
+        auto pDefaultLogger = LoggerRegistry::Instance().GetDefaultLogger();
+        if (pDefaultLogger != nullptr)
+        {
+            auto& targets = pDefaultLogger->GetTargets();
+            for (size_t i = 0; i < targets.size(); ++i)
+            {
+                if (std::dynamic_pointer_cast<EditorConsoleLogTargetMT>(targets[i]) != nullptr)
+                {
+                    std::swap(targets[i], targets.back());
+                    targets.pop_back();
+                    break;
+                }
+            }
+        }
+        
+    }
+
     void EditorConsole::RenderImGui()
     {
         if (!ImGui::Begin("Console", &m_desc.m_isOpen, m_desc.m_flags))

@@ -3,12 +3,18 @@
 #include "Nessie/Application/Application.h"
 #include "Nessie/Editor/EditorWindowManager.h"
 #include "Nessie/Graphics/ImGui/ImGuiRenderer.h"
+#include "World/TestWorld.h"
+
+namespace nes
+{
+    class ViewportWindow;
+}
 
 class EditorTestApp final : public nes::Application
 {
 public:
     EditorTestApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc);
-    virtual void PushEvent(nes::Event& e) override;
+    virtual void    PushEvent(nes::Event& e) override;
 
 private:
     virtual bool    Init() override;
@@ -23,4 +29,7 @@ private:
 private:
     nes::ImGuiRenderer          m_imgui = nullptr;
     nes::EditorWindowManager    m_windowManager{};
+    nes::StrongPtr<TestWorld>   m_pWorld = nullptr;
+
+    std::shared_ptr<nes::ViewportWindow> m_viewportWindow = nullptr;
 };

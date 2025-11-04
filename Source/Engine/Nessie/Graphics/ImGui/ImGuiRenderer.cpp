@@ -13,45 +13,31 @@
 
 namespace nes
 {
-    ImGuiRenderer::ImGuiRenderer(ImGuiRenderer&& other) noexcept
-        : m_pDevice(other.m_pDevice)
-        , m_descriptorPool(std::move(other.m_descriptorPool))
-        , m_iniSettingsPath(std::move(other.m_iniSettingsPath))
-    {
-        other.m_pDevice = nullptr;
-    }
-
-    ImGuiRenderer& ImGuiRenderer::operator=(std::nullptr_t)
-    {
-        Destroy();
-        return *this;
-    }
-
-    ImGuiRenderer& ImGuiRenderer::operator=(ImGuiRenderer&& other) noexcept
-    {
-        if (this != &other)
-        {
-            m_pDevice = other.m_pDevice;
-            m_descriptorPool = std::move(other.m_descriptorPool);
-            m_iniSettingsPath = std::move(other.m_iniSettingsPath);
-            
-            other.m_pDevice = nullptr;
-        }
-
-        return *this;
-    }
-    
     ImGuiRenderer::~ImGuiRenderer()
     {
-        if (m_pDevice != nullptr)
-            Destroy();
+        if (m_pDevice)
+            Shutdown();
     }
 
-    ImGuiRenderer::ImGuiRenderer(RenderDevice& device, const ImGuiDesc& desc)
-        : m_pDevice(&device)
+    void ImGuiRenderer::Init(RenderDevice& device, const ImGuiDesc& desc)
     {
+        m_pDevice = &device;
         CreateDescriptorPool(device, desc);
         InitializeImGui(device, desc);
+    }
+
+    void ImGuiRenderer::Shutdown()
+    {
+        if (m_pDevice != nullptr)
+        {
+            // Shutdown ImGui:
+            ImGui_ImplVulkan_Shutdown();
+            ImGui_ImplGlfw_Shutdown();
+            ImGui::DestroyContext();
+        
+            m_pDevice = nullptr;
+            m_descriptorPool = nullptr;
+        }
     }
 
     void ImGuiRenderer::BeginFrame()
@@ -102,12 +88,13 @@ namespace nes
 
         m_descriptorPool = vk::raii::DescriptorPool(device, poolInfo);
     }
-
+    
     void ImGuiRenderer::InitializeImGui(RenderDevice& device, const ImGuiDesc& desc)
     {
         IMGUI_CHECKVERSION();
         ImGui::CreateContext();
         ImGui::StyleColorsDark();
+        //ImGuiPlatformIO platformIO = ImGui::GetPlatformIO();
         
         ImGuiIO& io = ImGui::GetIO();
         (void)io;
@@ -116,10 +103,7 @@ namespace nes
         io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
         io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
         io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;       // Enable Multi-Viewport / Platform Windows
-
-        // Style
-        ImGui::StyleColorsDark();
-
+        
         // When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular ones.
         ImGuiStyle& style = ImGui::GetStyle();
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
@@ -127,33 +111,41 @@ namespace nes
             style.WindowRounding = 0.0f;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
         }
-        
+
         // Must be static for ImGui_ImplVulkan_InitInfo
-        static VkFormat imageFormats = VK_FORMAT_B8G8R8A8_UNORM;
+        static VkFormat imguiImageFormats = VK_FORMAT_B8G8R8A8_SRGB;
         
         if (desc.m_pWindow)
         {
             ImGui_ImplGlfw_InitForVulkan(checked_cast<GLFWwindow*>(desc.m_pWindow->GetNativeWindow().m_glfw), true);
-            imageFormats = static_cast<VkFormat>(GetVkFormat(nes::Renderer::GetSwapchainFormat()));
+            ImGui_ImplGlfw_SetCallbacksChainForAllWindows(true);
+            
+            imguiImageFormats = static_cast<VkFormat>(GetVkFormat(desc.m_swapchainFormat));
         }
         
-        ImGui_ImplVulkan_InitInfo initInfo = {};
+        static ImGui_ImplVulkan_InitInfo initInfo = {};
         initInfo.ApiVersion = device.GetDesc().m_apiVersion;
         initInfo.Instance = *device.GetVkInstance();
         initInfo.PhysicalDevice = *device.GetVkPhysicalDevice();
         initInfo.Device = *device.GetVkDevice();
         initInfo.Allocator = device.GetVkAllocationCallbacks();
-        initInfo.MinAllocationSize = 1024 * 1024;
+        initInfo.MinAllocationSize = 1024ull * 1024ull;
         initInfo.QueueFamily = desc.m_pRenderQueue->GetFamilyIndex();
         initInfo.Queue = *desc.m_pRenderQueue->GetVkQueue();
         initInfo.UseDynamicRendering = true;
-        initInfo.MinImageCount = nes::Renderer::GetMaxFramesInFlight();
-        initInfo.ImageCount = nes::Renderer::GetMaxFramesInFlight();
+        initInfo.MinImageCount = desc.m_framesInFlight;
+        initInfo.ImageCount = desc.m_framesInFlight;
         initInfo.PipelineInfoMain.PipelineRenderingCreateInfo =
         {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
             .colorAttachmentCount = 1,
-            .pColorAttachmentFormats = &imageFormats
+            .pColorAttachmentFormats = &imguiImageFormats
+        };
+        initInfo.PipelineInfoForViewports.PipelineRenderingCreateInfo =
+        {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+            .colorAttachmentCount = 1,
+            .pColorAttachmentFormats = &imguiImageFormats
         };
         
         initInfo.DescriptorPool = *m_descriptorPool;
@@ -161,16 +153,5 @@ namespace nes
 
         // [TODO]: 
         // Fonts:
-    }
-
-    void ImGuiRenderer::Destroy()
-    {
-        // Shutdown ImGui:
-        ImGui_ImplVulkan_Shutdown();
-        ImGui_ImplGlfw_Shutdown();
-        ImGui::DestroyContext();
-        
-        m_pDevice = nullptr;
-        m_descriptorPool = nullptr;
     }
 }

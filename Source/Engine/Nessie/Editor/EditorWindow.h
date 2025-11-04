@@ -1,6 +1,9 @@
 // EditorWindow.h
 #pragma once
 #include "EditorCore.h"
+#include "Nessie/Core/Events/Event.h"
+#include "Nessie/FileIO/YAML/YamlReader.h"
+#include "Nessie/FileIO/YAML/YamlWriter.h"
 
 namespace nes
 {
@@ -30,9 +33,19 @@ namespace nes
         virtual TypeID          GetTypeID() const = 0;
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Render the window and its contents.
+        /// @brief : Render the window and its contents. The base function sets whether the window 
         //----------------------------------------------------------------------------------------------------
         virtual void            RenderImGui() = 0;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Load the window settings from YAML. The default method loads the Window's name.
+        //----------------------------------------------------------------------------------------------------
+        virtual void            Deserialize(const YamlNode& in);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Save the window settings to YAML. The default method saves the Window's name.
+        //----------------------------------------------------------------------------------------------------
+        virtual void            Serialize(YamlWriter& out) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the window should be opened or closed.

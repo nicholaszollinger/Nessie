@@ -3,66 +3,38 @@
 
 namespace nes
 {
-    void Camera::LookAt(const nes::Vec3& eyePosition, const nes::Vec3& targetPosition, const nes::Vec3& up)
+    Mat44 Camera::CalculateProjectionMatrix(const uint32 width, const uint32 height, const bool flipAxis) const
     {
-        m_viewMatrix = Mat44::LookAt(eyePosition, targetPosition, up);
-    }
-    
-    void Camera::UpdateViewport(const uint32 width, const uint32 height, const bool flipYAxis)
-    {
-        switch (m_projectionType)
+        Mat44 projection;
+        
+        if (m_projectionType == EProjectionType::Perspective)
         {
-            case Perspective:
-            {
-                m_projectionMatrix = Mat44::Perspective(m_perspectiveFOV, static_cast<float>(width), static_cast<float>(height), m_perspectiveNear, m_perspectiveFar);
-                break;
-            }
-
-            case Orthographic:
-            {
-                const float aspect = static_cast<float>(width) / static_cast<float>(height);
-                const float orthoHalfHeight = m_orthographicSize * 0.5f;
-                const float orthoHalfWidth = orthoHalfHeight * aspect;
-                m_projectionMatrix = Mat44::Orthographic(-orthoHalfWidth, orthoHalfWidth, -orthoHalfHeight, orthoHalfHeight, m_orthographicNear, m_orthographicFar);
-                break;
-            }
+            projection = Mat44::Perspective(math::ToRadians(m_perspectiveFOV), static_cast<float>(width), static_cast<float>(height), m_nearPlane, m_farPlane);
         }
+        else
+        {
+            const float aspect = static_cast<float>(width) / static_cast<float>(height);
+            const float orthoHalfHeight = m_orthographicSize * 0.5f;
+            const float orthoHalfWidth = orthoHalfHeight * aspect;
+            projection = Mat44::Orthographic(-orthoHalfWidth, orthoHalfWidth, -orthoHalfHeight, orthoHalfHeight, m_nearPlane, m_farPlane);
+        }
+        
+        if (flipAxis)
+            projection[1][1] *= -1.f;
 
-        if (flipYAxis)
-            m_projectionMatrix[1][1] *= -1.f;
+        return projection;
     }
-    
-    void Camera::SetPerspective(const float fovRadians, const float aspectRatio, const float nearPlane,
-                                const float farPlane, const bool flipYAxis)
+
+    float Camera::CalculateExposureFactor() const
     {
-        m_projectionType = EProjectionType::Perspective;
-        m_perspectiveFOV = fovRadians;
-        m_perspectiveNear = nearPlane;
-        m_perspectiveFar = farPlane;
-        m_projectionMatrix = Mat44::Perspective(fovRadians, aspectRatio, nearPlane, farPlane);
-        if (flipYAxis)
-            m_projectionMatrix[1][1] *= -1.f;
-    }
-    
-    Vec3 Camera::CameraViewLocation() const
-    {
-        const Mat44 inverse = m_viewMatrix.Inversed();
-        return inverse.GetColumn3(3);
-    }
-    
-    void Camera::SetPerspective(const float fovRadians, const uint32 viewWidth, const uint32 viewHeight, const float nearPlane,
-        const float farPlane, const bool flipYAxis)
-    {
-        SetPerspective(fovRadians, static_cast<float>(viewWidth) / static_cast<float>(viewHeight), nearPlane, farPlane, flipYAxis);
-    }
-    
-    void Camera::SetOrthographic(const uint32 viewWidth, const uint32 viewHeight, const float orthographicSize,
-        const float near, const float far, const bool flipYAxis)
-    {
-        m_projectionType = EProjectionType::Orthographic;
-        m_orthographicSize = orthographicSize;
-        m_orthographicNear = near;
-        m_orthographicFar = far;
-        UpdateViewport(viewWidth, viewHeight, flipYAxis);
+        // Calculate exposure value (EV) - standard photographic formula
+        const float ev = std::log2((m_aperture * m_aperture) / (1.f / m_shutterSpeed));
+
+        // Convert to exposure adjustment factor
+        // ISO 100 is baseline, higher ISO = more sensitive (brighter)
+        const float isoAdjustment = m_iso / 100.f;
+
+        // Exposure factor combines EV and ISO
+        return isoAdjustment * std::pow(2.f, -ev);
     }
 }

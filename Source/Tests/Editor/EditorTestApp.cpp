@@ -12,6 +12,7 @@
 #include "Nessie/Graphics/RenderDevice.h"
 #include "Nessie/Graphics/Renderer.h"
 #include "Nessie/Input/InputEvents.h"
+#include "Nessie/Input/InputManager.h"
 
 EditorTestApp::EditorTestApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc)
     : nes::Application(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc))
@@ -38,10 +39,10 @@ bool EditorTestApp::Init()
     desc.m_pWindow = &GetWindow();
     desc.m_swapchainFormat = nes::Renderer::GetSwapchainFormat();
     desc.m_framesInFlight = nes::Renderer::GetMaxFramesInFlight();
-    m_imgui = nes::ImGuiRenderer(nes::Renderer::GetDevice(), desc);
+    m_imgui.Init(nes::Renderer::GetDevice(), desc);
 
     // Register Editor Window Types:
-    m_windowManager.RegisterWindow<nes::ViewportWindow>();
+    m_viewportWindow = m_windowManager.RegisterWindow<nes::ViewportWindow>();
     m_windowManager.RegisterWindow<nes::HierarchyWindow>();
     m_windowManager.RegisterWindow<nes::InspectorWindow>();
     m_windowManager.RegisterWindow<nes::EditorConsole>();
@@ -51,39 +52,60 @@ bool EditorTestApp::Init()
         NES_ERROR("Failed to initialize EditorWindowManager!");
         return false;
     }
+
+    // Create the runtime world
+    m_pWorld = nes::Create<TestWorld>();
+    if (!m_pWorld->Init())
+    {
+        NES_ERROR("Failed to initialize Test World!");
+        return false;
+    }
+
+    m_viewportWindow->Init(m_pWorld, m_imgui);
     
     return true;
 }
 
 void EditorTestApp::PreShutdown()
 {
+    if (m_pWorld)
+    {
+        m_pWorld->Destroy();
+        m_pWorld = nullptr;
+    }
+    
+    m_viewportWindow = nullptr;
     m_windowManager.Shutdown();
     
     // Close ImGui.
-    m_imgui = nullptr;
+    m_imgui.Shutdown();
 }
 
-void EditorTestApp::Update(const float)
+void EditorTestApp::Update(const float deltaTime)
 {
-    //
+    if (m_viewportWindow)
+        m_viewportWindow->Tick(deltaTime);
 }
 
 void EditorTestApp::OnResize(const uint32, const uint32)
 {
-    //auto& device = nes::DeviceManager::GetRenderDevice();
-    //auto& window = GetWindow().GetNativeWindow();
-    //auto pQueue = nes::Renderer::GetRenderQueue();
-    
     // [TODO]: Handle DPI/Content scaling appropriately with ImGui?
 }
 
 void EditorTestApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
+    // Render the World into the offscreen targets (non-swapchain targets)
+    if (m_viewportWindow)
+    {
+        m_viewportWindow->RenderWorld(commandBuffer, context);
+    }
+    
     // Record ImGui Draw calls:
     m_imgui.BeginFrame();
     RenderImGuiEditor();
     m_imgui.CreateRenderData();
     
+    // Render ImGui data into the Swapchain:
     // Transition the swapchain image to color attachment
     {
         nes::ImageBarrierDesc swapchainBarrier = nes::ImageBarrierDesc()
@@ -123,7 +145,8 @@ void EditorTestApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderF
     {
         nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
             .SetImage(context.GetSwapchainImage())
-            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::Present);
+            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::Present)
+            .SetBarrierStage(nes::EPipelineStageBits::ColorAttachment, nes::EPipelineStageBits::All);
     
         nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
             .SetImageBarriers(imageBarrier);
@@ -143,9 +166,9 @@ void EditorTestApp::RenderImGuiEditor()
     {
         if (ImGui::BeginMenu("File"))
         {
-            //if (ImGui::MenuItem("Save", "Ctrl+S")) { /* Handle save */ }
-            //ImGui::Separator();
-            if (ImGui::MenuItem("Quit")) { Quit(); }
+            if (ImGui::MenuItem("Quit"))
+                Quit();
+            
             ImGui::EndMenu();
         }
 

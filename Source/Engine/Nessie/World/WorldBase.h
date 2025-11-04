@@ -2,8 +2,8 @@
 #pragma once
 #include "Nessie/Core/Events/Event.h"
 #include "Nessie/Core/Memory/StrongPtr.h"
-#include "ComponentSystem.h"
 #include "WorldAsset.h"
+#include "WorldRenderer.h"
 
 namespace nes
 {
@@ -35,7 +35,7 @@ namespace nes
         /// @brief : Called every frame. Delta time is in seconds.
         //----------------------------------------------------------------------------------------------------
         virtual void        Tick(const float deltaTime) = 0;
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calls WorldBase::OnDestroy(), destroys all entities and components, then shuts down each ComponentSystem. 
         //----------------------------------------------------------------------------------------------------
@@ -58,6 +58,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         template <ComponentSystemType Type>
         StrongPtr<Type>     GetSystem();
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the Renderer object for the world.
+        //----------------------------------------------------------------------------------------------------
+        StrongPtr<WorldRenderer> GetRenderer() const { return m_pRenderer; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the Entity Registry for the world.
@@ -98,7 +103,7 @@ namespace nes
         /// @brief : Processes any entities that need to be initialized, enabled, disable, or destroyed.
         //----------------------------------------------------------------------------------------------------
         void                ProcessEntityLifecycle();
-
+        
     private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allows systems to initialize entities that need to be initialized. 
@@ -123,7 +128,8 @@ namespace nes
     protected:
         using SystemArray = std::vector<StrongPtr<ComponentSystem>>;
         
-        EntityRegistry      m_entityRegistry{};
-        SystemArray         m_systems{};
+        EntityRegistry              m_entityRegistry{};
+        SystemArray                 m_systems{};
+        StrongPtr<WorldRenderer>    m_pRenderer = nullptr;
     };
 }

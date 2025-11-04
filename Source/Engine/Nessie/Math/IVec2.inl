@@ -99,7 +99,7 @@ namespace nes
     template <IntegralType Type>
     float TIntVec2<Type>::LengthSqr() const
     {
-        return x * x + y * y;
+        return static_cast<float>(x * x + y * y);
     }
 
     template <IntegralType Type>

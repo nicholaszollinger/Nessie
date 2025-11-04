@@ -144,6 +144,12 @@ namespace nes
         ECursorMode             GetCursorMode() const           { return m_desc.m_cursorMode; }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Determine if this is the main application window - if the main application window is closed,
+        ///     then the Application will close.
+        //----------------------------------------------------------------------------------------------------
+        bool                    IsMainApplicationWindow() const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Check whether the Window needs to close. 
         //----------------------------------------------------------------------------------------------------
         bool                    ShouldClose() const;
@@ -181,8 +187,10 @@ namespace nes
         void                    Internal_Shutdown();
     
     protected:
-        WindowDesc              m_desc;                      /// Current window properties.
-        NativeWindow            m_nativeWindow{};                   /// Platform specific window handles, and the GLFW Window*.
-        bool                    m_swapChainNeedsRebuild = false;    /// Flag to determine if the Renderer needs to update the swap chain.
+        WindowDesc              m_desc;                             // Current window properties.
+        NativeWindow            m_nativeWindow{};                   // Platform specific window handles, and the GLFW Window*.
+        void*                   m_subWindowWithFocus = nullptr;
+        void*                   m_subWindowLastUnderCursor = nullptr;
+        bool                    m_swapChainNeedsRebuild = false;    // Flag to determine if the Renderer needs to update the swap chain.
     };
 }

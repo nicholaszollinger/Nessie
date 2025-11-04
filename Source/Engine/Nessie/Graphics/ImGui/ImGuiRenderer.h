@@ -33,16 +33,20 @@ namespace nes
     public:
         ImGuiRenderer(std::nullptr_t) {}
         ImGuiRenderer(const ImGuiRenderer&) = delete;
-        ImGuiRenderer(ImGuiRenderer&& other) noexcept;
-        ImGuiRenderer& operator=(std::nullptr_t);
+        ImGuiRenderer(ImGuiRenderer&& other) noexcept = delete;
         ImGuiRenderer& operator=(const ImGuiRenderer&) = delete;
-        ImGuiRenderer& operator=(ImGuiRenderer&& other) noexcept;
+        ImGuiRenderer& operator=(ImGuiRenderer&& other) noexcept = delete;
         ~ImGuiRenderer();
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Creates and initializes ImGui. This will also load the shaders and create graphics resources.
+        /// @brief : Creates and initializes the ImGui context. 
         //----------------------------------------------------------------------------------------------------
-        ImGuiRenderer(RenderDevice& device, const ImGuiDesc& desc);
+        void            Init(RenderDevice& device, const ImGuiDesc& desc);
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Shutdowns and destroys the ImGui context. No ImGui calls can be made past this point!  
+        //----------------------------------------------------------------------------------------------------
+        void            Shutdown();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Begin a new ImGui frame. Must be called before any ImGui commands are recorded. 
@@ -64,6 +68,11 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void            RenderToSwapchain(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& renderFrameContext);
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Get the descriptor pool used for ImGui.
+        //----------------------------------------------------------------------------------------------------
+        vk::raii::DescriptorPool& GetDescriptorPool() { return m_descriptorPool; }
+
     private:
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the Descriptor Pool that ImGui can use for textures. 
@@ -75,14 +84,8 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void            InitializeImGui(RenderDevice& device, const ImGuiDesc& desc);
         
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Destroys the ImGui context and all graphics resources.
-        //----------------------------------------------------------------------------------------------------
-        void            Destroy();
-        
     private:
         RenderDevice*   m_pDevice = nullptr;
         vk::raii::DescriptorPool  m_descriptorPool = nullptr;
-        std::string     m_iniSettingsPath = "imgui.ini";
     };
 }

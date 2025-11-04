@@ -245,7 +245,13 @@ namespace nes
             else if (desc.m_before.m_access == graphics::kInferAccess)
             {
                 NES_ASSERT(desc.m_before.m_stages != graphics::kInferPipelineStage);
-                result.srcAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_before.m_stages), true);
+                result.srcStageMask = GetVkPipelineStageFlags(desc.m_before.m_stages);
+                result.srcAccessMask = InferAccessMaskFromStage(result.srcStageMask, true);
+            }
+            else
+            {
+                result.srcAccessMask = GetVkAccessFlags(desc.m_before.m_access);
+                result.srcStageMask = GetVkPipelineStageFlags(desc.m_before.m_stages);
             }
         
             // Destination Access:
@@ -256,7 +262,13 @@ namespace nes
             else if (desc.m_after.m_access == graphics::kInferAccess)
             {
                 NES_ASSERT(desc.m_after.m_stages != graphics::kInferPipelineStage);
-                result.dstAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_after.m_stages), false);
+                result.dstStageMask = GetVkPipelineStageFlags(desc.m_after.m_stages);
+                result.dstAccessMask = InferAccessMaskFromStage(result.dstStageMask, false);
+            }
+            else
+            {
+                result.dstAccessMask = GetVkAccessFlags(desc.m_after.m_access);
+                result.dstStageMask = GetVkPipelineStageFlags(desc.m_after.m_stages);
             }
         }
 
