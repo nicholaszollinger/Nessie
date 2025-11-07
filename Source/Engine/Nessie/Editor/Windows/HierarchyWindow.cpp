@@ -122,6 +122,27 @@ namespace nes
         {
             editor::SelectionManager::SelectGlobalUnique(idComp.GetID());
         }
+
+        if (ImGui::BeginDragDropTarget())
+        {
+            const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
+        
+            if (payload)
+            {
+                const size_t count = payload->DataSize / sizeof(uint64);
+        
+                for (size_t i = 0; i < count; ++i)
+                {
+                    const EntityID droppedID = *(static_cast<uint64*>(payload->Data) + i);
+                    const auto droppedHandle = registry.GetEntity(droppedID);
+                    
+                    // Parent the Entity
+                    m_pWorld->ParentEntity(droppedHandle, entity);
+                }
+            }
+            
+            ImGui::EndDragDropTarget();
+        }
         
         if (nodeOpen)
         {
@@ -149,53 +170,31 @@ namespace nes
         //     ImGui::FocusWindow(ImGui::GetCurrentWindow());
         // }
 
-        // // Drag and Drop
-        // if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
-        // {
-        //     const auto& selectedEntities = editor::SelectionManager::GetSelections(editor::SelectionManager::kGlobalContext);
-        //     auto entityID = idComp.GetID();
-        //     
-        //     if (editor::SelectionManager::IsSelectedGlobal(entityID))
-        //     {
-        //         ImGui::TextUnformatted(name.c_str());
-        //         ImGui::SetDragDropPayload("entity_hierarchy", &entityID, 1 * sizeof(EntityID));
-        //     }
-        //     else
-        //     {
-        //         for (const auto& selectedID : selectedEntities)
-        //         {
-        //             const auto handle = registry.GetEntity(selectedID);
-        //             const auto& selectedIDComp = registry.GetComponent<IDComponent>(handle);
-        //             ImGui::TextUnformatted(selectedIDComp.GetName().c_str());
-        //         }
-        //
-        //         ImGui::SetDragDropPayload("entity_hierarchy", selectedEntities.data(), selectedEntities.size() * sizeof(UUID));
-        //     }
-        //     
-        //     ImGui::EndDragDropSource();
-        // }
-        //
-        // if (ImGui::BeginDragDropTarget())
-        // {
-        //     const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("entity_hierarchy", ImGuiDragDropFlags_AcceptNoDrawDefaultRect);
-        //
-        //     if (payload)
-        //     {
-        //         const size_t count = payload->DataSize / sizeof(uint64);
-        //
-        //         for (size_t i = 0; i < count; ++i)
-        //         {
-        //             EntityID droppedID = *(static_cast<uint64*>(payload->Data) + i);
-        //             [[maybe_unused]] auto droppedHandle = registry.GetEntity(droppedID);
-        //
-        //             // [TODO]:
-        //             // Parent the Entity
-        //             // m_pWorld->ParentEntity(droppedEntity, entity);
-        //         }
-        //     }
-        //     
-        //     ImGui::EndDragDropTarget();
-        // }
+        // Drag and Drop
+        if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID))
+        {
+            const auto& selectedEntities = editor::SelectionManager::GetSelections(editor::SelectionManager::kGlobalContext);
+            auto entityID = idComp.GetID();
+            
+            if (editor::SelectionManager::IsSelectedGlobal(entityID))
+            {
+                ImGui::TextUnformatted(name.c_str());
+                ImGui::SetDragDropPayload("entity_hierarchy", &entityID, 1 * sizeof(EntityID));
+            }
+            else
+            {
+                for (const auto& selectedID : selectedEntities)
+                {
+                    const auto handle = registry.GetEntity(selectedID);
+                    const auto& selectedIDComp = registry.GetComponent<IDComponent>(handle);
+                    ImGui::TextUnformatted(selectedIDComp.GetName().c_str());
+                }
+        
+                ImGui::SetDragDropPayload("entity_hierarchy", selectedEntities.data(), selectedEntities.size() * sizeof(UUID));
+            }
+            
+            ImGui::EndDragDropSource();
+        }
 
         // [TODO]: Handle Deletion:
     }
@@ -217,7 +216,7 @@ namespace nes
                 if (m_filter.PassFilter(idComp.GetName().c_str()))
                     return true;
             }
-                                                                    
+            
             // Return found results.
             if (NameSearchRecursive(registry, childEntity, maxSearchDepth, currentDepth + 1))
                 return true;

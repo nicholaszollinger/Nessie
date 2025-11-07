@@ -71,6 +71,34 @@ namespace nes
         }
     }
 
+    void WorldBase::ExportToAsset(WorldAsset& dstAsset)
+    {
+        auto& componentRegistry = ComponentRegistry::Get();
+        auto componentTypes = componentRegistry.GetAllComponentTypes();
+        auto& srcRegistry = m_entityRegistry;
+
+        // Clear the current asset registry:
+        auto& dstRegistry = dstAsset.GetRegistry();
+        dstRegistry.Clear();
+
+        // All Entities must have an IDComponent, so this is equivalent to getting all entities. 
+        auto view = srcRegistry.GetAllEntitiesWith<IDComponent>();
+        for (auto srcEntity : view)
+        {
+            auto& idComp = view.get<IDComponent>(srcEntity);
+            
+            EntityHandle dstEntity = dstRegistry.CreateEntity(idComp.GetID(), idComp.GetName());
+
+            // Add all registered components that exist in the Registry.
+            // - If the entity already exists, this will update its current components.
+            for (const auto& desc : componentTypes)
+            {
+                NES_ASSERT(desc.m_copyFunction != nullptr);
+                desc.m_copyFunction(srcRegistry, dstRegistry, srcEntity, dstEntity);
+            }
+        }
+    }
+
     void WorldBase::DestroyEntity(const EntityHandle entity)
     {
         m_entityRegistry.MarkEntityForDestruction(entity);

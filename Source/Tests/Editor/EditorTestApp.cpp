@@ -107,8 +107,13 @@ bool EditorTestApp::Init()
 
 void EditorTestApp::PreShutdown()
 {
-    // Save on Close.
-    nes::AssetManager::SaveAssetSync(m_currentWorldAsset);
+    // Save the world information to disc.
+    auto pWorldAsset = nes::AssetManager::GetAsset<nes::WorldAsset>(m_currentWorldAsset);
+    if (pWorldAsset && m_pWorld)
+    {
+        m_pWorld->ExportToAsset(*pWorldAsset);
+        nes::AssetManager::SaveAssetSync(m_currentWorldAsset);
+    }
     
     if (m_pWorld)
     {

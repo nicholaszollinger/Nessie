@@ -30,6 +30,7 @@ namespace pbr
         virtual void    Tick(const float deltaTime) override;
         void            OnResize(const uint32 width, const uint32 height);
         void            Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
+        virtual void    ParentEntity(const nes::EntityHandle entity, const nes::EntityHandle parent) override;
 
     private:
         virtual void    AddComponentSystems() override;

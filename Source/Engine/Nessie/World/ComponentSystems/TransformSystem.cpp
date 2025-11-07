@@ -137,41 +137,41 @@ namespace nes
     {
         auto& registry = GetRegistry();
         
-        EntityHandle child = GetRegistry().GetEntity(childID);
-        EntityHandle parent = GetRegistry().GetEntity(parentID);
+        EntityHandle child = registry.GetEntity(childID);
+        EntityHandle parent = registry.GetEntity(parentID);
         SetParent(child, parent);
 
-        if (!registry.IsValidEntity(child) || !registry.IsValidEntity(parent))
-            return;
-
-        // Ensure both have Transform Components
-        if (!registry.HasComponent<TransformComponent>(child) || !registry.HasComponent<TransformComponent>(parent))
-            return;
-
-        auto& childNode = registry.GetComponent<NodeComponent>(child);
-
-        // Remove from the old parent, if necessary:
-        if (childNode.m_parentID != kInvalidEntityID)
-        {
-            EntityHandle oldParent = GetRegistry().GetEntity(childNode.m_parentID);
-            auto& oldParentNode = registry.GetComponent<NodeComponent>(oldParent);
-            
-            auto it = std::find(oldParentNode.m_childrenIDs.begin(), oldParentNode.m_childrenIDs.end(), childID);
-            if (it != oldParentNode.m_childrenIDs.end())
-            {
-                oldParentNode.m_childrenIDs.erase(it);
-            }
-        }
-
-        // Set up the new relationship:
-        auto& parentNode = registry.GetComponent<NodeComponent>(parent);
-        childNode.m_parentID = parentID;
-        parentNode.m_childrenIDs.push_back(childID);
-        
-        MarkDirty(child);
-
-        // Hierarchy changed:
-        m_needsRebuild = true;
+        // if (!registry.IsValidEntity(child) || !registry.IsValidEntity(parent))
+        //     return;
+        //
+        // // Ensure both have Transform Components
+        // if (!registry.HasComponent<TransformComponent>(child) || !registry.HasComponent<TransformComponent>(parent))
+        //     return;
+        //
+        // auto& childNode = registry.GetComponent<NodeComponent>(child);
+        //
+        // // Remove from the old parent, if necessary:
+        // if (childNode.m_parentID != kInvalidEntityID)
+        // {
+        //     EntityHandle oldParent = GetRegistry().GetEntity(childNode.m_parentID);
+        //     auto& oldParentNode = registry.GetComponent<NodeComponent>(oldParent);
+        //     
+        //     auto it = std::find(oldParentNode.m_childrenIDs.begin(), oldParentNode.m_childrenIDs.end(), childID);
+        //     if (it != oldParentNode.m_childrenIDs.end())
+        //     {
+        //         oldParentNode.m_childrenIDs.erase(it);
+        //     }
+        // }
+        //
+        // // Set up the new relationship:
+        // auto& parentNode = registry.GetComponent<NodeComponent>(parent);
+        // childNode.m_parentID = parentID;
+        // parentNode.m_childrenIDs.push_back(childID);
+        //
+        // MarkDirty(child);
+        //
+        // // Hierarchy changed:
+        // m_needsRebuild = true;
     }
 
     void TransformSystem::SetParent(const EntityHandle child, const EntityHandle parent)
@@ -187,12 +187,12 @@ namespace nes
 
         auto& childNode = registry.GetComponent<NodeComponent>(child);
         const auto childID = registry.GetComponent<IDComponent>(child).GetID();
-        const auto parentID = registry.GetComponent<IDComponent>(child).GetID();
+        const auto parentID = registry.GetComponent<IDComponent>(parent).GetID();
 
         // Remove from the old parent, if necessary:
         if (childNode.m_parentID != kInvalidEntityID)
         {
-            EntityHandle oldParent = GetRegistry().GetEntity(childNode.m_parentID);
+            EntityHandle oldParent = registry.GetEntity(childNode.m_parentID);
             auto& oldParentNode = registry.GetComponent<NodeComponent>(oldParent);
             
             auto it = std::find(oldParentNode.m_childrenIDs.begin(), oldParentNode.m_childrenIDs.end(), childID);

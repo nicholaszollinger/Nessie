@@ -47,10 +47,20 @@ namespace nes
         void                MergeWorld(WorldAsset& srcWorld);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Export the current entity information to the WorldAsset.
+        //----------------------------------------------------------------------------------------------------
+        void                ExportToAsset(WorldAsset& dstAsset);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Marks an Entity to be destroyed. The Entity will actually be destroyed on the next call
         ///     to ProcessEntityLifecycle().
         //----------------------------------------------------------------------------------------------------
         void                DestroyEntity(const EntityHandle entity);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Parent an Entity to another. 
+        //----------------------------------------------------------------------------------------------------
+        virtual void        ParentEntity(const EntityHandle entity, const EntityHandle parent) = 0;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a Component System by Type. Can be nullptr if the System was not correctly added to the

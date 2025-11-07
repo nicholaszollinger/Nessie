@@ -52,6 +52,12 @@ namespace pbr
             m_pSceneRenderer->RenderScene(commandBuffer, context);
     }
 
+    void PBRExampleWorld::ParentEntity(const nes::EntityHandle entity, const nes::EntityHandle parent)
+    {
+        if (m_pTransformSystem)
+            m_pTransformSystem->SetParent(entity, parent);
+    }
+
     void PBRExampleWorld::AddComponentSystems()
     {
         m_pTransformSystem = AddComponentSystem<nes::TransformSystem>();

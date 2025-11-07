@@ -13,6 +13,12 @@ void TestWorld::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrame
     m_pSimpleRenderer->RenderWorld(commandBuffer, context);
 }
 
+void TestWorld::ParentEntity(const nes::EntityHandle entity, const nes::EntityHandle parent)
+{
+    if (m_pTransformSystem)
+        m_pTransformSystem->SetParent(entity, parent);
+}
+
 void TestWorld::AddComponentSystems()
 {
     m_pTransformSystem = AddComponentSystem<nes::TransformSystem>();
