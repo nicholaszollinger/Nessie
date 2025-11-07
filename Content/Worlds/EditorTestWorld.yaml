@@ -1,66 +1,63 @@
 World:
-  Assets:
-
+  Assets: []
   Entities:
     - Entity: 1
       Name: "Player"
       Components:
-      - NodeComponent:
-          Parent: 0
-          Children: [3, 4]
-      - TransformComponent:
-          Position: [0.0, 0.0, 0.0]
-          Rotation: [0, 0, 0]
-          Scale: [1, 1, 1]
-
+        - NodeComponent:
+            Parent: 0
+            Children: [3, 4]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
     - Entity: 2
       Name: "Rock1"
       Components:
-      - NodeComponent:
-          Parent: 0
-          Children: [6]
-      - TransformComponent:
-          Position: [0.0, 0.0, 0.0]
-          Rotation: [0, 0, 0]
-          Scale: [1, 1, 1]
-
+        - NodeComponent:
+            Parent: 0
+            Children: [6]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
     - Entity: 3
       Name: "Helmet"
       Components:
-      - NodeComponent:
-          Parent: 1
-          Children: [5]
-      - TransformComponent:
-          Position: [0.0, 0.0, 0.0]
-          Rotation: [0, 0, 0]
-          Scale: [1, 1, 1]
-
+        - NodeComponent:
+            Parent: 1
+            Children: [5]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
     - Entity: 4
       Name: "Weapon"
       Components:
-      - NodeComponent:
-          Parent: 1
-      - TransformComponent:
-          Position: [0.0, 0.0, 0.0]
-          Rotation: [0, 0, 0]
-          Scale: [1, 1, 1]
-
+        - NodeComponent:
+            Parent: 1
+            Children: []
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
     - Entity: 5
       Name: "Visor"
       Components:
-      - NodeComponent:
-          Parent: 3
-      - TransformComponent:
-          Position: [0.0, 0.0, 0.0]
-          Rotation: [0, 0, 0]
-          Scale: [1, 1, 1]
-
+        - NodeComponent:
+            Parent: 3
+            Children: []
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
     - Entity: 6
       Name: "Rock2"
       Components:
-      - NodeComponent:
-          Parent: 2
-      - TransformComponent:
-          Position: [0.0, 0.0, 0.0]
-          Rotation: [0, 0, 0]
-          Scale: [1, 1, 1]
+        - NodeComponent:
+            Parent: 2
+            Children: []
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]

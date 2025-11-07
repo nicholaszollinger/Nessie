@@ -149,6 +149,45 @@ namespace nes
         return ELoadResult::Success;
     }
 
+    void AssetManager::SaveAssetSync(const AssetID& id)
+    {
+        NES_ASSERT(IsMainThread(), "Assets can only be accessed on the Main Thread!");
+        
+        AssetManager& assetManager = GetInstance();
+        if (auto it = assetManager.m_loadedAssetMap.find(id); it != assetManager.m_loadedAssetMap.end())
+        {
+            auto& desc = it->second;
+            
+            // If we are queued to free, but requested, cancel the free operation.
+            // Because we only get assets from the main thread, we won't be freeing an asset while
+            // changing this flag.
+            if (desc.m_state == EAssetState::Freeing)
+            {
+                desc.m_state = EAssetState::Loaded;
+            }
+            
+            // If not loaded, then return.
+            else if (desc.m_state != EAssetState::Loaded)
+            {
+                NES_WARN("Attempted to save an Asset that was not loaded! \n- ID: {}\n- Path: {}", id.GetValue(), desc.m_metadata.m_path.string());
+                return;
+            }
+
+            // If no path is present, we can't save it.
+            if (desc.m_metadata.m_path.empty())
+            {
+                NES_WARN("Attempted to save an Asset that does not have a valid path! \n- ID: {}", id.GetValue());
+                return;
+            }
+
+            NES_ASSERT(desc.m_loadedIndex < assetManager.m_loadedAssets.size());
+            NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex] != nullptr);
+
+            // Perform the save:
+            assetManager.m_loadedAssets[desc.m_loadedIndex]->SaveToFile(desc.m_metadata.m_path);    
+        }
+    }
+
     void AssetManager::LoadAssetPackAsync(AssetPack& pack, const LoadRequest::OnComplete& onComplete, const LoadRequest::OnAssetLoaded& onSingleAssetLoaded)
     {
         LoadRequest request = BeginLoadRequest();

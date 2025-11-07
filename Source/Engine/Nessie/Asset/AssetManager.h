@@ -234,6 +234,11 @@ namespace nes
         static ELoadResult              LoadAssetPackSync(AssetPack& pack);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Saves the current Asset to disk. The path of the Asset must be valid.
+        //----------------------------------------------------------------------------------------------------
+        static void                     SaveAssetSync(const AssetID& id);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Load an asset, asynchronously. This queues the asset to be loaded on a separate thread.
         ///	@tparam Type : Asset Type you are trying to load.
         /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,

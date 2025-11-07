@@ -24,6 +24,7 @@ namespace nes
     
     protected:
         virtual ELoadResult     LoadFromFile(const std::filesystem::path& path) override;
+        virtual void            SaveToFile(const std::filesystem::path&) override;
         bool                    LoadEntities(const YamlNode& entities);
         
     private:

@@ -108,9 +108,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                RemoveLock() const;
     
-
     private:
         friend class AssetManager;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Save an Asset to the given filepath.
+        //----------------------------------------------------------------------------------------------------
+        virtual void        SaveToFile(const std::filesystem::path&) {}
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Override to support loading an asset from a filepath. If the result != Success,

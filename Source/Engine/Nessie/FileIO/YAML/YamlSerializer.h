@@ -40,4 +40,23 @@ namespace nes
         static void Serialize(YAML::Emitter& out, const std::string& value);
         static void Deserialize(const YAML::Node& in, std::string& value, const std::string& defaultValue = {});
     };
+
+    template <typename ElementType>
+    struct Serializer<YAML::Emitter, YAML::Node, std::vector<ElementType>>
+    {
+        static void Serialize(YAML::Emitter& out, const std::vector<ElementType>& value)
+        {
+            if (value.empty() || (value.size() <= 32 && std::is_arithmetic_v<ElementType>))
+            {
+                out << YAML::Flow << value;
+            }
+        }
+        
+        static void Deserialize(const YAML::Node& in, std::vector<ElementType>& value, const std::vector<ElementType>& defaultValue = {})
+        {
+            // Default implementation:
+            value = in.as<std::vector<ElementType>>(defaultValue);
+        }
+        
+    };
 }

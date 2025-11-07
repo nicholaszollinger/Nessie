@@ -38,8 +38,10 @@ namespace nes
             { 
                 if (const Type* comp = registry.TryGetComponent<Type>(entity))
                 {
-                    writer.BeginMap(name.c_str());
+                    writer.BeginMap(); // Begins an anonymous map, for the sequence item.
+                    writer.BeginMap(name.c_str()); // Begins a map with the component name.
                     Type::Serialize(writer, *comp);
+                    writer.EndMap();
                     writer.EndMap();
                 }
             };

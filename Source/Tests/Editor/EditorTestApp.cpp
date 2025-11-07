@@ -107,6 +107,9 @@ bool EditorTestApp::Init()
 
 void EditorTestApp::PreShutdown()
 {
+    // Save on Close.
+    nes::AssetManager::SaveAssetSync(m_currentWorldAsset);
+    
     if (m_pWorld)
     {
         m_pWorld->Destroy();

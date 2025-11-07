@@ -106,7 +106,7 @@ namespace nes
 
     void AssetPack::Serialize(YamlOutStream& writer, const AssetPack& assetPack)
     {
-        writer.BeginSequence("Assets");
+        writer.BeginSequence("Assets", assetPack.m_assets.empty());
         for (auto& metaData : assetPack.m_assets)
         {
             writer.BeginMap();
