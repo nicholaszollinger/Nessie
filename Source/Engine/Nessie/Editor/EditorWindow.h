@@ -2,8 +2,7 @@
 #pragma once
 #include "EditorCore.h"
 #include "Nessie/Core/Events/Event.h"
-#include "Nessie/FileIO/YAML/YamlReader.h"
-#include "Nessie/FileIO/YAML/YamlWriter.h"
+#include "Nessie/FileIO/YAML/YamlSerializer.h"
 
 namespace nes
 {
@@ -45,7 +44,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Save the window settings to YAML. The default method saves the Window's name.
         //----------------------------------------------------------------------------------------------------
-        virtual void            Serialize(YamlWriter& out) const;
+        virtual void            Serialize(YamlOutStream& out) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the window should be opened or closed.

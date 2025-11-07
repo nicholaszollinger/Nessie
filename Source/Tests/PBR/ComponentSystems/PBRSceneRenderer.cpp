@@ -11,6 +11,10 @@
 #include "Nessie/World/Components/CameraComponent.h"
 #include "Nessie/World/ComponentSystems/TransformSystem.h"
 
+#include "Nessie/FileIO/YAML/Serializers/YamlCoreSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlGraphicsSerializers.h"
+
 namespace pbr
 {
     void PBRSceneRenderer::RegisterComponentTypes()
@@ -31,8 +35,8 @@ namespace pbr
         std::filesystem::path path = NES_CONFIG_DIR;
         path /= "PBRAppSettings.yaml";
 
-        YAML::Node file = YAML::LoadFile(path.string());
-        if (!file)
+        nes::YamlInStream file(path);
+        if (!file.IsOpen())
         {
             NES_ERROR("Failed to load Application Settings!");
             return false;
@@ -290,13 +294,15 @@ namespace pbr
         }
     }
 
-    bool PBRSceneRenderer::CreateAndLoadDefaultAssets(nes::RenderDevice& device, const YAML::Node& file)
+    bool PBRSceneRenderer::CreateAndLoadDefaultAssets(nes::RenderDevice& device, const nes::YamlInStream& file)
     {
+        const auto root = file.GetRoot();
+        
         // Load the Asset Pack of default assets and shaders.
         {
-            const auto& assets = file["Assets"];
+            const auto& assets = root["Assets"];
             nes::AssetPack pack{};
-            if (!nes::AssetPack::LoadFromYAML(assets, pack))
+            if (!nes::AssetPack::Deserialize(assets, pack))
             {
                 NES_ERROR("Failed to load default Asset Pack!");
                 return false;
@@ -311,7 +317,7 @@ namespace pbr
         }
 
         // Shaders are loaded, Create the render targets and pipelines:
-        CreateRenderTargetsAndPipelines(device, file);
+        CreateRenderTargetsAndPipelines(device, root);
 
         // Set the Default AssetIDs:
         {
@@ -319,14 +325,14 @@ namespace pbr
             s_planeMeshID = 2;
             s_sphereMeshID = 3;
             
-            const auto& defaultAssetIDs = file["DefaultAssetIDs"];
-            s_errorTextureID = defaultAssetIDs["ErrorTextureID"].as<uint64>();
-            s_blackTextureID = defaultAssetIDs["BlackTextureID"].as<uint64>();
-            s_whiteTextureID = defaultAssetIDs["WhiteTextureID"].as<uint64>();
-            s_flatNormalTextureID = defaultAssetIDs["FlatNormalTextureID"].as<uint64>();
-            s_defaultMaterialID = defaultAssetIDs["DefaultMaterialID"].as<uint64>();
-            s_defaultSkyboxID = defaultAssetIDs["DefaultSkyboxID"].as<uint64>();
-            
+            const auto& defaultAssetIDs = root["DefaultAssetIDs"];
+            defaultAssetIDs["ErrorTextureID"].Read(s_errorTextureID);
+            defaultAssetIDs["BlackTextureID"].Read(s_blackTextureID);
+            defaultAssetIDs["WhiteTextureID"].Read(s_whiteTextureID);
+            defaultAssetIDs["FlatNormalTextureID"].Read(s_flatNormalTextureID);
+            defaultAssetIDs["DefaultMaterialID"].Read(s_defaultMaterialID);
+            defaultAssetIDs["DefaultSkyboxID"].Read(s_defaultSkyboxID);
+
             // Set our default skybox to the scene.
             m_scene.m_skyboxTextureID = s_defaultSkyboxID;
 
@@ -372,9 +378,6 @@ namespace pbr
 
             auto pAsset = nes::AssetManager::GetAsset<MeshAsset>(s_cubeMeshID);
             RegisterMeshAsset(pAsset);
-            
-            //m_scene.m_meshes.emplace_back(sceneMesh);
-            //m_scene.m_idToMeshIndex.emplace(s_cubeMeshID, static_cast<uint32>(m_scene.m_meshes.size() - 1));
         }
 
         // Sphere:
@@ -390,8 +393,6 @@ namespace pbr
 
             auto pAsset = nes::AssetManager::GetAsset<MeshAsset>(s_sphereMeshID);
             RegisterMeshAsset(pAsset);
-            //m_scene.m_meshes.emplace_back(sceneMesh);
-            //m_scene.m_idToMeshIndex.emplace(s_sphereMeshID, static_cast<uint32>(m_scene.m_meshes.size() - 1));
         }
 
         // Plane:
@@ -408,21 +409,18 @@ namespace pbr
 
             auto pAsset = nes::AssetManager::GetAsset<MeshAsset>(s_planeMeshID);
             RegisterMeshAsset(pAsset);
-            
-            //m_scene.m_meshes.emplace_back(sceneMesh);
-            //m_scene.m_idToMeshIndex.emplace(s_planeMeshID, static_cast<uint32>(m_scene.m_meshes.size() - 1));
         }
 
         return true;
     }
 
-    void PBRSceneRenderer::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file)
+    void PBRSceneRenderer::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const nes::YamlNode& root)
     {
         const auto swapchainColorFormat = nes::Renderer::GetSwapchainFormat();
         const auto swapchainExtent = nes::Renderer::GetSwapchainExtent();
 
         // Load Render Targets:
-        auto renderTargets = file["RenderTargets"];
+        auto renderTargets = root["RenderTargets"];
         NES_ASSERT(renderTargets);
         NES_ASSERT(renderTargets.size() > 0);
         {
@@ -438,17 +436,19 @@ namespace pbr
 
         // Load Pipelines:
         std::filesystem::path path{};
-        auto pipelines = file["Pipelines"];
+        std::string relativePath{};
+        auto pipelines = root["Pipelines"];
         NES_ASSERT(pipelines);
 
         // Grid
         {
             path = NES_CONTENT_DIR;
-            path /= pipelines["Grid"].as<std::string>();
+            pipelines["Grid"].Read(relativePath);
+            path /= relativePath;
 
-            YAML::Node pipelineFile = YAML::LoadFile(path.string());
-            NES_ASSERT(pipelineFile);
-            auto graphicsPipeline = pipelineFile["GraphicsPipeline"];
+            nes::YamlInStream pipelineFile(path);
+            NES_ASSERT(pipelineFile.IsOpen());
+            auto graphicsPipeline = pipelineFile.GetRoot()["GraphicsPipeline"];
             NES_ASSERT(graphicsPipeline);
             LoadGraphicsPipeline(graphicsPipeline, device, m_gridPipelineLayout, m_gridPipeline);
         }
@@ -456,11 +456,12 @@ namespace pbr
         // Skybox
         {
             path = NES_CONTENT_DIR;
-            path /= pipelines["Skybox"].as<std::string>();
+            pipelines["Skybox"].Read(relativePath);
+            path /= relativePath;
 
-            YAML::Node pipelineFile = YAML::LoadFile(path.string());
-            NES_ASSERT(pipelineFile);
-            auto graphicsPipeline = pipelineFile["GraphicsPipeline"];
+            nes::YamlInStream pipelineFile(path);
+            NES_ASSERT(pipelineFile.IsOpen());
+            auto graphicsPipeline = pipelineFile.GetRoot()["GraphicsPipeline"];
             NES_ASSERT(graphicsPipeline);
             LoadGraphicsPipeline(graphicsPipeline, device, m_skyboxPipelineLayout, m_skyboxPipeline);
         }
@@ -468,28 +469,33 @@ namespace pbr
         // PBR Geometry Pipeline
         {
             path = NES_CONTENT_DIR;
-            path /= pipelines["PBR"].as<std::string>();
+            pipelines["PBR"].Read(relativePath);
+            path /= relativePath;
 
-            YAML::Node pipelineFile = YAML::LoadFile(path.string());
-            NES_ASSERT(pipelineFile);
-            auto graphicsPipeline = pipelineFile["GraphicsPipeline"];
+            nes::YamlInStream pipelineFile(path);
+            NES_ASSERT(pipelineFile.IsOpen());
+            auto graphicsPipeline = pipelineFile.GetRoot()["GraphicsPipeline"];
             NES_ASSERT(graphicsPipeline);
             LoadGraphicsPipeline(graphicsPipeline, device, m_pbrPipelineLayout, m_pbrPipeline);
         }
 
         // Shadow Pipeline:
         {
-            auto shadowSettings = file["ShadowSettings"];
-            uint32 minBits = shadowSettings["FormatMinBits"].as<uint32>(32);
+            auto shadowSettings = root["ShadowSettings"];
+            
+            uint32 minBits;
+            shadowSettings["FormatMinBits"].Read(minBits, 32u);
             m_shadowImageFormat = device.GetSupportedDepthFormat(minBits, false);
-            m_shadowMapResolution = shadowSettings["ImageResolution"].as<uint32>(2048);
-            m_shadowCascadeCount = shadowSettings["NumCascades"].as<uint32>(1);
-            m_shadowMaxDistance = shadowSettings["MaxShadowDistance"].as<float>(100.f);
-            m_shadowCascadeSplitLambda = shadowSettings["CascadeSplitLambda"].as<float>(0.5f);
-            m_shadowDepthBiasConstant = shadowSettings["DepthBiasConstant"].as<float>(1.25f);
-            m_shadowDepthBiasSlope = shadowSettings["DepthBiasSlope"].as<float>(1.75f);
 
-            auto shaderID = shadowSettings["DepthShader"].as<uint64>(nes::kInvalidAssetID.GetValue());
+            shadowSettings["ImageResolution"].Read(m_shadowMapResolution, 2048u);
+            shadowSettings["NumCascades"].Read(m_shadowCascadeCount, 1u);
+            shadowSettings["MaxShadowDistance"].Read(m_shadowMaxDistance, 100.f);
+            shadowSettings["CascadeSplitLambda"].Read(m_shadowCascadeSplitLambda, 0.5f);
+            shadowSettings["DepthBiasConstant"].Read(m_shadowDepthBiasConstant, 1.25f);
+            shadowSettings["DepthBiasSlope"].Read(m_shadowDepthBiasSlope, 1.75f);
+            
+            nes::AssetID shaderID;
+            shadowSettings["DepthShader"].Read(shaderID, nes::kInvalidAssetID);
             CreateDepthPassResources(device, shaderID);
         }
     }
@@ -1405,37 +1411,35 @@ namespace pbr
         m_scene.m_idToTextureIndex.emplace(pTextureCube->GetAssetID(), static_cast<uint32>(m_scene.m_textures.size() - 1));
     }
 
-    nes::RenderTarget PBRSceneRenderer::LoadColorRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent)
+    nes::RenderTarget PBRSceneRenderer::LoadColorRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent)
     {
         nes::RenderTargetDesc desc{};
         desc.m_name = name;
         desc.m_planes = nes::EImagePlaneBits::Color;
 
         // Format
-        desc.m_format = static_cast<nes::EFormat>(targetNode["Format"].as<uint32>(0));
+        targetNode["Format"].Read(desc.m_format, nes::EFormat::Unknown);
         if (desc.m_format == nes::EFormat::Unknown)
             desc.m_format = swapchainFormat;
 
         // Usage
-        desc.m_usage = static_cast<nes::EImageUsageBits>(targetNode["Usage"].as<uint32>(0));
+        targetNode["Usage"].Read(desc.m_usage, nes::EImageUsageBits::None);
         desc.m_usage |= nes::EImageUsageBits::ColorAttachment;
 
         // Sample Count
-        desc.m_sampleCount = targetNode["SampleCount"].as<uint32>(1);
+        targetNode["SampleCount"].Read<uint32>(desc.m_sampleCount, 1u);
 
         // Clear Value
         auto clearColorNode = targetNode["ClearColor"];
         nes::ClearColorValue clearColorValue{};
-        clearColorValue.m_float32[0] = clearColorNode[0].as<float>(0.f);
-        clearColorValue.m_float32[1] = clearColorNode[1].as<float>(0.f);
-        clearColorValue.m_float32[2] = clearColorNode[2].as<float>(0.f);
-        clearColorValue.m_float32[3] = clearColorNode[3].as<float>(1.f);
+        clearColorNode[0].Read<float>(clearColorValue.m_float32[0], 0.f);
+        clearColorNode[1].Read<float>(clearColorValue.m_float32[1], 0.f);
+        clearColorNode[2].Read<float>(clearColorValue.m_float32[2], 0.f);
+        clearColorNode[3].Read<float>(clearColorValue.m_float32[3], 1.f);
         desc.m_clearValue = clearColorValue;
 
         // Size
-        auto sizeNode = targetNode["Size"];
-        desc.m_size.x = sizeNode[0].as<uint32>(0);
-        desc.m_size.y = sizeNode[1].as<uint32>(0);
+        targetNode["Size"].Read(desc.m_size, nes::UInt2::Zero());
 
         // If either dimension is zero, use the swapchain extent.
         if (desc.m_size.x == 0 || desc.m_size.y == 0)
@@ -1444,19 +1448,23 @@ namespace pbr
         return nes::RenderTarget(device, desc);
     }
 
-    nes::RenderTarget PBRSceneRenderer::LoadDepthRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent)
+    nes::RenderTarget PBRSceneRenderer::LoadDepthRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent)
     {
         nes::RenderTargetDesc desc{};
         desc.m_name = name;
         
         // Format
-        const uint32 minBits = targetNode["FormatMinBits"].as<uint32>(16);
-        const bool requireStencil = targetNode["FormatRequireStencil"].as<bool>(false);
+        uint32 minBits;
+        targetNode["FormatMinBits"].Read<uint32>(minBits, 16u);
+        
+        bool requireStencil;
+        targetNode["FormatRequireStencil"].Read<bool>(requireStencil, false);
+        
         desc.m_format = device.GetSupportedDepthFormat(minBits, requireStencil);
         NES_ASSERT(desc.m_format != nes::EFormat::Unknown);
 
         // Usage
-        desc.m_usage = static_cast<nes::EImageUsageBits>(targetNode["Usage"].as<uint32>(0));
+        targetNode["Usage"].Read(desc.m_usage, nes::EImageUsageBits::None);
         desc.m_usage |= nes::EImageUsageBits::DepthStencilAttachment;
     
         // Image Planes based on the Format
@@ -1465,18 +1473,16 @@ namespace pbr
             desc.m_planes |= nes::EImagePlaneBits::Stencil;
     
         // Sample Count
-        desc.m_sampleCount = targetNode["SampleCount"].as<uint32>(1);
+        targetNode["SampleCount"].Read<uint32>(desc.m_sampleCount, 1u);
 
         // Clear Value
         nes::ClearDepthStencilValue clearDepthStencil;
-        clearDepthStencil.m_depth = targetNode["ClearDepth"].as<float>(1.f);
-        clearDepthStencil.m_stencil = targetNode["ClearDepth"].as<uint32>(0);
+        targetNode["ClearDepth"].Read<float>(clearDepthStencil.m_depth, 1.f);
+        targetNode["ClearStencil"].Read<uint32>(clearDepthStencil.m_stencil, 0);
         desc.m_clearValue = clearDepthStencil;
 
         // Size
-        auto sizeNode = targetNode["Size"];
-        desc.m_size.x = sizeNode[0].as<uint32>(0);
-        desc.m_size.y = sizeNode[1].as<uint32>(0);
+        targetNode["Size"].Read(desc.m_size, nes::UInt2::Zero());
 
         // If either dimension is zero, use the swapchain extent.
         if (desc.m_size.x == 0 || desc.m_size.y == 0)
@@ -1485,7 +1491,7 @@ namespace pbr
         return nes::RenderTarget(device, desc);
     }
 
-    void PBRSceneRenderer::LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const
+    void PBRSceneRenderer::LoadGraphicsPipeline(const nes::YamlNode& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const
     {
         // Pipeline Layout
         {
@@ -1493,7 +1499,8 @@ namespace pbr
 
             // Stages
             static constexpr uint32 kDefaultStages = static_cast<uint32>(nes::EPipelineStageBits::GraphicsShaders);
-            nes::EPipelineStageBits stages = static_cast<nes::EPipelineStageBits>(layoutNode["Stages"].as<uint32>(kDefaultStages));
+            nes::EPipelineStageBits stages;
+            layoutNode["Stages"].Read<nes::EPipelineStageBits>(stages, nes::EPipelineStageBits::GraphicsShaders);
 
             // Descriptor Sets:
             std::vector<std::vector<nes::DescriptorBindingDesc>> setBindings{};
@@ -1510,10 +1517,10 @@ namespace pbr
                 for (auto bindingNode : bindings)
                 {
                     nes::DescriptorBindingDesc desc{};
-                    desc.m_bindingIndex = bindingNode["Index"].as<uint32>(0);
-                    desc.m_descriptorCount = bindingNode["DescriptorCount"].as<uint32>(1);
-                    desc.m_descriptorType = static_cast<nes::EDescriptorType>(bindingNode["DescriptorType"].as<uint32>());
-                    desc.m_shaderStages = static_cast<nes::EPipelineStageBits>(bindingNode["Stages"].as<uint32>(kDefaultStages));
+                    bindingNode["Index"].Read<uint32>(desc.m_bindingIndex, 0u);
+                    bindingNode["DescriptorCount"].Read<uint32>(desc.m_descriptorCount, 1u);
+                    bindingNode["DescriptorType"].Read<nes::EDescriptorType>(desc.m_descriptorType, {});
+                    bindingNode["Stages"].Read<nes::EPipelineStageBits>(desc.m_shaderStages, nes::EPipelineStageBits::GraphicsShaders);
                     bindingsArray.emplace_back(desc);
                 }
             
@@ -1527,9 +1534,9 @@ namespace pbr
             for (auto pushConstant : pushConstantsNode)
             {
                 nes::PushConstantDesc desc{};
-                desc.m_offset = pushConstant["Offset"].as<uint32>(0);
-                desc.m_size = pushConstant["Size"].as<uint32>();
-                desc.m_shaderStages = static_cast<nes::EPipelineStageBits>(pushConstant["Stages"].as<uint32>(kDefaultStages));
+                pushConstant["Offset"].Read<uint32>(desc.m_offset, 0u);
+                pushConstant["Size"].Read<uint32>(desc.m_size, 0u);
+                pushConstant["Stages"].Read<nes::EPipelineStageBits>(desc.m_shaderStages, nes::EPipelineStageBits::GraphicsShaders);
                 pushConstantDescs.emplace_back(desc);
             }
 
@@ -1547,7 +1554,8 @@ namespace pbr
     
         // Shader Stages:
         {
-            nes::AssetID shaderID = pipelineNode["Shader"].as<uint64>(); 
+            nes::AssetID shaderID;
+            pipelineNode["Shader"].Read(shaderID, nes::kInvalidAssetID); 
             nes::AssetPtr<nes::Shader> shader = nes::AssetManager::GetAsset<nes::Shader>(shaderID);
             NES_ASSERT(shader);
             desc.m_shaderStages = shader->GetGraphicsShaderStages();
@@ -1565,10 +1573,10 @@ namespace pbr
             for (auto attribute : attributesNode)
             {
                 nes::VertexAttributeDesc attributeDesc{};
-                attributeDesc.m_location = attribute["Location"].as<uint32>();
-                attributeDesc.m_offset = attribute["Offset"].as<uint32>();
-                attributeDesc.m_format = static_cast<nes::EFormat>(attribute["Format"].as<uint32>());
-                attributeDesc.m_streamIndex = attribute["Stream"].as<uint32>(0);
+                attribute["Location"].Read(attributeDesc.m_location, 0u);
+                attribute["Offset"].Read(attributeDesc.m_offset, 0u);
+                attribute["Format"].Read(attributeDesc.m_format, nes::EFormat::Unknown);
+                attribute["Stream"].Read(attributeDesc.m_streamIndex, 0u);
                 attributeDescs.emplace_back(attributeDesc);
             }
 
@@ -1578,9 +1586,9 @@ namespace pbr
             for (auto stream : streamsNode)
             {
                 nes::VertexStreamDesc streamDesc{};
-                streamDesc.m_stride = stream["Stride"].as<uint32>();
-                streamDesc.m_bindingIndex = stream["BindingIndex"].as<uint32>(0);
-                streamDesc.m_stepRate = static_cast<nes::EVertexStreamStepRate>(stream["StepRate"].as<uint32>(0));
+                stream["Stride"].Read(streamDesc.m_stride, 0u);
+                stream["BindingIndex"].Read(streamDesc.m_bindingIndex, 0u);
+                stream["StepRate"].Read(streamDesc.m_stepRate, nes::EVertexStreamStepRate::PerVertex);
                 streamDescs.emplace_back(streamDesc);
             }
 
@@ -1591,34 +1599,28 @@ namespace pbr
         // Input Assembly
         {
             auto inputAssembly = pipelineNode["InputAssembly"];
-
-            static constexpr uint32 kDefaultTopologyMode = static_cast<uint32>(nes::ETopology::TriangleList);
-            desc.m_inputAssembly.m_primitiveRestart = static_cast<nes::EPrimitiveRestart>(inputAssembly["PrimitiveRestart"].as<uint32>(0));
-            desc.m_inputAssembly.m_tessControlPointCount = inputAssembly["TesselationPointCount"].as<uint8>(static_cast<uint8>(0));
-            desc.m_inputAssembly.m_topology = static_cast<nes::ETopology>(inputAssembly["Topology"].as<uint32>(kDefaultTopologyMode));
+            inputAssembly["PrimitiveRestart"].Read(desc.m_inputAssembly.m_primitiveRestart );
+            inputAssembly["TesselationPointCount"].Read(desc.m_inputAssembly.m_tessControlPointCount);
+            inputAssembly["Topology"].Read(desc.m_inputAssembly.m_topology, nes::ETopology::TriangleList);
         }
 
         // Rasterization
         {
             auto rasterizationNode = pipelineNode["Rasterization"];
             auto& rasterState = desc.m_rasterization;
-
-            static constexpr uint32 kDefaultCullMode = static_cast<uint32>(nes::ECullMode::Back);
-            static constexpr uint32 kDefaultFillMode = static_cast<uint32>(nes::EFillMode::Solid);
-            static constexpr uint32 kDefaultFrontFace = static_cast<uint32>(nes::EFrontFaceWinding::CounterClockwise);
-        
-            rasterState.m_cullMode = static_cast<nes::ECullMode>(rasterizationNode["CullMode"].as<uint32>(kDefaultCullMode));
-            rasterState.m_fillMode = static_cast<nes::EFillMode>(rasterizationNode["FillMode"].as<uint32>(kDefaultFillMode));
-            rasterState.m_enableDepthClamp = rasterizationNode["EnableDepthClamp"].as<bool>(false);
-            rasterState.m_frontFace = static_cast<nes::EFrontFaceWinding>(rasterizationNode["FrontFace"].as<uint32>(kDefaultFrontFace));
-            rasterState.m_lineWidth = rasterizationNode["LineWidth"].as<float>(1.0f);
+            
+            rasterizationNode["CullMode"].Read(rasterState.m_cullMode, nes::ECullMode::Back);
+            rasterizationNode["FillMode"].Read(rasterState.m_fillMode, nes::EFillMode::Solid);
+            rasterizationNode["EnableDepthClamp"].Read(rasterState.m_enableDepthClamp, false);
+            rasterizationNode["FrontFace"].Read(rasterState.m_frontFace, nes::EFrontFaceWinding::CounterClockwise);
+            rasterizationNode["LineWidth"].Read(rasterState.m_lineWidth, 1.f);
 
             if (auto depthBiasNode = rasterizationNode["DepthBias"])
             {
-                rasterState.m_depthBias.m_constant = depthBiasNode["Constant"].as<float>(0.f);
-                rasterState.m_depthBias.m_clamp = depthBiasNode["Clamp"].as<float>(0.f);
-                rasterState.m_depthBias.m_slope = depthBiasNode["Slope"].as<float>(0.f);
-                rasterState.m_depthBias.m_enabled = depthBiasNode["Enabled"].as<bool>(false);
+                depthBiasNode["Constant"].Read(rasterState.m_depthBias.m_constant, 0.f);
+                depthBiasNode["Clamp"].Read(rasterState.m_depthBias.m_clamp, 0.f);
+                depthBiasNode["Slope"].Read(rasterState.m_depthBias.m_slope, 0.f);
+                depthBiasNode["Enabled"].Read(rasterState.m_depthBias.m_enabled, false);
             }
         }
 
@@ -1628,9 +1630,7 @@ namespace pbr
         {
             auto outputMergerNode = pipelineNode["OutputMerger"];
             auto& outputMerger = desc.m_outputMerger;
-
-            static constexpr uint32 kDefaultColorWriteMask = static_cast<uint32>(nes::EColorComponentBits::RGBA);
-
+            
             // Color Attachments
             auto colorAttachmentsNode = outputMergerNode["ColorAttachments"];
             colorAttachments.reserve(colorAttachmentsNode.size());
@@ -1639,28 +1639,30 @@ namespace pbr
                 nes::ColorAttachmentDesc colorAttachmentDesc{};
             
                 // Get the render target format this attachment is for.
-                const std::string renderTargetName = attachment["RenderTarget"].as<std::string>();
+                std::string renderTargetName;
+                attachment["RenderTarget"].Read(renderTargetName);
+                
                 NES_ASSERT(m_renderTargetRegistry.contains(renderTargetName));
                 auto* pTarget = m_renderTargetRegistry.at(renderTargetName);
                 NES_ASSERT(pTarget->IsColorTarget());
                 colorAttachmentDesc.m_format = pTarget->GetFormat();
                 targets.emplace_back(pTarget);
 
-                colorAttachmentDesc.m_enableBlend = attachment["EnableBlend"].as<bool>(true);
-                colorAttachmentDesc.m_colorWriteMask = static_cast<nes::EColorComponentBits>(attachment["ColorWriteMask"].as<uint32>(kDefaultColorWriteMask));
-
+                attachment["EnableBlend"].Read(colorAttachmentDesc.m_enableBlend, true);
+                attachment["ColorWriteMask"].Read(colorAttachmentDesc.m_colorWriteMask, nes::EColorComponentBits::RGBA);
+                
                 // Color Blend
                 auto colorBlendState = attachment["ColorBlend"];
-                colorAttachmentDesc.m_colorBlend.m_srcFactor = static_cast<nes::EBlendFactor>(colorBlendState["SrcFactor"].as<uint32>());
-                colorAttachmentDesc.m_colorBlend.m_dstFactor = static_cast<nes::EBlendFactor>(colorBlendState["DstFactor"].as<uint32>());
-                colorAttachmentDesc.m_colorBlend.m_op = static_cast<nes::EBlendOp>(colorBlendState["BlendOp"].as<uint32>());
+                colorBlendState["SrcFactor"].Read(colorAttachmentDesc.m_colorBlend.m_srcFactor);
+                colorBlendState["DstFactor"].Read(colorAttachmentDesc.m_colorBlend.m_dstFactor);
+                colorBlendState["BlendOp"].Read(colorAttachmentDesc.m_colorBlend.m_op, nes::EBlendOp::Add);
 
                 // Alpha Blend
                 auto alphaBlendState = attachment["AlphaBlend"];
-                colorAttachmentDesc.m_alphaBlend.m_srcFactor = static_cast<nes::EBlendFactor>(colorBlendState["SrcFactor"].as<uint32>());
-                colorAttachmentDesc.m_alphaBlend.m_dstFactor = static_cast<nes::EBlendFactor>(colorBlendState["DstFactor"].as<uint32>());
-                colorAttachmentDesc.m_alphaBlend.m_op = static_cast<nes::EBlendOp>(colorBlendState["BlendOp"].as<uint32>());
-
+                alphaBlendState["SrcFactor"].Read(colorAttachmentDesc.m_alphaBlend.m_srcFactor);
+                alphaBlendState["DstFactor"].Read(colorAttachmentDesc.m_alphaBlend.m_dstFactor);
+                alphaBlendState["BlendOp"].Read(colorAttachmentDesc.m_colorBlend.m_op, nes::EBlendOp::Add);
+                
                 colorAttachments.emplace_back(colorAttachmentDesc);
             }
 
@@ -1671,16 +1673,16 @@ namespace pbr
             if (auto depthAttachmentNode = outputMergerNode["DepthAttachment"])
             {
                 // Get depth/stencil target this attachment is for.
-                const std::string renderTargetName = depthAttachmentNode["RenderTarget"].as<std::string>();
+                std::string renderTargetName;
+                depthAttachmentNode["RenderTarget"].Read(renderTargetName);
                 NES_ASSERT(m_renderTargetRegistry.contains(renderTargetName));
                 auto* pTarget = m_renderTargetRegistry.at(renderTargetName);
                 NES_ASSERT(pTarget->IsDepthTarget());
                 targets.emplace_back(pTarget);
                 outputMerger.m_depthStencilFormat = pTarget->GetFormat();
-
-                static constexpr uint32 kDefaultDepthCompareOp = static_cast<uint32>(nes::ECompareOp::Less);
-                outputMerger.m_depth.m_compareOp = static_cast<nes::ECompareOp>(depthAttachmentNode["CompareOp"].as<uint32>(kDefaultDepthCompareOp));
-                outputMerger.m_depth.m_enableWrite = depthAttachmentNode["EnableWrite"].as<bool>(true);
+                
+                depthAttachmentNode["CompareOp"].Read(outputMerger.m_depth.m_compareOp, nes::ECompareOp::Less);
+                depthAttachmentNode["EnableWrite"].Read(outputMerger.m_depth.m_enableWrite, true);
             }
 
             // Stencil Attachment (optional)
@@ -1691,22 +1693,23 @@ namespace pbr
                 // Front
                 auto frontNode = stencilAttachmentNode["Front"];
                 auto& front = outputMerger.m_stencil.m_front;
-                front.m_compareOp = static_cast<nes::ECompareOp>(frontNode["CompareOp"].as<uint32>(kDefaultStencilCompareOp));
-                front.m_failOp = static_cast<nes::EStencilOp>(frontNode["FailOp"].as<uint32>());
-                front.m_passOp = static_cast<nes::EStencilOp>(frontNode["PassOp"].as<uint32>());
-                front.m_depthFailOp = static_cast<nes::EStencilOp>(frontNode["DepthFailOp"].as<uint32>());
-                front.m_compareMask = frontNode["CompareMask"].as<uint8>(static_cast<uint8>(0));
-                front.m_writeMask = frontNode["WriteMask"].as<uint8>(static_cast<uint8>(0));
+
+                frontNode["CompareOp"].Read(front.m_compareOp, nes::ECompareOp::None);
+                frontNode["FailOp"].Read(front.m_failOp);
+                frontNode["PassOp"].Read(front.m_passOp);
+                frontNode["DepthFailOp"].Read(front.m_depthFailOp);
+                frontNode["CompareMask"].Read(front.m_compareMask);
+                frontNode["WriteMask"].Read(front.m_writeMask);
 
                 // Back
                 auto backNode = stencilAttachmentNode["Back"];
                 auto& back = outputMerger.m_stencil.m_back;
-                back.m_compareOp = static_cast<nes::ECompareOp>(backNode["CompareOp"].as<uint32>(kDefaultStencilCompareOp));
-                back.m_failOp = static_cast<nes::EStencilOp>(backNode["FailOp"].as<uint32>());
-                back.m_passOp = static_cast<nes::EStencilOp>(backNode["PassOp"].as<uint32>());
-                back.m_depthFailOp = static_cast<nes::EStencilOp>(backNode["DepthFailOp"].as<uint32>());
-                back.m_compareMask = backNode["CompareMask"].as<uint8>(static_cast<uint8>(0));
-                back.m_writeMask = backNode["WriteMask"].as<uint8>(static_cast<uint8>(0));
+                backNode["CompareOp"].Read(back.m_compareOp, nes::ECompareOp::None);
+                backNode["FailOp"].Read(back.m_failOp);
+                backNode["PassOp"].Read(back.m_passOp);
+                backNode["DepthFailOp"].Read(back.m_depthFailOp);
+                backNode["CompareMask"].Read(back.m_compareMask);
+                backNode["WriteMask"].Read(back.m_writeMask);
             }
         }
 
@@ -1717,7 +1720,7 @@ namespace pbr
 
             if (auto multisampleNode = pipelineNode["Multisample"])
             {
-                desc.m_enableMultisample = multisampleNode["Enabled"].as<bool>(false);
+                multisampleNode["Enabled"].Read(desc.m_enableMultisample, false);
                 if (desc.m_enableMultisample)
                 {
                     // If enabled, get the max sample count for the selected targets:
@@ -1730,7 +1733,8 @@ namespace pbr
         outPipeline = nes::Pipeline(device, outLayout, desc);
 
         // Debug Name
-        const std::string debugName = pipelineNode["DebugName"].as<std::string>();
+        std::string debugName;
+        pipelineNode["DebugName"].Read(debugName);
         outPipeline.SetDebugName(debugName);
     }
 

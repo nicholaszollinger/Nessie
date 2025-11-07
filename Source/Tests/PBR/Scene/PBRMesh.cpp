@@ -9,6 +9,7 @@
 #include "ComponentSystems/PBRSceneRenderer.h"
 #include "Nessie/Application/Device/DeviceManager.h"
 #include "Nessie/Graphics/Texture.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlCoreSerializers.h"
 
 namespace pbr
 {
@@ -37,9 +38,9 @@ namespace pbr
             Vertex& v2 = outVertices[mesh.m_firstVertex + i2];
         
             // Normals
-            nes::Vec3 n0(v0.m_normal);
+            //nes::Vec3 n0(v0.m_normal);
             nes::Vec3 n1(v1.m_normal);
-            nes::Vec3 n2(v2.m_normal);
+            //nes::Vec3 n2(v2.m_normal);
         
             // Calculate triangle edges in position and UV space
             const nes::Vec3 edge1 = v1.m_position - v0.m_position;
@@ -333,14 +334,15 @@ namespace pbr
 
     nes::ELoadResult MeshAsset::LoadFromFile(const std::filesystem::path& path)
     {
-        YAML::Node file = YAML::LoadFile(path.string());
-        if (!file)
+        nes::YamlInStream file(path);
+
+        if (!file.IsOpen())
         {
             NES_ERROR("Failed to load Mesh! Expecting a YAML file.");
             return nes::ELoadResult::InvalidArgument;
         }
 
-        YAML::Node mesh = file["Mesh"];
+        nes::YamlNode mesh = file.GetRoot()["Mesh"];
         if (!mesh)
         {
             NES_ERROR("Failed to load Mesh! YAML file invalid: Missing 'Mesh' entry!");
@@ -350,18 +352,22 @@ namespace pbr
         return LoadFromYAML(mesh);
     }
 
-    nes::ELoadResult MeshAsset::LoadFromYAML(const YAML::Node& node)
+    nes::ELoadResult MeshAsset::LoadFromYAML(const nes::YamlNode& node)
     {
-        const bool invertWinding = node["InvertWinding"].as<bool>(true);
+        bool invertWinding;
+        node["InvertWinding"].Read(invertWinding, true);
     
         Assimp::Importer importer;
         int importFlags = aiProcess_Triangulate | aiProcess_MakeLeftHanded | aiProcess_FlipUVs;
         if (invertWinding)
             importFlags |= aiProcess_FlipWindingOrder;
 
+        
         std::filesystem::path path = NES_CONTENT_DIR;
-            path /= node["Path"].as<std::string>();
-
+        std::string relativePath;
+        node["Path"].Read(relativePath);
+        path /= relativePath;
+        
         const aiScene* pScene = importer.ReadFile(path.string().c_str(), importFlags);
         if (!pScene)
         {

@@ -192,7 +192,13 @@ namespace nes
     void AssetManager::SubmitLoadRequest(LoadRequest&& request)
     {
         if (request.m_jobs.empty())
+        {
+            // Call the on complete immediately.
+            if (request.m_onComplete)
+                request.m_onComplete(true);
+            
             return;
+        }
 
 #ifndef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
         AssetManager& instance = GetInstance();

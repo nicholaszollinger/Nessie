@@ -4,10 +4,8 @@
 #include <filesystem>
 #include <fstream>
 #include "imgui_internal.h"
-#include "Nessie/FileIO/YAML/YamlReader.h"
-#include "Nessie/FileIO/YAML/YamlWriter.h"
-
-NES_YAML_DEFINE_ENUM_CONVERTER(ImGuiDir);
+#include "SelectionManager.h"
+#include "Nessie/FileIO/YAML/YamlSerializer.h"
 
 namespace nes
 {
@@ -17,7 +15,7 @@ namespace nes
         std::filesystem::path path = NES_CONFIG_DIR;
         path /= "EditorConfig.yaml";
 
-        YamlReader reader(path);
+        YamlInStream reader(path);
         if (!reader.IsOpen())
         {
             NES_ERROR("Failed to load Editor config file!");
@@ -76,6 +74,9 @@ namespace nes
 
     void EditorWindowManager::Shutdown()
     {
+        // Remove all Selections.
+        editor::SelectionManager::DeselectAll();
+        
         std::filesystem::path path = NES_CONFIG_DIR;
         path /= "EditorConfig.yaml";
 
@@ -86,7 +87,7 @@ namespace nes
             return;
         }
 
-        YamlWriter writer(path, stream);
+        YamlOutStream writer(path, stream);
         writer.BeginMap("Editor");
 
         // Default Layout

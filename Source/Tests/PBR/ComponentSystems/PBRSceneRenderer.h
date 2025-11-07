@@ -96,13 +96,13 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create default meshes, Load default assets.
         //----------------------------------------------------------------------------------------------------
-        bool                            CreateAndLoadDefaultAssets(nes::RenderDevice& device, const YAML::Node& file);
+        bool                            CreateAndLoadDefaultAssets(nes::RenderDevice& device, const nes::YamlInStream& file);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Loads and creates the sets of images that can be rendered to, and creates the pipelines
         ///     based on configuration data.
         //----------------------------------------------------------------------------------------------------
-        void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file);
+        void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const nes::YamlNode& root);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the depth images (1 per cascade), and the shadow pipeline.
@@ -176,9 +176,9 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         void                            RegisterTextureCubeAsset(nes::RenderDevice& device, const nes::AssetPtr<nes::TextureCube>& pTextureCube);
 
-        nes::RenderTarget               LoadColorRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
-        nes::RenderTarget               LoadDepthRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
-        void                            LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
+        nes::RenderTarget               LoadColorRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
+        nes::RenderTarget               LoadDepthRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
+        void                            LoadGraphicsPipeline(const nes::YamlNode& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
 
     private:
         // Default AssetIDs - Set during initialization.

@@ -1,8 +1,5 @@
-﻿// YamlSerializers.cpp
-#include "YamlSerializers.h"
-#include "Nessie/Graphics/Camera.h"
-
-NES_YAML_DEFINE_ENUM_CONVERTER(nes::Camera::EProjectionType);
+﻿// YamlGraphicsSerializers.cpp
+#include "YamlGraphicsSerializers.h"
 
 namespace nes
 {
@@ -18,7 +15,7 @@ namespace nes
         in["ProjectionType"].Read(camera.m_projectionType, Camera::EProjectionType::Perspective);
     }
 
-    void CameraSerializer::Serialize(YamlWriter& out, const Camera& camera)
+    void CameraSerializer::Serialize(YamlOutStream& out, const Camera& camera)
     {
         out.BeginMap("Camera");
         out.Write("PerspectiveFOV", camera.m_perspectiveFOV);

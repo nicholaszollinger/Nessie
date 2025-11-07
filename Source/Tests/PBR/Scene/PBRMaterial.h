@@ -96,7 +96,7 @@ namespace pbr
 
     private:
         virtual nes::ELoadResult    LoadFromFile(const std::filesystem::path& path) override;
-        nes::ELoadResult            LoadFromYAML(const YAML::Node& node);
+        nes::ELoadResult            LoadFromYAML(const nes::YamlNode& node);
 
     private:
         PBRMaterialDesc             m_desc{};

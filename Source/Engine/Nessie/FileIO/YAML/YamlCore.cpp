@@ -1,11 +1,25 @@
-﻿// YamlWriter.cpp
-#include "YamlWriter.h"
-
+﻿// YamlCore.cpp
+#include "YamlCore.h"
 #include "Nessie/Debug/Log.h"
 
 namespace nes
 {
-    YamlWriter::YamlWriter(const std::filesystem::path& path, std::ostream& stream)
+    YamlInStream::YamlInStream(const std::filesystem::path& path)
+        : m_path(path)
+    {
+        m_root = YAML::LoadFile(path.string());
+        if (!m_root)
+        {
+            NES_ERROR("Failed to load YAML file at path: {}", path.string());
+        }
+    }
+
+    bool YamlInStream::IsOpen() const
+    {
+        return !m_path.empty() && m_root.IsDefined();
+    }
+
+    YamlOutStream::YamlOutStream(const std::filesystem::path& path, std::ostream& stream)
         : m_path(path)
         , m_emitter(stream)
     {
@@ -25,24 +39,24 @@ namespace nes
         }
     }
 
-    YamlWriter::~YamlWriter()
+    YamlOutStream::~YamlOutStream()
     {
         // End the document.
         if (m_emitter.good())
             m_emitter << YAML::EndMap;
     }
     
-    bool YamlWriter::IsOpen() const
+    bool YamlOutStream::IsOpen() const
     {
         return !m_path.empty() && m_emitter.good();
     }
 
-    void YamlWriter::SetKey(const char* key)
+    void YamlOutStream::SetKey(const char* key)
     {
         m_emitter << YAML::Key << key;
     }
 
-    void YamlWriter::BeginMap(const char* mapName)
+    void YamlOutStream::BeginMap(const char* mapName)
     {
         if (mapName != nullptr)
             m_emitter << YAML::Key << mapName;
@@ -50,12 +64,12 @@ namespace nes
         m_emitter << YAML::BeginMap;
     }
 
-    void YamlWriter::EndMap()
+    void YamlOutStream::EndMap()
     {
         m_emitter << YAML::EndMap;
     }
 
-    void YamlWriter::BeginSequence(const char* sequenceName, const bool inlineArray)
+    void YamlOutStream::BeginSequence(const char* sequenceName, const bool inlineArray)
     {
         if (sequenceName != nullptr)
             m_emitter << YAML::Key << sequenceName;
@@ -66,7 +80,7 @@ namespace nes
         m_emitter << YAML::BeginSeq;
     }
 
-    void YamlWriter::EndSequence()
+    void YamlOutStream::EndSequence()
     {
         m_emitter << YAML::EndSeq;
     }

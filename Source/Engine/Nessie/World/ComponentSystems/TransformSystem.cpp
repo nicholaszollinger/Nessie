@@ -1,40 +1,23 @@
 ﻿// TransformSystem.cpp
 #include "TransformSystem.h"
 #include "Nessie/World.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
 
 namespace nes
 {
-    void TransformComponent::Serialize(YAML::Emitter&, const TransformComponent&)
+    void TransformComponent::Serialize(YamlOutStream& out, const TransformComponent& component)
     {
-        // [TODO]: 
+        out.Write("Position", component.m_localPosition);
+        out.Write("Rotation", component.m_localRotation);
+        out.Write("Scale", component.m_localScale);
     }
 
-    void TransformComponent::Deserialize(const YAML::Node& in, TransformComponent& component)
+    void TransformComponent::Deserialize(const YamlNode& in, TransformComponent& component)
     {
-        // Location
-        {
-            const auto& locationNode = in["Position"];
-            component.m_localPosition.x = locationNode[0].as<float>();
-            component.m_localPosition.y = locationNode[1].as<float>();
-            component.m_localPosition.z = locationNode[2].as<float>();
-        }
-
-        // Rotation
-        {
-            const auto& rotationNode = in["Rotation"];
-            component.m_localRotation.m_pitch = rotationNode[0].as<float>();
-            component.m_localRotation.m_yaw = rotationNode[1].as<float>();
-            component.m_localRotation.m_roll = rotationNode[2].as<float>();
-        }
-
-        // Scale
-        {
-            const auto& scaleNode = in["Scale"];
-            component.m_localScale.x = scaleNode[0].as<float>();
-            component.m_localScale.y = scaleNode[1].as<float>();
-            component.m_localScale.z = scaleNode[2].as<float>();
-        }
-
+        in["Position"].Read(component.m_localPosition, Vec3::Zero());
+        in["Rotation"].Read(component.m_localRotation, Rotation::Zero());
+        in["Scale"].Read(component.m_localScale, Vec3::Zero());
+        
         component.m_localMatrix = Mat44::ComposeTransform(component.m_localPosition, component.m_localRotation, component.m_localScale);
         component.m_worldMatrix = component.m_localMatrix;
         component.m_worldRotation = component.m_localRotation;

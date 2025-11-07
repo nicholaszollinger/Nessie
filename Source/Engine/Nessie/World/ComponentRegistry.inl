@@ -32,19 +32,22 @@ namespace nes
 
         const entt::id_type id = entt::type_hash<Type>::value();
         
-        if constexpr (SerializableComponent<Type>)
+        if constexpr (HasStaticSerializeMember<Type, YamlOutStream>)
         {
-            typeDesc.m_serializeYAML = [name](YAML::Emitter& emitter, EntityRegistry& registry, EntityHandle entity) 
+            typeDesc.m_serializeYAML = [name](YamlOutStream& writer, EntityRegistry& registry, EntityHandle entity) 
             { 
                 if (const Type* comp = registry.TryGetComponent<Type>(entity))
                 {
-                    emitter << YAML::BeginMap << YAML::Key << name << YAML::Value;
-                    Type::Serialize(emitter, *comp);
-                    emitter << YAML::EndMap;
+                    writer.BeginMap(name.c_str());
+                    Type::Serialize(writer, *comp);
+                    writer.EndMap();
                 }
             };
+        }
 
-            typeDesc.m_deserializeYAML = [](const YAML::Node& node, EntityRegistry& registry, EntityHandle entity)
+        if constexpr (HasStaticDeserializeMember<Type, YamlNode>)
+        {
+            typeDesc.m_deserializeYAML = [](const YamlNode& node, EntityRegistry& registry, EntityHandle entity)
             {
                 Type& comp = registry.AddComponent<Type>(entity);
                 Type::Deserialize(node, comp);

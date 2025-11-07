@@ -58,8 +58,8 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         Mat44                   GetWorldToLocalTransformMatrix() const { return m_worldMatrix.Inversed(); }
 
-        static void             Serialize(YAML::Emitter& out, const TransformComponent& component);
-        static void             Deserialize(const YAML::Node& in, TransformComponent& component);
+        static void             Serialize(YamlOutStream& out, const TransformComponent& component);
+        static void             Deserialize(const YamlNode& in, TransformComponent& component);
         
     private:
         friend class TransformSystem;

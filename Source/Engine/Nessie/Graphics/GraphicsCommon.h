@@ -6,12 +6,6 @@
 #include "Nessie/Core/Config.h"
 #include "Nessie/Core/Version.h"
 
-//-------------------------------------------------------------------------------------------------
-// Under development. This file contains the main descriptions for many graphics types. I am
-// bouncing off the NRI library. However, I only want to support Vulkan, so I am going to be
-// changing these as I go.
-//-------------------------------------------------------------------------------------------------
-
 namespace nes
 {
     

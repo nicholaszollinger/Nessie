@@ -5,6 +5,7 @@
 #include "imgui_internal.h"
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Application/Device/DeviceManager.h"
+#include "Nessie/Asset/AssetManager.h"
 #include "Nessie/Editor/Windows/EditorConsole.h"
 #include "Nessie/Editor/Windows/HierarchyWindow.h"
 #include "Nessie/Editor/Windows/InspectorWindow.h"
@@ -34,6 +35,8 @@ void EditorTestApp::PushEvent(nes::Event& event)
 
 bool EditorTestApp::Init()
 {
+    NES_REGISTER_ASSET_TYPE(nes::WorldAsset);
+    
     nes::ImGuiDesc desc{};
     desc.m_pRenderQueue = nes::Renderer::GetRenderQueue();
     desc.m_pWindow = &GetWindow();
@@ -43,7 +46,7 @@ bool EditorTestApp::Init()
 
     // Register Editor Window Types:
     m_viewportWindow = m_windowManager.RegisterWindow<nes::ViewportWindow>();
-    m_windowManager.RegisterWindow<nes::HierarchyWindow>();
+    auto pHierarchyWindow = m_windowManager.RegisterWindow<nes::HierarchyWindow>();
     m_windowManager.RegisterWindow<nes::InspectorWindow>();
     m_windowManager.RegisterWindow<nes::EditorConsole>();
     
@@ -61,6 +64,42 @@ bool EditorTestApp::Init()
         return false;
     }
 
+    // [TEST]: 
+    // Load the World Asset:
+    std::filesystem::path path = NES_CONTENT_DIR;
+    path /= "Worlds/EditorTestWorld.yaml";
+    if (nes::AssetManager::LoadSync<nes::WorldAsset>(m_currentWorldAsset, path) != nes::ELoadResult::Success)
+    {
+        NES_ERROR("Failed to load World Asset!");
+        return false;
+    }
+
+    auto pWorldAsset = nes::AssetManager::GetAsset<nes::WorldAsset>(m_currentWorldAsset);
+    NES_ASSERT(pWorldAsset);
+    auto& assetPack = pWorldAsset->GetAssetPack();
+
+    // Load the World's Assets, asynchronously:
+    auto onComplete = [this](const bool succeeded)
+    {
+        if (succeeded)
+        {
+            NES_LOG("World load successful!");
+    
+            // Merge the entities from the World Asset into the runtime world.
+            auto pWorldAsset = nes::AssetManager::GetAsset<nes::WorldAsset>(m_currentWorldAsset);
+            NES_ASSERT(pWorldAsset);
+            m_pWorld->MergeWorld(*pWorldAsset);
+        }
+        else
+        {
+            NES_ERROR("Failed to load World!");
+            Quit();
+        }
+    };
+    nes::AssetManager::LoadAssetPackAsync(assetPack, onComplete);
+
+    // Set the World information for the Windows:
+    pHierarchyWindow->SetWorld(m_pWorld);
     m_viewportWindow->Init(m_pWorld, m_imgui);
     
     return true;
@@ -85,6 +124,9 @@ void EditorTestApp::Update(const float deltaTime)
 {
     if (m_viewportWindow)
         m_viewportWindow->Tick(deltaTime);
+
+    if (m_pWorld)
+        m_pWorld->Tick(deltaTime);
 }
 
 void EditorTestApp::OnResize(const uint32, const uint32)

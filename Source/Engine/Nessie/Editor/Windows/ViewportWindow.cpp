@@ -2,9 +2,11 @@
 #include "ViewportWindow.h"
 
 #include "backends/imgui_impl_vulkan.h"
-#include "Nessie/FileIO/YAML/YamlSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlGraphicsSerializers.h"
 #include "Nessie/Graphics/Renderer.h"
 #include "Nessie/Graphics/ImGui/ImGuiRenderer.h"
+#include "Nessie/Graphics/ImGui/ImGuiUtils.h"
 #include "Nessie/Input/InputManager.h"
 #include "Nessie/World/WorldBase.h"
 
@@ -51,6 +53,9 @@ namespace nes
     
     void ViewportWindow::Tick(const float deltaTime)
     {
+        if (!m_isFocused)
+            return;
+        
         const bool shift = InputManager::IsKeyDown(EKeyCode::LeftShift) || InputManager::IsKeyDown(EKeyCode::RightShift);
         const bool ctrl = InputManager::IsKeyDown(EKeyCode::LeftControl) || InputManager::IsKeyDown(EKeyCode::RightControl);
         
@@ -89,9 +94,9 @@ namespace nes
 
     void ViewportWindow::RenderImGui()
     {
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.f);
-
+        NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+        NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowBorderSize, 0.f);
+        
         ImVec2 viewportSize = ImVec2(0.f, 0.f);
         ImVec2 viewportPosition = ImVec2(0.f, 0.f);
         
@@ -217,7 +222,6 @@ namespace nes
         }
         
         ImGui::End();
-        ImGui::PopStyleVar(2);
     }
 
     void ViewportWindow::RenderWorld(CommandBuffer& commandBuffer, const RenderFrameContext& context)
@@ -256,7 +260,7 @@ namespace nes
         CameraSerializer::Deserialize(camera, m_editorCamera.m_camera);
     }
 
-    void ViewportWindow::Serialize(YamlWriter& out) const
+    void ViewportWindow::Serialize(YamlOutStream& out) const
     {
         EditorWindow::Serialize(out);
         

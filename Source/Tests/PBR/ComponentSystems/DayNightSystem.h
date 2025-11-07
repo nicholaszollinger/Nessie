@@ -11,8 +11,8 @@ namespace pbr
         float       m_dayDuration = 20.f;                                   // Duration of both Day and Night, in seconds.
         float       m_sunMaxLux = 120'000.f;                                // The Lux at the peak of the afternoon.
 
-        static void Serialize(YAML::Emitter& out, const DayNightSimComponent& component);
-        static void Deserialize(const YAML::Node& in, DayNightSimComponent& component);
+        static void Serialize(nes::YamlOutStream& out, const DayNightSimComponent& component);
+        static void Deserialize(const nes::YamlNode& in, DayNightSimComponent& component);
     };
 
     class DayNightSystem final : public nes::ComponentSystem

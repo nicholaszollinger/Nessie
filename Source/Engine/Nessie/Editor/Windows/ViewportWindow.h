@@ -32,7 +32,7 @@ namespace nes
         virtual void    RenderImGui() override;
         void            RenderWorld(CommandBuffer& commandBuffer, const RenderFrameContext& context);
         virtual void    Deserialize(const YamlNode& in) override;
-        virtual void    Serialize(YamlWriter& out) const override;
+        virtual void    Serialize(YamlOutStream& out) const override;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the mouse cursor is over the window.

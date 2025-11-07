@@ -8,7 +8,7 @@ namespace nes
         in["Name"].Read(m_desc.m_name);
     }
 
-    void EditorWindow::Serialize(YamlWriter& out) const
+    void EditorWindow::Serialize(YamlOutStream& out) const
     {
         out.Write("Name", m_desc.m_name);
     }

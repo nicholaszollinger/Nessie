@@ -1,53 +1,35 @@
 ﻿// LightComponents.cpp
 #include "LightComponents.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
 
 namespace pbr
 {
-    void PointLightComponent::Serialize(YAML::Emitter&, const PointLightComponent&)
+    void PointLightComponent::Serialize(nes::YamlOutStream& out, const PointLightComponent& component)
     {
-        // [TODO]: 
+        out.Write("Color", component.m_color);
+        out.Write("Intensity", component.m_intensity);
+        out.Write("Radius", component.m_radius);
     }
 
-    void PointLightComponent::Deserialize(const YAML::Node& in, PointLightComponent& component)
+    void PointLightComponent::Deserialize(const nes::YamlNode& in, PointLightComponent& component)
     {
-        component.m_intensity = in["Intensity"].as<float>(600.f);
-        component.m_radius = in["Radius"].as<float>(30.f);
-
-        // Color:
-        {
-            auto colorNode = in["Color"];
-            component.m_color.r = colorNode[0].as<float>(1.f);
-            component.m_color.g = colorNode[1].as<float>(1.f);
-            component.m_color.b = colorNode[2].as<float>(1.f);
-            component.m_color.a = 1.f;
-        }
+        in["Color"].Read(component.m_color, nes::LinearColor::White());
+        in["Intensity"].Read(component.m_intensity, 600.f);
+        in["Radius"].Read(component.m_radius, 30.f);
     }
 
-    void DirectionalLightComponent::Serialize(YAML::Emitter&, const DirectionalLightComponent&)
+    void DirectionalLightComponent::Serialize(nes::YamlOutStream& out, const DirectionalLightComponent& component)
     {
-        // [TODO]: 
+        out.Write("Color", component.m_color);
+        out.Write("Direction", component.m_direction);
+        out.Write("Intensity", component.m_intensity);
     }
 
-    void DirectionalLightComponent::Deserialize(const YAML::Node& in, DirectionalLightComponent& component)
+    void DirectionalLightComponent::Deserialize(const nes::YamlNode& in, DirectionalLightComponent& component)
     {
-        component.m_intensity = in["Intensity"].as<float>(100'000.f); // 100K lux by default.
-        
-        // Direction
-        {
-            auto directionNode = in["Direction"];
-            component.m_direction.x = directionNode[0].as<float>(1.f);
-            component.m_direction.y = directionNode[1].as<float>(-1.f);
-            component.m_direction.z = directionNode[2].as<float>(1.f);
-            component.m_direction.Normalize();
-        }
-
-        // Color
-        {
-            auto colorNode = in["Color"];
-            component.m_color.r = colorNode[0].as<float>(1.f);
-            component.m_color.g = colorNode[1].as<float>(1.f);
-            component.m_color.b = colorNode[2].as<float>(1.f);
-            component.m_color.a = 1.f;
-        }
+        in["Color"].Read(component.m_color, nes::LinearColor::White());
+        in["Direction"].Read(component.m_direction, nes::Vec3(1.f, -1.f, 1.f));
+        component.m_direction.Normalize();
+        in["Intensity"].Read(component.m_intensity, 100'000.f); // 100K lux by default.
     }
 }

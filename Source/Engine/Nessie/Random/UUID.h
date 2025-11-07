@@ -21,7 +21,7 @@ namespace nes
         constexpr bool      IsValid() const                     { return m_value != kInvalidValue; }
 
     private:
-        static constexpr ValueType kInvalidValue = 0;
+        static constexpr ValueType kInvalidValue = std::numeric_limits<ValueType>::max();
         ValueType           m_value = kInvalidValue;
     };
 

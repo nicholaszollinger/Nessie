@@ -75,32 +75,46 @@ namespace nes
         return result;
     }
 
-    bool AssetPack::LoadFromYAML(const YAML::Node& node, AssetPack& outPack)
+    bool AssetPack::Deserialize(const YamlNode& node, AssetPack& outPack)
     {
-        std::filesystem::path path{};
-        
+        std::string path;
         for (auto assetNode : node)
         {
             // AssetID
             AssetMetadata metaData;
-            metaData.m_assetID = assetNode["AssetID"].as<uint64>();
+            assetNode["AssetID"].Read(metaData.m_assetID, kInvalidAssetID);
             
             // TypeID
             // - If invalid, it will be caught by the AssetManager when trying to load.
-            metaData.m_typeID = assetNode["TypeID"].as<uint64>();
+            assetNode["TypeID"].Read(metaData.m_typeID);
 
             // Path
-            metaData.m_path = assetNode["Path"].as<std::string>();
+            assetNode["Path"].Read<std::string>(path);
+            metaData.m_path = path;
+            
             ResolveAssetPath(metaData);
             if (!metaData.m_path.has_extension())
             {
                 NES_ERROR("Failed to load AssetPack! Invalid relative path for Asset: '{}'", metaData.m_path.string());
                 return false;
             }
-            
             outPack.AddAsset(metaData);
         }
 
         return true;
+    }
+
+    void AssetPack::Serialize(YamlOutStream& writer, const AssetPack& assetPack)
+    {
+        writer.BeginSequence("Assets");
+        for (auto& metaData : assetPack.m_assets)
+        {
+            writer.BeginMap();
+            writer.Write("AssetID", metaData.m_assetID);
+            writer.Write("TypeID", metaData.m_typeID);
+            writer.Write("Path", metaData.m_path.string());
+            writer.EndMap();
+        }
+        writer.EndSequence();
     }
 }

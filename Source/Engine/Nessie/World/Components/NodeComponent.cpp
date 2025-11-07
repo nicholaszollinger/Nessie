@@ -3,14 +3,15 @@
 
 namespace nes
 {
-    void NodeComponent::Serialize(YAML::Emitter&, const NodeComponent&)
+    void NodeComponent::Serialize(YamlOutStream& out, const NodeComponent& component)
     {
-        // [TODO]: 
+        out.Write("Parent", component.m_parentID);
+        out.Write("Children", component.m_childrenIDs);
     }
 
-    void NodeComponent::Deserialize(const YAML::Node& in, NodeComponent& component)
+    void NodeComponent::Deserialize(const YamlNode& in, NodeComponent& component)
     {
-        component.m_parentID = in["Parent"].as<uint64>(kInvalidEntityID);
-        component.m_childrenIDs = in["Children"].as<std::vector<uint64>>(std::vector<uint64>{});
+        in["Parent"].Read(component.m_parentID, kInvalidEntityID);
+        in["Children"].Read(component.m_childrenIDs, std::vector<uint64>{});
     }
 }

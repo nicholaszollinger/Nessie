@@ -2,7 +2,8 @@
 #pragma once
 #include "Nessie/Core/Config.h"
 #include "Nessie/Core/Concepts.h"
-#include "yaml-cpp/yaml.h"
+#include "Nessie/FileIO/YAML/YamlSerializer.h"
+
 
 namespace nes
 {
@@ -17,13 +18,6 @@ namespace nes
         && !std::is_empty_v<Type>;
     
     class EntityRegistry;
-
-    template <typename Type>
-    concept SerializableComponent = ComponentType<Type> && requires(Type component, YAML::Emitter& emitter, const YAML::Node& node)
-    {
-        { Type::Serialize(emitter, component) } -> std::same_as<void>;
-        { Type::Deserialize(node, component) } -> std::same_as<void>;
-    };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Derive from this Component if all you need is to add a 'marker' to an entity.

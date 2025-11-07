@@ -22,7 +22,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         float           CalculateExposureFactor() const { return m_camera.CalculateExposureFactor(); }
         
-        static void     Serialize(YAML::Emitter& out, const CameraComponent& component);
-        static void     Deserialize(const YAML::Node& in, CameraComponent& component);
+        static void     Serialize(YamlOutStream& out, const CameraComponent& component);
+        static void     Deserialize(const YamlNode& in, CameraComponent& component);
     };
 }

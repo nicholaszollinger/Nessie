@@ -13,8 +13,8 @@ namespace nes
 
     struct ComponentTypeDesc
     {
-        using SerializeYAML = std::function<void(YAML::Emitter& emitter, EntityRegistry& registry, EntityHandle entity)>;
-        using DeserializeYAML = std::function<void(const YAML::Node& node, EntityRegistry& registry, EntityHandle entity)>;
+        using SerializeYAML = std::function<void(YamlOutStream& out, EntityRegistry& registry, EntityHandle entity)>;
+        using DeserializeYAML = std::function<void(const YamlNode& in, EntityRegistry& registry, EntityHandle entity)>;
         using CopyFunction = std::function<void(EntityRegistry& srcRegistry, EntityRegistry& dstRegistry, EntityHandle srcEntity, EntityHandle dstEntity)>;
 
         // Component Functors generated on Registration.

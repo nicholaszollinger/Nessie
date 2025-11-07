@@ -6,15 +6,16 @@
 
 namespace nes
 {
-    void FreeCamMovementComponent::Serialize(YAML::Emitter&, const FreeCamMovementComponent&)
+    void FreeCamMovementComponent::Serialize(YamlOutStream& out, const FreeCamMovementComponent& component)
     {
-        // [TODO]: 
+        out.Write("MoveSpeed", component.m_moveSpeed);
+        out.Write("Sensitivity", component.m_sensitivity);
     }
 
-    void FreeCamMovementComponent::Deserialize(const YAML::Node& in, FreeCamMovementComponent& component)
+    void FreeCamMovementComponent::Deserialize(const YamlNode& in, FreeCamMovementComponent& component)
     {
-        component.m_moveSpeed = in["MoveSpeed"].as<float>(50.f);
-        component.m_sensitivity = in["Sensitivity"].as<float>(1.25f);
+        in["MoveSpeed"].Read(component.m_moveSpeed, 50.f);
+        in["Sensitivity"].Read(component.m_sensitivity, 1.25f);
     }
 
     bool FreeCamSystem::Init()

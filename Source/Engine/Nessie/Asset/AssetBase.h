@@ -4,12 +4,12 @@
 #include "Nessie/Core/Memory/RefCounter.h"
 #include "Nessie/Core/TypeInfo.h"
 #include "Nessie/Random/UUID.h"
-#include "yaml-cpp/yaml.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlCoreSerializers.h"
 
 namespace nes
 {
     using AssetID = UUID;
-    static constexpr AssetID kInvalidAssetID = std::numeric_limits<UUID::ValueType>::max();
+    static constexpr AssetID kInvalidAssetID = UUID(); // Default constructs with std::numeric_limits<uint64>::max().
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Current status of the Asset. 
@@ -136,3 +136,4 @@ namespace nes
     template <ValidAssetType Type>
     class AssetPtr;
 }
+

@@ -30,6 +30,7 @@ private:
     nes::ImGuiRenderer          m_imgui = nullptr;
     nes::EditorWindowManager    m_windowManager{};
     nes::StrongPtr<TestWorld>   m_pWorld = nullptr;
+    nes::AssetID                m_currentWorldAsset = nes::kInvalidAssetID;
 
     std::shared_ptr<nes::ViewportWindow> m_viewportWindow = nullptr;
 };

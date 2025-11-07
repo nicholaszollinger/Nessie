@@ -69,7 +69,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Load an Asset Pack from YAML.
         //----------------------------------------------------------------------------------------------------
-        static bool                 LoadFromYAML(const YAML::Node& node, AssetPack& outPack);
+        static bool                 Deserialize(const YamlNode& node, AssetPack& outPack);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Save all Asset Metadata to a YAML file. 
+        //----------------------------------------------------------------------------------------------------
+        static void                 Serialize(YamlOutStream& writer, const AssetPack& assetPack);
         
     private:
         using IDToIndexMap = std::unordered_map<AssetID, size_t, UUIDHasher>;
