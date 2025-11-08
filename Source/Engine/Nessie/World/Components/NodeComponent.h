@@ -13,6 +13,9 @@ namespace nes
         EntityID                m_parentID = nes::kInvalidEntityID;
         std::vector<EntityID>   m_childrenIDs{};
 
+        bool                    HasParent() const   { return m_parentID != nes::kInvalidEntityID; }
+        bool                    HasChildren() const { return !m_childrenIDs.empty(); }
+        
         static void             Serialize(YamlOutStream& out, const NodeComponent& component);
         static void             Deserialize(const YamlNode& in, NodeComponent& component);
     };

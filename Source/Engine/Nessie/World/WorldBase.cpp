@@ -99,9 +99,66 @@ namespace nes
         }
     }
 
+    EntityHandle WorldBase::CreateEntity(const std::string& newName)
+    {
+        const auto newEntity = m_entityRegistry.CreateEntity(newName);
+        OnNewEntityCreated(newEntity);
+        return newEntity;
+    }
+
+    void WorldBase::DestroyEntity(const EntityID entity)
+    {
+        const auto entityHandle = m_entityRegistry.GetEntity(entity);
+        if (entityHandle != kInvalidEntityHandle)
+            DestroyEntity(entityHandle);
+    }
+
     void WorldBase::DestroyEntity(const EntityHandle entity)
     {
         m_entityRegistry.MarkEntityForDestruction(entity);
+    }
+
+    void WorldBase::ParentEntity(const EntityID entity, const EntityID parent)
+    {
+        const EntityHandle entityHandle = m_entityRegistry.GetEntity(entity);
+        const EntityHandle parentHandle = m_entityRegistry.GetEntity(parent);
+        ParentEntity(entityHandle, parentHandle);
+    }
+
+    void WorldBase::RemoveParent(const EntityID entity)
+    {
+        const EntityHandle entityHandle = m_entityRegistry.GetEntity(entity);
+        ParentEntity(entityHandle, kInvalidEntityHandle);
+    }
+
+    void WorldBase::RemoveParent(const EntityHandle entity)
+    {
+        ParentEntity(entity, kInvalidEntityHandle);
+    }
+
+    bool WorldBase::IsDescendantOf(const EntityID entity, const EntityID potentialAncestor) const
+    {
+        if (entity == potentialAncestor)
+            return true;
+        
+        EntityID currentID = entity;
+
+        // Walk up the parent chain:
+        while (currentID != kInvalidEntityID)
+        {
+            const auto handle = m_entityRegistry.GetEntity(currentID);
+            if (handle == kInvalidEntityHandle)
+                break;
+
+            auto& nodeComp = m_entityRegistry.GetComponent<NodeComponent>(handle);
+            currentID = nodeComp.m_parentID;
+
+            // Found an ancestor in the parent chain.
+            if (currentID == potentialAncestor)
+                return true; 
+        }
+
+        return false;
     }
 
     void WorldBase::ProcessEntityLifecycle()

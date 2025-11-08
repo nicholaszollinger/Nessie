@@ -58,6 +58,12 @@ namespace pbr
             m_pTransformSystem->SetParent(entity, parent);
     }
 
+    void PBRExampleWorld::OnNewEntityCreated(const nes::EntityHandle newEntity)
+    {
+        m_entityRegistry.AddComponent<nes::NodeComponent>(newEntity);
+        m_entityRegistry.AddComponent<nes::TransformComponent>(newEntity);
+    }
+
     void PBRExampleWorld::AddComponentSystems()
     {
         m_pTransformSystem = AddComponentSystem<nes::TransformSystem>();

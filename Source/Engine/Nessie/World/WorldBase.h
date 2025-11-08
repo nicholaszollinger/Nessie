@@ -52,15 +52,46 @@ namespace nes
         void                ExportToAsset(WorldAsset& dstAsset);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Create a new entity in the world. 
+        //----------------------------------------------------------------------------------------------------
+        EntityHandle        CreateEntity(const std::string& newName);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Marks an Entity to be destroyed. The Entity will actually be destroyed on the next call
+        ///     to ProcessEntityLifecycle().
+        //----------------------------------------------------------------------------------------------------
+        void                DestroyEntity(const EntityID entity);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Marks an Entity to be destroyed. The Entity will actually be destroyed on the next call
         ///     to ProcessEntityLifecycle().
         //----------------------------------------------------------------------------------------------------
         void                DestroyEntity(const EntityHandle entity);
-
+        
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Parent an Entity to another. 
+        //----------------------------------------------------------------------------------------------------
+        void                ParentEntity(const EntityID entity, const EntityID parent);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Parent an Entity to another. 
         //----------------------------------------------------------------------------------------------------
         virtual void        ParentEntity(const EntityHandle entity, const EntityHandle parent) = 0;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Unparent an entity. 
+        //----------------------------------------------------------------------------------------------------
+        void                RemoveParent(const EntityID entity);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Unparent an entity. 
+        //----------------------------------------------------------------------------------------------------
+        void                RemoveParent(const EntityHandle entity);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns true if the ids are equal or the entity is a child, grand-child etc. of the potential ancestor.
+        //----------------------------------------------------------------------------------------------------
+        bool                IsDescendantOf(const EntityID entity, const EntityID potentialAncestor) const;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a Component System by Type. Can be nullptr if the System was not correctly added to the
@@ -92,6 +123,12 @@ namespace nes
         /// @brief : Called after all Component Systems have been initialized.
         //----------------------------------------------------------------------------------------------------
         virtual bool        PostInit() { return true; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : When a new Entity is created, the World can attach any required components. The entity will
+        ///     just have an IDComponent on creation. 
+        //----------------------------------------------------------------------------------------------------
+        virtual void        OnNewEntityCreated(const EntityHandle newEntity) = 0;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Called before all entities have been destroyed, and before all ComponentSystems have been

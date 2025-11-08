@@ -23,6 +23,7 @@ public:
 protected:
     virtual void    AddComponentSystems() override;
     virtual bool    PostInit() override;
+    virtual void    OnNewEntityCreated(const nes::EntityHandle newEntity) override;
     virtual void    OnDestroy() override;
 
     nes::StrongPtr<nes::TransformSystem>    m_pTransformSystem = nullptr;

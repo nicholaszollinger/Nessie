@@ -66,12 +66,26 @@ namespace nes
         {
             auto& node = registry.GetComponent<NodeComponent>(entity);
 
+            const auto parentID = node.m_parentID;
+            
             // If the parent is valid, we need to remove it from the tree.
             // We are orphaning all children.
             if (node.m_parentID != kInvalidEntityID)
             {
                 const auto& idComp = registry.GetComponent<IDComponent>(entity);
                 RemoveParent(idComp.GetID()); // This will set the 'm_needsRebuild' flag.
+            }
+
+            // Re-parent to the deleted entity's parent.
+            for (auto childID : node.m_childrenIDs)
+            {
+                auto childHandle = registry.GetEntity(childID);
+                
+                // If the child is also being destroyed, skip.
+                if (view.contains(childHandle))
+                    continue;
+                
+                SetParent(childID, parentID);
             }
         }
     }
@@ -136,50 +150,28 @@ namespace nes
     void TransformSystem::SetParent(const EntityID childID, const EntityID parentID)
     {
         auto& registry = GetRegistry();
-        
-        EntityHandle child = registry.GetEntity(childID);
-        EntityHandle parent = registry.GetEntity(parentID);
-        SetParent(child, parent);
 
-        // if (!registry.IsValidEntity(child) || !registry.IsValidEntity(parent))
-        //     return;
-        //
-        // // Ensure both have Transform Components
-        // if (!registry.HasComponent<TransformComponent>(child) || !registry.HasComponent<TransformComponent>(parent))
-        //     return;
-        //
-        // auto& childNode = registry.GetComponent<NodeComponent>(child);
-        //
-        // // Remove from the old parent, if necessary:
-        // if (childNode.m_parentID != kInvalidEntityID)
-        // {
-        //     EntityHandle oldParent = GetRegistry().GetEntity(childNode.m_parentID);
-        //     auto& oldParentNode = registry.GetComponent<NodeComponent>(oldParent);
-        //     
-        //     auto it = std::find(oldParentNode.m_childrenIDs.begin(), oldParentNode.m_childrenIDs.end(), childID);
-        //     if (it != oldParentNode.m_childrenIDs.end())
-        //     {
-        //         oldParentNode.m_childrenIDs.erase(it);
-        //     }
-        // }
-        //
-        // // Set up the new relationship:
-        // auto& parentNode = registry.GetComponent<NodeComponent>(parent);
-        // childNode.m_parentID = parentID;
-        // parentNode.m_childrenIDs.push_back(childID);
-        //
-        // MarkDirty(child);
-        //
-        // // Hierarchy changed:
-        // m_needsRebuild = true;
+        if (childID == parentID)
+            return;
+        
+        const EntityHandle child = registry.GetEntity(childID);
+        const EntityHandle parent = registry.GetEntity(parentID);
+        SetParent(child, parent);
     }
 
     void TransformSystem::SetParent(const EntityHandle child, const EntityHandle parent)
     {
         auto& registry = GetRegistry();
 
-        if (!registry.IsValidEntity(child) || !registry.IsValidEntity(parent))
+        if (!registry.IsValidEntity(child))
             return;
+
+        // Parent is invalid; just unparent the child.
+        if (!registry.IsValidEntity(parent))
+        {
+            RemoveParent(child);
+            return;
+        }
 
         // Ensure both have Transform Components
         if (!registry.HasComponent<TransformComponent>(child) || !registry.HasComponent<TransformComponent>(parent))
@@ -189,13 +181,17 @@ namespace nes
         const auto childID = registry.GetComponent<IDComponent>(child).GetID();
         const auto parentID = registry.GetComponent<IDComponent>(parent).GetID();
 
+        // Parenting to the same parent - no change to be made.
+        if (childNode.m_parentID == parentID)
+            return;
+
         // Remove from the old parent, if necessary:
         if (childNode.m_parentID != kInvalidEntityID)
         {
             EntityHandle oldParent = registry.GetEntity(childNode.m_parentID);
             auto& oldParentNode = registry.GetComponent<NodeComponent>(oldParent);
             
-            auto it = std::find(oldParentNode.m_childrenIDs.begin(), oldParentNode.m_childrenIDs.end(), childID);
+            auto it = std::ranges::find(oldParentNode.m_childrenIDs.begin(), oldParentNode.m_childrenIDs.end(), childID);
             if (it != oldParentNode.m_childrenIDs.end())
             {
                 oldParentNode.m_childrenIDs.erase(it);

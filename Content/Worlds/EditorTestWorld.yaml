@@ -1,12 +1,42 @@
 World:
   Assets: []
   Entities:
+    - Entity: 11670759681232464970
+      Name: "Visor"
+      Components:
+        - NodeComponent:
+            Parent: 16932789863297552802
+            Children: []
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 16932789863297552802
+      Name: "Helmet"
+      Components:
+        - NodeComponent:
+            Parent: 1
+            Children: [11670759681232464970]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 14988142370535006303
+      Name: "Weapon"
+      Components:
+        - NodeComponent:
+            Parent: 1
+            Children: []
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
     - Entity: 1
       Name: "Player"
       Components:
         - NodeComponent:
             Parent: 0
-            Children: [3, 4]
+            Children: [16932789863297552802, 14988142370535006303]
         - TransformComponent:
             Position: [0, 0, 0]
             Rotation: [0, 0, 0]
@@ -17,36 +47,6 @@ World:
         - NodeComponent:
             Parent: 0
             Children: [6]
-        - TransformComponent:
-            Position: [0, 0, 0]
-            Rotation: [0, 0, 0]
-            Scale: [1, 1, 1]
-    - Entity: 3
-      Name: "Helmet"
-      Components:
-        - NodeComponent:
-            Parent: 1
-            Children: [5]
-        - TransformComponent:
-            Position: [0, 0, 0]
-            Rotation: [0, 0, 0]
-            Scale: [1, 1, 1]
-    - Entity: 4
-      Name: "Weapon"
-      Components:
-        - NodeComponent:
-            Parent: 1
-            Children: []
-        - TransformComponent:
-            Position: [0, 0, 0]
-            Rotation: [0, 0, 0]
-            Scale: [1, 1, 1]
-    - Entity: 5
-      Name: "Visor"
-      Components:
-        - NodeComponent:
-            Parent: 3
-            Children: []
         - TransformComponent:
             Position: [0, 0, 0]
             Rotation: [0, 0, 0]

@@ -34,6 +34,12 @@ bool TestWorld::PostInit()
     return true;
 }
 
+void TestWorld::OnNewEntityCreated(const nes::EntityHandle newEntity)
+{
+    m_entityRegistry.AddComponent<nes::NodeComponent>(newEntity);
+    m_entityRegistry.AddComponent<nes::TransformComponent>(newEntity);
+}
+
 void TestWorld::OnDestroy()
 {
     m_pSimpleRenderer = nullptr;

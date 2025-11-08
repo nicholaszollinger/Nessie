@@ -21,16 +21,9 @@ EditorTestApp::EditorTestApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& w
     //
 }
 
-void EditorTestApp::PushEvent(nes::Event& event)
+void EditorTestApp::PushEvent(nes::Event&)
 {
-    // [TEST]: Used to show logs in the console window in the editor. 
-    if (nes::KeyEvent* keyEvent = event.Cast<nes::KeyEvent>())
-    {
-        if (keyEvent->GetKeyCode() == nes::EKeyCode::Space && keyEvent->GetAction() == nes::EKeyAction::Pressed)
-        {
-            NES_LOG("This is a test log!");
-        }
-    }
+    //
 }
 
 bool EditorTestApp::Init()

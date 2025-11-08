@@ -33,6 +33,7 @@ namespace pbr
         virtual void    ParentEntity(const nes::EntityHandle entity, const nes::EntityHandle parent) override;
 
     private:
+        virtual void    OnNewEntityCreated(const nes::EntityHandle newEntity) override;
         virtual void    AddComponentSystems() override;
 
     private:
