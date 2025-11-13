@@ -72,11 +72,11 @@ namespace nes
         void                                Reset();
         
     private:
-        /// Friend classes:
+        // Friend classes:
         template <typename OtherType> friend class StrongPtr;
         template <typename OtherType> friend class ConstStrongPtr;
 
-        /// Friend Functions:
+        // Friend Functions:
         template <typename ObjectType, typename...CtorParams> requires nes::ValidConstructorForType<ObjectType, CtorParams...>
         friend StrongPtr<ObjectType>        Create(CtorParams&&...params);
 

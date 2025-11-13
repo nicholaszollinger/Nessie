@@ -202,7 +202,7 @@ namespace nes
                 // itself already.
                 NES_DELETE(m_pRefCounter);
             }
-
+            
             m_pRefCounter = nullptr;
         }
     }
