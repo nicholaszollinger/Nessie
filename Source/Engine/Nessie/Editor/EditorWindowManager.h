@@ -13,7 +13,7 @@ namespace nes
     //  of a window is allowed. I need to have the Window name map to WindowTypeDesc info rather than the instance itself.
     //  it could have a number of allowed instances, etc.
     //		
-    /// @brief : [Under Development]
+    /// @brief : Manages all Editor Window instances.
     //----------------------------------------------------------------------------------------------------
     class EditorWindowManager
     {
@@ -28,43 +28,48 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Loads window states and layouts from the EditorConfig.yaml
         //----------------------------------------------------------------------------------------------------
-        bool Init();
-
+        bool                    Init();
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Closes all windows, and saves window settings to the EditorConfig.yaml
         //----------------------------------------------------------------------------------------------------
-        void Shutdown();
+        void                    Shutdown();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the current World context for all editors.
+        //----------------------------------------------------------------------------------------------------
+        void                    SetWorld(const StrongPtr<WorldBase>& pWorld) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Must be called every frame. Initializes the main window and docking area.
         //----------------------------------------------------------------------------------------------------
-        void SetupMainWindowAndDockSpace();
+        void                    SetupMainWindowAndDockSpace();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Sets a layout for the editor.
         //----------------------------------------------------------------------------------------------------
-        void ApplyWindowLayout(const std::string& layoutName);
+        void                    ApplyWindowLayout(const std::string& layoutName);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Opens a window, or focuses it if the window is already open.
         //----------------------------------------------------------------------------------------------------
-        void OpenWindow(const std::string& name) const;
+        void                    OpenWindow(const std::string& name) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Renders the "Window" dropdown menu in the main menu bar.
         //----------------------------------------------------------------------------------------------------
-        void RenderWindowMenu() const;
+        void                    RenderWindowMenu() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Renders all open windows.
         //----------------------------------------------------------------------------------------------------
-        void RenderWindows() const;
+        void                    RenderWindows() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Register an Editor Window type so that it can be opened and used.
         //----------------------------------------------------------------------------------------------------
         template <typename Type>
-        std::shared_ptr<Type> RegisterWindow()
+        std::shared_ptr<Type>   RegisterWindow()
         {
             // Naive approach for now, assuming that we aren't adding duplicate window types, and single instances.
             std::shared_ptr<Type> pWindow = std::make_shared<Type>();
@@ -77,7 +82,7 @@ namespace nes
         /// @brief : Get a registered window by type.
         //----------------------------------------------------------------------------------------------------
         template <typename Type>
-        std::shared_ptr<Type> GetWindow(const std::string& name) const
+        std::shared_ptr<Type>   GetWindow(const std::string& name) const
         {
             if (auto it = m_nameToIndexMap.find(name); it != m_nameToIndexMap.end())
             {

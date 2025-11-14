@@ -143,6 +143,14 @@ namespace nes
         m_windows.clear();
     }
 
+    void EditorWindowManager::SetWorld(const StrongPtr<WorldBase>& pWorld) const
+    {
+        for (auto& pWindow : m_windows)
+        {
+            pWindow->SetWorld(pWorld);
+        }
+    }
+
     void EditorWindowManager::SetupMainWindowAndDockSpace()
     {
         // Set up the main viewport window

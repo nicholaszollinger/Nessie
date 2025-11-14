@@ -110,6 +110,11 @@ namespace nes
         {
             style.WindowRounding = 0.0f;
             style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+            //style.Colors[ImGuiCol_WindowBg] = ImVec4(0.06f, 0.06f, 0.06f, 1.f);
+            //style.Colors[ImGuiCol_ChildBg] = ImVec4(0.03f, 0.03f, 0.03f, 1.f);
+            //style.Colors[ImGuiCol_Border] = ImVec4(0.02f, 0.02f, 0.02f, 0.50f);
+            //style.Colors[ImGuiCol_Separator] = style.Colors[ImGuiCol_Border];
+            //style.Colors[ImGuiCol_BorderShadow] = ImVec4(0.00f, 0.00f, 0.00f, 1.f);
         }
 
         // Must be static for ImGui_ImplVulkan_InitInfo

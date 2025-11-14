@@ -7,7 +7,6 @@
 
 namespace nes
 {
-    static constexpr const char* kEntityHierarchyDropPayloadName = "entityHierarchy";
     static constexpr float kRowHeight = 21.f;
     static constexpr auto kDividerLineThickness = 2.f;
 
@@ -81,7 +80,7 @@ namespace nes
             
             if (ImGui::BeginTable("##HierarchyTree", 1, kTableFlags))
             {
-                // [TODO]: Different column for visiblity.
+                // [TODO]: Different columns for name and visibility:
                 //ImGui::TableSetupColumn("Label");
                 //ImGui::TableSetupColumn("Visibility");
 
@@ -149,7 +148,6 @@ namespace nes
         
         ImGuiTreeNodeFlags nodeFlags = ImGuiTreeNodeFlags_SpanAvailWidth
             | ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_OpenOnArrow;
-            //| ImGuiTreeNodeFlags_DrawLinesToNodes;
 
         if (isSelected)
             nodeFlags |= ImGuiTreeNodeFlags_Selected;
@@ -245,7 +243,7 @@ namespace nes
                 }
             }
 
-            if (isSelected)
+            if (isSelected && ImGui::IsWindowFocused())
             {
                 // F2 to rename the current selected entity.
                 if (ImGui::IsKeyPressed(ImGuiKey_F2))

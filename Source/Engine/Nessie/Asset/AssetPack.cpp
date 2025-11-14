@@ -21,7 +21,7 @@ namespace nes
             metaData.m_path = std::filesystem::path(NES_CONTENT_DIR) / metaData.m_path;
         }
     }
-    
+
     void AssetPack::AddAsset(const AssetMetadata& metaData)
     {
         if (!Contains(metaData.m_assetID))

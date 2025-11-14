@@ -3,6 +3,9 @@
 #include "Concepts.h"
 #include "Hash.h"
 
+// [TODO]: Either make a similar implementation or just use entt's type_info. More straightforward than the below.
+#include "entt/core/type_info.hpp"
+
 //----------------------------------------------------------------------------------------------------
 ///	@brief : Defines a TypeID based on the Type's name. This should be the first thing in the body
 ///     of a class or struct. This macro assumes that a base class has defined the public virtual functions:

@@ -16,6 +16,7 @@ namespace nes
     {
         m_desc.m_name = "Viewport";
         m_desc.m_flags = ImGuiWindowFlags_NoNav;
+        CreateImGuiSampler();
     }
 
     ViewportWindow::~ViewportWindow()
@@ -23,34 +24,7 @@ namespace nes
         FreeImGuiDescriptorSetAndView();
         FreeImGuiSampler();
     }
-    
-    void ViewportWindow::Init(const StrongPtr<WorldBase>& pWorld, ImGuiRenderer& imGuiRenderer)
-    {
-        m_pWorld = pWorld;
-        m_pRenderer = m_pWorld->GetRenderer();
-        m_pImGui = &imGuiRenderer;
-
-        auto& device = Renderer::GetDevice();
-        // Create the Sampler:
-        {
-            // These are the same values from the ImGui Vulkan Backend.
-            // - Annoyingly, there is no way to get the default sampler that they use.
-            SamplerDesc desc{};
-            desc.m_filters.m_mag = EFilterType::Linear;
-            desc.m_filters.m_min = EFilterType::Linear;
-            desc.m_mipMin = -1000.0f;
-            desc.m_mipMax = 1000.0f;
-            desc.m_anisotropy = static_cast<uint8>(1);
-            desc.m_addressModes.u = EAddressMode::ClampToEdge;
-            desc.m_addressModes.v = EAddressMode::ClampToEdge;
-            desc.m_addressModes.w = EAddressMode::ClampToEdge;
-            m_imGuiSampler = nes::Descriptor(device, desc);
-        }
-
-        // Create the descriptor set once.
-        OnResize(*m_pRenderer->GetFinalColorTarget());
-    }
-    
+        
     void ViewportWindow::Tick(const float deltaTime)
     {
         if (!m_isFocused)
@@ -273,6 +247,19 @@ namespace nes
         CameraSerializer::Serialize(out, m_editorCamera.m_camera);
     }
 
+    void ViewportWindow::OnWorldSet()
+    {
+        if (m_pWorld)
+        {
+            m_pRenderer = m_pWorld->GetRenderer();
+            OnResize(*m_pRenderer->GetFinalColorTarget());
+        }
+        else
+        {
+            m_pRenderer = nullptr;
+        }
+    }
+
     void ViewportWindow::FreeImGuiDescriptorSetAndView()
     {
         nes::Renderer::SubmitResourceFree([view = std::move(m_imGuiImageView)]() mutable
@@ -326,6 +313,25 @@ namespace nes
         m_imGuiTexture = reinterpret_cast<ImTextureID>(descriptorSet);
     }
 
+    void ViewportWindow::CreateImGuiSampler()
+    {
+        auto& device = Renderer::GetDevice();
+        
+        // These are the same values from the ImGui Vulkan Backend.
+        // - Annoyingly, there is no way to get the default sampler that they use.
+        SamplerDesc desc{};
+        desc.m_filters.m_mag = EFilterType::Linear;
+        desc.m_filters.m_min = EFilterType::Linear;
+        desc.m_mipMin = -1000.0f;
+        desc.m_mipMax = 1000.0f;
+        desc.m_anisotropy = static_cast<uint8>(1);
+        desc.m_addressModes.u = EAddressMode::ClampToEdge;
+        desc.m_addressModes.v = EAddressMode::ClampToEdge;
+        desc.m_addressModes.w = EAddressMode::ClampToEdge;
+        m_imGuiSampler = nes::Descriptor(device, desc);
+
+    }
+
     void ViewportWindow::FreeImGuiSampler()
     {
         m_imGuiSampler = nullptr;
@@ -356,9 +362,8 @@ namespace nes
         // Set cursor for overlay widgets
         ImGui::SetCursorScreenPos(buttonPos);
 
-        ImGui::BeginGroup();
-
         static constexpr float kSliderWidth = 120.f;
+        ImGui::BeginGroup();
 
         // Camera Move Speed
         ImGui::Text("Speed:");

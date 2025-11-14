@@ -2,10 +2,13 @@
 #pragma once
 #include "EditorCore.h"
 #include "Nessie/Core/Events/Event.h"
+#include "Nessie/Core/Memory/StrongPtr.h"
 #include "Nessie/FileIO/YAML/YamlSerializer.h"
 
 namespace nes
 {
+    class WorldBase;
+    
     struct EditorWindowDesc
     {
         std::string         m_name = {};
@@ -37,6 +40,11 @@ namespace nes
         virtual void            RenderImGui() = 0;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the current World reference that is being observed. 
+        //----------------------------------------------------------------------------------------------------
+        void                    SetWorld(const StrongPtr<WorldBase>& world);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Load the window settings from YAML. The default method loads the Window's name.
         //----------------------------------------------------------------------------------------------------
         virtual void            Deserialize(const YamlNode& in);
@@ -65,8 +73,22 @@ namespace nes
         /// @brief : Check to see if this window is open.
         //----------------------------------------------------------------------------------------------------
         bool                    IsOpen() const                      { return m_desc.m_isOpen; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current world context for the Editor.
+        //----------------------------------------------------------------------------------------------------
+        StrongPtr<WorldBase>    GetWorld() { return m_pWorld; }
     
     protected:
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Called when the World pointer has been updated. 
+        //----------------------------------------------------------------------------------------------------
+        virtual void            OnWorldSet(){}
+        
+    protected:
         EditorWindowDesc        m_desc{};
+        StrongPtr<WorldBase>    m_pWorld = nullptr;
+
     };
+    
 }

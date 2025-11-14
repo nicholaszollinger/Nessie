@@ -6,8 +6,11 @@
 
 namespace nes
 {
-    class WorldBase;
     struct NodeComponent;
+    
+    // [TODO]: Move to a better location:
+    // This is a tag for accepting payloads from the hierarchy window.
+    static constexpr const char* kEntityHierarchyDropPayloadName = "entityHierarchy";
     
     class HierarchyWindow final : public EditorWindow
     {
@@ -15,8 +18,6 @@ namespace nes
         
     public:
         HierarchyWindow();
-
-        void            SetWorld(const StrongPtr<WorldBase>& pWorld) { m_pWorld = pWorld; }
         virtual void    RenderImGui() override;
 
     private:
@@ -57,13 +58,19 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void            DeleteEntityAndChildren(EntityRegistry& registry, const EntityID& entityID) const;
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Draw the set of options when selecting a single entity.
+        //----------------------------------------------------------------------------------------------------
         void            DrawSingleSelectedEntityMenuOptions(EntityRegistry& registry, const IDComponent& idComp, const NodeComponent& nodeComp);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Draw a set of options when selecting multiple entites within the hierarchy.
+        //----------------------------------------------------------------------------------------------------
         void            DrawMultSelectedEntityMenuOptions(EntityRegistry& registry, const std::vector<uint64>& selected) const;
         
     private:
         static constexpr size_t kInputBufferSize = 256;
         
-        StrongPtr<WorldBase>    m_pWorld = nullptr;
         ImGuiTextFilter         m_filter;
         EntityID                m_currentRenameEntity = kInvalidEntityID;
         EntityID                m_forceOpenEntity = kInvalidEntityID;

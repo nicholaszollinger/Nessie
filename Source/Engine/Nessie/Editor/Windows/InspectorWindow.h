@@ -1,6 +1,7 @@
 ﻿// InspectorWindow.h
 #pragma once
 #include "Nessie/Editor/EditorWindow.h"
+#include "Nessie/World.h"
 
 namespace nes
 {

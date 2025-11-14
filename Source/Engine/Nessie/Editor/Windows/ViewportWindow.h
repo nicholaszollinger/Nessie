@@ -27,47 +27,45 @@ namespace nes
         ViewportWindow();
         virtual ~ViewportWindow() override;
         
-        void            Init(const StrongPtr<WorldBase>& pWorld, ImGuiRenderer& imGuiRenderer);
-        void            Tick(const float deltaTime);
-        virtual void    RenderImGui() override;
-        void            RenderWorld(CommandBuffer& commandBuffer, const RenderFrameContext& context);
-        virtual void    Deserialize(const YamlNode& in) override;
-        virtual void    Serialize(YamlOutStream& out) const override;
+        void                        Tick(const float deltaTime);
+        virtual void                RenderImGui() override;
+        void                        RenderWorld(CommandBuffer& commandBuffer, const RenderFrameContext& context);
+        virtual void                Deserialize(const YamlNode& in) override;
+        virtual void                Serialize(YamlOutStream& out) const override;
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the mouse cursor is over the window.
         //----------------------------------------------------------------------------------------------------
-        bool            IsHovered() const                   { return m_isHovered; }
+        bool                        IsHovered() const                   { return m_isHovered; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns true if the window is focused for receiving input.
         //----------------------------------------------------------------------------------------------------
-        bool            IsFocused() const                   { return m_isFocused; }
+        bool                        IsFocused() const                   { return m_isFocused; }
     
     private:
-        void            FreeImGuiDescriptorSetAndView();
-        void            OnResize(RenderTarget& renderTarget);
-        void            FreeImGuiSampler();
-        void            GetCameraHeadingAndPitch(float& outHeading, float& outPitch) const;
-        void            RenderViewportControlsOverlay(const ImVec2& viewportPos, const ImVec2& viewportSize);
+        virtual void                OnWorldSet() override;
+        void                        FreeImGuiDescriptorSetAndView();
+        void                        OnResize(RenderTarget& renderTarget);
+        void                        CreateImGuiSampler();
+        void                        FreeImGuiSampler();
+        void                        GetCameraHeadingAndPitch(float& outHeading, float& outPitch) const;
+        void                        RenderViewportControlsOverlay(const ImVec2& viewportPos, const ImVec2& viewportSize);
 
     private:
-        ImGuiRenderer* m_pImGui = nullptr;
-        StrongPtr<WorldBase> m_pWorld = nullptr;
-        StrongPtr<WorldRenderer> m_pRenderer = nullptr;
-        
-        Descriptor      m_imGuiSampler = nullptr;
-        vk::raii::ImageView m_imGuiImageView = nullptr;
-        ImTextureID     m_imGuiTexture = 0; // Descriptor Set pointer.
-        UVec2           m_viewportSize = UVec2::Zero();
-        bool            m_preserveAspectRatio = false;
-        bool            m_isHovered = false;
-        bool            m_isFocused = false;
+        StrongPtr<WorldRenderer>    m_pRenderer = nullptr;
+        Descriptor                  m_imGuiSampler = nullptr;
+        vk::raii::ImageView         m_imGuiImageView = nullptr;
+        ImTextureID                 m_imGuiTexture = 0; // Descriptor Set pointer.
+        UVec2                       m_viewportSize = UVec2::Zero();
+        bool                        m_preserveAspectRatio = false;
+        bool                        m_isHovered = false;
+        bool                        m_isFocused = false;
 
         // Editor Camera
-        WorldCamera     m_editorCamera{};
-        bool            m_rotationEnabled = false;
-        float           m_freeCamMoveSpeed = 50.f;
-        float           m_freeCamSensitivity = 0.75f;
+        WorldCamera                 m_editorCamera{};
+        bool                        m_rotationEnabled = false;
+        float                       m_freeCamMoveSpeed = 50.f;
+        float                       m_freeCamSensitivity = 0.75f;
     };
 }

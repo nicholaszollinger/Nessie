@@ -158,6 +158,37 @@ namespace nes
         }
     }
 
+    void EntityRegistry::RemoveComponent(const entt::id_type componentTypeID, const EntityHandle handle)
+    {
+        // Get the storage pool for this component type
+        auto* storage = m_registry.storage(componentTypeID);
+        if (storage && storage->contains(handle))
+        {
+            storage->erase(handle);
+        }
+    }
+
+    void* EntityRegistry::TryGetComponentRaw(const entt::id_type componentTypeID, const EntityHandle entity)
+    {
+        // Get the storage pool for this component type
+        auto* storage = m_registry.storage(componentTypeID);
+
+        if (!storage || !storage->contains(entity))
+            return nullptr;
+        
+        // Get raw pointer to the component data
+        return storage->value(entity);
+    }
+
+    bool EntityRegistry::HasComponent(const entt::id_type componentTypeID, const EntityHandle entity)
+    {
+        // Get the storage pool for this component type
+        const auto* storage = m_registry.storage(componentTypeID);
+
+        // Check if storage exists and contains the entity
+        return storage && storage->contains(entity);
+    }
+
     bool EntityRegistry::IsValidEntity(const EntityHandle entity) const
     {
         if (!m_registry.valid(entity))

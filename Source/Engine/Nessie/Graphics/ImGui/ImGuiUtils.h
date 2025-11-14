@@ -1,6 +1,7 @@
 ﻿// ImGuiUtils.h
 #pragma once
 #include "imgui.h"
+#include "misc/cpp/imgui_stdlib.h"
 #include "Nessie/Core/Config.h"
 
 namespace nes::ui
