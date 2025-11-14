@@ -40,9 +40,6 @@ World:
         - NodeComponent:
             Parent: 0
             Children: [16932789863297552802, 14988142370535006303]
-        - TextureAssetComponent:
-            TextureAsset: 2579614714382996603
-            TestEntity: 14988142370535006303
         - TransformComponent:
             Position: [0, 0, 0]
             Rotation: [0, 0, 0]

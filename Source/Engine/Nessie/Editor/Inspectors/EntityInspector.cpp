@@ -90,6 +90,9 @@ namespace nes
                     // Check Internal inspectors allowed.
                     if (pInspector->IsInternal() && (m_inspectorShowFlags & EInspectorLevel::Internal) == 0)
                         continue;
+            #else
+                    if (pInspector->IsInternal())
+                        continue;
             #endif
 
                     // Check Debug-Only inspectors allowed.
@@ -243,6 +246,9 @@ namespace nes
                 #if NES_DEBUG
                     // Check Internal inspectors allowed.
                     if (pInspector->IsInternal() && (m_inspectorShowFlags & EInspectorLevel::Internal) == 0)
+                        continue;
+                #else
+                    if (pInspector->IsInternal())
                         continue;
                 #endif
 
