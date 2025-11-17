@@ -58,8 +58,8 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         Mat44                   GetWorldToLocalTransformMatrix() const { return m_worldMatrix.Inversed(); }
 
-        static void             Serialize(YAML::Emitter& out, const TransformComponent& component);
-        static void             Deserialize(const YAML::Node& in, TransformComponent& component);
+        static void             Serialize(YamlOutStream& out, const TransformComponent& component);
+        static void             Deserialize(const YamlNode& in, TransformComponent& component);
         
     private:
         friend class TransformSystem;
@@ -211,27 +211,36 @@ namespace nes
         
     private:
         using EntityDepthPair = std::pair<EntityHandle, uint32>;
+
+        // Helper overloads that take in a registry reference.
+        void                    MarkDirty(EntityRegistry& registry, const EntityHandle entity);
+        void                    SetParent(EntityRegistry& registry, const EntityHandle entity, const EntityHandle parent);
+        void                    RemoveParent(EntityRegistry& registry, const EntityHandle entity);
+        void                    SetWorldTransform(EntityRegistry& registry, const EntityHandle entity, const Vec3 position, const Rotation rotation, const Vec3 scale);
+        void                    SetWorldPosition(EntityRegistry& registry, const EntityHandle entity, const Vec3 position);
+        void                    SetWorldRotation(EntityRegistry& registry, const EntityHandle entity, const Rotation rotation);
+        void                    SetWorldScale(EntityRegistry& registry, const EntityHandle entity, const Vec3 scale);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Walks down a hierarchy, calculating the depth value of the transform component.
         //----------------------------------------------------------------------------------------------------
-        void                    ComputeDepthRecursively(const EntityHandle, const uint32 depth);
+        void                    ComputeDepthRecursively(EntityRegistry& registry, const EntityHandle, const uint32 depth);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Marks all children transforms as dirty, recursively down the hierarchy.
         //----------------------------------------------------------------------------------------------------
-        void                    MarkChildrenDirty(const std::vector<EntityID>& childIDs);
+        void                    MarkChildrenDirty(EntityRegistry& registry, const std::vector<EntityID>& childIDs);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Recalculates the Entity's world and local transform matrices.
         //----------------------------------------------------------------------------------------------------
-        void                    UpdateSingleTransform(const EntityHandle entity) const;
+        void                    UpdateSingleTransform(EntityRegistry& registry, const EntityHandle entity) const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Rebuilds the depth ordered array of entities, to process efficiently. Must be called anytime
         /// the hierarchy changes: adding or removing a parent. NeedsHierarchyCacheRebuild() will return true.
         //----------------------------------------------------------------------------------------------------
-        void                    RebuildHierarchyCache();
+        void                    RebuildHierarchyCache(EntityRegistry& registry);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if the current hierarchy is out of date.

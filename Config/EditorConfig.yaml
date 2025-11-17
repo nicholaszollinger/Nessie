@@ -1,0 +1,43 @@
+Editor:
+  DefaultLayout: "Default"
+  Windows:
+    - Name: "Viewport"
+      CameraPosition: [-0.3928, 3.751, -8.265]
+      CameraForward: [-0.01167, -0.3249, 0.9457]
+      CameraUp: [0, 1, 0]
+      CameraMovementSpeed: 12
+      CameraSensitivity: 0.285
+      PreserveAspectRatio: false
+      Camera:
+        PerspectiveFOV: 60
+        OrthographicSize: 10
+        NearPlane: 0.1
+        FarPlane: 1000
+        Aperture: 8
+        ShutterSpeed: 125
+        Iso: 100
+        ProjectionType: 0
+    - Name: "Hierarchy"
+    - Name: "Inspector"
+    - Name: "Console"
+  Layouts:
+    - Name: "Default"
+      DockSplits:
+        - SplitNode: -1
+          SplitDir: 0
+          SplitRatio: 0.2
+        - SplitNode: -1
+          SplitDir: 1
+          SplitRatio: 0.25
+        - SplitNode: -1
+          SplitDir: 3
+          SplitRatio: 0.3
+      Windows:
+        - Name: "Viewport"
+          DockIndex: -1
+        - Name: "Hierarchy"
+          DockIndex: 0
+        - Name: "Inspector"
+          DockIndex: 1
+        - Name: "Console"
+          DockIndex: 2

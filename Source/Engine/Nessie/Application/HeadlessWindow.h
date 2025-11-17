@@ -11,7 +11,7 @@ namespace nes
     class HeadlessWindow final : public ApplicationWindow
     {
     public:
-        virtual bool Internal_Init(Platform& platform, const WindowDesc& windowDesc) override;
+        virtual bool Internal_Init(Application& app, WindowDesc&& windowDesc) override;
         virtual void Internal_ProcessEvents() override;
     
         virtual void SetCursorMode(const ECursorMode) override {}

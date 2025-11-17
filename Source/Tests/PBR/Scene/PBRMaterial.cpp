@@ -1,5 +1,7 @@
 ﻿// PBRMaterial.cpp
 #include "PBRMaterial.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlCoreSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
 
 namespace pbr
 {
@@ -11,48 +13,36 @@ namespace pbr
 
     nes::ELoadResult PBRMaterial::LoadFromFile(const std::filesystem::path& path)
     {
-        YAML::Node file = YAML::LoadFile(path.string());
-        if (!file)
+        nes::YamlInStream reader(path);
+        if (!reader.IsOpen())
         {
             NES_ERROR("Failed to load PBRMaterial. Expecting a YAML file!");
             return nes::ELoadResult::InvalidArgument;
         }
 
-        YAML::Node shader = file["PBRMaterial"];
-        if (!shader)
+        auto root = reader.GetRoot()["PBRMaterial"];
+        if (!root)
         {
             NES_ERROR("Failed to load PBRMaterial. YAML file invalid! Missing 'PBRMaterial' entry!");
             return nes::ELoadResult::InvalidArgument;
         }
 
-        return LoadFromYAML(shader);
+        return LoadFromYAML(root);
     }
 
-    nes::ELoadResult PBRMaterial::LoadFromYAML(const YAML::Node& node)
+    nes::ELoadResult PBRMaterial::LoadFromYAML(const nes::YamlNode& node)
     {
-        // Base Color
-        const auto baseColorNode = node["BaseColor"]; 
-        m_desc.m_baseColor.x = baseColorNode[0].as<float>(helpers::kMaxLinearColorValue);
-        m_desc.m_baseColor.y = baseColorNode[1].as<float>(helpers::kMaxLinearColorValue);
-        m_desc.m_baseColor.z = baseColorNode[2].as<float>(helpers::kMaxLinearColorValue);
-        m_desc.m_baseColor.w = baseColorNode[3].as<float>(1.f);
-
-        // Emission
-        const auto emissionNode = node["Emission"]; 
-        m_desc.m_emission.x = emissionNode[0].as<float>(0.f);
-        m_desc.m_emission.y = emissionNode[1].as<float>(0.f);
-        m_desc.m_emission.z = emissionNode[2].as<float>(0.f);
-
-        // Other Params:
-        m_desc.m_roughness  = node["Roughness"].as<float>(0.5f);
-        m_desc.m_metallic   = node["Metallic"].as<float>(0.f);
+        node["BaseColor"].Read(m_desc.m_baseColor, nes::Float4(helpers::kMaxLinearColorValue, helpers::kMaxLinearColorValue, helpers::kMaxLinearColorValue, 1.f));
+        node["Emission"].Read(m_desc.m_emission, nes::Float3(0.f));
+        node["Roughness"].Read(m_desc.m_roughness, 0.5f);
+        node["Metallic"].Read(m_desc.m_metallic, 0.f);
 
         // Texture Maps:
         const auto mapsNode = node["Maps"];
-        m_desc.m_baseColorMap           = mapsNode["BaseColor"].as<uint64>(nes::kInvalidAssetID.GetValue()); 
-        m_desc.m_normalMap              = mapsNode["Normal"].as<uint64>(nes::kInvalidAssetID.GetValue()); 
-        m_desc.m_roughnessMetallicMap   = mapsNode["RoughnessMetallic"].as<uint64>(nes::kInvalidAssetID.GetValue());
-        m_desc.m_emissionMap            = mapsNode["Emission"].as<uint64>(nes::kInvalidAssetID.GetValue());
+        mapsNode["BaseColor"].Read(m_desc.m_baseColorMap, nes::kInvalidAssetID);
+        mapsNode["Normal"].Read(m_desc.m_normalMap, nes::kInvalidAssetID);
+        mapsNode["RoughnessMetallic"].Read(m_desc.m_roughnessMetallicMap, nes::kInvalidAssetID);
+        mapsNode["Emission"].Read(m_desc.m_emissionMap, nes::kInvalidAssetID);
 
         return nes::ELoadResult::Success;
     }

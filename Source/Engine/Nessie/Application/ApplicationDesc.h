@@ -27,9 +27,10 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     struct ApplicationDesc
     {
+        ApplicationDesc() = default;
         ApplicationDesc(const CommandLineArgs& args) : m_commandLineArgs(args) {}
         
-        const CommandLineArgs   m_commandLineArgs;
+        CommandLineArgs         m_commandLineArgs{};        /// Arguments passed into the executable.
         std::string             m_appName{};                /// Application Name.
         Version                 m_appVersion{};             /// Application Version.
         float                   m_minTimeStepMs = 0.0333f;  /// Minimum time step for an application update, in milliseconds.

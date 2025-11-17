@@ -1,5 +1,8 @@
 ﻿// WorldAsset.cpp
 #include "WorldAsset.h"
+
+#include <fstream>
+
 #include "Nessie/World.h"
 #include "Nessie/Core/String/StringID.h"
 
@@ -23,14 +26,15 @@ namespace nes
 
     ELoadResult WorldAsset::LoadFromFile(const std::filesystem::path& path)
     {
-        YAML::Node file = YAML::LoadFile(path.string());
-        if (!file)
+        YamlInStream file(path);
+
+        if (!file.IsOpen())
         {
             NES_ERROR("Failed to load World Asset! \n- Path: {}", path.string());
             return ELoadResult::InvalidArgument;
         }
 
-        auto world = file["World"];
+        auto world = file.GetRoot()["World"];
         NES_ASSERT(world);
         
         auto assets = world["Assets"];
@@ -48,7 +52,7 @@ namespace nes
         }
 
         // Load the Assets
-        if (!AssetPack::LoadFromYAML(assets, m_assetPack))
+        if (!AssetPack::Deserialize(assets, m_assetPack))
             return ELoadResult::Failure;
 
         // Load the Entities:
@@ -58,20 +62,87 @@ namespace nes
         return ELoadResult::Success;
     }
 
-    bool WorldAsset::LoadEntities(const YAML::Node& entities)
+    void WorldAsset::SaveToFile(const std::filesystem::path& path)
     {
+        // [TODO]: Verify that the extension is a yaml file.
+
+        std::ofstream stream(path.string());
+        if (!stream.is_open())
+        {
+            NES_ERROR("Failed to save World Asset! Failed to open filepath: {}", path.string());
+            return;
+        }
+        
+        YamlOutStream out(path, stream);
+        NES_ASSERT(out.IsOpen());
+
+        out.BeginMap("World");
+
+        // Serialize the Assets:
+        AssetPack::Serialize(out, m_assetPack);
+
+        // Serializer the Entities:
+        auto& componentRegistry = ComponentRegistry::Get();
+        auto componentTypes = componentRegistry.GetAllComponentTypes();
+        
+        // Remove non-serializable components..
+        for (size_t i = 0; i < componentTypes.size();)
+        {
+            if (!componentTypes[i].m_serializeYAML)
+            {
+                std::swap(componentTypes[i], componentTypes.back());
+                componentTypes.pop_back();
+                continue;
+            }
+            
+            ++i;
+        }
+        
+        out.BeginSequence("Entities");
+        auto entities = m_entityRegistry.GetAllEntitiesWith<IDComponent>();
+        for (auto it = entities.rbegin(); it != entities.rend(); ++it)
+        {
+            EntityHandle entity = *it;
+            out.BeginMap();
+
+            // IDComponent information:
+            auto& idComp = m_entityRegistry.GetComponent<IDComponent>(entity);
+            out.Write("Entity", idComp.GetID());
+            out.Write("Name", idComp.GetName());
+
+            // [TODO]: Enabled state.
+
+            // Save all Components.
+            out.BeginSequence("Components");
+            for (auto& componentType : componentTypes)
+            {
+                NES_ASSERT(componentType.m_serializeYAML);
+                componentType.m_serializeYAML(out, m_entityRegistry, entity);
+            }
+            out.EndSequence();
+            
+            out.EndMap(); // End "Entity" Map.
+        }
+        out.EndSequence(); // End "Entities" sequence.
+        
+        out.EndMap(); // End "World" map.
+    }
+
+    bool WorldAsset::LoadEntities(const YamlNode& entities)
+    {
+        uint64_t entityLoadID;
         std::string entityName{};
         std::string componentName{};
         entityName.reserve(64);
         componentName.reserve(64);
 
-        auto& componentRegistry = ComponentRegistry::Get(); 
+        auto& componentRegistry = ComponentRegistry::Get();
         
         for (auto entityNode : entities)
         {
             // ID Component Information:
-            const uint64_t entityLoadID = entityNode["Entity"].as<uint64_t>(); 
-            entityName = entityNode["Name"].as<std::string>("");
+            entityNode["Entity"].Read(entityLoadID);
+            entityNode["Name"].Read<std::string>(entityName, "");
 
             // Create the entity:
             EntityHandle entity = m_entityRegistry.CreateEntity(entityLoadID, entityName);
@@ -80,7 +151,8 @@ namespace nes
             m_entityRegistry.AddComponent<PendingInitialization>(entity);
 
             // Initial Enable State
-            const bool startEnabled = entityNode["StartEnabled"].as<bool>(true);
+            bool startEnabled;
+            entityNode["StartEnabled"].Read(startEnabled, true);
             if (startEnabled)
                 m_entityRegistry.AddComponent<PendingEnable>(entity);
             else
@@ -90,10 +162,10 @@ namespace nes
             for (const auto& componentMapping : componentsNode)
             {
                 // Each item in the list is a mapping with one entry
-                for (const auto& componentPair : componentMapping)
+                for (auto it = componentMapping.begin(); it != componentMapping.end(); ++it)
                 {
-                    componentName = componentPair.first.as<std::string>();
-                    const auto& componentNode = componentPair.second;
+                    it.Key().Read(componentName);
+                    const auto& componentNode = it.Value();
 
                     const ComponentTypeDesc* pDesc = componentRegistry.GetComponentDescByName(componentName);
                     if (!pDesc || pDesc->m_deserializeYAML == nullptr)

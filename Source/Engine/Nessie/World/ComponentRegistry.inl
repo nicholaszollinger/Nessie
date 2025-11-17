@@ -30,21 +30,26 @@ namespace nes
         if (typeDesc.m_isRegistered)
             return;
 
-        const entt::id_type id = entt::type_hash<Type>::value();
+        typeDesc.m_typeID = entt::type_hash<Type>::value();
         
-        if constexpr (SerializableComponent<Type>)
+        if constexpr (HasStaticSerializeMember<Type, YamlOutStream>)
         {
-            typeDesc.m_serializeYAML = [name](YAML::Emitter& emitter, EntityRegistry& registry, EntityHandle entity) 
+            typeDesc.m_serializeYAML = [name](YamlOutStream& writer, EntityRegistry& registry, EntityHandle entity) 
             { 
                 if (const Type* comp = registry.TryGetComponent<Type>(entity))
                 {
-                    emitter << YAML::BeginMap << YAML::Key << name << YAML::Value;
-                    Type::Serialize(emitter, *comp);
-                    emitter << YAML::EndMap;
+                    writer.BeginMap(); // Begins an anonymous map, for the sequence item.
+                    writer.BeginMap(name.c_str()); // Begins a map with the component name.
+                    Type::Serialize(writer, *comp);
+                    writer.EndMap();
+                    writer.EndMap();
                 }
             };
+        }
 
-            typeDesc.m_deserializeYAML = [](const YAML::Node& node, EntityRegistry& registry, EntityHandle entity)
+        if constexpr (HasStaticDeserializeMember<Type, YamlNode>)
+        {
+            typeDesc.m_deserializeYAML = [](const YamlNode& node, EntityRegistry& registry, EntityHandle entity)
             {
                 Type& comp = registry.AddComponent<Type>(entity);
                 Type::Deserialize(node, comp);
@@ -58,9 +63,14 @@ namespace nes
                 [[maybe_unused]] auto& newComp = dstRegistry.AddComponent<Type>(dstEntity, *pComp);
             }
         };
+
+        typeDesc.m_addFunction = [](EntityRegistry& registry, EntityHandle entity)
+        {
+            registry.AddComponent<Type>(entity);
+        };
         
         typeDesc.m_name = name;
-        m_nameToTypeID.emplace(name, id);
+        m_nameToTypeID.emplace(name, typeDesc.m_typeID);
         typeDesc.m_isRegistered = true;
 
         NES_LOG("ComponentRegistry: Registered Component: '{}'", name);
@@ -78,6 +88,19 @@ namespace nes
         }
 
         NES_WARN("Failed to find registered ComponentType: '{}'! Make sure you registered the Type with NES_REGISTER_COMPONENT(Type)", name);
+        return nullptr;
+    }
+
+    inline const ComponentTypeDesc* ComponentRegistry::GetComponentDescByTypeID(entt::id_type typeID)
+    {
+        std::shared_lock lock(m_mutex);
+
+        if (auto it = m_componentTypes.find(typeID); it != m_componentTypes.end())
+        {
+            return &it->second;
+        }
+
+        NES_WARN("Failed to find registered ComponentType with ID: '{}'! Make sure you registered the Type with NES_REGISTER_COMPONENT(Type)", typeID);
         return nullptr;
     }
 

@@ -2,7 +2,14 @@
 #pragma once
 
 #include "Nessie/Application/Application.h"
-#include "PBRExampleWorld.h"
+#include "Nessie/Editor/EditorWindowManager.h"
+#include "Nessie/Graphics/ImGui/ImGuiRenderer.h"
+
+namespace nes
+{
+    class EditorWorld;
+    class ViewportWindow;
+}
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : This example application renders a 3D Scene with a single mesh. It uses a Physically Based
@@ -11,18 +18,25 @@
 class PBRExampleApp final : public nes::Application
 {
 public:
-    explicit PBRExampleApp(const nes::ApplicationDesc& appDesc) : nes::Application(appDesc) {}
-
+    PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc);
+    
+private:
     // Application Interface:
-    virtual void                    OnEvent(nes::Event& e) override;
-    virtual bool                    Internal_AppInit() override;
-    virtual void                    Internal_AppUpdate(const float timeStep) override;
-    virtual void                    Internal_OnResize(const uint32 width, const uint32 height) override;
-    virtual void                    Internal_AppRender(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
-    virtual void                    Internal_AppShutdown() override;
+    virtual void                        PushEvent(nes::Event& e) override;
+    virtual bool                        Init() override;
+    virtual void                        OnResize(const uint32 width, const uint32 height) override;
+    virtual void                        PreShutdown() override;
+    virtual void                        Update(const float deltaTime) override;
+    virtual void                        Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
 
 private:
-    nes::StrongPtr<pbr::PBRExampleWorld> m_pWorld = nullptr;
+    // Editor-Specific Members.
+    void                                RenderImGuiEditor();
+    void                                RenderSimulationControls();
+    
+    nes::ImGuiRenderer                  m_imgui = nullptr;
+    nes::EditorWindowManager            m_windowManager{};
+    std::shared_ptr<nes::ViewportWindow> m_viewportWindow = nullptr;
+    nes::StrongPtr<nes::EditorWorld>     m_pEditorWorld = nullptr; 
     nes::AssetID                        m_worldAssetID = nes::kInvalidAssetID;
-    bool                                m_worldLoaded = false;
 };

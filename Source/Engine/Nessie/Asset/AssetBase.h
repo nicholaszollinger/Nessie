@@ -4,12 +4,12 @@
 #include "Nessie/Core/Memory/RefCounter.h"
 #include "Nessie/Core/TypeInfo.h"
 #include "Nessie/Random/UUID.h"
-#include "yaml-cpp/yaml.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlCoreSerializers.h"
 
 namespace nes
 {
     using AssetID = UUID;
-    static constexpr AssetID kInvalidAssetID = std::numeric_limits<UUID::ValueType>::max();
+    static constexpr AssetID kInvalidAssetID = UUID(); // Default constructs with std::numeric_limits<uint64>::max().
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Current status of the Asset. 
@@ -108,9 +108,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                RemoveLock() const;
     
-
     private:
         friend class AssetManager;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Save an Asset to the given filepath.
+        //----------------------------------------------------------------------------------------------------
+        virtual void        SaveToFile(const std::filesystem::path&) {}
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Override to support loading an asset from a filepath. If the result != Success,
@@ -136,3 +140,4 @@ namespace nes
     template <ValidAssetType Type>
     class AssetPtr;
 }
+

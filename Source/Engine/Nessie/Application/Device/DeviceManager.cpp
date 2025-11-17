@@ -1,7 +1,7 @@
 ﻿// DeviceManager.cpp
 #include "DeviceManager.h"
 
-#include "Nessie/Application/Platform.h"
+#include "Nessie/Application/Application.h"
 #include "Nessie/Graphics/RenderDevice.h"
 #include "GLFW/glfw3.h"
 
@@ -19,7 +19,7 @@ namespace nes
 
     RenderDevice& DeviceManager::GetRenderDevice()
     {
-        return *(Platform::GetDeviceManager().m_pDevice.get());
+        return *(Application::GetDeviceManager().m_pDevice.get());
     }
 
     bool DeviceManager::Init()

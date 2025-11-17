@@ -242,7 +242,8 @@ namespace nes
         vk::DescriptorSetLayoutCreateInfo info = vk::DescriptorSetLayoutCreateInfo()
             .setPNext(nullptr) // [TODO]: If descriptor indexing is allowed, add the bindingFlagsInfo, otherwise nullptr.
             .setBindingCount(bindingCount)
-            .setBindings(bindings);
+            .setBindings(bindings)
+            .setFlags((setDesc.m_flags & EDescriptorSetBits::AllowUpdateAfterBound) ? vk::DescriptorSetLayoutCreateFlagBits::eUpdateAfterBindPool : vk::DescriptorSetLayoutCreateFlags{}); 
 
         // Create the DescriptorSetLayout:
         m_descriptorSetLayouts.emplace_back(vk::raii::DescriptorSetLayout(*m_pDevice, info, m_pDevice->GetVkAllocationCallbacks()));

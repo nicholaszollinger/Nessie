@@ -126,12 +126,27 @@ namespace nes
         }
     };
 
-    template <typename Type>
-    concept IsRefTargetType = requires(Type value)
+    //----------------------------------------------------------------------------------------------------
+    // [NOTE]
+    // Why have the Type Trait and not a Concept?
+    // - This concept is used in the RemoveRef function of the StrongPtr. Because of this, if the type is
+    //   just forward declared, the concept fails to compile because of the incomplete type. So I needed the
+    //   ability to silently fail when the type is incomplete.
+    //----------------------------------------------------------------------------------------------------
+    namespace internal
     {
-        TypeIsDerivedFrom<Type, internal::RefCounterBase>;
-        TypeIsDerivedFrom<typename Type::RefTargetDerivedType, internal::RefCounterBase>;
-    };
+        template <typename Type, typename = void>
+        struct IsRefTargetTypeImpl : std::false_type {};
+
+        template <typename Type>
+        struct IsRefTargetTypeImpl<Type, std::void_t<typename Type::RefTargetDerivedType>> // This will silently fail if the type is incomplete.
+            : std::bool_constant
+                <TypeIsDerivedFrom<Type, internal::RefCounterBase> &&
+                TypeIsDerivedFrom<typename Type::RefTargetDerivedType, internal::RefCounterBase>>{};
+    }
+
+    template <typename Type>
+    inline constexpr bool IsRefTargetType = internal::IsRefTargetTypeImpl<Type>::value;
 }
 
 #include "RefCounter.inl"

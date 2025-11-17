@@ -14,8 +14,8 @@ namespace nes
         float       m_moveSpeed = 50.f;      // m/s.
         float       m_sensitivity = 1.25f;
 
-        static void Serialize(YAML::Emitter& out, const FreeCamMovementComponent& component);
-        static void Deserialize(const YAML::Node& in, FreeCamMovementComponent& component);
+        static void Serialize(YamlOutStream& out, const FreeCamMovementComponent& component);
+        static void Deserialize(const YamlNode& in, FreeCamMovementComponent& component);
     };
 
     //----------------------------------------------------------------------------------------------------

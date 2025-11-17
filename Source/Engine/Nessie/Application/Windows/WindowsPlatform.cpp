@@ -1,5 +1,6 @@
 ﻿// WindowsPlatform.cpp
-#include "Nessie/Application/Platform.h"
+#include "Nessie/Application/Application.h"
+
 #ifdef NES_PLATFORM_WINDOWS
 #include "Nessie/Core/PlatformConstants.h"
 #include "WindowsInclude.h"

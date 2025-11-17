@@ -70,14 +70,16 @@ namespace nes
         // Number of layers we are going to upload to.
         const uint32 layerCount = math::Max(1u, math::Min(desc.m_layerCount, imageDesc.m_layerCount));
         
-        // Size of the image.
-        const uint64 imageSize = image.GetPixelCount() * image.GetPixelSize();
+        const uint32 width = desc.m_region.m_width == graphics::kUseRemaining? math::Max(imageDesc.m_width - desc.m_region.m_offset.x, 1u) : desc.m_region.m_width;
+        const uint32 height = desc.m_region.m_height == graphics::kUseRemaining? math::Max(imageDesc.m_height - desc.m_region.m_offset.y, 1u) : desc.m_region.m_height;
+        const uint32 depth = desc.m_region.m_depth == graphics::kUseRemaining? math::Max(imageDesc.m_depth - desc.m_region.m_offset.z, 1u) : desc.m_region.m_depth;
+        const uint64 pixelBufferSize = width * height * depth * image.GetPixelSize();
         
         //NES_ASSERT(desc.m_uploadOffset + size <= imageSize);
         NES_ASSERT(image.m_image != nullptr);
 
         // Create the Staging Buffer - Room for each layer we are uploading to.
-        const DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pSrcData, imageSize * layerCount, semaphoreState);
+        const DeviceBufferRange stagingRange = AcquireStagingBuffer(desc.m_pSrcData, pixelBufferSize * layerCount, semaphoreState);
 
         // Transition the top mip level from an unknown state to the copy destination state:
         ImageBarrierDesc preBarrier;
@@ -86,6 +88,8 @@ namespace nes
         preBarrier.m_after = AccessLayoutStage::CopyDestinationState();
         preBarrier.m_mipCount = image.m_desc.m_mipCount;
         preBarrier.m_layerCount = image.m_desc.m_layerCount;
+        preBarrier.m_baseLayer = desc.m_region.m_layer;
+        preBarrier.m_baseMip = desc.m_region.m_mipLevel;
         m_preBarriers.m_imageBarriers.emplace_back(preBarrier);
 
         // Transition from the copy destination state to the final upload layout.
@@ -93,8 +97,12 @@ namespace nes
         postBarrier.m_pImage = &image;
         postBarrier.m_before = AccessLayoutStage::CopyDestinationState();
         postBarrier.m_after.m_layout = desc.m_newLayout;
+        postBarrier.m_after.m_access = EAccessBits::ShaderResourceRead;
+        postBarrier.m_after.m_stages = EPipelineStageBits::FragmentShader;
         postBarrier.m_mipCount = image.m_desc.m_mipCount;
         postBarrier.m_layerCount = image.m_desc.m_layerCount;
+        postBarrier.m_baseLayer = desc.m_region.m_layer;
+        postBarrier.m_baseMip = desc.m_region.m_mipLevel;
 
         // If we are on a separate staging queue, then we need to transition ownership to the render queue.
         if (AssetManager::IsAssetThread())
@@ -137,12 +145,11 @@ namespace nes
         CopyBufferToImageDesc copyDesc;
         copyDesc.m_dstImage = &image;
         copyDesc.m_dstImageLayout = EImageLayout::CopyDestination;
-        copyDesc.m_imageOffset = {0, 0, 0};
+        copyDesc.m_dstRegion = desc.m_region;
+        copyDesc.m_layerCount = layerCount;
         copyDesc.m_srcBuffer = stagingRange.GetBuffer();
         copyDesc.m_srcOffset = stagingRange.GetOffset();
-        copyDesc.m_size = imageSize * layerCount;
-        copyDesc.m_layerCount = layerCount;
-        copyDesc.m_planes = desc.m_planes;
+        copyDesc.m_size = pixelBufferSize * layerCount;
         m_copyBufferToImageDescs.emplace_back(copyDesc);
     }
 

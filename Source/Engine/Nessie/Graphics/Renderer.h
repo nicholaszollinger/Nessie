@@ -16,7 +16,7 @@
 
 namespace nes
 {
-    class Camera;
+    struct Camera;
     class Material;
     class RenderCommandBuffer;
     class RenderPass;
@@ -46,7 +46,7 @@ namespace nes
         DeviceImage*                GetSwapchainImage() const           { return m_swapchainImage; }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the descriptor for the swapchain image. This can be used to set the swapchain image k
+        /// @brief : Get the descriptor for the swapchain image. This can be used to set the swapchain image
         ///     as a render target for a series of render calls.
         //----------------------------------------------------------------------------------------------------
         const Descriptor&           GetSwapchainImageDescriptor() const { return *m_swapchainImageDescriptor; }
@@ -150,7 +150,7 @@ namespace nes
         /// @brief : Initialize the Renderer. If the window is nullptr, then no presenting will be allowed,
         ///     and the swapchain will not be created.
         //----------------------------------------------------------------------------------------------------
-        bool                        Init(ApplicationWindow* pWindow, const RendererDesc& rendererDesc);
+        bool                        Init(ApplicationWindow* pWindow, RendererDesc&& rendererDesc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Shutdown the renderer, cleaning up all resources. 

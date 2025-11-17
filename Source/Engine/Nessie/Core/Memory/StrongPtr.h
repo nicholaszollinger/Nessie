@@ -49,6 +49,8 @@ namespace nes
         [[nodiscard]] inline bool           operator!=(const StrongPtr& other) const    { return !(*this == other); }
         [[nodiscard]] inline bool           operator==(const Type* pObject) const       { return Get() == pObject; }
         [[nodiscard]] inline bool           operator!=(const Type* pObject) const       { return Get() != pObject; }
+        [[nodiscard]] inline bool           operator==(std::nullptr_t) const            { return Get() == nullptr; }
+        [[nodiscard]] inline bool           operator!=(std::nullptr_t) const            { return Get() != nullptr; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the raw object pointer. 
@@ -72,11 +74,11 @@ namespace nes
         void                                Reset();
         
     private:
-        /// Friend classes:
+        // Friend classes:
         template <typename OtherType> friend class StrongPtr;
         template <typename OtherType> friend class ConstStrongPtr;
 
-        /// Friend Functions:
+        // Friend Functions:
         template <typename ObjectType, typename...CtorParams> requires nes::ValidConstructorForType<ObjectType, CtorParams...>
         friend StrongPtr<ObjectType>        Create(CtorParams&&...params);
 
@@ -145,6 +147,8 @@ namespace nes
         [[nodiscard]] inline bool           operator!=(const StrongPtr<Type>& other) const  { return m_pRefCounter != other.m_pRefCounter; }
         [[nodiscard]] inline bool           operator==(const Type* pObject) const           { return Get() == pObject; }
         [[nodiscard]] inline bool           operator!=(const Type* pObject) const           { return Get() != pObject; }
+        [[nodiscard]] inline bool           operator==(std::nullptr_t) const                { return Get() == nullptr; }
+        [[nodiscard]] inline bool           operator!=(std::nullptr_t) const                { return Get() != nullptr; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the raw object pointer. 

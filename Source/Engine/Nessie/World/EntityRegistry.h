@@ -105,6 +105,11 @@ namespace nes
         void                        RemoveComponent(const EntityHandle entity) { m_registry.remove<Type>(entity); }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Removes and destroys a component if the entity has it, using a type ID.
+        //----------------------------------------------------------------------------------------------------
+        void                        RemoveComponent(const entt::id_type componentTypeID, const EntityHandle handle);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Removes and destroys a component of a particular type from all entities within a view.
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
@@ -123,7 +128,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
         const Type&                 GetComponent(const EntityHandle entity) const { return m_registry.get<Type>(entity); }
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Attempts to get a component of a particular type. If the entity does not have one, this
         ///     returns nullptr. 
@@ -139,10 +144,20 @@ namespace nes
         const Type*                 TryGetComponent(const EntityHandle entity) const { return m_registry.try_get<Type>(entity); }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Returns a pointer to the component memory, or nullptr if the entity does not have it.
+        //----------------------------------------------------------------------------------------------------
+        void*                       TryGetComponentRaw(const entt::id_type componentTypeID, const EntityHandle entity);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if an entity has a particular component.
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
         bool                        HasComponent(const EntityHandle entity) const { return m_registry.all_of<Type>(entity); }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check to see if an entity has a particular component, using a component type ID.
+        //----------------------------------------------------------------------------------------------------
+        bool                        HasComponent(const entt::id_type componentTypeID, const EntityHandle entity);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check to see if an entity has all the given components.
@@ -192,7 +207,18 @@ namespace nes
         /// You can connect a lambda or member function to respond to the event. Must be in the form
         /// <code>
         ///     void(entt::registry& registry, entt::entity entity);
-        /// </code> 
+        /// </code>
+        ///
+        /// Usage:
+        /// <code>
+        ///     // Connect to the event: 
+        ///     registry.OnComponentCreated<position>().connect<&my_free_function>();
+        ///     registry.OnComponentCreated<position>().connect<&my_class::member>(instance);
+        ///
+        ///     // Disconnect from the event:
+        ///     registry.OnComponentCreated<position>().disconnect<&my_free_function>();
+        ///     registry.OnComponentCreated<position>().disconnect<&my_class::member>(instance);
+        /// </code>
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
         auto                        OnComponentCreated();
@@ -202,10 +228,47 @@ namespace nes
         /// You can connect a lambda or member function to respond to the event. Must be in the form:
         /// <code>
         ///     void(entt::registry& registry, entt::entity entity);
-        /// </code> 
+        /// </code>
+        ///
+        /// Usage:
+        /// <code>
+        ///     // Connect to the event: 
+        ///     registry.OnComponentDestroyed<position>().connect<&my_free_function>();
+        ///     registry.OnComponentDestroyed<position>().connect<&my_class::member>(instance);
+        ///
+        ///     // Disconnect from the event:
+        ///     registry.OnComponentDestroyed<position>().disconnect<&my_free_function>();
+        ///     registry.OnComponentDestroyed<position>().disconnect<&my_class::member>(instance);
+        /// </code>
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
         auto                        OnComponentDestroyed();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the event that is invoked when a Component of the given type has changed. 
+        /// You can connect a lambda or member function to respond to the event. Must be in the form:
+        /// <code>
+        ///     void(entt::registry& registry, entt::entity entity);
+        /// </code>
+        ///
+        /// Usage:
+        /// <code>
+        ///     // Connect to the event: 
+        ///     registry.OnComponentUpdated<position>().connect<&my_free_function>();
+        ///     registry.OnComponentUpdated<position>().connect<&my_class::member>(instance);
+        ///
+        ///     // Disconnect from the event:
+        ///     registry.OnComponentUpdated<position>().disconnect<&my_free_function>();
+        ///     registry.OnComponentUpdated<position>().disconnect<&my_class::member>(instance);
+        /// </code>
+        ///
+        /// @note : This event will only be signaled if EntityRegistry::SignalUpdate() is called.
+        //----------------------------------------------------------------------------------------------------
+        template <ComponentType Type>
+        auto                        OnComponentUpdated() { return entt::sink{ m_registry.on_update<Type>() }; }
+
+        template <ComponentType Type, typename...Args>
+        void                        TriggerUpdate(const EntityHandle entity, Args&&...args);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Checks to see if the Entity exists in the registry, and contains an IDComponent.
@@ -216,7 +279,7 @@ namespace nes
         /// @brief : Checks to see if the Entity exists in the registry, and contains an IDComponent.
         //----------------------------------------------------------------------------------------------------
         bool                        IsValidEntity(const EntityID id) const;
-
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the number of entities in the registry.
         //----------------------------------------------------------------------------------------------------

@@ -11,6 +11,10 @@
 #include "Nessie/World/Components/CameraComponent.h"
 #include "Nessie/World/ComponentSystems/TransformSystem.h"
 
+#include "Nessie/FileIO/YAML/Serializers/YamlCoreSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlGraphicsSerializers.h"
+
 namespace pbr
 {
     void PBRSceneRenderer::RegisterComponentTypes()
@@ -31,8 +35,8 @@ namespace pbr
         std::filesystem::path path = NES_CONFIG_DIR;
         path /= "PBRAppSettings.yaml";
 
-        YAML::Node file = YAML::LoadFile(path.string());
-        if (!file)
+        nes::YamlInStream file(path);
+        if (!file.IsOpen())
         {
             NES_ERROR("Failed to load Application Settings!");
             return false;
@@ -42,7 +46,8 @@ namespace pbr
         CreateGraphicsResources(device);
         CreateAndLoadDefaultAssets(device, file);
         CreateDescriptorSets(device);
-        
+
+        NES_LOG("PBR Renderer Initialized!");
         return true;
     }
 
@@ -78,11 +83,13 @@ namespace pbr
 
     void PBRSceneRenderer::ProcessEnabledEntities()
     {
-        auto& registry = GetRegistry();
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
         
         // Handle Camera Activation:
         {
-            auto view = registry.GetAllEntitiesWith<nes::IDComponent, nes::PendingEnable, nes::CameraComponent>(entt::exclude<nes::DisabledComponent>);
+            auto view = pRegistry->GetAllEntitiesWith<nes::IDComponent, nes::PendingEnable, nes::CameraComponent>(entt::exclude<nes::DisabledComponent>);
 
             // [TODO]: Check whether it should be set active on enable.
             for (auto entity : view)
@@ -98,72 +105,21 @@ namespace pbr
         
         // Handle enabled Entities with Meshes:
         {
-            auto view = registry.GetAllEntitiesWith<nes::IDComponent, nes::PendingEnable, nes::TransformComponent, MeshComponent>();
+            auto view = pRegistry->GetAllEntitiesWith<nes::IDComponent, nes::PendingEnable, nes::TransformComponent, MeshComponent>();
             for (auto entity : view)
             {
                 // Register a new Mesh geometry if not already:
                 auto& meshComp = view.get<MeshComponent>(entity);
-                auto pMesh = nes::AssetManager::GetAsset<MeshAsset>(meshComp.m_meshID);
-                if (!m_scene.m_idToMeshIndex.contains(meshComp.m_meshID))
-                {
-                    if (pMesh != nullptr)
-                        RegisterMeshAsset(pMesh);
-                }
-                
-                if (meshComp.m_materialID == nes::kInvalidAssetID)
-                {
-                    // Get the default material for the asset.
-                    meshComp.m_materialID = pMesh->GetDefaultMaterialID();
-
-                    // Default Material if none present:
-                    if (meshComp.m_materialID == nes::kInvalidAssetID)
-                        meshComp.m_materialID = GetDefaultMaterialID();
-                }
-
-                // Register a new Material data if not already:
-                if (!m_scene.m_idToMaterialIndex.contains(meshComp.m_materialID))
-                {
-                    auto pMaterial = nes::AssetManager::GetAsset<PBRMaterial>(meshComp.m_materialID);
-                    if (pMaterial != nullptr)
-                        RegisterMaterialAsset(pMaterial);
-                }
-
-                // Add the instance to our array.
-                EntityInstance instance
-                {
-                    .m_entity = entity,
-                    .m_meshIndex = m_scene.m_idToMeshIndex.at(meshComp.m_meshID),
-                    .m_materialIndex = m_scene.m_idToMaterialIndex.at(meshComp.m_materialID)
-                };
-                m_scene.m_instances.emplace_back(instance);
-                m_scene.m_entityToInstanceMap.emplace(entity, static_cast<uint32>(m_scene.m_instances.size() - 1));
-            }
-        }
-
-        // Handle Enabled Point Lights
-        {
-            auto view = registry.GetAllEntitiesWith<nes::PendingEnable, PointLightComponent>();
-            for ([[maybe_unused]] auto entity : view)
-            {
-                m_scene.m_pointLights.emplace_back();
-            }
-        }
-        
-        // Handle Enabled Directional Lights
-        {
-            auto view = registry.GetAllEntitiesWith<nes::PendingEnable, DirectionalLightComponent>();
-            for ([[maybe_unused]] auto entity : view)
-            {
-                m_scene.m_directionalLights.emplace_back();
+                RegisterMeshComponent(entity, meshComp);
             }
         }
     }
 
     void PBRSceneRenderer::ProcessDisabledEntities()
     {
-        // [TODO]: 
-        //auto& registry = GetRegistry();
+        // [TODO]: Disabling entities isn't implemented just yet in the editor, so I don't have to worry about it at the moment.
         
+        //auto& registry = GetRegistry();
         // [TODO]: If a CameraComponent is disabled, and it is my Active Camera, print an Error? No Active Camera? Select the next active Camera?
         // [TODO]: Disable PointLights.
         // [TODO]: Disable DirectionalLights.
@@ -171,89 +127,64 @@ namespace pbr
 
     void PBRSceneRenderer::ProcessDestroyedEntities(const bool destroyingWorld)
     {
-        if (!destroyingWorld)
+        auto* registry = GetEntityRegistry();
+        if (!destroyingWorld && registry)
         {
-            // [TODO]: If a Mesh Component is destroyed, and there are no other entities using that mesh, remove it?
+            // Handle removing meshes:
+            {
+                auto view = registry->GetAllEntitiesWith<nes::IDComponent, nes::PendingDestruction, MeshComponent>(entt::exclude<nes::DisabledComponent>);
+                for (auto entity : view)
+                {
+                    auto& meshComp = view.get<MeshComponent>(entity);
+                    UnregisterMeshComponent(entity, meshComp);
+                }
+            }
         }
     }
 
-    void PBRSceneRenderer::ResizeRenderTargets(const uint32 width, const uint32 height)
+    void PBRSceneRenderer::RenderWorldWithCamera(const nes::WorldCamera& worldCamera, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
     {
-        // Resize the MSAA Set
-        m_colorTarget.Resize(width, height);
-        m_depthTarget.Resize(width, height);
-
-        // After resize, each image is in the Undefined layout.
-        // Convert the msaa image to the resolve source layout:
-        {
-            auto commandBuffer = nes::Renderer::BeginTempCommands();
-            auto& msaaImage = m_colorTarget.GetImage();
-            auto& depthImage = m_depthTarget.GetImage();
-        
-            nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
-                .SetImage(&msaaImage)
-                .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ResolveSource)
-                .SetAccess(nes::EAccessBits::None, nes::EAccessBits::ResolveSource)
-                .SetBarrierStage(nes::EPipelineStageBits::TopOfPipe, nes::EPipelineStageBits::Copy);
-
-            nes::ImageBarrierDesc depthBarrier = nes::ImageBarrierDesc()
-                .SetImage(&depthImage, nes::EImagePlaneBits::Depth | nes::EImagePlaneBits::Stencil)
-                .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::DepthStencilAttachment);
-
-            nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
-                .SetImageBarriers({imageBarrier, depthBarrier});
-        
-            commandBuffer.SetBarriers(barrierGroup);
-
-            nes::Renderer::SubmitAndWaitTempCommands(commandBuffer);
-        }
-    }
-
-    void PBRSceneRenderer::RenderScene(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
-    {
-        // No Camera!
-        if (m_activeCameraID == nes::kInvalidEntityID)
-            return;
-
         auto& device = nes::DeviceManager::GetRenderDevice();
-        BuildSceneData(device, commandBuffer);
-        UpdateUniformBuffers(context);
-    
-        // Shadow Pass
-        RenderShadows(commandBuffer, context);
-
-        // We render to this higher sampled image - we will resolve this with the swapchain image at the end of the frame.
-        auto& msaaImage = m_colorTarget.GetImage();
-
-        // Transition the MSAA image to Color Attachment so that we can render to it,
-        // and the Swapchain image to Resolve Destination so that we can resolve our rendered MSAA image to it.
+        auto* pRegistry = GetEntityRegistry();
+        
+        if (pRegistry)
         {
-            nes::ImageBarrierDesc msaaBarrier = nes::ImageBarrierDesc()
-                .SetImage(&msaaImage)
-                .SetLayout(nes::EImageLayout::ResolveSource, nes::EImageLayout::ColorAttachment)
-                .SetBarrierStage(nes::EPipelineStageBits::None, nes::EPipelineStageBits::ColorAttachment)
-                .SetAccess(nes::EAccessBits::ResolveSource, nes::EAccessBits::ColorAttachment);
+            BuildSceneData(*pRegistry, device, commandBuffer);
+        }
+        
+        UpdateUniformBuffers(worldCamera, context);
 
-            nes::ImageBarrierDesc swapchainBarrier = nes::ImageBarrierDesc()
-                .SetImage(context.GetSwapchainImage())
-                .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ResolveDestination);
+        if (pRegistry)
+        {
+            RenderShadows(*pRegistry, commandBuffer, context);
+        }
+        
+        // Get the color target (multisampled or single-sampled) image that will be drawn into.
+        auto& colorTarget = GetColorDrawTarget();
+        auto& colorImage = colorTarget.GetImage();
+
+        // Transition the color target to color attachment.
+        {
+            nes::ImageBarrierDesc colorBarrier = nes::ImageBarrierDesc()
+                .SetImage(&colorImage)
+                .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ColorAttachment);
 
             nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
-                .SetImageBarriers({ msaaBarrier, swapchainBarrier } );
+                .SetImageBarriers({ colorBarrier } );
         
             commandBuffer.SetBarriers(barrierGroup);
         }
 
-        // Set the msaa image as our color render target:
+        // Set our render targets:
         nes::RenderTargetsDesc renderTargetsDesc = nes::RenderTargetsDesc()
-             .SetColorTargets(&m_colorTarget.GetView())
+             .SetColorTargets(&colorTarget.GetView())
              .SetDepthStencilTarget(&m_depthTarget.GetView());
     
         // Record Render Commands:
         commandBuffer.BeginRendering(renderTargetsDesc);
         {
             // Clear the Color and Depth Targets:
-            const nes::ClearDesc colorClear = nes::ClearDesc::Color(m_colorTarget.GetClearValue(), 0);
+            const nes::ClearDesc colorClear = nes::ClearDesc::Color(colorTarget.GetClearValue(), 0);
             const nes::ClearDesc depthClear = nes::ClearDesc::DepthStencil(m_depthTarget.GetClearValue());
             commandBuffer.ClearRenderTargets({ colorClear, depthClear });
 
@@ -262,41 +193,114 @@ namespace pbr
             const nes::Scissor scissor(viewport);
             commandBuffer.SetViewports(viewport);
             commandBuffer.SetScissors(scissor);
-        
-            RenderSkybox(commandBuffer, context);
+            
             RenderInstances(commandBuffer, context);
+            RenderSkybox(commandBuffer, context);
             RenderGrid(commandBuffer, context);
-
+ 
             // Finish.
             commandBuffer.EndRendering();
         }
 
-        // Transition the MSAA Image to the Resolve Source layout:
+        // Resolve the m_msaa image into the final color target if enabled. 
+        if (colorTarget.GetSampleCount() > 1)
         {
-            nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
-                .SetImage(&msaaImage)
-                .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::ResolveSource)
-                .SetAccess(nes::EAccessBits::ColorAttachment, nes::EAccessBits::ResolveSource);
+            // Transition images for resolution:
+            {
+                nes::ImageBarrierDesc imageBarrier = nes::ImageBarrierDesc()
+                    .SetImage(&m_msaaTarget.GetImage())
+                    .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::ResolveSource);
 
-            nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
-                .SetImageBarriers(imageBarrier);
+                nes::ImageBarrierDesc colorImageBarrier = nes::ImageBarrierDesc()
+                    .SetImage(&m_colorTarget.GetImage())
+                    .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::ResolveDestination);
+            
+                nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+                    .SetImageBarriers({ imageBarrier, colorImageBarrier} );
+                    
+                commandBuffer.SetBarriers(barrierGroup);
+            }
         
-            commandBuffer.SetBarriers(barrierGroup);
-        }
+            commandBuffer.ResolveImage(m_msaaTarget.GetImage(), m_colorTarget.GetImage());
 
-        // Resolve the Swapchain image from the MSAA image:
-        {
-            commandBuffer.ResolveImage(msaaImage, *context.GetSwapchainImage());
+            // Transition to the color attachment after
+            {
+                nes::ImageBarrierDesc colorImageBarrier = nes::ImageBarrierDesc()
+                    .SetImage(&m_colorTarget.GetImage())
+                    .SetLayout(nes::EImageLayout::ResolveDestination, nes::EImageLayout::ColorAttachment);
+            
+                nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+                    .SetImageBarriers({ colorImageBarrier} );
+                    
+                commandBuffer.SetBarriers(barrierGroup);
+            }
         }
     }
 
-    bool PBRSceneRenderer::CreateAndLoadDefaultAssets(nes::RenderDevice& device, const YAML::Node& file)
+    nes::WorldCamera PBRSceneRenderer::GetActiveCamera() const
     {
+        nes::WorldCamera worldCamera{};
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return worldCamera;
+        
+        auto activeCameraEntity = pRegistry->GetEntity(m_activeCameraID);
+        if (activeCameraEntity == nes::kInvalidEntityHandle)
+        {
+            NES_WARN("No Camera in World!");
+            return worldCamera;
+        }
+    
+        nes::CameraComponent& camera = pRegistry->GetComponent<nes::CameraComponent>(activeCameraEntity);
+        worldCamera.m_camera = camera.m_camera;
+    
+        nes::TransformComponent& transform = pRegistry->GetComponent<nes::TransformComponent>(activeCameraEntity);
+        worldCamera.m_position = transform.GetWorldPosition();
+        const auto& worldMatrix = transform.GetWorldTransformMatrix(); 
+        worldCamera.m_forward = worldMatrix.GetForward();
+        worldCamera.m_up = worldMatrix.GetUp();
+    
+        return worldCamera;
+    }
+
+    void PBRSceneRenderer::OnViewportResize(const uint32 width, const uint32 height)
+    {
+        // Resize the MSAA Set
+        m_colorTarget.Resize(width, height);
+        m_depthTarget.Resize(width, height);
+
+        if (m_sampleCount > 1)
+        {
+            m_msaaTarget.Resize(width, height);
+        }
+
+        // After resize, each image is in the undefined layout.
+        {
+            auto commandBuffer = nes::Renderer::BeginTempCommands();
+            auto& depthImage = m_depthTarget.GetImage();
+
+            nes::ImageBarrierDesc depthBarrier = nes::ImageBarrierDesc()
+                .SetImage(&depthImage, nes::EImagePlaneBits::Depth | nes::EImagePlaneBits::Stencil)
+                .SetLayout(nes::EImageLayout::Undefined, nes::EImageLayout::DepthStencilAttachment);
+
+            nes::BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
+                .SetImageBarriers({depthBarrier});
+        
+            commandBuffer.SetBarriers(barrierGroup);
+
+            nes::Renderer::SubmitAndWaitTempCommands(commandBuffer);
+        }
+    }
+
+    bool PBRSceneRenderer::CreateAndLoadDefaultAssets(nes::RenderDevice& device, const nes::YamlInStream& file)
+    {
+        const auto root = file.GetRoot();
+        
         // Load the Asset Pack of default assets and shaders.
         {
-            const auto& assets = file["Assets"];
+            const auto& assets = root["Assets"];
             nes::AssetPack pack{};
-            if (!nes::AssetPack::LoadFromYAML(assets, pack))
+            if (!nes::AssetPack::Deserialize(assets, pack))
             {
                 NES_ERROR("Failed to load default Asset Pack!");
                 return false;
@@ -311,7 +315,7 @@ namespace pbr
         }
 
         // Shaders are loaded, Create the render targets and pipelines:
-        CreateRenderTargetsAndPipelines(device, file);
+        CreateRenderTargetsAndPipelines(device, root);
 
         // Set the Default AssetIDs:
         {
@@ -319,14 +323,14 @@ namespace pbr
             s_planeMeshID = 2;
             s_sphereMeshID = 3;
             
-            const auto& defaultAssetIDs = file["DefaultAssetIDs"];
-            s_errorTextureID = defaultAssetIDs["ErrorTextureID"].as<uint64>();
-            s_blackTextureID = defaultAssetIDs["BlackTextureID"].as<uint64>();
-            s_whiteTextureID = defaultAssetIDs["WhiteTextureID"].as<uint64>();
-            s_flatNormalTextureID = defaultAssetIDs["FlatNormalTextureID"].as<uint64>();
-            s_defaultMaterialID = defaultAssetIDs["DefaultMaterialID"].as<uint64>();
-            s_defaultSkyboxID = defaultAssetIDs["DefaultSkyboxID"].as<uint64>();
-            
+            const auto& defaultAssetIDs = root["DefaultAssetIDs"];
+            defaultAssetIDs["ErrorTextureID"].Read(s_errorTextureID);
+            defaultAssetIDs["BlackTextureID"].Read(s_blackTextureID);
+            defaultAssetIDs["WhiteTextureID"].Read(s_whiteTextureID);
+            defaultAssetIDs["FlatNormalTextureID"].Read(s_flatNormalTextureID);
+            defaultAssetIDs["DefaultMaterialID"].Read(s_defaultMaterialID);
+            defaultAssetIDs["DefaultSkyboxID"].Read(s_defaultSkyboxID);
+
             // Set our default skybox to the scene.
             m_scene.m_skyboxTextureID = s_defaultSkyboxID;
 
@@ -368,13 +372,10 @@ namespace pbr
         {
             helpers::AppendCubeMeshData(vertices, indices, sceneMesh);
             MeshAsset asset(&vertices[sceneMesh.m_firstVertex], sceneMesh.m_vertexCount, &indices[sceneMesh.m_firstIndex], sceneMesh.m_indexCount, s_defaultMaterialID);
-            nes::AssetManager::AddMemoryAsset<MeshAsset>(s_cubeMeshID, std::move(asset));
+            nes::AssetManager::AddMemoryAsset<MeshAsset>(s_cubeMeshID, std::move(asset), "Default Cube");
 
             auto pAsset = nes::AssetManager::GetAsset<MeshAsset>(s_cubeMeshID);
             RegisterMeshAsset(pAsset);
-            
-            //m_scene.m_meshes.emplace_back(sceneMesh);
-            //m_scene.m_idToMeshIndex.emplace(s_cubeMeshID, static_cast<uint32>(m_scene.m_meshes.size() - 1));
         }
 
         // Sphere:
@@ -386,12 +387,10 @@ namespace pbr
             
             helpers::AppendSphereMeshData(desc, m_scene.m_vertices, m_scene.m_indices, sceneMesh);
             MeshAsset asset(&m_scene.m_vertices[sceneMesh.m_firstVertex], sceneMesh.m_vertexCount, &m_scene.m_indices[sceneMesh.m_firstIndex], sceneMesh.m_indexCount, s_defaultMaterialID);
-            nes::AssetManager::AddMemoryAsset<MeshAsset>(s_sphereMeshID, std::move(asset));
+            nes::AssetManager::AddMemoryAsset<MeshAsset>(s_sphereMeshID, std::move(asset), "Default Sphere");
 
             auto pAsset = nes::AssetManager::GetAsset<MeshAsset>(s_sphereMeshID);
             RegisterMeshAsset(pAsset);
-            //m_scene.m_meshes.emplace_back(sceneMesh);
-            //m_scene.m_idToMeshIndex.emplace(s_sphereMeshID, static_cast<uint32>(m_scene.m_meshes.size() - 1));
         }
 
         // Plane:
@@ -404,51 +403,49 @@ namespace pbr
             
             helpers::AppendPlaneData(desc, m_scene.m_vertices, m_scene.m_indices, sceneMesh);
             MeshAsset asset(&m_scene.m_vertices[sceneMesh.m_firstVertex], sceneMesh.m_vertexCount, &m_scene.m_indices[sceneMesh.m_firstIndex], sceneMesh.m_indexCount, s_defaultMaterialID);
-            nes::AssetManager::AddMemoryAsset<MeshAsset>(s_planeMeshID, std::move(asset));
+            nes::AssetManager::AddMemoryAsset<MeshAsset>(s_planeMeshID, std::move(asset), "Default Plane");
 
             auto pAsset = nes::AssetManager::GetAsset<MeshAsset>(s_planeMeshID);
             RegisterMeshAsset(pAsset);
-            
-            //m_scene.m_meshes.emplace_back(sceneMesh);
-            //m_scene.m_idToMeshIndex.emplace(s_planeMeshID, static_cast<uint32>(m_scene.m_meshes.size() - 1));
         }
 
         return true;
     }
 
-    void PBRSceneRenderer::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file)
+    void PBRSceneRenderer::CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const nes::YamlNode& root)
     {
         const auto swapchainColorFormat = nes::Renderer::GetSwapchainFormat();
         const auto swapchainExtent = nes::Renderer::GetSwapchainExtent();
 
         // Load Render Targets:
-        auto renderTargets = file["RenderTargets"];
+        auto renderTargets = root["RenderTargets"];
         NES_ASSERT(renderTargets);
         NES_ASSERT(renderTargets.size() > 0);
         {
             const nes::UInt2 swapchainSize = nes::UInt2(swapchainExtent.width, swapchainExtent.height);
             
-            m_colorTarget = LoadColorRenderTarget(renderTargets["Color"], "Color", device,  swapchainColorFormat, swapchainSize);
+            m_colorTarget = CreateColorRenderTarget(renderTargets["Color"], "Color", device,  swapchainColorFormat, swapchainSize);
             m_depthTarget = LoadDepthRenderTarget(renderTargets["Depth"], "Depth", device, swapchainSize);
             
-            // Add to the registry:
-            m_renderTargetRegistry.emplace(m_colorTarget.GetName(), &m_colorTarget);
+            m_renderTargetRegistry.emplace(m_colorTarget.GetName(), &GetColorDrawTarget());
             m_renderTargetRegistry.emplace(m_depthTarget.GetName(), &m_depthTarget);
         }
 
         // Load Pipelines:
         std::filesystem::path path{};
-        auto pipelines = file["Pipelines"];
+        std::string relativePath{};
+        auto pipelines = root["Pipelines"];
         NES_ASSERT(pipelines);
 
         // Grid
         {
             path = NES_CONTENT_DIR;
-            path /= pipelines["Grid"].as<std::string>();
+            pipelines["Grid"].Read(relativePath);
+            path /= relativePath;
 
-            YAML::Node pipelineFile = YAML::LoadFile(path.string());
-            NES_ASSERT(pipelineFile);
-            auto graphicsPipeline = pipelineFile["GraphicsPipeline"];
+            nes::YamlInStream pipelineFile(path);
+            NES_ASSERT(pipelineFile.IsOpen());
+            auto graphicsPipeline = pipelineFile.GetRoot()["GraphicsPipeline"];
             NES_ASSERT(graphicsPipeline);
             LoadGraphicsPipeline(graphicsPipeline, device, m_gridPipelineLayout, m_gridPipeline);
         }
@@ -456,11 +453,12 @@ namespace pbr
         // Skybox
         {
             path = NES_CONTENT_DIR;
-            path /= pipelines["Skybox"].as<std::string>();
+            pipelines["Skybox"].Read(relativePath);
+            path /= relativePath;
 
-            YAML::Node pipelineFile = YAML::LoadFile(path.string());
-            NES_ASSERT(pipelineFile);
-            auto graphicsPipeline = pipelineFile["GraphicsPipeline"];
+            nes::YamlInStream pipelineFile(path);
+            NES_ASSERT(pipelineFile.IsOpen());
+            auto graphicsPipeline = pipelineFile.GetRoot()["GraphicsPipeline"];
             NES_ASSERT(graphicsPipeline);
             LoadGraphicsPipeline(graphicsPipeline, device, m_skyboxPipelineLayout, m_skyboxPipeline);
         }
@@ -468,28 +466,33 @@ namespace pbr
         // PBR Geometry Pipeline
         {
             path = NES_CONTENT_DIR;
-            path /= pipelines["PBR"].as<std::string>();
+            pipelines["PBR"].Read(relativePath);
+            path /= relativePath;
 
-            YAML::Node pipelineFile = YAML::LoadFile(path.string());
-            NES_ASSERT(pipelineFile);
-            auto graphicsPipeline = pipelineFile["GraphicsPipeline"];
+            nes::YamlInStream pipelineFile(path);
+            NES_ASSERT(pipelineFile.IsOpen());
+            auto graphicsPipeline = pipelineFile.GetRoot()["GraphicsPipeline"];
             NES_ASSERT(graphicsPipeline);
             LoadGraphicsPipeline(graphicsPipeline, device, m_pbrPipelineLayout, m_pbrPipeline);
         }
 
         // Shadow Pipeline:
         {
-            auto shadowSettings = file["ShadowSettings"];
-            uint32 minBits = shadowSettings["FormatMinBits"].as<uint32>(32);
+            auto shadowSettings = root["ShadowSettings"];
+            
+            uint32 minBits;
+            shadowSettings["FormatMinBits"].Read(minBits, 32u);
             m_shadowImageFormat = device.GetSupportedDepthFormat(minBits, false);
-            m_shadowMapResolution = shadowSettings["ImageResolution"].as<uint32>(2048);
-            m_shadowCascadeCount = shadowSettings["NumCascades"].as<uint32>(1);
-            m_shadowMaxDistance = shadowSettings["MaxShadowDistance"].as<float>(100.f);
-            m_shadowCascadeSplitLambda = shadowSettings["CascadeSplitLambda"].as<float>(0.5f);
-            m_shadowDepthBiasConstant = shadowSettings["DepthBiasConstant"].as<float>(1.25f);
-            m_shadowDepthBiasSlope = shadowSettings["DepthBiasSlope"].as<float>(1.75f);
 
-            auto shaderID = shadowSettings["DepthShader"].as<uint64>(nes::kInvalidAssetID.GetValue());
+            shadowSettings["ImageResolution"].Read(m_shadowMapResolution, 2048u);
+            shadowSettings["NumCascades"].Read(m_shadowCascadeCount, 1u);
+            shadowSettings["MaxShadowDistance"].Read(m_shadowMaxDistance, 100.f);
+            shadowSettings["CascadeSplitLambda"].Read(m_shadowCascadeSplitLambda, 0.5f);
+            shadowSettings["DepthBiasConstant"].Read(m_shadowDepthBiasConstant, 1.25f);
+            shadowSettings["DepthBiasSlope"].Read(m_shadowDepthBiasSlope, 1.75f);
+            
+            nes::AssetID shaderID;
+            shadowSettings["DepthShader"].Read(shaderID, nes::kInvalidAssetID);
             CreateDepthPassResources(device, shaderID);
         }
     }
@@ -910,9 +913,9 @@ namespace pbr
         }
     }
 
-    void PBRSceneRenderer::UpdateUniformBuffers(const nes::RenderFrameContext& context)
+    void PBRSceneRenderer::UpdateUniformBuffers(const nes::WorldCamera& worldCamera, const nes::RenderFrameContext& context)
     {
-        auto& registry = GetRegistry();
+        //auto& registry = GetRegistry();
         auto& frame = m_frames[context.GetFrameIndex()];
     
         const auto viewport = context.GetSwapchainViewport();
@@ -921,20 +924,11 @@ namespace pbr
         // Update Camera Data:
         CameraUBO cameraConstants;
         {
-            auto activeCameraEntity = registry.GetEntity(m_activeCameraID);
-            nes::CameraComponent& camera = registry.GetComponent<nes::CameraComponent>(activeCameraEntity);
-            nes::TransformComponent& transform = registry.GetComponent<nes::TransformComponent>(activeCameraEntity);
-    
-            const auto worldPosition = transform.GetWorldPosition();
-            cameraConstants.m_position = nes::Float3(worldPosition.x, worldPosition.y, worldPosition.z);
-
-            const nes::Vec3 forward = transform.GetWorldTransformMatrix().GetForward();
-            const nes::Vec3 up = transform.GetWorldTransformMatrix().GetUp();
-    
-            cameraConstants.m_view = nes::Mat44::LookAt(worldPosition, worldPosition + forward, up);
-            cameraConstants.m_projection = camera.CalculateProjectionMatrix(static_cast<uint32>(viewport.m_extent.x), static_cast<uint32>(viewport.m_extent.y));
+            cameraConstants.m_position = nes::Float3(worldCamera.m_position.x, worldCamera.m_position.y, worldCamera.m_position.z);
+            cameraConstants.m_view = worldCamera.CalculateViewMatrix();
+            cameraConstants.m_exposureFactor = worldCamera.m_camera.CalculateExposureFactor();
+            cameraConstants.m_projection = worldCamera.m_camera.CalculateProjectionMatrix(static_cast<uint32>(viewport.m_extent.x), static_cast<uint32>(viewport.m_extent.y));
             cameraConstants.m_viewProjection = cameraConstants.m_projection * cameraConstants.m_view;
-            cameraConstants.m_exposureFactor = camera.CalculateExposureFactor();
 
             m_globalsBuffer.CopyToMappedMemory(&cameraConstants, frame.m_cameraBufferOffset, sizeof(CameraUBO));
         }
@@ -960,8 +954,9 @@ namespace pbr
         }
 
         // Update Shadow Cascades:
+        if (!m_scene.m_directionalLights.empty())
         {
-            NES_ASSERT(!m_scene.m_directionalLights.empty());
+            //NES_ASSERT(!m_scene.m_directionalLights.empty());
 
             GenShadowCascadesDesc desc;
             desc.m_shadowMapResolution = static_cast<float>(m_shadowMapResolution);
@@ -985,10 +980,9 @@ namespace pbr
         }
     }
 
-    void PBRSceneRenderer::BuildSceneData(nes::RenderDevice& device, nes::CommandBuffer& commandBuffer)
+    void PBRSceneRenderer::BuildSceneData(nes::EntityRegistry& registry, nes::RenderDevice& device, nes::CommandBuffer& commandBuffer)
     {
         // Update all model matrices for the instances:
-        auto& registry = GetRegistry();
         for (auto& instance : m_scene.m_instances)
         {
             auto& transform = registry.GetComponent<nes::TransformComponent>(instance.m_entity);
@@ -1032,7 +1026,7 @@ namespace pbr
             }
         }
 
-        // [TODO]: Should probably add to a member Uploader variable, and 
+        // [TODO]: Should probably make the Uploader a member variable.
         // Upload the geometry data to the GPU:
         {
             nes::DataUploader uploader(device);
@@ -1057,9 +1051,8 @@ namespace pbr
         }
     }
 
-    void PBRSceneRenderer::RenderShadows(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+    void PBRSceneRenderer::RenderShadows(nes::EntityRegistry& registry, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
     {
-        auto& registry = GetRegistry();
         auto& depthImage = m_shadowMap;
     
         // Transition the Shadow Target's image to the DepthStencilAttachment.
@@ -1236,6 +1229,69 @@ namespace pbr
         commandBuffer.DrawVertices(6);
     }
 
+    void PBRSceneRenderer::RegisterMeshComponent(nes::EntityHandle entity, MeshComponent& meshComp)
+    {
+        auto pMesh = nes::AssetManager::GetAsset<MeshAsset>(meshComp.m_meshID);
+        if (!m_scene.m_idToMeshIndex.contains(meshComp.m_meshID))
+        {
+            if (pMesh != nullptr)
+                RegisterMeshAsset(pMesh);
+        }
+                
+        if (meshComp.m_materialID == nes::kInvalidAssetID)
+        {
+            // Get the default material for the asset.
+            meshComp.m_materialID = pMesh->GetDefaultMaterialID();
+
+            // Default Material if none present:
+            if (meshComp.m_materialID == nes::kInvalidAssetID)
+                meshComp.m_materialID = GetDefaultMaterialID();
+        }
+
+        // Register a new Material data if not already:
+        if (!m_scene.m_idToMaterialIndex.contains(meshComp.m_materialID))
+        {
+            auto pMaterial = nes::AssetManager::GetAsset<PBRMaterial>(meshComp.m_materialID);
+            if (pMaterial != nullptr)
+                RegisterMaterialAsset(pMaterial);
+        }
+
+        // Add the instance to our array.
+        EntityInstance instance
+        {
+            .m_entity = entity,
+            .m_meshIndex = m_scene.m_idToMeshIndex.at(meshComp.m_meshID),
+            .m_materialIndex = m_scene.m_idToMaterialIndex.at(meshComp.m_materialID)
+        };
+        m_scene.m_instances.emplace_back(instance);
+        m_scene.m_entityToInstanceMap.emplace(entity, static_cast<uint32>(m_scene.m_instances.size() - 1));
+    }
+
+    void PBRSceneRenderer::UnregisterMeshComponent(nes::EntityHandle entity, MeshComponent& /*meshComp*/)
+    {
+        // [TODO]: Unregister Mesh/Material Data if there are no more references to them in the scene.
+        // - I would need to add a scene reference count in the maps for ID -> Mesh/Material Index.
+        //auto pMeshAsset = nes::AssetManager::GetAsset<MeshAsset>(meshComponent.m_meshID);
+        //auto pMaterialAsset = nes::AssetManager::GetAsset<PBRMaterial>(meshComponent.m_materialID);
+        
+        const auto instanceIndex = m_scene.m_entityToInstanceMap.at(entity);
+        if (instanceIndex == m_scene.m_instances.size() - 1)
+        {
+            m_scene.m_instances.pop_back();
+        }
+        else
+        {
+            std::swap(m_scene.m_instances[instanceIndex], m_scene.m_instances.back());
+            m_scene.m_instances.pop_back();
+        
+            // Update the mapping of entity to index.
+            const auto& swappedInstance = m_scene.m_instances[instanceIndex];
+            m_scene.m_entityToInstanceMap[swappedInstance.m_entity] = instanceIndex;
+        }
+        
+        m_scene.m_entityToInstanceMap.erase(entity);
+    }
+
     void PBRSceneRenderer::RegisterMeshAsset(const nes::AssetPtr<MeshAsset>& pMesh)
     {
         NES_ASSERT(pMesh != nullptr);
@@ -1405,58 +1461,229 @@ namespace pbr
         m_scene.m_idToTextureIndex.emplace(pTextureCube->GetAssetID(), static_cast<uint32>(m_scene.m_textures.size() - 1));
     }
 
-    nes::RenderTarget PBRSceneRenderer::LoadColorRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent)
+    nes::RenderTarget& PBRSceneRenderer::GetColorDrawTarget()
+    {
+        if (m_sampleCount > 1)
+        {
+            NES_ASSERT(m_msaaTarget.GetImage() != nullptr, "Multisampling is enabled, but no msaa render target was created!");
+            return m_msaaTarget;
+        }
+
+        return m_colorTarget;
+    }
+
+    void PBRSceneRenderer::OnWorldSet()
+    {
+        if (auto* pRegistry = GetEntityRegistry())
+        {
+            pRegistry->OnComponentCreated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
+            pRegistry->OnComponentUpdated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
+            pRegistry->OnComponentDestroyed<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+        }
+
+        ClearSceneInstanceData();
+    }
+
+    void PBRSceneRenderer::OnWorldRemoved()
+    {
+        if (auto* pRegistry = GetEntityRegistry())
+        {
+            pRegistry->OnComponentCreated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
+            pRegistry->OnComponentUpdated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
+            pRegistry->OnComponentDestroyed<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+        }
+    }
+
+    void PBRSceneRenderer::OnBeginSimulation()
+    {
+        ClearSceneInstanceData();
+    }
+
+    void PBRSceneRenderer::OnEndSimulation()
+    {
+        ClearSceneInstanceData();
+    }
+
+    void PBRSceneRenderer::OnEntityRegistryChanged(nes::EntityRegistry* pNewRegistry, nes::EntityRegistry* pOldRegistry)
+    {
+        ClearSceneInstanceData();
+        
+        if (pOldRegistry != nullptr)
+        {
+            pOldRegistry->OnComponentCreated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
+            pOldRegistry->OnComponentUpdated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
+            pOldRegistry->OnComponentDestroyed<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+        }
+        
+        if (pNewRegistry != nullptr)
+        {
+            pNewRegistry->OnComponentCreated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
+            pNewRegistry->OnComponentUpdated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
+            pNewRegistry->OnComponentDestroyed<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+        }
+    }
+
+    void PBRSceneRenderer::ClearSceneInstanceData()
+    {
+        m_scene.m_directionalLights.clear();
+        m_scene.m_pointLights.clear();
+        m_scene.m_entityToInstanceMap.clear();
+        m_scene.m_instances.clear();
+    }
+
+    void PBRSceneRenderer::OnMeshComponentAdded(entt::registry& registry, const entt::entity entity)
+    {
+        if (entity == nes::kInvalidEntityHandle || m_scene.m_entityToInstanceMap.contains(entity))
+            return;
+
+        // If pending initialization, this will be handled later.
+        // If disabled, we won't worry about it now.
+        if (registry.any_of<nes::PendingInitialization, nes::DisabledComponent>(entity))
+            return;
+
+        // This is a new mesh component, for an entity that is visible and already exists.
+        auto& meshComponent = registry.get<MeshComponent>(entity);
+
+        // Set the initial mesh to a cube:
+        if (meshComponent.m_meshID == nes::kInvalidAssetID)
+        {
+            meshComponent.m_meshID = GetDefaultMeshID(EDefaultMeshType::Cube);
+        }
+        
+        RegisterMeshComponent(entity, meshComponent);
+    }
+
+    void PBRSceneRenderer::OnMeshComponentUpdated(entt::registry& registry, const entt::entity entity)
+    {
+        if (entity == nes::kInvalidEntityHandle || registry.any_of<nes::DisabledComponent>(entity) || !m_scene.m_entityToInstanceMap.contains(entity))
+            return;
+
+        auto& meshComponent = registry.get<MeshComponent>(entity);
+        const uint32 index = m_scene.m_entityToInstanceMap.at(entity);
+        NES_ASSERT(index < m_scene.m_instances.size());
+
+        auto& instance = m_scene.m_instances[index];
+
+        // Get the mesh and material indices:
+        uint32 meshIndex = std::numeric_limits<uint32>::max();
+        uint32 materialIndex = std::numeric_limits<uint32>::max();
+
+        if (m_scene.m_idToMeshIndex.contains(meshComponent.m_meshID))
+        {
+            meshIndex = m_scene.m_idToMeshIndex.at(meshComponent.m_meshID);
+        }
+        else
+        {
+            auto pMeshAsset = nes::AssetManager::GetAsset<MeshAsset>(meshComponent.m_meshID);
+            if (pMeshAsset != nullptr)
+            {
+                RegisterMeshAsset(pMeshAsset);
+                meshIndex = m_scene.m_idToMeshIndex.at(meshComponent.m_meshID);
+            }
+        }
+
+        if (m_scene.m_idToMaterialIndex.contains(meshComponent.m_materialID))
+        {
+            materialIndex = m_scene.m_idToMaterialIndex.at(meshComponent.m_materialID);
+        }
+        else
+        {
+            // Register the material asset.
+            auto pMaterialAsset = nes::AssetManager::GetAsset<PBRMaterial>(meshComponent.m_materialID);
+            if (pMaterialAsset != nullptr)
+            {
+                RegisterMaterialAsset(pMaterialAsset);
+                materialIndex = m_scene.m_idToMaterialIndex.at(meshComponent.m_materialID);
+            }
+        }
+
+        NES_ASSERT(meshIndex < m_scene.m_meshes.size());
+        NES_ASSERT(materialIndex < m_scene.m_materials.size());
+
+        instance.m_meshIndex = meshIndex;
+        instance.m_materialIndex = materialIndex;
+    }
+
+    void PBRSceneRenderer::OnMeshComponentRemoved(entt::registry& registry, const entt::entity entity)
+    {
+        if (entity == nes::kInvalidEntityHandle || registry.any_of<nes::DisabledComponent>(entity) || !m_scene.m_entityToInstanceMap.contains(entity))
+            return;
+
+        auto& meshComponent = registry.get<MeshComponent>(entity);
+        UnregisterMeshComponent(entity, meshComponent);
+    }
+
+    nes::RenderTarget PBRSceneRenderer::CreateColorRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent)
     {
         nes::RenderTargetDesc desc{};
-        desc.m_name = name;
         desc.m_planes = nes::EImagePlaneBits::Color;
 
         // Format
-        desc.m_format = static_cast<nes::EFormat>(targetNode["Format"].as<uint32>(0));
+        targetNode["Format"].Read(desc.m_format, nes::EFormat::Unknown);
         if (desc.m_format == nes::EFormat::Unknown)
             desc.m_format = swapchainFormat;
 
         // Usage
-        desc.m_usage = static_cast<nes::EImageUsageBits>(targetNode["Usage"].as<uint32>(0));
-        desc.m_usage |= nes::EImageUsageBits::ColorAttachment;
+        targetNode["Usage"].Read(desc.m_usage, nes::EImageUsageBits::None);
+        desc.m_usage |= nes::EImageUsageBits::ColorAttachment | nes::EImageUsageBits::ShaderResource;
 
         // Sample Count
-        desc.m_sampleCount = targetNode["SampleCount"].as<uint32>(1);
+        targetNode["SampleCount"].Read<uint32>(desc.m_sampleCount, 1u);
+        if (desc.m_sampleCount == 0)
+        {
+            // Get the max sample count for the format
+            const auto features = device.GetFormatFeatures(desc.m_format);
+            desc.m_sampleCount = nes::GetMaxSampleCount(features);
+        }
 
         // Clear Value
         auto clearColorNode = targetNode["ClearColor"];
         nes::ClearColorValue clearColorValue{};
-        clearColorValue.m_float32[0] = clearColorNode[0].as<float>(0.f);
-        clearColorValue.m_float32[1] = clearColorNode[1].as<float>(0.f);
-        clearColorValue.m_float32[2] = clearColorNode[2].as<float>(0.f);
-        clearColorValue.m_float32[3] = clearColorNode[3].as<float>(1.f);
+        clearColorNode[0].Read<float>(clearColorValue.m_float32[0], 0.f);
+        clearColorNode[1].Read<float>(clearColorValue.m_float32[1], 0.f);
+        clearColorNode[2].Read<float>(clearColorValue.m_float32[2], 0.f);
+        clearColorNode[3].Read<float>(clearColorValue.m_float32[3], 1.f);
         desc.m_clearValue = clearColorValue;
 
         // Size
-        auto sizeNode = targetNode["Size"];
-        desc.m_size.x = sizeNode[0].as<uint32>(0);
-        desc.m_size.y = sizeNode[1].as<uint32>(0);
+        targetNode["Size"].Read(desc.m_size, nes::UInt2::Zero());
 
         // If either dimension is zero, use the swapchain extent.
         if (desc.m_size.x == 0 || desc.m_size.y == 0)
             desc.m_size = swapchainExtent;
-    
+
+        // Hack: Create the Multisampled Target here if enabled.
+        if (desc.m_sampleCount > 1)
+        {
+            // Create the msaa target
+            desc.m_name = "MSAA Color";
+            m_msaaTarget = nes::RenderTarget(device, desc);
+            m_sampleCount = m_msaaTarget.GetSampleCount();
+        }
+
+        // Set the sample count to 1 for the output color target.
+        desc.m_sampleCount = 1;
+        desc.m_name = name;
         return nes::RenderTarget(device, desc);
     }
 
-    nes::RenderTarget PBRSceneRenderer::LoadDepthRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent)
+    nes::RenderTarget PBRSceneRenderer::LoadDepthRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent)
     {
         nes::RenderTargetDesc desc{};
         desc.m_name = name;
         
         // Format
-        const uint32 minBits = targetNode["FormatMinBits"].as<uint32>(16);
-        const bool requireStencil = targetNode["FormatRequireStencil"].as<bool>(false);
+        uint32 minBits;
+        targetNode["FormatMinBits"].Read<uint32>(minBits, 16u);
+        
+        bool requireStencil;
+        targetNode["FormatRequireStencil"].Read<bool>(requireStencil, false);
+        
         desc.m_format = device.GetSupportedDepthFormat(minBits, requireStencil);
         NES_ASSERT(desc.m_format != nes::EFormat::Unknown);
 
         // Usage
-        desc.m_usage = static_cast<nes::EImageUsageBits>(targetNode["Usage"].as<uint32>(0));
+        targetNode["Usage"].Read(desc.m_usage, nes::EImageUsageBits::None);
         desc.m_usage |= nes::EImageUsageBits::DepthStencilAttachment;
     
         // Image Planes based on the Format
@@ -1465,18 +1692,16 @@ namespace pbr
             desc.m_planes |= nes::EImagePlaneBits::Stencil;
     
         // Sample Count
-        desc.m_sampleCount = targetNode["SampleCount"].as<uint32>(1);
+        targetNode["SampleCount"].Read<uint32>(desc.m_sampleCount, 1u);
 
         // Clear Value
         nes::ClearDepthStencilValue clearDepthStencil;
-        clearDepthStencil.m_depth = targetNode["ClearDepth"].as<float>(1.f);
-        clearDepthStencil.m_stencil = targetNode["ClearDepth"].as<uint32>(0);
+        targetNode["ClearDepth"].Read<float>(clearDepthStencil.m_depth, 1.f);
+        targetNode["ClearStencil"].Read<uint32>(clearDepthStencil.m_stencil, 0);
         desc.m_clearValue = clearDepthStencil;
 
         // Size
-        auto sizeNode = targetNode["Size"];
-        desc.m_size.x = sizeNode[0].as<uint32>(0);
-        desc.m_size.y = sizeNode[1].as<uint32>(0);
+        targetNode["Size"].Read(desc.m_size, nes::UInt2::Zero());
 
         // If either dimension is zero, use the swapchain extent.
         if (desc.m_size.x == 0 || desc.m_size.y == 0)
@@ -1485,7 +1710,7 @@ namespace pbr
         return nes::RenderTarget(device, desc);
     }
 
-    void PBRSceneRenderer::LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const
+    void PBRSceneRenderer::LoadGraphicsPipeline(const nes::YamlNode& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const
     {
         // Pipeline Layout
         {
@@ -1493,7 +1718,8 @@ namespace pbr
 
             // Stages
             static constexpr uint32 kDefaultStages = static_cast<uint32>(nes::EPipelineStageBits::GraphicsShaders);
-            nes::EPipelineStageBits stages = static_cast<nes::EPipelineStageBits>(layoutNode["Stages"].as<uint32>(kDefaultStages));
+            nes::EPipelineStageBits stages;
+            layoutNode["Stages"].Read<nes::EPipelineStageBits>(stages, nes::EPipelineStageBits::GraphicsShaders);
 
             // Descriptor Sets:
             std::vector<std::vector<nes::DescriptorBindingDesc>> setBindings{};
@@ -1510,10 +1736,10 @@ namespace pbr
                 for (auto bindingNode : bindings)
                 {
                     nes::DescriptorBindingDesc desc{};
-                    desc.m_bindingIndex = bindingNode["Index"].as<uint32>(0);
-                    desc.m_descriptorCount = bindingNode["DescriptorCount"].as<uint32>(1);
-                    desc.m_descriptorType = static_cast<nes::EDescriptorType>(bindingNode["DescriptorType"].as<uint32>());
-                    desc.m_shaderStages = static_cast<nes::EPipelineStageBits>(bindingNode["Stages"].as<uint32>(kDefaultStages));
+                    bindingNode["Index"].Read<uint32>(desc.m_bindingIndex, 0u);
+                    bindingNode["DescriptorCount"].Read<uint32>(desc.m_descriptorCount, 1u);
+                    bindingNode["DescriptorType"].Read<nes::EDescriptorType>(desc.m_descriptorType, {});
+                    bindingNode["Stages"].Read<nes::EPipelineStageBits>(desc.m_shaderStages, nes::EPipelineStageBits::GraphicsShaders);
                     bindingsArray.emplace_back(desc);
                 }
             
@@ -1527,9 +1753,9 @@ namespace pbr
             for (auto pushConstant : pushConstantsNode)
             {
                 nes::PushConstantDesc desc{};
-                desc.m_offset = pushConstant["Offset"].as<uint32>(0);
-                desc.m_size = pushConstant["Size"].as<uint32>();
-                desc.m_shaderStages = static_cast<nes::EPipelineStageBits>(pushConstant["Stages"].as<uint32>(kDefaultStages));
+                pushConstant["Offset"].Read<uint32>(desc.m_offset, 0u);
+                pushConstant["Size"].Read<uint32>(desc.m_size, 0u);
+                pushConstant["Stages"].Read<nes::EPipelineStageBits>(desc.m_shaderStages, nes::EPipelineStageBits::GraphicsShaders);
                 pushConstantDescs.emplace_back(desc);
             }
 
@@ -1547,7 +1773,8 @@ namespace pbr
     
         // Shader Stages:
         {
-            nes::AssetID shaderID = pipelineNode["Shader"].as<uint64>(); 
+            nes::AssetID shaderID;
+            pipelineNode["Shader"].Read(shaderID, nes::kInvalidAssetID); 
             nes::AssetPtr<nes::Shader> shader = nes::AssetManager::GetAsset<nes::Shader>(shaderID);
             NES_ASSERT(shader);
             desc.m_shaderStages = shader->GetGraphicsShaderStages();
@@ -1565,10 +1792,10 @@ namespace pbr
             for (auto attribute : attributesNode)
             {
                 nes::VertexAttributeDesc attributeDesc{};
-                attributeDesc.m_location = attribute["Location"].as<uint32>();
-                attributeDesc.m_offset = attribute["Offset"].as<uint32>();
-                attributeDesc.m_format = static_cast<nes::EFormat>(attribute["Format"].as<uint32>());
-                attributeDesc.m_streamIndex = attribute["Stream"].as<uint32>(0);
+                attribute["Location"].Read(attributeDesc.m_location, 0u);
+                attribute["Offset"].Read(attributeDesc.m_offset, 0u);
+                attribute["Format"].Read(attributeDesc.m_format, nes::EFormat::Unknown);
+                attribute["Stream"].Read(attributeDesc.m_streamIndex, 0u);
                 attributeDescs.emplace_back(attributeDesc);
             }
 
@@ -1578,9 +1805,9 @@ namespace pbr
             for (auto stream : streamsNode)
             {
                 nes::VertexStreamDesc streamDesc{};
-                streamDesc.m_stride = stream["Stride"].as<uint32>();
-                streamDesc.m_bindingIndex = stream["BindingIndex"].as<uint32>(0);
-                streamDesc.m_stepRate = static_cast<nes::EVertexStreamStepRate>(stream["StepRate"].as<uint32>(0));
+                stream["Stride"].Read(streamDesc.m_stride, 0u);
+                stream["BindingIndex"].Read(streamDesc.m_bindingIndex, 0u);
+                stream["StepRate"].Read(streamDesc.m_stepRate, nes::EVertexStreamStepRate::PerVertex);
                 streamDescs.emplace_back(streamDesc);
             }
 
@@ -1591,34 +1818,28 @@ namespace pbr
         // Input Assembly
         {
             auto inputAssembly = pipelineNode["InputAssembly"];
-
-            static constexpr uint32 kDefaultTopologyMode = static_cast<uint32>(nes::ETopology::TriangleList);
-            desc.m_inputAssembly.m_primitiveRestart = static_cast<nes::EPrimitiveRestart>(inputAssembly["PrimitiveRestart"].as<uint32>(0));
-            desc.m_inputAssembly.m_tessControlPointCount = inputAssembly["TesselationPointCount"].as<uint8>(static_cast<uint8>(0));
-            desc.m_inputAssembly.m_topology = static_cast<nes::ETopology>(inputAssembly["Topology"].as<uint32>(kDefaultTopologyMode));
+            inputAssembly["PrimitiveRestart"].Read(desc.m_inputAssembly.m_primitiveRestart );
+            inputAssembly["TesselationPointCount"].Read(desc.m_inputAssembly.m_tessControlPointCount);
+            inputAssembly["Topology"].Read(desc.m_inputAssembly.m_topology, nes::ETopology::TriangleList);
         }
 
         // Rasterization
         {
             auto rasterizationNode = pipelineNode["Rasterization"];
             auto& rasterState = desc.m_rasterization;
-
-            static constexpr uint32 kDefaultCullMode = static_cast<uint32>(nes::ECullMode::Back);
-            static constexpr uint32 kDefaultFillMode = static_cast<uint32>(nes::EFillMode::Solid);
-            static constexpr uint32 kDefaultFrontFace = static_cast<uint32>(nes::EFrontFaceWinding::CounterClockwise);
-        
-            rasterState.m_cullMode = static_cast<nes::ECullMode>(rasterizationNode["CullMode"].as<uint32>(kDefaultCullMode));
-            rasterState.m_fillMode = static_cast<nes::EFillMode>(rasterizationNode["FillMode"].as<uint32>(kDefaultFillMode));
-            rasterState.m_enableDepthClamp = rasterizationNode["EnableDepthClamp"].as<bool>(false);
-            rasterState.m_frontFace = static_cast<nes::EFrontFaceWinding>(rasterizationNode["FrontFace"].as<uint32>(kDefaultFrontFace));
-            rasterState.m_lineWidth = rasterizationNode["LineWidth"].as<float>(1.0f);
+            
+            rasterizationNode["CullMode"].Read(rasterState.m_cullMode, nes::ECullMode::Back);
+            rasterizationNode["FillMode"].Read(rasterState.m_fillMode, nes::EFillMode::Solid);
+            rasterizationNode["EnableDepthClamp"].Read(rasterState.m_enableDepthClamp, false);
+            rasterizationNode["FrontFace"].Read(rasterState.m_frontFace, nes::EFrontFaceWinding::CounterClockwise);
+            rasterizationNode["LineWidth"].Read(rasterState.m_lineWidth, 1.f);
 
             if (auto depthBiasNode = rasterizationNode["DepthBias"])
             {
-                rasterState.m_depthBias.m_constant = depthBiasNode["Constant"].as<float>(0.f);
-                rasterState.m_depthBias.m_clamp = depthBiasNode["Clamp"].as<float>(0.f);
-                rasterState.m_depthBias.m_slope = depthBiasNode["Slope"].as<float>(0.f);
-                rasterState.m_depthBias.m_enabled = depthBiasNode["Enabled"].as<bool>(false);
+                depthBiasNode["Constant"].Read(rasterState.m_depthBias.m_constant, 0.f);
+                depthBiasNode["Clamp"].Read(rasterState.m_depthBias.m_clamp, 0.f);
+                depthBiasNode["Slope"].Read(rasterState.m_depthBias.m_slope, 0.f);
+                depthBiasNode["Enabled"].Read(rasterState.m_depthBias.m_enabled, false);
             }
         }
 
@@ -1628,9 +1849,7 @@ namespace pbr
         {
             auto outputMergerNode = pipelineNode["OutputMerger"];
             auto& outputMerger = desc.m_outputMerger;
-
-            static constexpr uint32 kDefaultColorWriteMask = static_cast<uint32>(nes::EColorComponentBits::RGBA);
-
+            
             // Color Attachments
             auto colorAttachmentsNode = outputMergerNode["ColorAttachments"];
             colorAttachments.reserve(colorAttachmentsNode.size());
@@ -1639,28 +1858,30 @@ namespace pbr
                 nes::ColorAttachmentDesc colorAttachmentDesc{};
             
                 // Get the render target format this attachment is for.
-                const std::string renderTargetName = attachment["RenderTarget"].as<std::string>();
+                std::string renderTargetName;
+                attachment["RenderTarget"].Read(renderTargetName);
+                
                 NES_ASSERT(m_renderTargetRegistry.contains(renderTargetName));
                 auto* pTarget = m_renderTargetRegistry.at(renderTargetName);
                 NES_ASSERT(pTarget->IsColorTarget());
                 colorAttachmentDesc.m_format = pTarget->GetFormat();
                 targets.emplace_back(pTarget);
 
-                colorAttachmentDesc.m_enableBlend = attachment["EnableBlend"].as<bool>(true);
-                colorAttachmentDesc.m_colorWriteMask = static_cast<nes::EColorComponentBits>(attachment["ColorWriteMask"].as<uint32>(kDefaultColorWriteMask));
-
+                attachment["EnableBlend"].Read(colorAttachmentDesc.m_enableBlend, true);
+                attachment["ColorWriteMask"].Read(colorAttachmentDesc.m_colorWriteMask, nes::EColorComponentBits::RGBA);
+                
                 // Color Blend
                 auto colorBlendState = attachment["ColorBlend"];
-                colorAttachmentDesc.m_colorBlend.m_srcFactor = static_cast<nes::EBlendFactor>(colorBlendState["SrcFactor"].as<uint32>());
-                colorAttachmentDesc.m_colorBlend.m_dstFactor = static_cast<nes::EBlendFactor>(colorBlendState["DstFactor"].as<uint32>());
-                colorAttachmentDesc.m_colorBlend.m_op = static_cast<nes::EBlendOp>(colorBlendState["BlendOp"].as<uint32>());
+                colorBlendState["SrcFactor"].Read(colorAttachmentDesc.m_colorBlend.m_srcFactor);
+                colorBlendState["DstFactor"].Read(colorAttachmentDesc.m_colorBlend.m_dstFactor);
+                colorBlendState["BlendOp"].Read(colorAttachmentDesc.m_colorBlend.m_op, nes::EBlendOp::Add);
 
                 // Alpha Blend
                 auto alphaBlendState = attachment["AlphaBlend"];
-                colorAttachmentDesc.m_alphaBlend.m_srcFactor = static_cast<nes::EBlendFactor>(colorBlendState["SrcFactor"].as<uint32>());
-                colorAttachmentDesc.m_alphaBlend.m_dstFactor = static_cast<nes::EBlendFactor>(colorBlendState["DstFactor"].as<uint32>());
-                colorAttachmentDesc.m_alphaBlend.m_op = static_cast<nes::EBlendOp>(colorBlendState["BlendOp"].as<uint32>());
-
+                alphaBlendState["SrcFactor"].Read(colorAttachmentDesc.m_alphaBlend.m_srcFactor);
+                alphaBlendState["DstFactor"].Read(colorAttachmentDesc.m_alphaBlend.m_dstFactor);
+                alphaBlendState["BlendOp"].Read(colorAttachmentDesc.m_colorBlend.m_op, nes::EBlendOp::Add);
+                
                 colorAttachments.emplace_back(colorAttachmentDesc);
             }
 
@@ -1671,42 +1892,41 @@ namespace pbr
             if (auto depthAttachmentNode = outputMergerNode["DepthAttachment"])
             {
                 // Get depth/stencil target this attachment is for.
-                const std::string renderTargetName = depthAttachmentNode["RenderTarget"].as<std::string>();
+                std::string renderTargetName;
+                depthAttachmentNode["RenderTarget"].Read(renderTargetName);
                 NES_ASSERT(m_renderTargetRegistry.contains(renderTargetName));
                 auto* pTarget = m_renderTargetRegistry.at(renderTargetName);
                 NES_ASSERT(pTarget->IsDepthTarget());
                 targets.emplace_back(pTarget);
                 outputMerger.m_depthStencilFormat = pTarget->GetFormat();
-
-                static constexpr uint32 kDefaultDepthCompareOp = static_cast<uint32>(nes::ECompareOp::Less);
-                outputMerger.m_depth.m_compareOp = static_cast<nes::ECompareOp>(depthAttachmentNode["CompareOp"].as<uint32>(kDefaultDepthCompareOp));
-                outputMerger.m_depth.m_enableWrite = depthAttachmentNode["EnableWrite"].as<bool>(true);
+                
+                depthAttachmentNode["CompareOp"].Read(outputMerger.m_depth.m_compareOp, nes::ECompareOp::Less);
+                depthAttachmentNode["EnableWrite"].Read(outputMerger.m_depth.m_enableWrite, true);
             }
 
             // Stencil Attachment (optional)
             if (auto stencilAttachmentNode = outputMergerNode["StencilAttachment"])
             {
-                static constexpr uint32 kDefaultStencilCompareOp = static_cast<uint32>(nes::ECompareOp::None);
-
                 // Front
                 auto frontNode = stencilAttachmentNode["Front"];
                 auto& front = outputMerger.m_stencil.m_front;
-                front.m_compareOp = static_cast<nes::ECompareOp>(frontNode["CompareOp"].as<uint32>(kDefaultStencilCompareOp));
-                front.m_failOp = static_cast<nes::EStencilOp>(frontNode["FailOp"].as<uint32>());
-                front.m_passOp = static_cast<nes::EStencilOp>(frontNode["PassOp"].as<uint32>());
-                front.m_depthFailOp = static_cast<nes::EStencilOp>(frontNode["DepthFailOp"].as<uint32>());
-                front.m_compareMask = frontNode["CompareMask"].as<uint8>(static_cast<uint8>(0));
-                front.m_writeMask = frontNode["WriteMask"].as<uint8>(static_cast<uint8>(0));
+
+                frontNode["CompareOp"].Read(front.m_compareOp, nes::ECompareOp::None);
+                frontNode["FailOp"].Read(front.m_failOp);
+                frontNode["PassOp"].Read(front.m_passOp);
+                frontNode["DepthFailOp"].Read(front.m_depthFailOp);
+                frontNode["CompareMask"].Read(front.m_compareMask);
+                frontNode["WriteMask"].Read(front.m_writeMask);
 
                 // Back
                 auto backNode = stencilAttachmentNode["Back"];
                 auto& back = outputMerger.m_stencil.m_back;
-                back.m_compareOp = static_cast<nes::ECompareOp>(backNode["CompareOp"].as<uint32>(kDefaultStencilCompareOp));
-                back.m_failOp = static_cast<nes::EStencilOp>(backNode["FailOp"].as<uint32>());
-                back.m_passOp = static_cast<nes::EStencilOp>(backNode["PassOp"].as<uint32>());
-                back.m_depthFailOp = static_cast<nes::EStencilOp>(backNode["DepthFailOp"].as<uint32>());
-                back.m_compareMask = backNode["CompareMask"].as<uint8>(static_cast<uint8>(0));
-                back.m_writeMask = backNode["WriteMask"].as<uint8>(static_cast<uint8>(0));
+                backNode["CompareOp"].Read(back.m_compareOp, nes::ECompareOp::None);
+                backNode["FailOp"].Read(back.m_failOp);
+                backNode["PassOp"].Read(back.m_passOp);
+                backNode["DepthFailOp"].Read(back.m_depthFailOp);
+                backNode["CompareMask"].Read(back.m_compareMask);
+                backNode["WriteMask"].Read(back.m_writeMask);
             }
         }
 
@@ -1717,7 +1937,7 @@ namespace pbr
 
             if (auto multisampleNode = pipelineNode["Multisample"])
             {
-                desc.m_enableMultisample = multisampleNode["Enabled"].as<bool>(false);
+                multisampleNode["Enabled"].Read(desc.m_enableMultisample, false);
                 if (desc.m_enableMultisample)
                 {
                     // If enabled, get the max sample count for the selected targets:
@@ -1730,7 +1950,8 @@ namespace pbr
         outPipeline = nes::Pipeline(device, outLayout, desc);
 
         // Debug Name
-        const std::string debugName = pipelineNode["DebugName"].as<std::string>();
+        std::string debugName;
+        pipelineNode["DebugName"].Read(debugName);
         outPipeline.SetDebugName(debugName);
     }
 

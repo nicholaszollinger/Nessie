@@ -6,34 +6,24 @@
 #include "Nessie/Input/InputEvents.h"
 #include "Nessie/Input/InputManager.h"
 #include "Nessie/World/ComponentSystems/TransformSystem.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
 
 namespace pbr
 {
-    void DayNightSimComponent::Serialize(YAML::Emitter&, const DayNightSimComponent&)
+    void DayNightSimComponent::Serialize(nes::YamlOutStream& out, const DayNightSimComponent& component)
     {
-        // [TODO]: 
+        out.Write("DayColor", component.m_dayColor);
+        out.Write("NightColor", component.m_nightColor);
+        out.Write("DayDuration", component.m_dayDuration);
+        out.Write("SunMaxLux", component.m_sunMaxLux);
     }
 
-    void DayNightSimComponent::Deserialize(const YAML::Node& in, DayNightSimComponent& component)
+    void DayNightSimComponent::Deserialize(const nes::YamlNode& in, DayNightSimComponent& component)
     {
-        component.m_dayDuration = in["DayDuration"].as<float>(20.f);
-        component.m_sunMaxLux = in["SunMaxLux"].as<float>(120'000.f);
-
-        // Day Color
-        {
-            const auto& colorNode = in["DayColor"];
-            component.m_dayColor.x = colorNode[0].as<float>(1.f);
-            component.m_dayColor.y = colorNode[1].as<float>(1.f);
-            component.m_dayColor.z = colorNode[2].as<float>(0.95f);
-        }
-
-        // Night Color
-        {
-            const auto& colorNode = in["NightColor"];
-            component.m_nightColor.x = colorNode[0].as<float>(1.f);
-            component.m_nightColor.y = colorNode[1].as<float>(0.6f);
-            component.m_nightColor.z = colorNode[2].as<float>(0.3f);
-        }
+        in["DayColor"].Read(component.m_dayColor, nes::Vec3(1.f, 1.f, 0.95f));
+        in["NightColor"].Read(component.m_nightColor, nes::Vec3(1.f, 0.6f, 0.3f));
+        in["DayDuration"].Read(component.m_dayDuration, 20.f);
+        in["SunMaxLux"].Read(component.m_sunMaxLux, 120'000.f);
     }
 
     void DayNightSystem::RegisterComponentTypes()
@@ -44,14 +34,13 @@ namespace pbr
 
     void DayNightSystem::Tick(const float deltaTime)
     {
-        if (!m_shouldSimulate)
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
             return;
-        
-        auto& registry = GetRegistry();
 
         m_accumulatedTime += deltaTime;
 
-        auto view = registry.GetAllEntitiesWith<DirectionalLightComponent, DayNightSimComponent>();
+        auto view = pRegistry->GetAllEntitiesWith<DirectionalLightComponent, DayNightSimComponent>();
         for (auto entity : view)
         {
             auto& dayNightSimComp = view.get<DayNightSimComponent>(entity);
@@ -86,15 +75,8 @@ namespace pbr
         }
     }
 
-    void DayNightSystem::OnEvent(nes::Event& e)
+    void DayNightSystem::OnBeginSimulation()
     {
-        // Pressing 'P' will toggle sun simulation.
-        if (auto* pKeyEvent = e.Cast<nes::KeyEvent>())
-        {
-            if (pKeyEvent->GetKeyCode() == nes::EKeyCode::P && pKeyEvent->GetAction() == nes::EKeyAction::Pressed)
-            {
-                m_shouldSimulate = !m_shouldSimulate;
-            }
-        }
+        m_accumulatedTime = 0.f;
     }
 }

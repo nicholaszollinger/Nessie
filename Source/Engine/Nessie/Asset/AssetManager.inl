@@ -156,7 +156,7 @@ namespace nes
     }
 
     template <ValidAssetType Type>
-    ELoadResult AssetManager::AddMemoryAsset(AssetID& id, Type&& asset)
+    ELoadResult AssetManager::AddMemoryAsset(AssetID& id, Type&& asset, const std::string& name)
     {
         AssetManager& assetManager = GetInstance();
 
@@ -181,6 +181,8 @@ namespace nes
         AssetMetadata metadata;
         metadata.m_assetID = id;
         metadata.m_typeID = typeID;
+        NES_ASSERT(!name.empty(), "Memory-Only Assets need a valid name, since they have no filepath to fallback on.");
+        metadata.m_assetName = name;
 
         return assetManager.AddMemoryAsset(metadata, std::move(asset));
     }
@@ -215,16 +217,38 @@ namespace nes
             NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex]->GetTypeID() == Type::GetStaticTypeID());
 
             // Otherwise, return a pointer to the asset.
-            return AssetPtr<Type>(checked_cast<Type*>(assetManager.m_loadedAssets[desc.m_loadedIndex]));
+            return AssetPtr<Type>(checked_cast<Type*>(assetManager.m_loadedAssets[desc.m_loadedIndex]), desc.m_metadata);
         }
 
         return nullptr;
     }
 
     template <ValidAssetType Type>
+    std::vector<AssetPtr<Type>> AssetManager::GetAllAssetsOfType()
+    {
+        std::vector<AssetPtr<Type>> assets;
+        NES_ASSERT(IsMainThread(), "Assets can only be accessed on the Main Thread!");
+        AssetManager& assetManager = GetInstance();
+
+        for (auto& [_, desc] : assetManager.m_loadedAssetMap)
+        {
+            if (desc.m_metadata.m_typeID == Type::GetStaticTypeID())
+            {
+                NES_ASSERT(desc.m_loadedIndex < assetManager.m_loadedAssets.size());
+                NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex] != nullptr);
+                NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex]->GetTypeID() == Type::GetStaticTypeID());
+                
+                assets.emplace_back(AssetPtr<Type>(checked_cast<Type*>(assetManager.m_loadedAssets[desc.m_loadedIndex]), desc.m_metadata));
+            }
+        }
+
+        return assets;
+    }
+
+    template <ValidAssetType Type>
     AssetPtr<Type>::AssetPtr(const AssetPtr& other)
         : m_pAsset(other.m_pAsset)
-        , m_id(other.m_id)
+        , m_metadata(other.m_metadata)
     {
         AddLock();
     }
@@ -232,10 +256,10 @@ namespace nes
     template <ValidAssetType Type>
     AssetPtr<Type>::AssetPtr(AssetPtr&& other) noexcept
         : m_pAsset(other.m_pAsset)
-        , m_id(other.m_id)
+        , m_metadata(std::move(other.m_metadata))
     {
         other.m_pAsset = nullptr;
-        other.m_id = kInvalidAssetID;
+        other.m_metadata = {};
     }
 
     template <ValidAssetType Type>
@@ -244,7 +268,7 @@ namespace nes
         if (this != &other && m_pAsset != other.m_pAsset)
         {
             RemoveLock();
-            m_id = other.m_id;
+            m_metadata = other.m_metadata;
             m_pAsset = other.m_pAsset;
             AddLock();
         }
@@ -258,11 +282,11 @@ namespace nes
         if (this != &other)
         {
             RemoveLock();
-            m_id = other.m_id;
+            m_metadata = std::move(other.m_metadata);
             m_pAsset = other.m_pAsset;
             
             other.m_pAsset = nullptr;
-            other.m_id = kInvalidAssetID;
+            other.m_metadata = {};
         }
 
         return *this;
@@ -272,7 +296,7 @@ namespace nes
     AssetPtr<Type>& AssetPtr<Type>::operator=(std::nullptr_t)
     {
         RemoveLock();
-        m_id = kInvalidAssetID;
+        m_metadata = {};
         m_pAsset = nullptr;
 
         return *this;
@@ -286,13 +310,10 @@ namespace nes
     }
 
     template <ValidAssetType Type>
-    AssetPtr<Type>::AssetPtr(Type* pAsset)
+    AssetPtr<Type>::AssetPtr(Type* pAsset, AssetMetadata metadata)
         : m_pAsset(pAsset)
+        , m_metadata(std::move(metadata))
     {
-        // Set the ID, if valid.
-        if (m_pAsset != nullptr)
-            m_id = pAsset->GetAssetID();
-
         // Add a reference to the Asset.
         AddLock();
     }

@@ -21,7 +21,7 @@ namespace nes
             metaData.m_path = std::filesystem::path(NES_CONTENT_DIR) / metaData.m_path;
         }
     }
-    
+
     void AssetPack::AddAsset(const AssetMetadata& metaData)
     {
         if (!Contains(metaData.m_assetID))
@@ -75,32 +75,49 @@ namespace nes
         return result;
     }
 
-    bool AssetPack::LoadFromYAML(const YAML::Node& node, AssetPack& outPack)
+    bool AssetPack::Deserialize(const YamlNode& node, AssetPack& outPack)
     {
-        std::filesystem::path path{};
-        
+        std::string path;
         for (auto assetNode : node)
         {
             // AssetID
             AssetMetadata metaData;
-            metaData.m_assetID = assetNode["AssetID"].as<uint64>();
+            assetNode["AssetID"].Read(metaData.m_assetID, kInvalidAssetID);
             
             // TypeID
             // - If invalid, it will be caught by the AssetManager when trying to load.
-            metaData.m_typeID = assetNode["TypeID"].as<uint64>();
+            assetNode["TypeID"].Read(metaData.m_typeID);
 
             // Path
-            metaData.m_path = assetNode["Path"].as<std::string>();
+            assetNode["Path"].Read<std::string>(path);
+            metaData.m_path = path;
+            
             ResolveAssetPath(metaData);
             if (!metaData.m_path.has_extension())
             {
                 NES_ERROR("Failed to load AssetPack! Invalid relative path for Asset: '{}'", metaData.m_path.string());
                 return false;
             }
-            
+
+            // Set the filename (no extension) as the asset name.
+            metaData.m_assetName = metaData.m_path.stem().string();
             outPack.AddAsset(metaData);
         }
 
         return true;
+    }
+
+    void AssetPack::Serialize(YamlOutStream& writer, const AssetPack& assetPack)
+    {
+        writer.BeginSequence("Assets", assetPack.m_assets.empty());
+        for (auto& metaData : assetPack.m_assets)
+        {
+            writer.BeginMap();
+            writer.Write("AssetID", metaData.m_assetID);
+            writer.Write("TypeID", metaData.m_typeID);
+            writer.Write("Path", metaData.m_path.string());
+            writer.EndMap();
+        }
+        writer.EndSequence();
     }
 }

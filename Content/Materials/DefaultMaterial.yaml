@@ -1,6 +1,6 @@
 # White Base color - No texture maps.
 PBRMaterial:
-  BaseColor: [1.0, 1.0, 1.0]
+  BaseColor: [1.0, 1.0, 1.0, 1.0]
   Emission: [0, 0, 0]
   Roughness: 0.5
   Metallic: 0.0

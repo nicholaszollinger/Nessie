@@ -26,30 +26,34 @@ namespace pbr
 
     void PBRExampleWorld::OnEvent(nes::Event& event)
     {
-        m_pFreeCamSystem->OnEvent(event);
-        m_pDayNightSystem->OnEvent(event);
+        if (IsSimulating() && !IsPaused())
+        {
+            m_pFreeCamSystem->OnEvent(event);
+        }
     }
 
     void PBRExampleWorld::Tick(const float deltaTime)
     {
         ProcessEntityLifecycle();
-        
         m_pTransformSystem->UpdateHierarchy();
-        
-        m_pDayNightSystem->Tick(deltaTime);
-        m_pFreeCamSystem->Tick(deltaTime);
+
+        if (IsSimulating())
+        {
+            m_pDayNightSystem->Tick(deltaTime);
+            m_pFreeCamSystem->Tick(deltaTime);
+        }
     }
 
-    void PBRExampleWorld::OnResize(const uint32 width, const uint32 height)
+    void PBRExampleWorld::ParentEntity(const nes::EntityHandle entity, const nes::EntityHandle parent)
     {
-        if (m_pSceneRenderer)
-            m_pSceneRenderer->ResizeRenderTargets(width, height);
+        if (m_pTransformSystem)
+            m_pTransformSystem->SetParent(entity, parent);
     }
 
-    void PBRExampleWorld::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
+    void PBRExampleWorld::OnNewEntityCreated(nes::EntityRegistry& registry, const nes::EntityHandle newEntity)
     {
-        if (m_pSceneRenderer)
-            m_pSceneRenderer->RenderScene(commandBuffer, context);
+        registry.AddComponent<nes::NodeComponent>(newEntity);
+        registry.AddComponent<nes::TransformComponent>(newEntity);
     }
 
     void PBRExampleWorld::AddComponentSystems()

@@ -10,12 +10,13 @@ int main(int argc, char** argv)                                             \
     nes::LoggerRegistry::Instance().Internal_Init();                        \
     nes::CommandLineArgs args = {static_cast<size_t>(argc), argv };         \
                                                                             \
-    nes::Platform platform;                                                 \
-    if (platform.Init(args))                                                \
+    std::unique_ptr<nes::Application> pApp = nes::CreateApplication(args);  \
+    if (pApp->Internal_Init())                                              \
     {                                                                       \
-        platform.RunMainLoop();                                             \
+        pApp->Internal_RunMainLoop();                                       \
     }                                                                       \
-    platform.Shutdown();                                                    \
+    pApp->Internal_Shutdown();                                              \
+    pApp.reset();                                                           \
                                                                             \
     nes::LoggerRegistry::Instance().Internal_Shutdown();                    \
     NES_DUMP_AND_DESTROY_LEAK_DETECTOR();                                   \

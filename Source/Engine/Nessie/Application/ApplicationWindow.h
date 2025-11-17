@@ -14,7 +14,6 @@ namespace nes
     class Swapchain;
     class RendererContext;
     struct RendererDesc;
-    class Platform;
     struct ApplicationDesc;
 
     enum class EWindowMode
@@ -145,6 +144,12 @@ namespace nes
         ECursorMode             GetCursorMode() const           { return m_desc.m_cursorMode; }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Determine if this is the main application window - if the main application window is closed,
+        ///     then the Application will close.
+        //----------------------------------------------------------------------------------------------------
+        bool                    IsMainApplicationWindow() const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Check whether the Window needs to close. 
         //----------------------------------------------------------------------------------------------------
         bool                    ShouldClose() const;
@@ -166,10 +171,10 @@ namespace nes
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Initialize the Window. Returns false on failure.
-        ///	@param platform : The platform that has created this window.
+        ///	@param app : The Application that has created this window.
         ///	@param desc : Window properties requested by the Application.
         //----------------------------------------------------------------------------------------------------
-        virtual bool            Internal_Init(Platform& platform, const WindowDesc& desc);
+        virtual bool            Internal_Init(Application& app, WindowDesc&& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Process window events. Must be called every frame, when all threads are synced. 
@@ -182,8 +187,10 @@ namespace nes
         void                    Internal_Shutdown();
     
     protected:
-        WindowDesc              m_desc;                      /// Current window properties.
-        NativeWindow            m_nativeWindow{};                   /// Platform specific window handles, and the GLFW Window*.
-        bool                    m_swapChainNeedsRebuild = false;    /// Flag to determine if the Renderer needs to update the swap chain.
+        WindowDesc              m_desc;                             // Current window properties.
+        NativeWindow            m_nativeWindow{};                   // Platform specific window handles, and the GLFW Window*.
+        void*                   m_subWindowWithFocus = nullptr;
+        void*                   m_subWindowLastUnderCursor = nullptr;
+        bool                    m_swapChainNeedsRebuild = false;    // Flag to determine if the Renderer needs to update the swap chain.
     };
 }

@@ -17,26 +17,35 @@ namespace nes
 
 namespace pbr
 {
-    class PBRSceneRenderer : public nes::ComponentSystem
+    struct MeshComponent;
+    struct PointLightComponent;
+    struct DirectionalLightComponent;
+    
+    class PBRSceneRenderer : public nes::WorldRenderer
     {
     public:
-        PBRSceneRenderer(nes::WorldBase& world) : nes::ComponentSystem(world) {}
+        PBRSceneRenderer(nes::WorldBase& world) : nes::WorldRenderer(world) {}
 
-        virtual void                    RegisterComponentTypes() override;
         virtual bool                    Init() override;
         virtual void                    Shutdown() override;
+        virtual void                    RegisterComponentTypes() override;
         virtual void                    ProcessEnabledEntities() override;
         virtual void                    ProcessDisabledEntities() override;
         virtual void                    ProcessDestroyedEntities(const bool destroyingWorld) override;
 
-        void                            ResizeRenderTargets(const uint32 width, const uint32 height);
-        void                            RenderScene(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
+        // WorldRenderer API:
+        virtual void                    RenderWorldWithCamera(const nes::WorldCamera& worldCamera, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
+        virtual nes::WorldCamera        GetActiveCamera() const override;
+        virtual nes::RenderTarget*      GetFinalColorTarget() override { return &m_colorTarget; }
+        virtual nes::RenderTarget*      GetFinalDepthTarget() override { return nullptr; }
+        virtual void                    OnViewportResize(const uint32 width, const uint32 height) override;
 
         static nes::AssetID             GetDefaultMeshID(const EDefaultMeshType type);
         static nes::AssetID             GetDefaultTextureID(const EDefaultTextureType type);
         static nes::AssetID             GetDefaultMaterialID();
 
     private:
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Struct containing the number of lights per type in the variable sized storage buffers. 
         //----------------------------------------------------------------------------------------------------
@@ -96,13 +105,13 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create default meshes, Load default assets.
         //----------------------------------------------------------------------------------------------------
-        bool                            CreateAndLoadDefaultAssets(nes::RenderDevice& device, const YAML::Node& file);
+        bool                            CreateAndLoadDefaultAssets(nes::RenderDevice& device, const nes::YamlInStream& file);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Loads and creates the sets of images that can be rendered to, and creates the pipelines
         ///     based on configuration data.
         //----------------------------------------------------------------------------------------------------
-        void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const YAML::Node& file);
+        void                            CreateRenderTargetsAndPipelines(nes::RenderDevice& device, const nes::YamlNode& root);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Create the depth images (1 per cascade), and the shadow pipeline.
@@ -128,18 +137,18 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update this frame's uniform buffers.
         //----------------------------------------------------------------------------------------------------
-        void                            UpdateUniformBuffers(const nes::RenderFrameContext& context);
+        void                            UpdateUniformBuffers(const nes::WorldCamera& worldCamera, const nes::RenderFrameContext& context);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Fill out the ObjectUBO array in the scene for all instances.
         //----------------------------------------------------------------------------------------------------
-        void                            BuildSceneData(nes::RenderDevice& device, nes::CommandBuffer& commandBuffer);
+        void                            BuildSceneData(nes::EntityRegistry& registry, nes::RenderDevice& device, nes::CommandBuffer& commandBuffer);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Renders the scene from the perspective of the directional light, storing the depth data in
         ///     the ShadowTarget's image.
         //----------------------------------------------------------------------------------------------------
-        void                            RenderShadows(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
+        void                            RenderShadows(nes::EntityRegistry& registry, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Render the skybox.
@@ -156,6 +165,16 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         void                            RenderGrid(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) const;
 
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates the Entity Instance for the given entity and mesh component to the Scene.
+        //----------------------------------------------------------------------------------------------------
+        void                            RegisterMeshComponent(nes::EntityHandle entity, MeshComponent& meshComp);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Removes the Entity Instance for the given entity and mesh component from the Scene.
+        //----------------------------------------------------------------------------------------------------
+        void                            UnregisterMeshComponent(nes::EntityHandle entity, MeshComponent& meshComp);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Adds the Mesh data (vertices, and indices) of an Asset to the Scene.
         //----------------------------------------------------------------------------------------------------
@@ -176,9 +195,24 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         void                            RegisterTextureCubeAsset(nes::RenderDevice& device, const nes::AssetPtr<nes::TextureCube>& pTextureCube);
 
-        nes::RenderTarget               LoadColorRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
-        nes::RenderTarget               LoadDepthRenderTarget(const YAML::Node& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
-        void                            LoadGraphicsPipeline(const YAML::Node& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Returns the Render Target used for color rendering. If multisampling is enabled, this will be
+        ///     the m_msaaImage, otherwise it will be the m_colorTarget that has no multisampling.
+        //----------------------------------------------------------------------------------------------------
+        nes::RenderTarget&              GetColorDrawTarget();
+
+        virtual void                    OnWorldSet() override;
+        virtual void                    OnWorldRemoved() override;
+        virtual void                    OnBeginSimulation() override;
+        virtual void                    OnEndSimulation() override;
+        virtual void                    OnEntityRegistryChanged(nes::EntityRegistry* pNewRegistry, nes::EntityRegistry* pOldRegistry) override;
+        void                            ClearSceneInstanceData();
+        void                            OnMeshComponentAdded(entt::registry& registry, const entt::entity entity);
+        void                            OnMeshComponentUpdated(entt::registry& registry, const entt::entity entity);
+        void                            OnMeshComponentRemoved(entt::registry& registry, const entt::entity entity);
+        nes::RenderTarget               CreateColorRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
+        nes::RenderTarget               LoadDepthRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
+        void                            LoadGraphicsPipeline(const nes::YamlNode& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
 
     private:
         // Default AssetIDs - Set during initialization.
@@ -196,7 +230,9 @@ namespace pbr
         
         // Render Targets
         nes::RenderTarget               m_colorTarget = nullptr;
+        nes::RenderTarget               m_msaaTarget = nullptr;
         nes::RenderTarget               m_depthTarget = nullptr;
+        uint32                          m_sampleCount = 1;
         RenderTargetRegistry            m_renderTargetRegistry{};
 
         // Shadow Pipeline

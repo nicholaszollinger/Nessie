@@ -219,8 +219,7 @@ namespace nes
                 {
                     result.setDstStageMask(GetVkPipelineStageFlags(desc.m_after.m_stages));
                 }
-
-                // Can be zero for
+                
                 result.setDstAccessMask(vk::AccessFlagBits2::eNone);
             }
             else if (desc.m_queueOp == EBarrierQueueOp::Acquire)
@@ -238,25 +237,37 @@ namespace nes
             result.setDstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED);
 
             // Source Access:
-            if (desc.m_before.m_stages == graphics::kInferPipelineStage && desc.m_before.m_access == graphics::kInferAccess)
+            if (desc.m_before.m_stages == graphics::kInferPipelineStage)
             {
                 InferPipelineStageAccess(result.oldLayout, result.srcStageMask, result.srcAccessMask);
             }
             else if (desc.m_before.m_access == graphics::kInferAccess)
             {
                 NES_ASSERT(desc.m_before.m_stages != graphics::kInferPipelineStage);
-                result.srcAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_before.m_stages), true);
+                result.srcStageMask = GetVkPipelineStageFlags(desc.m_before.m_stages);
+                result.srcAccessMask = InferAccessMaskFromStage(result.srcStageMask, true);
+            }
+            else
+            {
+                result.srcAccessMask = GetVkAccessFlags(desc.m_before.m_access);
+                result.srcStageMask = GetVkPipelineStageFlags(desc.m_before.m_stages);
             }
         
             // Destination Access:
-            if (desc.m_after.m_stages == graphics::kInferPipelineStage && desc.m_after.m_access == graphics::kInferAccess)
+            if (desc.m_after.m_stages == graphics::kInferPipelineStage)
             {
                 InferPipelineStageAccess(result.newLayout, result.dstStageMask, result.dstAccessMask);
             }
             else if (desc.m_after.m_access == graphics::kInferAccess)
             {
                 NES_ASSERT(desc.m_after.m_stages != graphics::kInferPipelineStage);
-                result.dstAccessMask = InferAccessMaskFromStage(GetVkPipelineStageFlags(desc.m_after.m_stages), false);
+                result.dstStageMask = GetVkPipelineStageFlags(desc.m_after.m_stages);
+                result.dstAccessMask = InferAccessMaskFromStage(result.dstStageMask, false);
+            }
+            else
+            {
+                result.dstAccessMask = GetVkAccessFlags(desc.m_after.m_access);
+                result.dstStageMask = GetVkPipelineStageFlags(desc.m_after.m_stages);
             }
         }
 

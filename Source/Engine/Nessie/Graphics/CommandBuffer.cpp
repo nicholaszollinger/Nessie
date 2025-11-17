@@ -162,20 +162,33 @@ namespace nes
 
     void CommandBuffer::CopyBufferToImage(const CopyBufferToImageDesc& desc)
     {
-        const vk::Offset3D imageOffset = { desc.m_imageOffset.x, desc.m_imageOffset.y, desc.m_imageOffset.z };
+        const vk::Offset3D imageOffset =
+        {
+            static_cast<int>(desc.m_dstRegion.m_offset.x),
+            static_cast<int>(desc.m_dstRegion.m_offset.y),
+            static_cast<int>(desc.m_dstRegion.m_offset.z)
+        };
 
-        // [TODO]: All of these should be parameters:
+        const auto& imageDesc = desc.m_dstImage->GetDesc();
+
+        const vk::Extent3D imageExtent =
+        {
+            desc.m_dstRegion.m_width == graphics::kUseRemaining? (imageDesc.m_width - desc.m_dstRegion.m_offset.x) : desc.m_dstRegion.m_width, 
+            desc.m_dstRegion.m_height == graphics::kUseRemaining? (imageDesc.m_height - desc.m_dstRegion.m_offset.y) : desc.m_dstRegion.m_height, 
+            desc.m_dstRegion.m_depth == graphics::kUseRemaining? (imageDesc.m_depth - desc.m_dstRegion.m_offset.z) : desc.m_dstRegion.m_depth, 
+        };
+        
         const vk::ImageSubresourceLayers subresource = vk::ImageSubresourceLayers()
-            .setAspectMask(GetVkImageAspectFlags(desc.m_planes))
-            .setBaseArrayLayer(0)
-            .setMipLevel(0)
+            .setAspectMask(GetVkImageAspectFlags(desc.m_dstRegion.m_planes))
+            .setBaseArrayLayer(desc.m_dstRegion.m_layer)
+            .setMipLevel(desc.m_dstRegion.m_mipLevel)
             .setLayerCount(desc.m_layerCount);
         
         vk::BufferImageCopy2 region = vk::BufferImageCopy2()
             .setBufferRowLength(0)     
             .setBufferImageHeight(0) 
             .setBufferOffset(desc.m_srcOffset)
-            .setImageExtent(desc.m_dstImage->GetExtent())
+            .setImageExtent(imageExtent)
             .setImageOffset(imageOffset)
             .setImageSubresource(subresource);
         
@@ -462,7 +475,7 @@ namespace nes
 
     void CommandBuffer::DrawIndexed(const DrawIndexedDesc& draw)
     {
-        m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_vertexOffset), draw.m_firstInstance);
+        m_buffer.drawIndexed(draw.m_indexCount, draw.m_instanceCount, draw.m_firstIndex, static_cast<int32>(draw.m_firstVertex), draw.m_firstInstance);
     }
 
     void CommandBuffer::ResolveImage(const DeviceImage& srcImage, DeviceImage& dstImage)

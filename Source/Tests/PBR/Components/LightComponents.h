@@ -11,8 +11,8 @@ namespace pbr
         float               m_intensity = 600.f;                                    // The amount of energy emitted by a light, in lumens.
         float               m_radius = 10.f;                                        // Radius of the light's effect.
 
-        static void         Serialize(YAML::Emitter& out, const PointLightComponent& component);
-        static void         Deserialize(const YAML::Node& in, PointLightComponent& component);
+        static void         Serialize(nes::YamlOutStream& out, const PointLightComponent& component);
+        static void         Deserialize(const nes::YamlNode& in, PointLightComponent& component);
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -48,10 +48,10 @@ namespace pbr
     struct DirectionalLightComponent
     {
         nes::LinearColor    m_color = nes::LinearColor::White();                    // Light color.
-        nes::Vec3           m_direction = nes::Vec3(0.f, -1.f, 0.f);            // Direction of the light.  
+        nes::Vec3           m_direction = nes::Vec3(0.f, -1.f, 0.f);          // Direction of the light.  
         float               m_intensity     = 100'000.f;                            // The amount of energy emitted by the light, in lux (lumens/m^2).
-
-        static void         Serialize(YAML::Emitter& out, const DirectionalLightComponent& component);
-        static void         Deserialize(const YAML::Node& in, DirectionalLightComponent& component);
+        
+        static void         Serialize(nes::YamlOutStream& out, const DirectionalLightComponent& component);
+        static void         Deserialize(const nes::YamlNode& in, DirectionalLightComponent& component);
     };
 }

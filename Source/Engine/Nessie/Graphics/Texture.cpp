@@ -2,7 +2,6 @@
 #include "Texture.h"
 
 #include <stb_image.h>
-
 #include "DataUploader.h"
 #include "RenderDevice.h"
 #include "Renderer.h"
@@ -38,7 +37,7 @@ namespace nes
 
     Texture::~Texture()
     {
-        NES_ASSERT(Platform::IsMainThread());
+        NES_ASSERT(Application::IsMainThread());
 
         m_image = nullptr;
         m_imageData.Free();
@@ -112,6 +111,7 @@ namespace nes
             uploadDesc.m_pImage = &m_image;
             uploadDesc.m_pSrcData = pData;
             uploadDesc.m_newLayout = EImageLayout::ShaderResource;
+            uploadDesc.m_region.m_planes = EImagePlaneBits::Color;
             dataUploader.AppendUploadImage(uploadDesc);
             dataUploader.RecordCommands(cmdBuffer);
 
@@ -217,6 +217,7 @@ namespace nes
             uploadDesc.m_layerCount = 6;
             uploadDesc.m_pImage = &m_image;
             uploadDesc.m_newLayout = EImageLayout::ShaderResource;
+            uploadDesc.m_region.m_planes = EImagePlaneBits::Color;
             dataUploader.AppendUploadImage(uploadDesc);
             dataUploader.RecordCommands(cmdBuffer);
             

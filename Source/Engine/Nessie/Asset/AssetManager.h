@@ -89,6 +89,11 @@ namespace nes
             /// @brief : Get the type ID for the asset.
             //----------------------------------------------------------------------------------------------------
             TypeID                      GetAssetTypeID() const  { return m_assetDesc.m_metadata.m_typeID; }
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Get all of the information about the loaded Asset.
+            //----------------------------------------------------------------------------------------------------
+            const AssetMetadata&        GetAssetMetadata() const  { return m_assetDesc.m_metadata; } 
         
             //----------------------------------------------------------------------------------------------------
             /// @brief : Get the enum result value.
@@ -234,6 +239,11 @@ namespace nes
         static ELoadResult              LoadAssetPackSync(AssetPack& pack);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Saves the current Asset to disk. The path of the Asset must be valid.
+        //----------------------------------------------------------------------------------------------------
+        static void                     SaveAssetSync(const AssetID& id);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Load an asset, asynchronously. This queues the asset to be loaded on a separate thread.
         ///	@tparam Type : Asset Type you are trying to load.
         /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,
@@ -287,9 +297,11 @@ namespace nes
         /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,
         ///     a new ID will be generated.
         /// @param asset : Asset that will be stored in the Asset Manager.
+        /// @param name : Asset name used to help identify the Asset. Since Memory-Only Assets have no filepath,
+        ///     this is used it help identify the asset.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        static ELoadResult              AddMemoryAsset(AssetID& id, Type&& asset);
+        static ELoadResult              AddMemoryAsset(AssetID& id, Type&& asset, const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a loaded asset. If the asset has not been loaded, the reference will be invalid.
@@ -299,8 +311,14 @@ namespace nes
         static AssetPtr<Type>           GetAsset(const AssetID& id);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Returns an array of all assets of a single type.
+        //----------------------------------------------------------------------------------------------------
+        template <ValidAssetType Type>
+        static std::vector<AssetPtr<Type>> GetAllAssetsOfType();
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief :  Attempt to get an AssetTypeDesc by name. If not found, this will return nullptr.
-        ///     Asset types must be registered with AssetManager::RegisterAssetType<Tyep>().
+        ///     Asset types must be registered with AssetManager::RegisterAssetType<Type>().
         //----------------------------------------------------------------------------------------------------
         static const AssetTypeDesc*     GetAssetTypeDescByName(const std::string& name);
 
@@ -576,6 +594,11 @@ namespace nes
         [[nodiscard]] inline Type&      operator*() const                           { NES_ASSERT(IsValid()); return *m_pAsset; }
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Return meta information about the Asset, including its TypeID, AssetID and filepath.
+        //----------------------------------------------------------------------------------------------------
+        const AssetMetadata&            GetMetadata() const                         { return m_metadata; }
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get this AssetPtr cast to base or derived class.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType OtherType> requires TypeIsBaseOrDerived<Type, OtherType>
@@ -591,7 +614,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Private Ctor to set the Asset reference. This is only usable by the AssetManager.
         //----------------------------------------------------------------------------------------------------
-        explicit                        AssetPtr(Type* pAsset);
+        explicit                        AssetPtr(Type* pAsset, AssetMetadata metadata);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Add a lock to the underlying Asset. 
@@ -607,11 +630,11 @@ namespace nes
         /// @brief : Checks that the Asset is either null or has not been freed from the AssetManager.
         ///     If the pointer is not null and not in the AssetManager, then the pointer is dangling!
         //----------------------------------------------------------------------------------------------------
-        bool                            IsValid() const { return m_pAsset == nullptr || AssetManager::IsValidAsset(m_id); }
+        bool                            IsValid() const { return m_pAsset == nullptr || AssetManager::IsValidAsset(m_metadata.m_assetID); }
 
     private:
-        Type*                           m_pAsset = nullptr;         // The Asset reference.
-        AssetID                         m_id = kInvalidAssetID;     // The Asset's ID. This is used to ensure that the pointer still points to an asset.
+        Type*                           m_pAsset = nullptr;  // The Asset reference.
+        AssetMetadata                   m_metadata = {};     // The Type, ID, and path of the Asset. 
     };
     
     using LoadRequest = AssetManager::LoadRequest;

@@ -5,12 +5,13 @@
 #include "World/EntityRegistry.h"
 #include "World/ComponentRegistry.h"
 #include "World/ComponentSystem.h"
-#include "World/WorldBase.h"
+#include "World/RuntimeWorld.h"
 
 // Common Components:
 #include "World/Components/IDComponent.h"
 #include "World/Components/LifetimeComponents.h"
 #include "World/Components/NodeComponent.h"
+
 
 // Implementation files:
 #include "World/EntityRegistry.inl"

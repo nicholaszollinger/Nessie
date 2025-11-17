@@ -13,17 +13,20 @@ namespace nes
 
     struct ComponentTypeDesc
     {
-        using SerializeYAML = std::function<void(YAML::Emitter& emitter, EntityRegistry& registry, EntityHandle entity)>;
-        using DeserializeYAML = std::function<void(const YAML::Node& node, EntityRegistry& registry, EntityHandle entity)>;
+        using SerializeYAML = std::function<void(YamlOutStream& out, EntityRegistry& registry, EntityHandle entity)>;
+        using DeserializeYAML = std::function<void(const YamlNode& in, EntityRegistry& registry, EntityHandle entity)>;
         using CopyFunction = std::function<void(EntityRegistry& srcRegistry, EntityRegistry& dstRegistry, EntityHandle srcEntity, EntityHandle dstEntity)>;
+        using AddFunction = std::function<void(EntityRegistry& registry, EntityHandle entity)>;
 
         // Component Functors generated on Registration.
         SerializeYAML           m_serializeYAML{};
         DeserializeYAML         m_deserializeYAML{};
-        CopyFunction            m_copyFunction{};  
+        CopyFunction            m_copyFunction{};
+        AddFunction             m_addFunction{};
         
         // Meta Data
         std::string             m_name{};
+        entt::id_type           m_typeID{};
         bool                    m_isRegistered = false;
     };
 
@@ -52,6 +55,11 @@ namespace nes
         /// @brief : Attempt to get a ComponentTypeDesc by name. If not found, this will return nullptr.
         //----------------------------------------------------------------------------------------------------
         const ComponentTypeDesc*    GetComponentDescByName(const std::string& name);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Attempt to get a ComponentTypeDesc by type ID. If not found, this will return nullptr.
+        //----------------------------------------------------------------------------------------------------
+        const ComponentTypeDesc*    GetComponentDescByTypeID(const entt::id_type typeID);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the array of Component Type Descriptions. 
