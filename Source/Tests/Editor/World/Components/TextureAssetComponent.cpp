@@ -17,6 +17,9 @@ void TextureAssetComponent::Deserialize(const nes::YamlNode& in, TextureAssetCom
 
 void TextureAssetComponentInspector::DrawImpl(TargetType* pTarget, const nes::InspectorContext& context)
 {
-    nes::editor::PropertyAssetID<nes::Texture>("Texture", pTarget->m_assetID);
-    nes::editor::PropertyEntityID("EntityRef", pTarget->m_testEntity, context.m_pWorld->GetRegistry());
+    if (auto* pRegistry = context.m_pWorld->GetEntityRegistry())
+    {
+        nes::editor::PropertyAssetID<nes::Texture>("Texture", pTarget->m_assetID);
+        nes::editor::PropertyEntityID("EntityRef", pTarget->m_testEntity, *pRegistry);
+    }
 }

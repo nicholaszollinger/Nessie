@@ -3,6 +3,7 @@
 #include "EditorCore.h"
 #include "Nessie/Asset/AssetBase.h"
 #include "Nessie/Asset/AssetManager.h"
+#include "Nessie/Core/Color.h"
 #include "Nessie/Math/Math.h"
 #include "Nessie/World/Components/IDComponent.h"
 
@@ -44,6 +45,11 @@ namespace nes::editor
         /// @brief : End the current Property Value scope.
         //----------------------------------------------------------------------------------------------------
         void EndPropertyValue(const bool isDisabled = false);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Creates a unique label for a property based on the string.
+        //----------------------------------------------------------------------------------------------------
+        std::string CreateHiddenPropertyValueLabel(const char* label);
     }
 
     //----------------------------------------------------------------------------------------------------
@@ -64,6 +70,33 @@ namespace nes::editor
     void EndPropertyTable();
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Render a float property that can be edited.
+    ///	@param label : Name of the property.
+    ///	@param value : Value to edit.
+    ///	@param speed : Rate of change when dragging the float with the mouse.
+    ///	@param min : Minimum value. If the min and max values are both equal to 0.f, then there will be no bounds.
+    ///	@param max : Maximum value. If the min and max values are both equal to 0.f, then there will be no bounds.
+    ///	@param format : Format of the float in the inspector. Default is "%.3f" which will make the precision up
+    ///     to 3 decimal places. If you want to add a unit, just add the characters after the precision. For example:
+    ///     "%.1f°" will render a value of 40.125 as "40.1°".
+    ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
+    ///	@returns : Returns true if the value has changed.
+    //----------------------------------------------------------------------------------------------------
+    bool Property(const char* label, float& value, const float speed = 0.1f, const float min = 0.f, const float max = 0.f, const char* format = "%.3f", const char* toolTip = "");
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Render a float property, but disable any edits.
+    ///	@param label : Name of the property.
+    ///	@param value : Value to show.
+    ///	@param format : Format of the float in the inspector. Default is "%.3f" which will make the precision up
+    ///     to 3 decimal places. If you want to add a unit, just add the characters after the precision. For example:
+    ///     "%.1f°" will render a value of 40.125 as "40.1°".
+    ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
+    ///	@returns : Returns true if the value has changed.
+    //----------------------------------------------------------------------------------------------------
+    void Property(const char* label, const float& value, const char* format = "%.3f", const char* toolTip = "");
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Render a string property that can be edited.
     ///	@param label : Name of the property.
     ///	@param value : Value to edit.
@@ -75,7 +108,7 @@ namespace nes::editor
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render a string property, but disable any edits.
     ///	@param label : Name of the property.
-    ///	@param value : Value to edit.
+    ///	@param value : Value to show.
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     //----------------------------------------------------------------------------------------------------
     void Property(const char* label, const std::string& value, const char* toolTip = "");
@@ -92,7 +125,7 @@ namespace nes::editor
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render a uint64 property, but disable any edits.
     ///	@param label : Name of the property.
-    ///	@param value : Value to edit.
+    ///	@param value : Value to show.
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     //----------------------------------------------------------------------------------------------------
     void Property(const char* label, const uint64& value, const char* toolTip = "");
@@ -109,7 +142,7 @@ namespace nes::editor
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render a string property, but disable any edits.
     ///	@param label : Name of the property.
-    ///	@param vec : Value to edit.
+    ///	@param vec : Value to show.
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     //----------------------------------------------------------------------------------------------------
     void Property(const char* label, const Vec3& vec, const char* toolTip = "");
@@ -126,10 +159,19 @@ namespace nes::editor
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render a Rotation property, but disable any edits.
     ///	@param label : Name of the property.
-    ///	@param rotation : Value to edit.
+    ///	@param rotation : Value to show.
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     //----------------------------------------------------------------------------------------------------
     void Property(const char* label, const Rotation& rotation, const char* toolTip = "");
+
+    bool PropertyColor(const char* label, LinearColor& color, const bool includeAlpha = true, const char* toolTip = "");
+    void PropertyColor(const char* label, const LinearColor& color, const bool includeAlpha = true, const char* toolTip = "");
+
+    bool PropertyColor(const char* label, Color& color, const bool includeAlpha = true, const char* toolTip = "");
+    void PropertyColor(const char* label, const Color& color, const bool includeAlpha = true, const char* toolTip = "");
+
+    bool PropertyColor(const char* label, Vec3& color, const char* toolTip = "");
+    
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Renders the name of the Entity for the given ID, and a dropdown to select other Entities in
@@ -151,6 +193,61 @@ namespace nes::editor
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     //----------------------------------------------------------------------------------------------------
     void PropertyEntityID(const char* label, const EntityID& entity, EntityRegistry& registry, const char* toolTip = "");
+    
+    template <EnumType Type>
+    struct EnumPropertyValueDesc
+    {
+        Type m_value{};
+        const char* m_label = "";
+        const char* m_toolTip = "";
+    };
+
+    template <EnumType Type>
+    bool PropertyEnum(const char* label, Type& value, const std::vector<EnumPropertyValueDesc<Type>>& options, const char* toolTip = "")
+    {
+        bool modified = false;
+
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+
+        // Find the current item name:
+        const char* currentItemName = "";
+        for (const auto& option : options)
+        {
+            if (option.m_value == value)
+            {
+                currentItemName = option.m_label;
+                break;
+            }
+        }
+        
+        // Create combo dropdown
+        if (ImGui::BeginCombo(internal::CreateHiddenPropertyValueLabel(label).c_str(), currentItemName))
+        {
+            for (const auto& option : options)
+            {
+                const bool isSelected = option.m_value == value;
+
+                if (ImGui::Selectable(option.m_label, isSelected))
+                {
+                    value = option.m_value;
+                    modified = true;
+                }
+
+                SetToolTip(option.m_toolTip);
+
+                // Set initial focus on selected item
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+            ImGui::EndCombo();
+        }
+
+        internal::EndPropertyValue();
+        internal::EndProperty();
+
+        return modified;
+    }
     
     //----------------------------------------------------------------------------------------------------
     // [TODO]: I am currently just rendering child properties as elements in the table, but I would prefer just
@@ -226,7 +323,7 @@ namespace nes::editor
 
         // Get current asset and its name
         auto pAsset = AssetManager::GetAsset<Type>(assetID);
-        const std::string currentName = pAsset != nullptr ? pAsset.GetMetadata().m_path.filename().string() : "None";
+        const std::string currentName = pAsset != nullptr ? pAsset.GetMetadata().m_assetName : "None";
     
         // Begin combo box
         if (ImGui::BeginCombo("##AssetCombo", currentName.c_str()))
@@ -241,7 +338,6 @@ namespace nes::editor
             }
         
             // Get all assets of this type
-            std::string assetName;
             std::vector<AssetPtr<Type>> assets = AssetManager::GetAllAssetsOfType<Type>();
             
             for (const auto& asset : assets)
@@ -250,11 +346,10 @@ namespace nes::editor
                     continue;
 
                 const AssetMetadata& metadata = asset.GetMetadata(); 
-            
-                assetName = metadata.m_path.filename().string();
+                
                 bool isSelected = (assetID == metadata.m_assetID);
             
-                if (ImGui::Selectable(assetName.c_str(), isSelected))
+                if (ImGui::Selectable(metadata.m_assetName.c_str(), isSelected))
                 {
                     assetID = metadata.m_assetID;
                     modified = true;

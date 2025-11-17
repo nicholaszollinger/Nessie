@@ -63,8 +63,7 @@ bool EditorTestApp::Init()
         NES_ERROR("Failed to initialize Test World!");
         return false;
     }
-
-    // [TEST]: 
+    
     // Load the World Asset:
     std::filesystem::path path = NES_CONTENT_DIR;
     path /= "Worlds/EditorTestWorld.yaml";
@@ -98,8 +97,6 @@ bool EditorTestApp::Init()
         }
     };
     nes::AssetManager::LoadAssetPackAsync(assetPack, onComplete);
-    
-    
     
     return true;
 }
@@ -208,7 +205,7 @@ void EditorTestApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderF
 
 void EditorTestApp::RenderImGuiEditor()
 {
-    m_windowManager.SetupMainWindowAndDockSpace();
+    m_windowManager.BeginMainWindowAndDockSpace();
     
     // Menu Bar (fixed at top)
     if (ImGui::BeginMenuBar())

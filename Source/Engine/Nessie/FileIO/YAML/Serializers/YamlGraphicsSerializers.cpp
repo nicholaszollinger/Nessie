@@ -5,14 +5,18 @@ namespace nes
 {
     void CameraSerializer::Deserialize(const YamlNode& in, Camera& camera)
     {
-        in["PerspectiveFOV"].Read(camera.m_perspectiveFOV, 60.f);
-        in["OrthographicSize"].Read(camera.m_orthographicSize, 10.f);
-        in["NearPlane"].Read(camera.m_nearPlane, 0.1f);
-        in["FarPlane"].Read(camera.m_farPlane, 1000.f);
-        in["Aperture"].Read(camera.m_aperture, 1.f);
-        in["ShutterSpeed"].Read(camera.m_shutterSpeed, 125.f);
-        in["ISO"].Read(camera.m_iso, 100.f);
-        in["ProjectionType"].Read(camera.m_projectionType, Camera::EProjectionType::Perspective);
+        auto cameraNode = in["Camera"];
+        if (!cameraNode.IsValid())
+            return;
+        
+        cameraNode["PerspectiveFOV"].Read(camera.m_perspectiveFOV, 60.f);
+        cameraNode["OrthographicSize"].Read(camera.m_orthographicSize, 10.f);
+        cameraNode["NearPlane"].Read(camera.m_nearPlane, 0.1f);
+        cameraNode["FarPlane"].Read(camera.m_farPlane, 1000.f);
+        cameraNode["Aperture"].Read(camera.m_aperture, 8.f);
+        cameraNode["ShutterSpeed"].Read(camera.m_shutterSpeed, 125.f);
+        cameraNode["ISO"].Read(camera.m_iso, 100.f);
+        cameraNode["ProjectionType"].Read(camera.m_projectionType, Camera::EProjectionType::Perspective);
     }
 
     void CameraSerializer::Serialize(YamlOutStream& out, const Camera& camera)

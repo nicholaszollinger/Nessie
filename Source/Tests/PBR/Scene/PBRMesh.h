@@ -102,7 +102,7 @@ namespace pbr
 
     private:
         virtual nes::ELoadResult    LoadFromFile(const std::filesystem::path& path) override;
-        nes::ELoadResult            LoadFromYAML(const nes::YamlNode& node);
+        nes::ELoadResult            LoadFromYAML(const nes::YamlNode& node, const std::string& yamlFileName);
 
     private:
         std::vector<Vertex>         m_vertices{};

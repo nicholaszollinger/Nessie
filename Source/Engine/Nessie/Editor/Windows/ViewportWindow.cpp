@@ -24,10 +24,12 @@ namespace nes
         FreeImGuiDescriptorSetAndView();
         FreeImGuiSampler();
     }
-        
+
     void ViewportWindow::Tick(const float deltaTime)
     {
-        if (!m_isFocused)
+        // [TODO]: If the user wants to 'eject' from the in game camera and use the
+        // editor camera, use that.
+        if (!m_isFocused || m_pWorld->IsSimulating())
             return;
         
         const bool shift = InputManager::IsKeyDown(EKeyCode::LeftShift) || InputManager::IsKeyDown(EKeyCode::RightShift);
@@ -68,6 +70,8 @@ namespace nes
 
     void ViewportWindow::RenderImGui()
     {
+        const bool isSimulating = m_pRenderer && m_pWorld->IsSimulating();
+        
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowBorderSize, 0.f);
         
@@ -83,67 +87,77 @@ namespace nes
                 ImGui::End();
                 return;
             }
-
-            // Get the available viewport size and cache it.
-            viewportPosition = ImGui::GetCursorScreenPos();
+            
+            // Get the available space and the current Screen space position.
+            viewportPosition = ImGui::GetWindowContentRegionMin();
             viewportSize = ImGui::GetContentRegionAvail();
+            
             m_viewportSize.x = static_cast<uint32>(viewportSize.x);
             m_viewportSize.y = static_cast<uint32>(viewportSize.y);
-            const float viewportAspectRatio = viewportSize.x / viewportSize.y;
-
-            // Get the current image size and aspect ratio:
+            
+            // Get image dimensions
             RenderTarget* colorTarget = m_pRenderer->GetFinalColorTarget();
             const UInt2 imageExtent = colorTarget->GetSize();
-            ImVec2 imageSize = {static_cast<float>(imageExtent.x), static_cast<float>(imageExtent.y)};
-            const float imageAspectRatio = imageSize.x / imageSize.y;
-            
+            ImVec2 imageExtentF = ImVec2(static_cast<float>(imageExtent.x), static_cast<float>(imageExtent.y));
+            const float imageAspectRatio = imageExtentF.x / imageExtentF.y;
+
+            // Store where the actual image will be rendered (relative to window)
+            ImVec2 imagePos = viewportPosition;
+            ImVec2 imageSize = viewportSize;
+
             if (m_preserveAspectRatio)
             {
-                ImVec2 scaledSize;
-                if (viewportAspectRatio > imageAspectRatio)
+                // Calculate size that fits within available space while preserving aspect ratio
+                const float availableAspect = viewportSize.x / viewportSize.y;
+        
+                if (availableAspect > imageAspectRatio)
                 {
-                    scaledSize.y = viewportSize.y;
-                    scaledSize.x = viewportSize.y * imageAspectRatio;
+                    // Available space is wider - fit to height
+                    imageSize.y = viewportSize.y;
+                    imageSize.x = viewportSize.y * imageAspectRatio;
                 }
                 else
                 {
-                    scaledSize.x = viewportSize.x;
-                    scaledSize.y = viewportSize.x / imageAspectRatio;
+                    // Available space is taller - fit to width
+                    imageSize.x = viewportSize.x;
+                    imageSize.y = viewportSize.x / imageAspectRatio;
                 }
-
-                // Center the image in the viewport
-                ImVec2 offset;
-                offset.x = (viewportSize.x - scaledSize.x) * 0.5f;
-                offset.y = (viewportSize.y - scaledSize.y) * 0.5f;
-
-                // Add padding to center the image
-                ImGui::SetCursorPos(ImVec2(ImGui::GetCursorPosX() + offset.x, ImGui::GetCursorPosY() + offset.y));
-                ImGui::Image(m_imGuiTexture, scaledSize);
+        
+                // Center it
+                const float offsetX = (viewportSize.x - imageSize.x) * 0.5f;
+                const float offsetY = (viewportSize.y - imageSize.y) * 0.5f;
+                imagePos.x += offsetX;
+                imagePos.y += offsetY;
+                
+                ImGui::SetCursorPos(imagePos);
+                ImGui::Image(m_imGuiTexture, imageSize);
             }
-
             else
             {
+                // Fill viewport - crop image to fit
                 ImVec2 uv0 = ImVec2(0, 0);
                 ImVec2 uv1 = ImVec2(1, 1);
+                float availableAspect = viewportSize.x / viewportSize.y;
 
-                if (viewportAspectRatio > imageAspectRatio)
+                if (availableAspect > imageAspectRatio)
                 {
-                    // Viewport is wider - crop the top/bottom of the image.
-                    const float visibleHeight = imageSize.x / viewportAspectRatio;
-                    const float crop = (imageSize.y - visibleHeight) / (2.f * imageSize.y);
+                    // Viewport is wider - crop top/bottom
+                    const float visibleHeight = imageExtentF.x / availableAspect;
+                    float crop = (imageExtentF.y - visibleHeight) / (2.0f * imageExtentF.y);
                     uv0.y = crop;
-                    uv1.y = 1.f - crop;
+                    uv1.y = 1.0f - crop;
                 }
                 else
                 {
-                    // Viewport is taller - crop left/right of the image.
-                    const float visibleWidth = imageSize.y * viewportAspectRatio;
-                    const float crop = (imageSize.x - visibleWidth) / (2.f * imageSize.x);
+                    // Viewport is taller - crop left/right
+                    float visibleWidth = imageExtentF.y * availableAspect;
+                    float crop = (imageExtentF.x - visibleWidth) / (2.0f * imageExtentF.x);
                     uv0.x = crop;
-                    uv1.x = 1.f - crop;
+                    uv1.x = 1.0f - crop;
                 }
 
-                ImGui::Image(m_imGuiTexture, viewportSize, uv0, uv1);
+                ImGui::SetCursorPos(imagePos);
+                ImGui::Image(m_imGuiTexture, imageSize, uv0, uv1);
             }
         }
 
@@ -160,7 +174,7 @@ namespace nes
                 ImGui::SetWindowFocus();
                 m_isFocused = true;
 
-                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+                if (ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !isSimulating)
                 {
                     m_rotationEnabled = true;
                     InputManager::SetCursorMode(nes::ECursorMode::Disabled);
@@ -168,7 +182,7 @@ namespace nes
             }
         }
         
-        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right))
+        if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !isSimulating)
         {
             m_rotationEnabled = true;
     
@@ -179,13 +193,24 @@ namespace nes
 
         if (m_rotationEnabled)
         {
-            // Keep cursor hidden
-            ImGui::SetMouseCursor(ImGuiMouseCursor_None);
-    
-            if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            // Clear the rotation enabled state if we are now simulating the world.
+            if (isSimulating)
             {
-                m_rotationEnabled = false;
                 InputManager::SetCursorMode(nes::ECursorMode::Visible);
+                m_rotationEnabled = false;
+            }
+
+            // Handle releasing right click.
+            else
+            {
+                // Keep cursor hidden
+                ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+    
+                if (ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                {
+                    m_rotationEnabled = false;
+                    InputManager::SetCursorMode(nes::ECursorMode::Visible);
+                }
             }
         }
 
@@ -203,16 +228,25 @@ namespace nes
         if (!m_pRenderer || m_pRenderer->GetFinalColorTarget() == nullptr || m_viewportSize.LengthSqr() <= 0.f)
             return;
 
-        // Render the World using the editor Camera.
-        m_pRenderer->RenderWorldWithCamera(m_editorCamera, commandBuffer, context);
+        if (m_pWorld->IsSimulating())
+        {
+            // Render the world using an in-game camera.
+            m_pRenderer->RenderWorld(commandBuffer, context);
+        }
+        else
+        {
+            // Render the World using the editor Camera.
+            m_pRenderer->RenderWorldWithCamera(m_editorCamera, commandBuffer, context);    
+        }
         
         RenderTarget* colorTarget = m_pRenderer->GetFinalColorTarget();
-
+        NES_ASSERT(colorTarget->GetSampleCount() == 1, "The Final Color Target must not be multisampled! You should have a separate render target for multisampling that is resolved into the final render target.");
+        
         // Transition the color target for ImGui to sample:
         ImageBarrierDesc targetBarrier = nes::ImageBarrierDesc()
             .SetImage(&colorTarget->GetImage())
-            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::ShaderResource)
-            .SetBarrierStage(EPipelineStageBits::ColorAttachment, nes::EPipelineStageBits::FragmentShader);
+            .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::ShaderResource);
+            //.SetBarrierStage(EPipelineStageBits::ColorAttachment, nes::EPipelineStageBits::FragmentShader);
 
         BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
             .SetImageBarriers({targetBarrier} );
@@ -229,9 +263,8 @@ namespace nes
         in["CameraMovementSpeed"].Read(m_freeCamMoveSpeed, 50.f);
         in["CameraSensitivity"].Read(m_freeCamSensitivity, 0.75f);
         in["PreserveAspectRatio"].Read(m_preserveAspectRatio, false);
-
-        auto camera = in["Camera"];
-        CameraSerializer::Deserialize(camera, m_editorCamera.m_camera);
+        
+        CameraSerializer::Deserialize(in, m_editorCamera.m_camera);
     }
 
     void ViewportWindow::Serialize(YamlOutStream& out) const
@@ -329,7 +362,6 @@ namespace nes
         desc.m_addressModes.v = EAddressMode::ClampToEdge;
         desc.m_addressModes.w = EAddressMode::ClampToEdge;
         m_imGuiSampler = nes::Descriptor(device, desc);
-
     }
 
     void ViewportWindow::FreeImGuiSampler()
@@ -343,24 +375,19 @@ namespace nes
         outPitch = math::ATan2(m_editorCamera.m_forward.y, Vec3(m_editorCamera.m_forward.x, 0.f, m_editorCamera.m_forward.z).Length());
     }
 
-    void ViewportWindow::RenderViewportControlsOverlay(const ImVec2& viewportPos, const ImVec2& viewportSize)
+    void ViewportWindow::RenderViewportControlsOverlay(const ImVec2& viewportPos, const ImVec2& /*viewportSize*/)
     {
-        // Now overlay controls using the window's draw list
-        ImDrawList* drawList = ImGui::GetWindowDrawList();
-
-        // Push a clip rect to keep buttons within viewport bounds
-        drawList->PushClipRect(viewportPos, 
-            ImVec2(viewportPos.x + viewportSize.x, viewportPos.y + viewportSize.y));
-    
         static constexpr float kPadding = 10.0f;
-        ImVec2 buttonPos = ImVec2
+    
+        // Position overlay controls at the top-left of the content area (relative to window)
+        ImVec2 overlayPos = ImVec2
         (
             viewportPos.x + kPadding,
             viewportPos.y + kPadding
         );
-
-        // Set cursor for overlay widgets
-        ImGui::SetCursorScreenPos(buttonPos);
+        
+        // Set cursor position (relative to window)
+        ImGui::SetCursorPos(overlayPos);
 
         static constexpr float kSliderWidth = 120.f;
         ImGui::BeginGroup();
@@ -416,6 +443,5 @@ namespace nes
         }
         
         ImGui::EndGroup();
-        drawList->PopClipRect();
     }
 }

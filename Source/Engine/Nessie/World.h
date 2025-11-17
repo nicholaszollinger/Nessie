@@ -5,7 +5,7 @@
 #include "World/EntityRegistry.h"
 #include "World/ComponentRegistry.h"
 #include "World/ComponentSystem.h"
-#include "World/WorldBase.h"
+#include "World/RuntimeWorld.h"
 
 // Common Components:
 #include "World/Components/IDComponent.h"

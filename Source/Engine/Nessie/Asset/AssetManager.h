@@ -89,6 +89,11 @@ namespace nes
             /// @brief : Get the type ID for the asset.
             //----------------------------------------------------------------------------------------------------
             TypeID                      GetAssetTypeID() const  { return m_assetDesc.m_metadata.m_typeID; }
+
+            //----------------------------------------------------------------------------------------------------
+            /// @brief : Get all of the information about the loaded Asset.
+            //----------------------------------------------------------------------------------------------------
+            const AssetMetadata&        GetAssetMetadata() const  { return m_assetDesc.m_metadata; } 
         
             //----------------------------------------------------------------------------------------------------
             /// @brief : Get the enum result value.
@@ -292,9 +297,11 @@ namespace nes
         /// @param id: Represents the AssetID that will be assigned to the loaded asset. If set to nes::kInvalidAssetID,
         ///     a new ID will be generated.
         /// @param asset : Asset that will be stored in the Asset Manager.
+        /// @param name : Asset name used to help identify the Asset. Since Memory-Only Assets have no filepath,
+        ///     this is used it help identify the asset.
         //----------------------------------------------------------------------------------------------------
         template <ValidAssetType Type>
-        static ELoadResult              AddMemoryAsset(AssetID& id, Type&& asset);
+        static ELoadResult              AddMemoryAsset(AssetID& id, Type&& asset, const std::string& name);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get a loaded asset. If the asset has not been loaded, the reference will be invalid.

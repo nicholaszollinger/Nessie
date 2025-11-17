@@ -151,7 +151,7 @@ namespace nes
         }
     }
 
-    void EditorWindowManager::SetupMainWindowAndDockSpace()
+    void EditorWindowManager::BeginMainWindowAndDockSpace()
     {
         // Set up the main viewport window
         ImGuiViewport* imGuiViewport = ImGui::GetMainViewport();
@@ -189,9 +189,14 @@ namespace nes
                 ApplyWindowLayout(m_defaultLayout);
             }
         }
+    }
 
-        // Use the Dock space.
-        ImGui::DockSpace(m_dockSpaceID, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_PassthruCentralNode);
+    void EditorWindowManager::EndMainWindowAndDockSpace()
+    {
+        // // Create the dock space with the remaining space.
+        ImVec2 dockSpaceSize = ImGui::GetContentRegionAvail();
+        ImGui::DockSpace(m_dockSpaceID, dockSpaceSize, ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::End();
     }
 
     void EditorWindowManager::ApplyWindowLayout(const std::string& layoutName)

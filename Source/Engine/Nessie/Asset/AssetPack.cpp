@@ -98,6 +98,9 @@ namespace nes
                 NES_ERROR("Failed to load AssetPack! Invalid relative path for Asset: '{}'", metaData.m_path.string());
                 return false;
             }
+
+            // Set the filename (no extension) as the asset name.
+            metaData.m_assetName = metaData.m_path.stem().string();
             outPack.AddAsset(metaData);
         }
 

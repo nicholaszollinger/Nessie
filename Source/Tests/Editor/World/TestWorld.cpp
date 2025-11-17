@@ -23,9 +23,6 @@ void TestWorld::AddComponentSystems()
 {
     m_pTransformSystem = AddComponentSystem<nes::TransformSystem>();
     m_pSimpleRenderer = AddComponentSystem<SimpleRenderer>();
-
-    // Set our Renderer.
-    m_pRenderer = nes::Cast<nes::WorldRenderer>(m_pSimpleRenderer);
 }
 
 bool TestWorld::PostInit()
@@ -34,10 +31,10 @@ bool TestWorld::PostInit()
     return true;
 }
 
-void TestWorld::OnNewEntityCreated(const nes::EntityHandle newEntity)
+void TestWorld::OnNewEntityCreated(nes::EntityRegistry& registry, const nes::EntityHandle newEntity)
 {
-    m_entityRegistry.AddComponent<nes::NodeComponent>(newEntity);
-    m_entityRegistry.AddComponent<nes::TransformComponent>(newEntity);
+    registry.AddComponent<nes::NodeComponent>(newEntity);
+    registry.AddComponent<nes::TransformComponent>(newEntity);
 }
 
 void TestWorld::OnDestroy()

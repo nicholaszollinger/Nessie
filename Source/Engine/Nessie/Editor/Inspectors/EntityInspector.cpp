@@ -27,13 +27,13 @@ namespace nes
         // Validate the target:
         if (pTarget == nullptr || context.m_pWorld == nullptr || *pTarget == kInvalidEntityHandle)
         {
-            auto& registry = context.m_pWorld->GetRegistry();
-
+            auto* pRegistry = context.m_pWorld->GetEntityRegistry();
+            
             // If the last selected entity is still valid, render it.
-            if (m_lastSelected != kInvalidEntityHandle && registry.IsValidEntity(m_lastSelected))
+            if (m_lastSelected != kInvalidEntityHandle && pRegistry && pRegistry->IsValidEntity(m_lastSelected))
             {
-                DrawComponentList(registry, m_lastSelected);
-                DrawSelectedComponentDetails(registry, m_lastSelected, context);
+                DrawComponentList(*pRegistry, m_lastSelected);
+                DrawSelectedComponentDetails(*pRegistry, m_lastSelected, context);
             }
             else
             {
@@ -53,9 +53,11 @@ namespace nes
             AssembleComponentInspectors();
         }
 
-        auto& registry = context.m_pWorld->GetRegistry();
-        DrawComponentList(registry, entity);
-        DrawSelectedComponentDetails(registry, entity, context);
+        if (auto* pRegistry = context.m_pWorld->GetEntityRegistry())
+        {
+            DrawComponentList(*pRegistry, entity);
+            DrawSelectedComponentDetails(*pRegistry, entity, context);
+        }
     }
 
     void EntityInspector::DrawComponentList(EntityRegistry& registry, EntityHandle entity)

@@ -3,9 +3,18 @@
 
 namespace nes
 {
-    EntityRegistry& ComponentSystem::GetRegistry() const
+    void ComponentSystem::SetWorld(WorldBase& world)
     {
-        return GetWorld().GetRegistry();
+        if (m_pWorld != nullptr)
+            OnWorldRemoved();
+        
+        m_pWorld = &world;
+        OnWorldSet();
+    }
+
+    EntityRegistry* ComponentSystem::GetEntityRegistry() const
+    {
+        return GetWorld().GetEntityRegistry();
     }
     
     WorldBase& ComponentSystem::GetWorld() const

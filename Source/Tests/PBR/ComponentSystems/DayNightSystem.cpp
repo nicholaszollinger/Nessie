@@ -34,14 +34,13 @@ namespace pbr
 
     void DayNightSystem::Tick(const float deltaTime)
     {
-        if (!m_shouldSimulate)
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
             return;
-        
-        auto& registry = GetRegistry();
 
         m_accumulatedTime += deltaTime;
 
-        auto view = registry.GetAllEntitiesWith<DirectionalLightComponent, DayNightSimComponent>();
+        auto view = pRegistry->GetAllEntitiesWith<DirectionalLightComponent, DayNightSimComponent>();
         for (auto entity : view)
         {
             auto& dayNightSimComp = view.get<DayNightSimComponent>(entity);
@@ -76,15 +75,8 @@ namespace pbr
         }
     }
 
-    void DayNightSystem::OnEvent(nes::Event& e)
+    void DayNightSystem::OnBeginSimulation()
     {
-        // Pressing 'P' will toggle sun simulation.
-        if (auto* pKeyEvent = e.Cast<nes::KeyEvent>())
-        {
-            if (pKeyEvent->GetKeyCode() == nes::EKeyCode::P && pKeyEvent->GetAction() == nes::EKeyAction::Pressed)
-            {
-                m_shouldSimulate = !m_shouldSimulate;
-            }
-        }
+        m_accumulatedTime = 0.f;
     }
 }

@@ -1,132 +1,138 @@
 World:
   Assets:
-  - AssetID: 50
-    TypeID: 2829778445906215252
-    Path: "Images\\light-gold-ue\\lightgold_albedo.png"
-  - AssetID: 51
-    TypeID: 2829778445906215252
-    Path: "Images\\light-gold-ue\\lightgold_normal-dx.png"
-  - AssetID: 52
-    TypeID: 2829778445906215252
-    Path: "Images\\light-gold-ue\\lightgold_RoughnessMetallic.png"
-  - AssetID: 53
-    TypeID: 2829778445906215252
-    Path: "Images\\Copper\\copper-rock1-alb.png"
-  - AssetID: 54
-    TypeID: 2829778445906215252
-    Path: "Images\\Copper\\copper-rock1-normal.png"
-  - AssetID: 55
-    TypeID: 2829778445906215252
-    Path: "Images\\Copper\\copper-rock1-roughMetal.png"
-  - AssetID: 5001
-    TypeID: 14967253334840397702
-    Path: "Materials\\GoldMaterial.yaml"
-  - AssetID: 5002
-    TypeID: 14967253334840397702
-    Path: "Materials\\CopperRockMaterial.yaml"
-  - AssetID: 3000
-    TypeID: 17524471269486645012
-    Path: "Meshes\\ancient_vase.yaml"
-
+    - AssetID: 50
+      TypeID: 2829778445906215252
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Images\\light-gold-ue\\lightgold_albedo.png"
+    - AssetID: 51
+      TypeID: 2829778445906215252
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Images\\light-gold-ue\\lightgold_normal-dx.png"
+    - AssetID: 52
+      TypeID: 2829778445906215252
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Images\\light-gold-ue\\lightgold_RoughnessMetallic.png"
+    - AssetID: 53
+      TypeID: 2829778445906215252
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Images\\Copper\\copper-rock1-alb.png"
+    - AssetID: 54
+      TypeID: 2829778445906215252
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Images\\Copper\\copper-rock1-normal.png"
+    - AssetID: 55
+      TypeID: 2829778445906215252
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Images\\Copper\\copper-rock1-roughMetal.png"
+    - AssetID: 5001
+      TypeID: 14967253334840397702
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Materials\\GoldMaterial.yaml"
+    - AssetID: 5002
+      TypeID: 14967253334840397702
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Materials\\CopperRockMaterial.yaml"
+    - AssetID: 3000
+      TypeID: 17524471269486645012
+      Path: "M:\\Dev\\C++\\Nessie\\Content\\Meshes\\ancient_vase.yaml"
   Entities:
-  - Entity: 1
-    Name: "Camera"
-    Components:
-    - NodeComponent:
-        Parent: 0
-    - TransformComponent:
-        Position: [-0.12, 1.14, -2.25]
-        Rotation: [17.0, 7.0, 0.0]
-        Scale: [1, 1, 1]
-    - CameraComponent:
-        NearPlane: 0.1
-        FarPlane: 1000.0
-        PerspectiveFOV: 65.0
-        OrthographicSize: 10.0
-        Aperture: 8.0
-        ShutterSpeed: 125.0
-        ISO: 100.0
-        ProjectionType: 0 # Perspective.
-    - FreeCamMovementComponent:
-        MoveSpeed: 50.0
-        Sensitivity: 1.25
-
-  - Entity: 5
-    Name: "Directional Light"
-    Components:
-    - DirectionalLightComponent:
-        Intensity: 120000.0
-        Direction: [0.1, -1.0, 0.1]
-        Color: [1.0, 1.0, 0.95]
-    - DayNightSimComponent:
-        DayColor: [1.0, 1.0, 0.95]
-        NightColor: [1.0, 0.6, 0.3]
-        DayDuration: 20.0
-        SunMaxLux: 120000.0
-
-  - Entity: 2
-    Name: "Gold Sphere"
-    Components:
-    - NodeComponent:
-        Parent: 0
-    - TransformComponent:
-        Position: [1.0, 1.0, 0.0]
-        Rotation: [0, 0, 0]
-        Scale: [1, 1, 1]
-    - MeshComponent:
-        Mesh: 3
-        Material: 5001
-
-  - Entity: 3
-    Name: "Floor"
-    Components:
-    - NodeComponent:
-        Parent: 0
-    - TransformComponent:
-        Position: [0.0, 0.0, 0.0]
-        Rotation: [0, 0, 0]
-        Scale: [1, 1, 1]
-    - MeshComponent:
-        Mesh: 2
-        Material: 18446744073709551615 # Invalid to use the Mesh's default material.
-
-  - Entity: 4
-    Name: "Copper Sphere"
-    Components:
-    - NodeComponent:
-        Parent: 0
-    - TransformComponent:
-        Position: [-1.0, 0.5, 0.0]
-        Rotation: [0, 0, 0]
-        Scale: [1, 1, 1]
-    - MeshComponent:
-        Mesh: 3
-        Material: 5002
-
-  - Entity: 6
-    Name: "Vase"
-    Components:
-    - NodeComponent:
-        Parent: 0
-    - TransformComponent:
-        Position: [-2.0, 0, 0.0]
-        Rotation: [90, 0, 0]
-        Scale: [1.5, 1.5, 1.5]
-    - MeshComponent:
-        Mesh: 3000
-        Material: 18446744073709551615 # Invalid to use the Mesh's default material.
-
-  - Entity: 7
-    Name: "Point Light"
-    Components:
-    - NodeComponent:
-        Parent: 0
-    - TransformComponent:
-        Position: [0.0, 0.15, 0.0]
-        Rotation: [0, 0, 0]
-        Scale: [1, 1, 1]
-    - PointLightComponent:
-        Color: [1.0, 0.0, 0.0]
-        Intensity: 80000.0
-        Radius: 10.0
-    
+    - Entity: 1
+      Name: "Camera"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - FreeCamMovementComponent:
+            MoveSpeed: 12
+            Sensitivity: 0.69
+        - CameraComponent:
+            Camera:
+              PerspectiveFOV: 60
+              OrthographicSize: 10
+              NearPlane: 0.1
+              FarPlane: 1000
+              Aperture: 8
+              ShutterSpeed: 125
+              Iso: 100
+              ProjectionType: 0
+        - TransformComponent:
+            Position: [-0.12, 1.14, -2.25]
+            Rotation: [17, 7, 0]
+            Scale: [1, 1, 1]
+    - Entity: 5
+      Name: "Directional_Light"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - DayNightSimComponent:
+            DayColor: [1, 1, 0.95]
+            NightColor: [1, 0.6, 0.3]
+            DayDuration: 20
+            SunMaxLux: 1.2e+05
+        - DirectionalLightComponent:
+            Color: [1, 0.9171, 0.8152, 1]
+            Direction: [-0.1651, -0.7927, 0.5869]
+            Intensity: 1.2e+05
+        - TransformComponent:
+            Position: [-0.1, 0.6, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 2
+      Name: "Gold_Sphere"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - MeshComponent:
+            Mesh: 3
+            Material: 5001
+        - TransformComponent:
+            Position: [1.1, 1, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 3
+      Name: "Floor"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - MeshComponent:
+            Mesh: 2
+            Material: 5000
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 4
+      Name: "Copper_Sphere"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - MeshComponent:
+            Mesh: 3
+            Material: 5002
+        - TransformComponent:
+            Position: [-1, 0.7, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 6
+      Name: "Vase"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - MeshComponent:
+            Mesh: 3000
+            Material: 18446744073709551615
+        - TransformComponent:
+            Position: [-2, 0, 0]
+            Rotation: [90, 0, 0]
+            Scale: [1.5, 1.5, 1.5]
+    - Entity: 7
+      Name: "Point_Light"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - PointLightComponent:
+            Color: [1, 0, 0, 1]
+            Intensity: 8e+04
+            Radius: 10
+        - TransformComponent:
+            Position: [0.2, 0.1, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]

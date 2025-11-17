@@ -207,7 +207,18 @@ namespace nes
         /// You can connect a lambda or member function to respond to the event. Must be in the form
         /// <code>
         ///     void(entt::registry& registry, entt::entity entity);
-        /// </code> 
+        /// </code>
+        ///
+        /// Usage:
+        /// <code>
+        ///     // Connect to the event: 
+        ///     registry.OnComponentCreated<position>().connect<&my_free_function>();
+        ///     registry.OnComponentCreated<position>().connect<&my_class::member>(instance);
+        ///
+        ///     // Disconnect from the event:
+        ///     registry.OnComponentCreated<position>().disconnect<&my_free_function>();
+        ///     registry.OnComponentCreated<position>().disconnect<&my_class::member>(instance);
+        /// </code>
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
         auto                        OnComponentCreated();
@@ -217,10 +228,47 @@ namespace nes
         /// You can connect a lambda or member function to respond to the event. Must be in the form:
         /// <code>
         ///     void(entt::registry& registry, entt::entity entity);
-        /// </code> 
+        /// </code>
+        ///
+        /// Usage:
+        /// <code>
+        ///     // Connect to the event: 
+        ///     registry.OnComponentDestroyed<position>().connect<&my_free_function>();
+        ///     registry.OnComponentDestroyed<position>().connect<&my_class::member>(instance);
+        ///
+        ///     // Disconnect from the event:
+        ///     registry.OnComponentDestroyed<position>().disconnect<&my_free_function>();
+        ///     registry.OnComponentDestroyed<position>().disconnect<&my_class::member>(instance);
+        /// </code>
         //----------------------------------------------------------------------------------------------------
         template <ComponentType Type>
         auto                        OnComponentDestroyed();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the event that is invoked when a Component of the given type has changed. 
+        /// You can connect a lambda or member function to respond to the event. Must be in the form:
+        /// <code>
+        ///     void(entt::registry& registry, entt::entity entity);
+        /// </code>
+        ///
+        /// Usage:
+        /// <code>
+        ///     // Connect to the event: 
+        ///     registry.OnComponentUpdated<position>().connect<&my_free_function>();
+        ///     registry.OnComponentUpdated<position>().connect<&my_class::member>(instance);
+        ///
+        ///     // Disconnect from the event:
+        ///     registry.OnComponentUpdated<position>().disconnect<&my_free_function>();
+        ///     registry.OnComponentUpdated<position>().disconnect<&my_class::member>(instance);
+        /// </code>
+        ///
+        /// @note : This event will only be signaled if EntityRegistry::SignalUpdate() is called.
+        //----------------------------------------------------------------------------------------------------
+        template <ComponentType Type>
+        auto                        OnComponentUpdated() { return entt::sink{ m_registry.on_update<Type>() }; }
+
+        template <ComponentType Type, typename...Args>
+        void                        TriggerUpdate(const EntityHandle entity, Args&&...args);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Checks to see if the Entity exists in the registry, and contains an IDComponent.

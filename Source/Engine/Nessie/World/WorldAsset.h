@@ -20,7 +20,7 @@ namespace nes
 
         AssetPack&              GetAssetPack()          { return m_assetPack; }
         const AssetPack&        GetAssetPack() const    { return m_assetPack; }
-        EntityRegistry&         GetRegistry()           { return m_entityRegistry; }
+        EntityRegistry&         GetEntityRegistry()           { return m_entityRegistry; }
     
     protected:
         virtual ELoadResult     LoadFromFile(const std::filesystem::path& path) override;

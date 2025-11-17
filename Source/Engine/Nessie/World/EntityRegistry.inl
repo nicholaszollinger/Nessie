@@ -25,6 +25,15 @@ namespace nes
     }
 
     template <ComponentType Type, typename... Args>
+    void EntityRegistry::TriggerUpdate(const EntityHandle entity, Args&&...args)
+    {
+        if (!m_registry.valid(entity))
+            return;
+        
+        m_registry.emplace_or_replace<Type>(entity, std::forward<Args>(args)...);
+    }
+
+    template <ComponentType Type, typename... Args>
     Type& Entity::AddComponent(Args&&... args)
     {
         NES_ASSERT(m_pRegistry != nullptr);

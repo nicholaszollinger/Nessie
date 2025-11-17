@@ -1,6 +1,5 @@
 ﻿// InspectorWindow.cpp
 #include "InspectorWindow.h"
-
 #include "Nessie/Editor/SelectionManager.h"
 #include "Nessie/Editor/Inspectors/EntityInspector.h"
 
@@ -15,8 +14,6 @@ namespace nes
 
     void InspectorWindow::RenderImGui()
     {
-        auto& registry = m_pWorld->GetRegistry();
-        
         if (ImGui::Begin(m_desc.m_name.c_str(), &m_desc.m_isOpen, 0))
         {
             // [TODO]: Render the Lock Button to lock the window to the current selected item.
@@ -39,15 +36,19 @@ namespace nes
             // - They could also be AssetIDs. I probably need to unify these in some way.
             // [TODO]: I should render the last selected. Otherwise, if you misclick on the hierarchy window, it will
             // undo the inspection that you had previously.
-            const EntityID entityID = context.m_selectionIDs.front();
-            if (registry.IsValidEntity(entityID))
+            if (auto* pRegistry = m_pWorld->GetEntityRegistry())
             {
-                if (auto pEntityInspector = EditorInspectorRegistry::GetInspector<EntityHandle>())
+                const EntityID entityID = context.m_selectionIDs.front();
+                if (pRegistry->IsValidEntity(entityID))
                 {
-                    EntityHandle handle = registry.GetEntity(entityID);
-                    pEntityInspector->Draw(&handle, context);
+                    if (auto pEntityInspector = EditorInspectorRegistry::GetInspector<EntityHandle>())
+                    {
+                        EntityHandle handle = pRegistry->GetEntity(entityID);
+                        pEntityInspector->Draw(&handle, context);
+                    }
                 }
             }
+            
         }
         ImGui::End();
     }

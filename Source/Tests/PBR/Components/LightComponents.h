@@ -48,9 +48,9 @@ namespace pbr
     struct DirectionalLightComponent
     {
         nes::LinearColor    m_color = nes::LinearColor::White();                    // Light color.
-        nes::Vec3           m_direction = nes::Vec3(0.f, -1.f, 0.f);            // Direction of the light.  
+        nes::Vec3           m_direction = nes::Vec3(0.f, -1.f, 0.f);          // Direction of the light.  
         float               m_intensity     = 100'000.f;                            // The amount of energy emitted by the light, in lux (lumens/m^2).
-
+        
         static void         Serialize(nes::YamlOutStream& out, const DirectionalLightComponent& component);
         static void         Deserialize(const nes::YamlNode& in, DirectionalLightComponent& component);
     };

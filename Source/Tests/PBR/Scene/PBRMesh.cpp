@@ -349,10 +349,10 @@ namespace pbr
             return nes::ELoadResult::InvalidArgument;
         }
 
-        return LoadFromYAML(mesh);
+        return LoadFromYAML(mesh, path.stem().string());
     }
 
-    nes::ELoadResult MeshAsset::LoadFromYAML(const nes::YamlNode& node)
+    nes::ELoadResult MeshAsset::LoadFromYAML(const nes::YamlNode& node, const std::string& yamlFileName)
     {
         bool invertWinding;
         node["InvertWinding"].Read(invertWinding, true);
@@ -594,7 +594,7 @@ namespace pbr
                 materialDesc.m_emissionMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
             
             PBRMaterial defaultMaterial(materialDesc);
-            nes::AssetManager::AddMemoryAsset<PBRMaterial>(m_defaultMaterialID, std::move(defaultMaterial));
+            nes::AssetManager::AddMemoryAsset<PBRMaterial>(m_defaultMaterialID, std::move(defaultMaterial), std::format("{} Material", yamlFileName.c_str()));
         }
 
         return nes::ELoadResult::Success;

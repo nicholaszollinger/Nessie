@@ -43,7 +43,13 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Must be called every frame. Initializes the main window and docking area.
         //----------------------------------------------------------------------------------------------------
-        void                    SetupMainWindowAndDockSpace();
+        void                    BeginMainWindowAndDockSpace();
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Ends drawing the main window and creates sets the Dock Space out of the remaining window
+        /// space. Other windows can now be drawn.
+        //----------------------------------------------------------------------------------------------------
+        void                    EndMainWindowAndDockSpace();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Sets a layout for the editor.

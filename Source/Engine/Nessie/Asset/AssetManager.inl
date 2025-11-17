@@ -156,7 +156,7 @@ namespace nes
     }
 
     template <ValidAssetType Type>
-    ELoadResult AssetManager::AddMemoryAsset(AssetID& id, Type&& asset)
+    ELoadResult AssetManager::AddMemoryAsset(AssetID& id, Type&& asset, const std::string& name)
     {
         AssetManager& assetManager = GetInstance();
 
@@ -181,6 +181,8 @@ namespace nes
         AssetMetadata metadata;
         metadata.m_assetID = id;
         metadata.m_typeID = typeID;
+        NES_ASSERT(!name.empty(), "Memory-Only Assets need a valid name, since they have no filepath to fallback on.");
+        metadata.m_assetName = name;
 
         return assetManager.AddMemoryAsset(metadata, std::move(asset));
     }

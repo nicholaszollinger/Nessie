@@ -21,19 +21,18 @@ namespace pbr
     class DayNightSystem;
     class PBRSceneRenderer;
     
-    class PBRExampleWorld final : public nes::WorldBase
+    class PBRExampleWorld final : public nes::World
     {
     public:
         virtual bool    PostInit() override;
         virtual void    OnDestroy() override;
         virtual void    OnEvent(nes::Event& event) override;
         virtual void    Tick(const float deltaTime) override;
-        void            OnResize(const uint32 width, const uint32 height);
-        void            Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
         virtual void    ParentEntity(const nes::EntityHandle entity, const nes::EntityHandle parent) override;
-
+        virtual nes::StrongPtr<nes::WorldRenderer> GetRenderer() const override { return m_pSceneRenderer; }
+    
     private:
-        virtual void    OnNewEntityCreated(const nes::EntityHandle newEntity) override;
+        virtual void    OnNewEntityCreated(nes::EntityRegistry& registry, const nes::EntityHandle newEntity) override;
         virtual void    AddComponentSystems() override;
 
     private:

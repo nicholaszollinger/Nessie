@@ -35,17 +35,20 @@ namespace nes
 
     void TransformSystem::ProcessNewEntities()
     {
-        auto& registry = GetRegistry();
-        auto view = registry.GetAllEntitiesWith<TransformComponent, PendingInitialization>();
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+        
+        auto view = pRegistry->GetAllEntitiesWith<TransformComponent, PendingInitialization>();
         
         for (auto entity : view)
         {
             m_needsRebuild = true;
 
             // Ensure that this entity has a NodeComponent.
-            if (!registry.HasComponent<NodeComponent>(entity))
+            if (!pRegistry->HasComponent<NodeComponent>(entity))
             {
-                registry.AddComponent<NodeComponent>(entity);
+                pRegistry->AddComponent<NodeComponent>(entity);
             }
         }
     }
@@ -58,54 +61,61 @@ namespace nes
             m_needsRebuild = false;
             return;
         }
+
+        auto* registry = GetEntityRegistry();
+        if (!registry)
+            return;
         
-        auto& registry = GetRegistry();
-        auto view = registry.GetAllEntitiesWith<TransformComponent, PendingDestruction>();
+        auto view = registry->GetAllEntitiesWith<TransformComponent, PendingDestruction>();
 
         for (auto entity : view)
         {
-            auto& node = registry.GetComponent<NodeComponent>(entity);
-
+            auto& node = registry->GetComponent<NodeComponent>(entity);
             const auto parentID = node.m_parentID;
             
             // If the parent is valid, we need to remove it from the tree.
             // We are orphaning all children.
             if (node.m_parentID != kInvalidEntityID)
             {
-                const auto& idComp = registry.GetComponent<IDComponent>(entity);
-                RemoveParent(idComp.GetID()); // This will set the 'm_needsRebuild' flag.
+                RemoveParent(*registry, entity); // This will set the 'm_needsRebuild' flag.
             }
+
+            const auto parentEntity = registry->GetEntity(parentID);
 
             // Re-parent to the deleted entity's parent.
             for (auto childID : node.m_childrenIDs)
             {
-                auto childHandle = registry.GetEntity(childID);
+                const auto otherChildEntity = registry->GetEntity(childID);
                 
                 // If the child is also being destroyed, skip.
-                if (view.contains(childHandle))
+                if (view.contains(otherChildEntity))
                     continue;
                 
-                SetParent(childID, parentID);
+                SetParent(*registry, otherChildEntity, parentEntity);
             }
         }
     }
 
     void TransformSystem::UpdateHierarchy()
     {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+        
         if (m_needsRebuild)
-            RebuildHierarchyCache();
+            RebuildHierarchyCache(*pRegistry);
+
 
         // [TODO]: Consider threading.
         for (const auto& [entity, _] : m_depthOrderedEntities)
         {
-            UpdateSingleTransform(entity);
+            UpdateSingleTransform(*pRegistry, entity);
         }
     }
 
-    void TransformSystem::RebuildHierarchyCache()
+    void TransformSystem::RebuildHierarchyCache(EntityRegistry& registry)
     {
         m_depthOrderedEntities.clear();
-        auto& registry = GetRegistry();
         
         auto view = registry.GetAllEntitiesWith<TransformComponent>();
         for (auto entity : view)
@@ -116,7 +126,7 @@ namespace nes
             // for all child transforms.
             if (node.m_parentID == kInvalidEntityID)
             {
-                ComputeDepthRecursively(entity, 0);
+                ComputeDepthRecursively(registry, entity, 0);
             }
         }
 
@@ -138,38 +148,223 @@ namespace nes
 
     void TransformSystem::MarkDirty(const EntityHandle entity)
     {
-        auto& registry = GetRegistry();
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::SetParent(const EntityID childID, const EntityID parentID)
+    {
+        if (childID == parentID)
+            return;
+        
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+        
+        const EntityHandle child = pRegistry->GetEntity(childID);
+        const EntityHandle parent = pRegistry->GetEntity(parentID);
+        SetParent(*pRegistry, child, parent);
+    }
+
+    void TransformSystem::SetParent(const EntityHandle child, const EntityHandle parent)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+
+        SetParent(*pRegistry, child, parent);
+    }
+
+    void TransformSystem::RemoveParent(const EntityID childID)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(childID))
+            return;
+
+        RemoveParent(*pRegistry, pRegistry->GetEntity(childID));
+    }
+
+    void TransformSystem::RemoveParent(const EntityHandle child)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(child))
+            return;
+
+        RemoveParent(*pRegistry, child);
+    }
+
+    void TransformSystem::TransformLocal(const EntityHandle entity, const Vec3& translation, const Rotation& rotation, const Vec3& scale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localPosition += translation;
+        transform.m_localRotation += rotation;
+        transform.m_localScale *= scale;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::TranslateLocal(const EntityHandle entity, const Vec3& translation)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localPosition += translation;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::RotateLocal(const EntityHandle entity, const Rotation& rotation)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localRotation += rotation;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::RotateLocal(const EntityHandle entity, const float angle, const Vec3& axis)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localRotation = Quat::FromAxisAngle(axis, angle).ToEulerAngles() * math::RadiansToDegrees();
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::ScaleLocal(const EntityHandle entity, const float uniformScale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localScale *= uniformScale;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::ScaleLocal(const EntityHandle entity, const Vec3& scale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localScale *= scale;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::SetLocalPosition(const EntityHandle entity, const Vec3& position)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localPosition = position;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::SetLocalRotation(const EntityHandle entity, const Rotation& rotation)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localRotation = rotation;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::SetLocalScale(const EntityHandle entity, const Vec3& scale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localScale = scale;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::SetLocalTransform(const EntityHandle entity, const Vec3 position, const Rotation rotation, const Vec3 scale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        transform.m_localPosition = position;
+        transform.m_localRotation = rotation;
+        transform.m_localScale = scale;
+        MarkDirty(*pRegistry, entity);
+    }
+
+    void TransformSystem::SetWorldTransform(const EntityHandle entity, const Vec3 position, const Rotation rotation, const Vec3 scale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+        
+        SetWorldTransform(*pRegistry, entity, position, rotation, scale);
+    }
+
+    void TransformSystem::SetWorldPosition(const EntityHandle entity, const Vec3 position)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+
+        SetWorldPosition(*pRegistry, entity, position);
+    }
+
+    void TransformSystem::SetWorldRotation(const EntityHandle entity, const Rotation rotation)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+
+        SetWorldRotation(*pRegistry, entity, rotation);
+    }
+
+    void TransformSystem::SetWorldScale(const EntityHandle entity, const Vec3 scale)
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
+            return;
+
+        SetWorldScale(*pRegistry, entity, scale);
+    }
+
+    void TransformSystem::MarkDirty(EntityRegistry& registry, const EntityHandle entity)
+    {
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         transform.m_isDirty = true;
 
         // Mark all children dirty, recursively.
         const auto& node = registry.GetComponent<NodeComponent>(entity);
-        MarkChildrenDirty(node.m_childrenIDs);
+        MarkChildrenDirty(registry, node.m_childrenIDs);
     }
 
-    void TransformSystem::SetParent(const EntityID childID, const EntityID parentID)
+    void TransformSystem::SetParent(EntityRegistry& registry, const EntityHandle child, const EntityHandle parent)
     {
-        auto& registry = GetRegistry();
-
-        if (childID == parentID)
-            return;
-        
-        const EntityHandle child = registry.GetEntity(childID);
-        const EntityHandle parent = registry.GetEntity(parentID);
-        SetParent(child, parent);
-    }
-
-    void TransformSystem::SetParent(const EntityHandle child, const EntityHandle parent)
-    {
-        auto& registry = GetRegistry();
-
         if (!registry.IsValidEntity(child))
             return;
 
         // Parent is invalid; just unparent the child.
         if (!registry.IsValidEntity(parent))
         {
-            RemoveParent(child);
+            RemoveParent(registry, child);
             return;
         }
 
@@ -203,26 +398,21 @@ namespace nes
         childNode.m_parentID = parentID;
         parentNode.m_childrenIDs.push_back(childID);
         
-        MarkDirty(child);
+        MarkDirty(registry, child);
 
         // Hierarchy changed:
         m_needsRebuild = true;
     }
 
-    void TransformSystem::RemoveParent(const EntityID childID)
+    void TransformSystem::RemoveParent(EntityRegistry& registry, const EntityHandle entity)
     {
-        auto& registry = GetRegistry();
-        EntityHandle child = GetRegistry().GetEntity(childID);
-
-        if (!registry.IsValidEntity(child))
-            return;
-
-        auto& childNode = registry.GetComponent<NodeComponent>(child);
+        auto& childNode = registry.GetComponent<NodeComponent>(entity);
         if (childNode.m_parentID != kInvalidEntityID)
         {
-            EntityHandle parent = GetRegistry().GetEntity(childNode.m_parentID);
+            EntityHandle parent = registry.GetEntity(childNode.m_parentID);
             auto& parentNode = registry.GetComponent<NodeComponent>(parent);
             
+            const auto childID = registry.GetComponent<IDComponent>(entity).GetID();
             auto it = std::find(parentNode.m_childrenIDs.begin(), parentNode.m_childrenIDs.end(), childID);
             if (it != parentNode.m_childrenIDs.end())
             {
@@ -232,158 +422,13 @@ namespace nes
             childNode.m_parentID = kInvalidEntityID;
 
             // The hierarchy has changed; needs to be updated.
-            MarkDirty(child);
+            MarkDirty(registry, entity);
             m_needsRebuild = true;
         }
     }
 
-    void TransformSystem::RemoveParent(const EntityHandle child)
+    void TransformSystem::SetWorldTransform(EntityRegistry& registry, const EntityHandle entity, const Vec3 position, const Rotation rotation, const Vec3 scale)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(child))
-            return;
-
-        auto& childNode = registry.GetComponent<NodeComponent>(child);
-        if (childNode.m_parentID != kInvalidEntityID)
-        {
-            EntityHandle parent = GetRegistry().GetEntity(childNode.m_parentID);
-            auto& parentNode = registry.GetComponent<NodeComponent>(parent);
-            
-            const auto childID = registry.GetComponent<IDComponent>(child).GetID();
-            auto it = std::find(parentNode.m_childrenIDs.begin(), parentNode.m_childrenIDs.end(), childID);
-            if (it != parentNode.m_childrenIDs.end())
-            {
-                parentNode.m_childrenIDs.erase(it);
-            }
-            
-            childNode.m_parentID = kInvalidEntityID;
-
-            // The hierarchy has changed; needs to be updated.
-            MarkDirty(child);
-            m_needsRebuild = true;
-        }
-    }
-
-    void TransformSystem::TransformLocal(const EntityHandle entity, const Vec3& translation, const Rotation& rotation, const Vec3& scale)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localPosition += translation;
-        transform.m_localRotation += rotation;
-        transform.m_localScale *= scale;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::TranslateLocal(const EntityHandle entity, const Vec3& translation)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localPosition += translation;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::RotateLocal(const EntityHandle entity, const Rotation& rotation)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localRotation += rotation;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::RotateLocal(const EntityHandle entity, const float angle, const Vec3& axis)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localRotation = Quat::FromAxisAngle(axis, angle).ToEulerAngles() * math::RadiansToDegrees();
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::ScaleLocal(const EntityHandle entity, const float uniformScale)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localScale *= uniformScale;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::ScaleLocal(const EntityHandle entity, const Vec3& scale)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localScale *= scale;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::SetLocalPosition(const EntityHandle entity, const Vec3& position)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localPosition = position;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::SetLocalRotation(const EntityHandle entity, const Rotation& rotation)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localRotation = rotation;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::SetLocalScale(const EntityHandle entity, const Vec3& scale)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localScale = scale;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::SetLocalTransform(const EntityHandle entity, const Vec3 position, const Rotation rotation, const Vec3 scale)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        transform.m_localPosition = position;
-        transform.m_localRotation = rotation;
-        transform.m_localScale = scale;
-        MarkDirty(entity);
-    }
-
-    void TransformSystem::SetWorldTransform(const EntityHandle entity, const Vec3 position, const Rotation rotation, const Vec3 scale)
-    {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         auto& node = registry.GetComponent<NodeComponent>(entity);
         
@@ -393,13 +438,12 @@ namespace nes
             transform.m_localPosition = position;
             transform.m_localRotation = rotation;
             transform.m_localScale = scale;
-            MarkDirty(entity);
+            MarkDirty(registry, entity);
         }
         else
         {
             // Convert to local space.
             EntityHandle parent = registry.GetEntity(node.m_parentID);
-
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
             const Mat44 parentInverse = parentTransform.m_worldMatrix.Inversed();
             
@@ -408,15 +452,11 @@ namespace nes
             transform.m_localScale = scale / parentTransform.GetWorldScale();
         }
         
-        MarkDirty(entity);
+        MarkDirty(registry, entity);
     }
 
-    void TransformSystem::SetWorldPosition(const EntityHandle entity, const Vec3 position)
+    void TransformSystem::SetWorldPosition(EntityRegistry& registry, const EntityHandle entity, const Vec3 position)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         auto& node = registry.GetComponent<NodeComponent>(entity);
 
@@ -424,27 +464,23 @@ namespace nes
         if (node.m_parentID == kInvalidEntityID)
         {
             transform.m_localPosition = position;
-            MarkDirty(entity);
+            MarkDirty(registry, entity);
         }
         else
         {
             // Convert to local space.
-            EntityHandle parent = GetRegistry().GetEntity(node.m_parentID);
+            EntityHandle parent = registry.GetEntity(node.m_parentID);
 
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
             Mat44 parentInverse = parentTransform.m_worldMatrix.Inversed();
             transform.m_localPosition = parentInverse.TransformPoint(position);
         }
-
-        MarkDirty(entity);
+        
+        MarkDirty(registry, entity);
     }
 
-    void TransformSystem::SetWorldRotation(const EntityHandle entity, const Rotation rotation)
+    void TransformSystem::SetWorldRotation(EntityRegistry& registry, const EntityHandle entity, const Rotation rotation)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         auto& node = registry.GetComponent<NodeComponent>(entity);
 
@@ -453,25 +489,21 @@ namespace nes
         {
             // If no parent, then world rotation = local rotation
             transform.m_localRotation = rotation;
-            MarkDirty(entity);
+            MarkDirty(registry, entity);
         }
         else
         {
             // Convert to local space.
-            EntityHandle parent = GetRegistry().GetEntity(node.m_parentID);
+            EntityHandle parent = registry.GetEntity(node.m_parentID);
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
             transform.m_localRotation = (parentTransform.m_worldRotation - rotation).Normalized();
         }
 
-        MarkDirty(entity);
+        MarkDirty(registry, entity);
     }
 
-    void TransformSystem::SetWorldScale(const EntityHandle entity, const Vec3 scale)
+    void TransformSystem::SetWorldScale(EntityRegistry& registry, const EntityHandle entity, const Vec3 scale)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
-            return;
-        
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         auto& node = registry.GetComponent<NodeComponent>(entity);
 
@@ -479,80 +511,77 @@ namespace nes
         if (node.m_parentID == kInvalidEntityID)
         {
             transform.m_localScale = scale;
-            MarkDirty(entity);
+            MarkDirty(registry, entity);
         }
         else
         {
             // Convert to local space.
-            EntityHandle parent = GetRegistry().GetEntity(node.m_parentID);
+            EntityHandle parent = registry.GetEntity(node.m_parentID);
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
             transform.m_localScale = scale / parentTransform.GetWorldScale();
         }
 
-        MarkDirty(entity);
+        MarkDirty(registry, entity);
     }
 
     void TransformSystem::TranslateWorld(const EntityHandle entity, const Vec3& translation)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
             return;
         
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        SetWorldPosition(entity, transform.GetWorldPosition() + translation);
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        SetWorldPosition(*pRegistry, entity, transform.GetWorldPosition() + translation);
     }
 
     void TransformSystem::RotateWorld(const EntityHandle entity, const Rotation& rotation)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
             return;
         
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        SetWorldRotation(entity, transform.GetWorldRotation() + rotation);
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        SetWorldRotation(*pRegistry, entity, transform.GetWorldRotation() + rotation);
     }
 
     void TransformSystem::ScaleWorld(const EntityHandle entity, const float uniformScale)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
             return;
         
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        SetWorldScale(entity, transform.GetWorldScale() * uniformScale);
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        SetWorldScale(*pRegistry, entity, transform.GetWorldScale() * uniformScale);
     }
 
     void TransformSystem::ScaleWorld(const EntityHandle entity, const Vec3& scale)
     {
-        auto& registry = GetRegistry();
-        if (!registry.IsValidEntity(entity))
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry || !pRegistry->IsValidEntity(entity))
             return;
         
-        auto& transform = registry.GetComponent<TransformComponent>(entity);
-        SetWorldScale(entity, transform.GetWorldScale() * scale);
+        auto& transform = pRegistry->GetComponent<TransformComponent>(entity);
+        SetWorldScale(*pRegistry, entity, transform.GetWorldScale() * scale);
     }
 
-    void TransformSystem::ComputeDepthRecursively(const EntityHandle entity, const uint32 depth)
+    void TransformSystem::ComputeDepthRecursively(EntityRegistry& registry, const EntityHandle entity, const uint32 depth)
     {
-        auto& registry = GetRegistry();
         auto& transform = registry.GetComponent<TransformComponent>(entity);
         transform.m_hierarchyDepth = depth;
 
         auto& node = registry.GetComponent<NodeComponent>(entity);
         for (EntityID childID : node.m_childrenIDs)
         {
-            auto childEntity = GetRegistry().GetEntity(childID);
+            auto childEntity = registry.GetEntity(childID);
             if (registry.IsValidEntity(childID))
             {
-                ComputeDepthRecursively(childEntity, depth + 1);
+                ComputeDepthRecursively(registry, childEntity, depth + 1);
             }
         }
     }
 
-    void TransformSystem::MarkChildrenDirty(const std::vector<EntityID>& childIDs)
+    void TransformSystem::MarkChildrenDirty(EntityRegistry& registry, const std::vector<EntityID>& childIDs)
     {
-        auto& registry = GetRegistry();
-        
         for (const EntityID childID : childIDs)
         {
             EntityHandle entity = registry.GetEntity(childID);
@@ -563,13 +592,12 @@ namespace nes
             transform.m_isDirty = true;
 
             auto& node = registry.GetComponent<NodeComponent>(entity);
-            MarkChildrenDirty(node.m_childrenIDs);
+            MarkChildrenDirty(registry, node.m_childrenIDs);
         }
     }
 
-    void TransformSystem::UpdateSingleTransform(const EntityHandle entity) const
+    void TransformSystem::UpdateSingleTransform(EntityRegistry& registry, const EntityHandle entity) const
     {
-        auto& registry = GetRegistry();
         if (!registry.IsValidEntity(entity))
             return;
 
@@ -586,7 +614,7 @@ namespace nes
         const auto& node = registry.GetComponent<NodeComponent>(entity);
         if (node.m_parentID != 0)
         {
-            auto parent = GetRegistry().GetEntity(node.m_parentID);
+            auto parent = registry.GetEntity(node.m_parentID);
             if (registry.IsValidEntity(parent))
             {
                 const auto& parentTransform = registry.GetComponent<TransformComponent>(parent);

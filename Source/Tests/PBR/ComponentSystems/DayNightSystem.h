@@ -22,10 +22,11 @@ namespace pbr
 
         virtual void    RegisterComponentTypes() override;
         void            Tick(const float deltaTime);
-        void            OnEvent(nes::Event& e);
+
+    private:
+        virtual void    OnBeginSimulation() override;
 
     private:
         float           m_accumulatedTime = 0.f;
-        bool            m_shouldSimulate = true;           
     };
 }

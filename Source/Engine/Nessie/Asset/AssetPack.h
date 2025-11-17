@@ -11,6 +11,7 @@ namespace nes
     struct AssetMetadata
     {
         std::filesystem::path   m_path;
+        std::string             m_assetName{}; // User-friendly name of the Asset. 
         TypeID                  m_typeID = 0;   
         AssetID                 m_assetID = kInvalidAssetID;
     };

@@ -88,7 +88,6 @@ namespace nes
     protected:
         EditorWindowDesc        m_desc{};
         StrongPtr<WorldBase>    m_pWorld = nullptr;
-
     };
     
 }

@@ -41,18 +41,18 @@ namespace nes
 
     void HierarchyWindow::RenderImGui()
     {
-        EntityRegistry& registry = m_pWorld->GetRegistry();
-        
         // Cache the drag payload once at the top level
         const ImGuiPayload* dragPayload = ImGui::GetDragDropPayload();
         m_isDraggingEntity = dragPayload && strcmp(dragPayload->DataType, kEntityHierarchyDropPayloadName) == 0;
+
+        EntityRegistry* pRegistry = m_pWorld ? m_pWorld->GetEntityRegistry() : nullptr;
         
         if (ImGui::Begin(m_desc.m_name.c_str(), &m_desc.m_isOpen, m_desc.m_flags))
         {
             // Add entity button:
-            if (ImGui::Button("+##add_entity", ImVec2(25, 0)))
+            if (pRegistry && ImGui::Button("+##add_entity", ImVec2(25, 0)))
             {
-                CreateNewEntity(registry);
+                CreateNewEntity(*pRegistry);
             }
             if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayNormal))
             {
@@ -84,20 +84,23 @@ namespace nes
                 //ImGui::TableSetupColumn("Label");
                 //ImGui::TableSetupColumn("Visibility");
 
-                auto view = registry.GetAllEntitiesWith<IDComponent, NodeComponent>();
-
-                for (auto entity : view)
+                if (pRegistry)
                 {
-                    auto& nodeComp = view.get<NodeComponent>(entity);
-                    Entity entityWrapper(registry, entity);
-                    if (nodeComp.m_parentID == kInvalidEntityID)
-                    {
-                        DrawEntityNode(registry, entityWrapper);
-                    }
-                }
+                    auto view = pRegistry->GetAllEntitiesWith<IDComponent, NodeComponent>();
 
-                // Draw a context menu for when the user right clicks in the open space of the hierarchy.
-                DrawGlobalContextMenu(registry);
+                    for (auto entity : view)
+                    {
+                        auto& nodeComp = view.get<NodeComponent>(entity);
+                        Entity entityWrapper(*pRegistry, entity);
+                        if (nodeComp.m_parentID == kInvalidEntityID)
+                        {
+                            DrawEntityNode(*pRegistry, entityWrapper);
+                        }
+                    }
+
+                    // Draw a context menu for when the user right clicks in the open space of the hierarchy.
+                    DrawGlobalContextMenu(*pRegistry);
+                }
                 
                 ImGui::EndTable();
             }
@@ -320,7 +323,7 @@ namespace nes
         }
 
         // Right click context menu:
-        if (!isRenaming)
+        if (!isRenaming && registry.IsValidEntity(entity))
             DrawEntityContextMenu(registry, entity);
         
         if (nodeOpen)

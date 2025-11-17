@@ -82,9 +82,7 @@ void SimpleRenderer::Shutdown()
 
 void SimpleRenderer::RegisterComponentTypes()
 {
-    //NES_REGISTER_COMPONENT(nes::CameraComponent);
-    nes::ComponentRegistry::Get().RegisterComponent<nes::CameraComponent>("CameraComponent");
-    
+    NES_REGISTER_COMPONENT(nes::CameraComponent);
     NES_REGISTER_COMPONENT(nes::TransformComponent);
 }
 
@@ -149,20 +147,22 @@ void SimpleRenderer::RenderWorldWithCamera(const nes::WorldCamera& worldCamera, 
 
 nes::WorldCamera SimpleRenderer::GetActiveCamera() const
 {
-    auto& registry = GetRegistry();
-    auto activeCameraEntity = registry.GetEntity(m_activeCameraID);
-
     nes::WorldCamera worldCamera{};
+    auto* pRegistry = GetEntityRegistry();
+    if (!pRegistry)
+        return worldCamera;
+    
+    auto activeCameraEntity = pRegistry->GetEntity(m_activeCameraID);
     if (activeCameraEntity == nes::kInvalidEntityHandle)
     {
         NES_WARN("No Camera in World!");
         return worldCamera;
     }
     
-    nes::CameraComponent& camera = registry.GetComponent<nes::CameraComponent>(activeCameraEntity);
+    nes::CameraComponent& camera = pRegistry->GetComponent<nes::CameraComponent>(activeCameraEntity);
     worldCamera.m_camera = camera.m_camera;
     
-    nes::TransformComponent& transform = registry.GetComponent<nes::TransformComponent>(activeCameraEntity);
+    nes::TransformComponent& transform = pRegistry->GetComponent<nes::TransformComponent>(activeCameraEntity);
     worldCamera.m_position = transform.GetWorldPosition();
     const auto& worldMatrix = transform.GetWorldTransformMatrix(); 
     worldCamera.m_forward = worldMatrix.GetForward();

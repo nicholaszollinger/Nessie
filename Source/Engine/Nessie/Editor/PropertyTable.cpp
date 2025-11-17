@@ -87,6 +87,11 @@ namespace nes::editor
             if (isDisabled)
                 ImGui::EndDisabled();
         }
+
+        std::string CreateHiddenPropertyValueLabel(const char* label)
+        {
+            return std::format("##{0}", label);
+        }
     }
     
     bool CollapsableHeader(const std::string& name, const bool openByDefault)
@@ -135,6 +140,30 @@ namespace nes::editor
         ImGui::PopStyleColor(1);
     }
 
+    bool Property(const char* label, float& value, const float speed, const float min, const float max, const char* format, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+
+        const bool modified = ImGui::DragFloat(internal::CreateHiddenPropertyValueLabel(label).c_str(), &value, speed, min, max, format);
+
+        internal::EndPropertyValue();
+        internal::EndProperty();
+
+        return modified;
+    }
+
+    void Property(const char* label, const float& value, const char* format, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue(true);
+
+        ImGui::DragFloat(internal::CreateHiddenPropertyValueLabel(label).c_str(), const_cast<float*>(&value), 1.f, 0.f, 0.f, format);
+
+        internal::EndPropertyValue(true);
+        internal::EndProperty();
+    }
+
     bool Property(const char* label, std::string& value, const char* toolTip)
     {
         internal::BeginProperty(label, toolTip);
@@ -144,7 +173,7 @@ namespace nes::editor
         static constexpr ImGuiInputTextFlags kInputTextFlags = ImGuiInputTextFlags_EnterReturnsTrue 
                 | ImGuiInputTextFlags_AutoSelectAll;
         
-        const bool modified = ImGui::InputText(std::format("##{0}", label).c_str(), &value, kInputTextFlags);
+        const bool modified = ImGui::InputText(internal::CreateHiddenPropertyValueLabel(label).c_str(), &value, kInputTextFlags);
         
         internal::EndPropertyValue();
         internal::EndProperty();
@@ -158,7 +187,7 @@ namespace nes::editor
 
         // Value
         internal::BeginPropertyValue(true);
-        ImGui::InputText(std::format("##{0}", label).c_str(), const_cast<char*>(value.data()), value.size(), ImGuiInputTextFlags_ReadOnly);
+        ImGui::InputText(internal::CreateHiddenPropertyValueLabel(label).c_str(), const_cast<char*>(value.data()), value.size(), ImGuiInputTextFlags_ReadOnly);
         internal::EndPropertyValue(true);
 
         internal::EndProperty();
@@ -169,7 +198,7 @@ namespace nes::editor
         internal::BeginProperty(label, toolTip);
         internal::BeginPropertyValue();
         
-        const bool modified = ImGui::InputScalar(std::format("##{0}", label).c_str(), ImGuiDataType_U64, &value);
+        const bool modified = ImGui::InputScalar(internal::CreateHiddenPropertyValueLabel(label).c_str(), ImGuiDataType_U64, &value);
         
         internal::EndPropertyValue();
         internal::EndProperty();
@@ -182,7 +211,7 @@ namespace nes::editor
         internal::BeginProperty(label, toolTip);
 
         internal::BeginPropertyValue(true);
-        ImGui::InputScalar(std::format("##{0}", label).c_str(), ImGuiDataType_U64, const_cast<uint64*>(&value));
+        ImGui::InputScalar(internal::CreateHiddenPropertyValueLabel(label).c_str(), ImGuiDataType_U64, const_cast<uint64*>(&value));
         internal::EndPropertyValue(true);
         
         internal::EndProperty();
@@ -331,6 +360,95 @@ namespace nes::editor
         
         ImGui::PopStyleVar();
         internal::EndProperty();
+    }
+
+    bool PropertyColor(const char* label, LinearColor& color, const bool includeAlpha, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+
+        ImGuiColorEditFlags flags = ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Float;
+        if (!includeAlpha)
+            flags |= ImGuiColorEditFlags_NoAlpha;
+        
+        const bool modified = ImGui::ColorEdit4(internal::CreateHiddenPropertyValueLabel(label).c_str(), &color.r, flags);
+
+        internal::EndPropertyValue();
+        internal::EndProperty();
+
+        return modified;
+    }
+
+    void PropertyColor(const char* label, const LinearColor& color, const bool includeAlpha, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue(true);
+        
+        ImGuiColorEditFlags flags = ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Float;
+        if (!includeAlpha)
+            flags |= ImGuiColorEditFlags_NoAlpha;
+        
+        ImGui::ColorEdit4(internal::CreateHiddenPropertyValueLabel(label).c_str(), const_cast<float*>(&color.r), flags);
+
+        internal::EndPropertyValue(true);
+        internal::EndProperty();
+    }
+
+    bool PropertyColor(const char* label, Color& color, const bool includeAlpha, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+
+        ImGuiColorEditFlags flags = ImGuiColorEditFlags_InputRGB;
+        if (!includeAlpha)
+            flags |= ImGuiColorEditFlags_NoAlpha;
+        
+        ImVec4 floatColor(color.r, color.g, color.b, color.a);
+        const bool modified = ImGui::ColorEdit4(internal::CreateHiddenPropertyValueLabel(label).c_str(), &floatColor.x, flags);
+
+        // Convert back to uint8 format.
+        if (modified)
+        {
+            color.r = static_cast<uint8>(floatColor.x);
+            color.g = static_cast<uint8>(floatColor.y);
+            color.b = static_cast<uint8>(floatColor.z);
+            color.a = static_cast<uint8>(floatColor.w);
+        }
+        
+        internal::EndPropertyValue();
+        internal::EndProperty();
+
+        return modified;
+    }
+
+    void PropertyColor(const char* label, const Color& color, const bool includeAlpha, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue(true);
+        
+        ImGuiColorEditFlags flags = ImGuiColorEditFlags_InputRGB;
+        if (!includeAlpha)
+            flags |= ImGuiColorEditFlags_NoAlpha;
+        
+        ImVec4 floatColor(color.r, color.g, color.b, color.a);
+        ImGui::ColorEdit4(internal::CreateHiddenPropertyValueLabel(label).c_str(), &floatColor.x, flags);
+
+        internal::EndPropertyValue(true);
+        internal::EndProperty();
+    }
+
+    bool PropertyColor(const char* label, Vec3& color, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+
+        static constexpr ImGuiColorEditFlags kFlags = ImGuiColorEditFlags_InputRGB | ImGuiColorEditFlags_Float | ImGuiColorEditFlags_NoAlpha;
+        const bool modified = ImGui::ColorEdit4(internal::CreateHiddenPropertyValueLabel(label).c_str(), &color.x, kFlags);
+
+        internal::EndPropertyValue();
+        internal::EndProperty();
+
+        return modified;
     }
 
     bool PropertyEntityID(const char* label, EntityID& entity, EntityRegistry& registry, const char* toolTip)

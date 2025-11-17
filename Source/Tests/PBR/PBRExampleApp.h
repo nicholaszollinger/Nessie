@@ -2,7 +2,14 @@
 #pragma once
 
 #include "Nessie/Application/Application.h"
-#include "PBRExampleWorld.h"
+#include "Nessie/Editor/EditorWindowManager.h"
+#include "Nessie/Graphics/ImGui/ImGuiRenderer.h"
+
+namespace nes
+{
+    class EditorWorld;
+    class ViewportWindow;
+}
 
 //----------------------------------------------------------------------------------------------------
 /// @brief : This example application renders a 3D Scene with a single mesh. It uses a Physically Based
@@ -22,7 +29,14 @@ private:
     virtual void                        Update(const float deltaTime) override;
     virtual void                        Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
 
-    nes::StrongPtr<pbr::PBRExampleWorld> m_pWorld = nullptr;
+private:
+    // Editor-Specific Members.
+    void                                RenderImGuiEditor();
+    void                                RenderSimulationControls();
+    
+    nes::ImGuiRenderer                  m_imgui = nullptr;
+    nes::EditorWindowManager            m_windowManager{};
+    std::shared_ptr<nes::ViewportWindow> m_viewportWindow = nullptr;
+    nes::StrongPtr<nes::EditorWorld>     m_pEditorWorld = nullptr; 
     nes::AssetID                        m_worldAssetID = nes::kInvalidAssetID;
-    bool                                m_worldLoaded = false;
 };

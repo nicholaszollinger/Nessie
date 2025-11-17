@@ -12,12 +12,13 @@ namespace nes
 
     void NodeComponentInspector::DrawImpl(NodeComponent* pComponent, const InspectorContext& context)
     {
-        auto& registry = context.m_pWorld->GetRegistry();
-        
-        const EntityID parentID = pComponent->m_parentID;
-        editor::PropertyEntityID("Parent", parentID, registry);
+        if (auto* pRegistry = context.m_pWorld->GetEntityRegistry())
+        {
+            const EntityID parentID = pComponent->m_parentID;
+            editor::PropertyEntityID("Parent", parentID, *pRegistry);
 
-        const auto& childrenIDs = pComponent->m_childrenIDs;
-        editor::PropertyArray("Children", childrenIDs, m_currentSelectedChild);
+            const auto& childrenIDs = pComponent->m_childrenIDs;
+            editor::PropertyArray("Children", childrenIDs, m_currentSelectedChild);    
+        }
     }
 }

@@ -93,8 +93,8 @@ GraphicsPipeline:
       ColorWriteMask: 15      # EColorComponentBits::RGBA
     DepthAttachment:
       RenderTarget: "Depth"
-      CompareOp: 0            # ECompareOp::None
-      EnableWrite: true
+      CompareOp: 6            # ECompareOp::LessOrEqual
+      EnableWrite: false
     StencilAttachment:
       Front:
         CompareOp: 0          # ECompareOp::None

@@ -66,7 +66,11 @@ namespace nes
 
     void FreeCamSystem::Tick(const float deltaTime) const
     {
-        auto view = GetRegistry().GetAllEntitiesWith<TransformComponent, FreeCamMovementComponent>(entt::exclude<DisabledComponent>);
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+        
+        auto view = pRegistry->GetAllEntitiesWith<TransformComponent, FreeCamMovementComponent>(entt::exclude<DisabledComponent>);
 
         Vec3 inputMovement;
         Vec2 inputRotation;

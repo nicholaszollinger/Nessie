@@ -52,10 +52,10 @@ GraphicsPipeline:
         SrcFactor: 1          # EBlendFactor::One
         DstFactor: 0          # EBlendFactor::Zero
         BlendOp: 0                 # EBlendOp::Add
-      ColorWriteMask: 15      # EColorComponentBits::RGBA
+      ColorWriteMask: 7      # EColorComponentBits::RGB, Don't write alpha!
     DepthAttachment:
       RenderTarget: "Depth"
-      CompareOp: 5            # ECompareOp::Less
+      CompareOp: 5            # ECompareOp::LessOrEqual
       EnableWrite: false
     StencilAttachment:
       Front:

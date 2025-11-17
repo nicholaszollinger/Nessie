@@ -38,7 +38,7 @@ namespace nes
         // - Higher numbers (8, 16) = narrower aperture = less light.
         float           m_aperture = 8.f;
 
-        // How long the camera sensor is exposed to light. When calling CalculateExposureFactor, this value will be
+        // How long the camera sensor is exposed to light, in seconds. When calling CalculateExposureFactor, this value will be
         // set over 1. So if you want a shutter speed of 1/500s, set this to 500.
         //     - Fast Speed (1/500s, 1/1000s) = less light.
         //     - Slow Speed (1/30s, 1) = more light.

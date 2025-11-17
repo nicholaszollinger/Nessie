@@ -691,6 +691,9 @@ namespace nes
 
     constexpr vk::ImageAspectFlags GetVkImageAspectFlags(const EImagePlaneBits planes)
     {
+        if (planes & EImagePlaneBits::All)
+            return vk::ImageAspectFlagBits::eColor | vk::ImageAspectFlagBits::eDepth | vk::ImageAspectFlagBits::eStencil;
+        
         vk::ImageAspectFlags aspectFlags{};
         if (planes & EImagePlaneBits::Color)
             aspectFlags |= vk::ImageAspectFlagBits::eColor;
