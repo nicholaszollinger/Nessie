@@ -6,8 +6,8 @@ Editor:
       CameraForward: [-0.01167, -0.3249, 0.9457]
       CameraUp: [0, 1, 0]
       CameraMovementSpeed: 12
-      CameraSensitivity: 0.285
-      PreserveAspectRatio: false
+      CameraSensitivity: 0.294
+      SelectedAspectRatioIndex: 1
       Camera:
         PerspectiveFOV: 60
         OrthographicSize: 10
