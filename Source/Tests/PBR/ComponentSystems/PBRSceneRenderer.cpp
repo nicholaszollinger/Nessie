@@ -189,7 +189,7 @@ namespace pbr
             commandBuffer.ClearRenderTargets({ colorClear, depthClear });
 
             // Set the viewport and scissor to encompass the entire image.
-            const nes::Viewport viewport = context.GetSwapchainViewport();
+            const nes::Viewport viewport(m_colorTarget.GetSize().x, m_colorTarget.GetSize().y);
             const nes::Scissor scissor(viewport);
             commandBuffer.SetViewports(viewport);
             commandBuffer.SetScissors(scissor);
@@ -918,8 +918,8 @@ namespace pbr
         //auto& registry = GetRegistry();
         auto& frame = m_frames[context.GetFrameIndex()];
     
-        const auto viewport = context.GetSwapchainViewport();
-        const float aspectRatio = viewport.m_extent.x / viewport.m_extent.y;
+        const nes::Viewport viewport(m_colorTarget.GetSize().x, m_colorTarget.GetSize().y);
+        const float aspectRatio = m_colorTarget.GetAspectRatio();
 
         // Update Camera Data:
         CameraUBO cameraConstants;

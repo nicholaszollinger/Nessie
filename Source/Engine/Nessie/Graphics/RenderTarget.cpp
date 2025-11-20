@@ -96,6 +96,14 @@ namespace nes
         // Set Debug Names
         m_image.SetDebugName(m_desc.m_name + " Image");
         m_view.SetDebugName(m_desc.m_name + " View");
+
+        m_desc.m_size.x = width;
+        m_desc.m_size.y = height;
+    }
+
+    float RenderTarget::GetAspectRatio() const
+    {
+        return (static_cast<float>(m_desc.m_size.x) / static_cast<float>(m_desc.m_size.y));
     }
 
     void RenderTarget::SetMaxSupportedSampleCount()
