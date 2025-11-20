@@ -1,6 +1,15 @@
 // Skybox.vert.glsl
 #version 450
 
+// Hardcoded fullscreen triangle (covers NDC space)
+// Using a single large triangle instead of quad (avoids diagonal seam)
+const vec2 vertices[3] = vec2[3]
+(
+    vec2(-1.0, -1.0),
+    vec2( 3.0, -1.0),
+    vec2(-1.0,  3.0)
+);
+
 layout (set = 0, binding = 0) uniform CameraUBO
 {
     mat4 view;
@@ -10,26 +19,21 @@ layout (set = 0, binding = 0) uniform CameraUBO
     float exposureFactor;
 } u_camera;
 
-// Vertex Input
-layout (location = 0) in vec3 inVertPosition;
-layout (location = 1) in vec3 inVertNormal; 
-layout (location = 2) in vec2 inUV;         
-layout (location = 3) in vec3 inTangent;
-layout (location = 4) in vec3 inBitangent;
-
 // Vertex Output.
 layout (location = 0) out vec3 outUVW;
 
 void main()
 {
-    // Our UV position is the same as the vertex position.
-    outUVW = inVertPosition;
-    
-    // We are removing the 4th column from the viewMatrix because we don't want the translation 
-    // from the view Matrix, but we do want the 4th column of the projection matrix to be applied
-    vec4 position = u_camera.proj * mat4(mat3(u_camera.view)) * vec4(inVertPosition, 1.f);
-    
-    // Force the skybox at maximum depth
-    // By setting z = w, after perspective division (z/w) we get z = 1.0
-    gl_Position = position.xyww;
+    vec2 pos = vertices[gl_VertexIndex];
+
+    // Unproject to get view direction
+    mat4 invProj = inverse(u_camera.proj);
+    vec3 unprojected = (invProj * vec4(pos, 1.0, 1.0)).xyz;
+
+    // Transform to world space
+    mat3 invView = transpose(mat3(u_camera.view));
+    outUVW = invView * unprojected;
+
+    // Output fullscreen position
+    gl_Position = vec4(pos, 1.0, 1.0);
 }
