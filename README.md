@@ -29,10 +29,16 @@ This Fall, the aim is finish rendering features and create the Editor UI!
 - Cascaded Shadow Mapping ✅
 - ECS refactor - wrapping Entt. ✅
 - Editor UI - using ImGui. ⌛
-- Height Map Terrain
-- Grass Renderer
+- Demo Scene showing off the Render Features and Editor Interface! ⌛
 
 ### Next Year (Unless I can get to these sooner):
+- More Advanced Rendering Features:
+    - Spotlights, Area Lights
+    - Instanced Rendering
+    - Culling Techniques
+    - Ambient Occlusion
+    - Global Illumination
+    - Height Map Terrain
 - Full Jolt Physics Integration
 - Exporting a final executable.
 - Proper Serialization - utilizing a binary format.
