@@ -189,7 +189,7 @@ namespace pbr
             commandBuffer.ClearRenderTargets({ colorClear, depthClear });
 
             // Set the viewport and scissor to encompass the entire image.
-            const nes::Viewport viewport = context.GetSwapchainViewport();
+            const nes::Viewport viewport(m_colorTarget.GetSize().x, m_colorTarget.GetSize().y);
             const nes::Scissor scissor(viewport);
             commandBuffer.SetViewports(viewport);
             commandBuffer.SetScissors(scissor);
@@ -918,8 +918,8 @@ namespace pbr
         //auto& registry = GetRegistry();
         auto& frame = m_frames[context.GetFrameIndex()];
     
-        const auto viewport = context.GetSwapchainViewport();
-        const float aspectRatio = viewport.m_extent.x / viewport.m_extent.y;
+        const nes::Viewport viewport(m_colorTarget.GetSize().x, m_colorTarget.GetSize().y);
+        const float aspectRatio = m_colorTarget.GetAspectRatio();
 
         // Update Camera Data:
         CameraUBO cameraConstants;
@@ -1157,20 +1157,8 @@ namespace pbr
         commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_cameraSet);
         commandBuffer.BindDescriptorSet(1, m_skyboxDescriptorSet);
 
-        const auto cubeMesh = m_scene.m_meshes[0];
-    
-        // Bind the vertex buffer range for the cube.
-        nes::VertexBufferRange vertexBuffer(&m_verticesBuffer, sizeof(Vertex), cubeMesh.m_vertexCount, cubeMesh.m_firstVertex * sizeof(Vertex));
-        commandBuffer.BindVertexBuffers(vertexBuffer);
-
-        // Bind the index buffer range for the cube.
-        nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, cubeMesh.m_indexCount, cubeMesh.m_firstIndex);
-        commandBuffer.BindIndexBuffer(indexBuffer);
-
-        nes::DrawIndexedDesc drawDesc{};
-        drawDesc.m_firstIndex = indexBuffer.GetFirstIndex();
-        drawDesc.m_indexCount = indexBuffer.GetNumIndices();
-        commandBuffer.DrawIndexed(drawDesc);
+        // Draw 3 Vertices, 
+        commandBuffer.DrawVertices(3);
     }
 
     void PBRSceneRenderer::RenderInstances(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)

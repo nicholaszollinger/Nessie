@@ -33,28 +33,28 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current extent of the swapchain image. 
         //----------------------------------------------------------------------------------------------------
-        const vk::Extent2D&         GetSwapchainExtent() const          { return m_swapchainExtent; }
+        const vk::Extent2D&         GetSwapchainExtent() const              { return m_swapchainExtent; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Returns a viewport that encompasses the entire swapchain image.
         //----------------------------------------------------------------------------------------------------
-        Viewport                    GetSwapchainViewport() const        { return Viewport(m_swapchainExtent.width, m_swapchainExtent.height); }
+        Viewport                    GetSwapchainViewport() const            { return Viewport(m_swapchainExtent.width, m_swapchainExtent.height); }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current swapchain image.
         //----------------------------------------------------------------------------------------------------
-        DeviceImage*                GetSwapchainImage() const           { return m_swapchainImage; }
+        DeviceImage*                GetSwapchainImage() const               { return m_swapchainImage; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the descriptor for the swapchain image. This can be used to set the swapchain image
         ///     as a render target for a series of render calls.
         //----------------------------------------------------------------------------------------------------
-        const Descriptor&           GetSwapchainImageDescriptor() const { return *m_swapchainImageDescriptor; }
+        const Descriptor&           GetSwapchainImageDescriptor() const     { return *m_swapchainImageDescriptor; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current frame index. This will be a value between [0, Renderer::MaxFramesInFlight()].
         //----------------------------------------------------------------------------------------------------
-        uint32                      GetFrameIndex() const               { return m_frameIndex; }
+        uint32                      GetFrameIndex() const                   { return m_frameIndex; }
         
     private:
         DeviceImage*                m_swapchainImage = nullptr;

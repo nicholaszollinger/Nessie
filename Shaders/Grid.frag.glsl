@@ -41,11 +41,28 @@ float computeDepth(vec3 fragPos)
 
 float computeLinearDepth(vec3 fragPos)
 {
-    float clipDepth = computeDepth(fragPos) * 2.0 - 1.0;
+    //float clipDepth = computeDepth(fragPos) * 2.0 - 1.0;
+    //float near = 0.1;
+    //float far = 256;
+    //float linearDepth = (2.0 * near * far) / (far + near - clipDepth * (far - near));
+    //return linearDepth / far;
+    
+    float clipDepth = computeDepth(fragPos);
     float near = 0.1;
     float far = 256;
-    float linearDepth = (2.0 * near * far) / (far + near - clipDepth * (far - near));
-    return linearDepth / far;
+    
+    if (u_camera.proj[3][3] < 1.0)
+    {
+        // Perspective Projection: need to linearize.
+        clipDepth = clipDepth * 2.0 - 1.0;
+        float linearDepth = (2.0 * near * far) / (far + near - clipDepth * (far - near));
+        return linearDepth / far;
+    }
+    else
+    {
+        // Orthographic Projection: depth is already linear.
+        return (clipDepth - near) / (far - near);
+    }
 }
 
 void main() 

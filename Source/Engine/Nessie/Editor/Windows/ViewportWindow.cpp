@@ -21,7 +21,7 @@ namespace nes
 
     ViewportWindow::~ViewportWindow()
     {
-        FreeImGuiDescriptorSetAndView();
+        FreeImGuiDescriptorSetAndView(true);
         FreeImGuiSampler();
     }
 
@@ -94,71 +94,22 @@ namespace nes
             
             m_viewportSize.x = static_cast<uint32>(viewportSize.x);
             m_viewportSize.y = static_cast<uint32>(viewportSize.y);
+
+            const auto renderDimensions = GetRenderDimensions();
+            ImVec2 imageSize = {static_cast<float>(renderDimensions.x), static_cast<float>(renderDimensions.y)};
+            ImVec2 imageDrawPosition = viewportPosition;
             
-            // Get image dimensions
-            RenderTarget* colorTarget = m_pRenderer->GetFinalColorTarget();
-            const UInt2 imageExtent = colorTarget->GetSize();
-            ImVec2 imageExtentF = ImVec2(static_cast<float>(imageExtent.x), static_cast<float>(imageExtent.y));
-            const float imageAspectRatio = imageExtentF.x / imageExtentF.y;
-
-            // Store where the actual image will be rendered (relative to window)
-            ImVec2 imagePos = viewportPosition;
-            ImVec2 imageSize = viewportSize;
-
-            if (m_preserveAspectRatio)
+            if (renderDimensions != m_viewportSize)
             {
-                // Calculate size that fits within available space while preserving aspect ratio
-                const float availableAspect = viewportSize.x / viewportSize.y;
-        
-                if (availableAspect > imageAspectRatio)
-                {
-                    // Available space is wider - fit to height
-                    imageSize.y = viewportSize.y;
-                    imageSize.x = viewportSize.y * imageAspectRatio;
-                }
-                else
-                {
-                    // Available space is taller - fit to width
-                    imageSize.x = viewportSize.x;
-                    imageSize.y = viewportSize.x / imageAspectRatio;
-                }
-        
                 // Center it
                 const float offsetX = (viewportSize.x - imageSize.x) * 0.5f;
                 const float offsetY = (viewportSize.y - imageSize.y) * 0.5f;
-                imagePos.x += offsetX;
-                imagePos.y += offsetY;
-                
-                ImGui::SetCursorPos(imagePos);
-                ImGui::Image(m_imGuiTexture, imageSize);
+                imageDrawPosition.x += offsetX;
+                imageDrawPosition.y += offsetY;
             }
-            else
-            {
-                // Fill viewport - crop image to fit
-                ImVec2 uv0 = ImVec2(0, 0);
-                ImVec2 uv1 = ImVec2(1, 1);
-                float availableAspect = viewportSize.x / viewportSize.y;
-
-                if (availableAspect > imageAspectRatio)
-                {
-                    // Viewport is wider - crop top/bottom
-                    const float visibleHeight = imageExtentF.x / availableAspect;
-                    float crop = (imageExtentF.y - visibleHeight) / (2.0f * imageExtentF.y);
-                    uv0.y = crop;
-                    uv1.y = 1.0f - crop;
-                }
-                else
-                {
-                    // Viewport is taller - crop left/right
-                    float visibleWidth = imageExtentF.y * availableAspect;
-                    float crop = (imageExtentF.x - visibleWidth) / (2.0f * imageExtentF.x);
-                    uv0.x = crop;
-                    uv1.x = 1.0f - crop;
-                }
-
-                ImGui::SetCursorPos(imagePos);
-                ImGui::Image(m_imGuiTexture, imageSize, uv0, uv1);
-            }
+            
+            ImGui::SetCursorPos(imageDrawPosition);
+            ImGui::Image(m_imGuiTexture, imageSize);
         }
 
         m_isHovered = ImGui::IsItemHovered();
@@ -215,7 +166,7 @@ namespace nes
         }
 
         // Render the controls overlaid on the Viewport window.
-        if (viewportSize.x > 0.f && viewportSize.y > 0.f)
+        if (!m_pWorld->IsSimulating() && viewportSize.x > 0.f && viewportSize.y > 0.f)
         {
             RenderViewportControlsOverlay(viewportPosition, viewportSize);
         }
@@ -227,6 +178,20 @@ namespace nes
     {
         if (!m_pRenderer || m_pRenderer->GetFinalColorTarget() == nullptr || m_viewportSize.LengthSqr() <= 0.f)
             return;
+        
+        // Check for resize
+        static constexpr uint32 kResizeThreshold = 2;
+        const auto currentTargetSize = m_pRenderer->GetFinalColorTarget()->GetSize();
+        const auto renderDimensions = GetRenderDimensions();
+
+        const bool sizeChanged = math::Abs(static_cast<int>(renderDimensions.x) - static_cast<int>(currentTargetSize.x)) > kResizeThreshold
+            || math::Abs(static_cast<int>(renderDimensions.y) - static_cast<int>(currentTargetSize.y)) > kResizeThreshold;
+        
+        // If the viewport size has significantly changed:
+        if (sizeChanged)
+        {
+            OnResize(renderDimensions);
+        }
 
         if (m_pWorld->IsSimulating())
         {
@@ -239,15 +204,14 @@ namespace nes
             m_pRenderer->RenderWorldWithCamera(m_editorCamera, commandBuffer, context);    
         }
         
+        // Transition the color target for ImGui to sample:
         RenderTarget* colorTarget = m_pRenderer->GetFinalColorTarget();
         NES_ASSERT(colorTarget->GetSampleCount() == 1, "The Final Color Target must not be multisampled! You should have a separate render target for multisampling that is resolved into the final render target.");
         
-        // Transition the color target for ImGui to sample:
         ImageBarrierDesc targetBarrier = nes::ImageBarrierDesc()
             .SetImage(&colorTarget->GetImage())
             .SetLayout(nes::EImageLayout::ColorAttachment, nes::EImageLayout::ShaderResource);
-            //.SetBarrierStage(EPipelineStageBits::ColorAttachment, nes::EPipelineStageBits::FragmentShader);
-
+        
         BarrierGroupDesc barrierGroup = nes::BarrierGroupDesc()
             .SetImageBarriers({targetBarrier} );
         
@@ -262,7 +226,7 @@ namespace nes
         in["CameraUp"].Read(m_editorCamera.m_up, nes::Vec3::Up());
         in["CameraMovementSpeed"].Read(m_freeCamMoveSpeed, 50.f);
         in["CameraSensitivity"].Read(m_freeCamSensitivity, 0.75f);
-        in["PreserveAspectRatio"].Read(m_preserveAspectRatio, false);
+        in["SelectedAspectRatioIndex"].Read(m_selectedAspectRatioIndex, 0u);
         
         CameraSerializer::Deserialize(in, m_editorCamera.m_camera);
     }
@@ -276,41 +240,60 @@ namespace nes
         out.Write("CameraUp", m_editorCamera.m_up);
         out.Write("CameraMovementSpeed", m_freeCamMoveSpeed);
         out.Write("CameraSensitivity", m_freeCamSensitivity);
-        out.Write("PreserveAspectRatio", m_preserveAspectRatio);
+        out.Write("SelectedAspectRatioIndex", m_selectedAspectRatioIndex);
         CameraSerializer::Serialize(out, m_editorCamera.m_camera);
     }
 
     void ViewportWindow::OnWorldSet()
     {
         if (m_pWorld)
-        {
             m_pRenderer = m_pWorld->GetRenderer();
-            OnResize(*m_pRenderer->GetFinalColorTarget());
-        }
         else
-        {
             m_pRenderer = nullptr;
-        }
     }
 
-    void ViewportWindow::FreeImGuiDescriptorSetAndView()
+    void ViewportWindow::FreeImGuiDescriptorSetAndView(const bool forceImGuiDestroy)
     {
-        nes::Renderer::SubmitResourceFree([view = std::move(m_imGuiImageView)]() mutable
+        if (forceImGuiDestroy)
         {
-            view = nullptr;
-        });
+            nes::Renderer::SubmitResourceFree([view = std::move(m_imGuiImageView)]() mutable
+            {
+                // Destroy the View:
+                view = nullptr;
+            });
         
-        // Free the ImGui Texture
-        vk::DescriptorSet descriptorSet = reinterpret_cast<VkDescriptorSet>(m_imGuiTexture);
-        if (descriptorSet != nullptr)
-            ImGui_ImplVulkan_RemoveTexture(descriptorSet);
+            // Free the ImGui Descriptor Set:
+            VkDescriptorSet descriptorSet = reinterpret_cast<VkDescriptorSet>(m_imGuiTexture);
+            if (descriptorSet != nullptr)
+                ImGui_ImplVulkan_RemoveTexture(descriptorSet);
+        }
+
+        else
+        {
+            ImTextureID imDescriptorSetID = m_imGuiTexture;
+            nes::Renderer::SubmitResourceFree([view = std::move(m_imGuiImageView), imDescriptorSetID]() mutable
+            {
+                // Destroy the View:
+                view = nullptr;
+            
+                // Free the ImGui Descriptor Set:
+                VkDescriptorSet descriptorSet = reinterpret_cast<VkDescriptorSet>(imDescriptorSetID);
+                if (descriptorSet != nullptr)
+                    ImGui_ImplVulkan_RemoveTexture(descriptorSet);
+            });
+        }
 
         m_imGuiTexture = 0;
     }
 
-    void ViewportWindow::OnResize(RenderTarget& renderTarget)
+    void ViewportWindow::OnResize(const UVec2 renderDimensions)
     {
+        NES_ASSERT(m_pRenderer != nullptr);
         FreeImGuiDescriptorSetAndView();
+
+        // Resize the Renderer's targets.
+        m_pRenderer->OnViewportResize(renderDimensions.x, renderDimensions.y);
+        auto& renderTarget = *m_pRenderer->GetFinalColorTarget();
         
         // Create the Image View
         auto& device = Renderer::GetDevice();
@@ -437,11 +420,58 @@ namespace nes
 
         // Preserve Aspect Ratio
         ImGui::SameLine();
-        if (ImGui::Button(m_preserveAspectRatio? "Aspect Locked" : "Fill Viewport"))
+        ImGui::SetNextItemWidth(100.f);
+        
+        if (ImGui::BeginCombo("##AspectRatio", kDefaultAspectRatioPresets[m_selectedAspectRatioIndex].m_name))
         {
-            m_preserveAspectRatio = !m_preserveAspectRatio;
+            for (size_t i = 0; i < kDefaultAspectRatioPresets.size(); ++i)
+            {
+                const bool isSelected = (m_selectedAspectRatioIndex == i);
+                if (ImGui::Selectable(kDefaultAspectRatioPresets[i].m_name, isSelected))
+                {
+                    m_selectedAspectRatioIndex = static_cast<uint32>(i);
+                }
+
+                if (isSelected)
+                    ImGui::SetItemDefaultFocus();
+            }
+
+            ImGui::EndCombo();
         }
         
         ImGui::EndGroup();
+    }
+
+    UVec2 ViewportWindow::GetRenderDimensions()
+    {
+        if (m_selectedAspectRatioIndex >= kDefaultAspectRatioPresets.size() || m_selectedAspectRatioIndex == 0)
+        {
+            m_selectedAspectRatioIndex = 0;
+            return m_viewportSize;
+        }
+
+        const float targetAspect = kDefaultAspectRatioPresets[m_selectedAspectRatioIndex].m_aspectRatio;
+        if (targetAspect <= 0.f)
+            return m_viewportSize;
+
+        // Calculate dimensions that fit within viewport while maintaining aspect ratio
+        const float viewportAspect = static_cast<float>(m_viewportSize.x) / static_cast<float>(m_viewportSize.y);
+
+        UVec2 result;
+
+        if (viewportAspect > targetAspect)
+        {
+            // Viewport is wider than the target - constrain by height.
+            result.y = m_viewportSize.y;
+            result.x = static_cast<uint32>(static_cast<float>(result.y) * targetAspect);
+        }
+        else
+        {
+            // Viewport is taller than the target - constrain by width.
+            result.x = m_viewportSize.x;
+            result.y = static_cast<uint32>(static_cast<float>(result.x) / targetAspect);
+        }
+        
+        return result;
     }
 }

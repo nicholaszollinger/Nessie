@@ -28,37 +28,10 @@ GraphicsPipeline:
   Shader: 1001
 
   # Vertex Input
+  # No vertices, we are using a hard coded, fullscreen Screen Space triangle
   VertexInputState:
     Attributes:
-    # Vertex::m_position
-    - Location: 0
-      Offset: 0
-      Format: 39  # RGB32_SFLOAT
-      Stream: 0
-    # Vertex::m_normal
-    - Location: 1
-      Offset: 16
-      Format: 39  # RGB32_SFLOAT
-      Stream: 0
-    # Vertex::m_texCoord
-    - Location: 2
-      Offset: 32
-      Format: 36  # RG32_SFLOAT
-      Stream: 0
-    # Vertex::m_tangent
-    - Location: 3
-      Offset: 48
-      Format: 39  # RGB32_SFLOAT
-      Stream: 0
-    # Vertex::m_bitangent
-    - Location: 4
-      Offset: 64
-      Format: 39  # RGB32_SFLOAT
-      Stream: 0
     Streams:
-    - Stride: 80
-      BindingIndex: 0
-      StepRate: 0     # 0=PerVertex 1=PerInstance
 
   # Input Assembly
   InputAssembly:

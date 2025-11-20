@@ -136,16 +136,16 @@ void PBRExampleApp::OnResize(const uint32, const uint32)
 
 void PBRExampleApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
+    // Record ImGui Draw calls:
+    m_imgui.BeginFrame();
+    RenderImGuiEditor();
+    m_imgui.CreateRenderData();
+    
     // Render the World into the offscreen targets (non-swapchain targets)
     if (m_viewportWindow)
     {
         m_viewportWindow->RenderWorld(commandBuffer, context);
     }
-
-    // Record ImGui Draw calls:
-    m_imgui.BeginFrame();
-    RenderImGuiEditor();
-    m_imgui.CreateRenderData();
 
     // Render ImGui data into the Swapchain:
     // Transition the swapchain image to color attachment

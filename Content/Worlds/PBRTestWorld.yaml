@@ -133,6 +133,6 @@ World:
             Intensity: 8e+04
             Radius: 10
         - TransformComponent:
-            Position: [0.2, 0.1, 0]
+            Position: [0.1, 0.1, 0]
             Rotation: [0, 0, 0]
             Scale: [1, 1, 1]

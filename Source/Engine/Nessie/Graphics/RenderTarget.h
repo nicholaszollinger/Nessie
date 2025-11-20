@@ -43,6 +43,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         void                        Resize(const uint32 width, const uint32 height);
         UInt2                       GetSize() const                             { return m_desc.m_size; }
+        float                       GetAspectRatio() const;
         DeviceImage&                GetImage()                                  { return m_image; }
         Descriptor&                 GetView()                                   { return m_view; }
         const RenderTargetDesc&     GetDesc() const                             { return m_desc; }
