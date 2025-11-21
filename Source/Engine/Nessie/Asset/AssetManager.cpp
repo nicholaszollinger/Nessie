@@ -1,10 +1,29 @@
 ﻿// AssetManager.cpp
 #include "AssetManager.h"
 #include "Nessie/Application/Application.h"
+#include "Nessie/Graphics/Shader.h"
 
 namespace nes
 {
     static AssetManager* g_pInstance = nullptr;
+
+    // [TODO]: Temp Fix. Right now, I have shaders in their own folder.
+    // - When I have all Assets in a single folder, then I can just prepend the NES_CONTENT_DIR
+    //   directory.
+    // - I will also have to update my shader compilation script.
+    // - NOTE: You will probably want to load Shaders separately from world assets, so that you
+    //   can immediately start rendering and don't stall the update loop.
+    static std::filesystem::path ResolveAbsoluteAssetPath(const AssetMetadata& metadata)
+    {
+        if (metadata.m_typeID == Shader::GetStaticTypeID())
+        {
+            return std::filesystem::path(NES_SHADER_DIR) / metadata.m_relativePath;
+        }
+        else
+        {
+            return std::filesystem::path(NES_CONTENT_DIR) / metadata.m_relativePath;
+        }
+    }
 
     LoadRequest& LoadRequest::operator=(const LoadRequest& other)
     {
@@ -56,7 +75,7 @@ namespace nes
     {
         NES_ASSERT(m_pAssetManager != nullptr);
         NES_ASSERT(m_pAssetManager->IsTypeRegistered(metadata.m_typeID), "Asset Type must be registered before being able to use AssetMetadata parameters directly!");
-        NES_ASSERT(!metadata.m_path.empty(), "Failed to AppendLoad to LoadRequest! AssetMetadata must have a valid path!");
+        NES_ASSERT(!metadata.m_relativePath.empty(), "Failed to AppendLoad to LoadRequest! AssetMetadata must have a valid path!");
 
         // If we don't have an entry already, create one.
         if (!m_pAssetManager->GetAssetDesc(metadata.m_assetID))
@@ -117,7 +136,7 @@ namespace nes
         // Create the asset id if necessary:
         if (metadata.m_assetID == kInvalidAssetID)
         {
-            metadata.m_assetID = GenerateAssetIDFromPath(metadata.m_path);
+            metadata.m_assetID = GenerateAssetIDFromPath(metadata.m_relativePath);
         }
 
         AssetManager& instance = GetInstance();
@@ -169,12 +188,12 @@ namespace nes
             // If not loaded, then return.
             else if (desc.m_state != EAssetState::Loaded)
             {
-                NES_WARN("Attempted to save an Asset that was not loaded! \n- ID: {}\n- Path: {}", id.GetValue(), desc.m_metadata.m_path.string());
+                NES_WARN("Attempted to save an Asset that was not loaded! \n- ID: {}\n- Path: {}", id.GetValue(), desc.m_metadata.m_relativePath.string());
                 return;
             }
 
             // If no path is present, we can't save it.
-            if (desc.m_metadata.m_path.empty())
+            if (desc.m_metadata.m_relativePath.empty())
             {
                 NES_WARN("Attempted to save an Asset that does not have a valid path! \n- ID: {}", id.GetValue());
                 return;
@@ -184,7 +203,7 @@ namespace nes
             NES_ASSERT(assetManager.m_loadedAssets[desc.m_loadedIndex] != nullptr);
 
             // Perform the save:
-            assetManager.m_loadedAssets[desc.m_loadedIndex]->SaveToFile(desc.m_metadata.m_path);    
+            assetManager.m_loadedAssets[desc.m_loadedIndex]->SaveToFile(desc.m_metadata.m_relativePath);    
         }
     }
 
@@ -200,7 +219,7 @@ namespace nes
             // Create the asset id if necessary:
             if (metadata.m_assetID == kInvalidAssetID)
             {
-                metadata.m_assetID = GenerateAssetIDFromPath(metadata.m_path);
+                metadata.m_assetID = GenerateAssetIDFromPath(metadata.m_relativePath);
             }
             
             request.AppendLoad(metadata);
@@ -342,7 +361,7 @@ namespace nes
             std::lock_guard lock(assetManager.m_threadLoadedAssetMapMutex);
             if (const auto it = assetManager.m_threadLoadedAssetMap.find(id); it != assetManager.m_threadLoadedAssetMap.end())
             {
-                return it->second.IsValid() && it->second.m_metadata.m_path.empty();
+                return it->second.IsValid() && it->second.m_metadata.m_relativePath.empty();
             }
         }
 
@@ -351,7 +370,7 @@ namespace nes
         {
             if (const auto it = assetManager.m_loadedAssetMap.find(id); it != assetManager.m_loadedAssetMap.end())
             {
-                return it->second.IsValid() && it->second.m_metadata.m_path.empty();
+                return it->second.IsValid() && it->second.m_metadata.m_relativePath.empty();
             }
         }
         
@@ -610,7 +629,9 @@ namespace nes
         // Load the Asset:
         AssetTypeDesc::CreateNewAsset createNew = GetCreateNewAsset(metadata.m_typeID);
         AssetBase* pAsset = createNew();
-        ELoadResult result = pAsset->LoadFromFile(metadata.m_path);
+
+        auto absolutePath = ResolveAbsoluteAssetPath(metadata);
+        ELoadResult result = pAsset->LoadFromFile(absolutePath);
 
         // Process the loaded result:
         ProcessLoadedAsset(pAsset, metadata, result);
@@ -655,7 +676,8 @@ namespace nes
             // Load:
             AssetTypeDesc::CreateNewAsset createNew = GetCreateNewAsset(metadata.m_typeID);
             memoryAsset.m_pAsset = createNew();
-            memoryAsset.m_result = memoryAsset.m_pAsset->LoadFromFile(metadata.m_path);
+            auto absolutePath = ResolveAbsoluteAssetPath(metadata);
+            memoryAsset.m_result = memoryAsset.m_pAsset->LoadFromFile(absolutePath);
             
             // Set the result of the load in the map.
             std::lock_guard lock(m_threadLoadedAssetMapMutex);
@@ -718,7 +740,7 @@ namespace nes
             if (canAddAsset)
             {
                 // Create the asset on the heap.
-                memoryAsset.m_pAsset = createAsset(std::move(asset)); //NES_NEW(Type(std::forward<Type>(asset)));
+                memoryAsset.m_pAsset = createAsset(std::move(asset));
                 memoryAsset.m_result = ELoadResult::Success;
             
                 // Set the result of the load in the map.
