@@ -26,7 +26,7 @@ namespace nes
         // Create the metadata for the asset.
         AssetMetadata metadata;
         metadata.m_assetID = id;
-        metadata.m_path = path;
+        metadata.m_relativePath = path;
         metadata.m_typeID = typeID;
 
         AppendLoad(metadata);
@@ -82,7 +82,7 @@ namespace nes
 
         // Create the metadata
         AssetMetadata metadata;
-        metadata.m_path = path;
+        metadata.m_relativePath = path;
         metadata.m_assetID = id;
         metadata.m_typeID = Type::GetStaticTypeID();
 

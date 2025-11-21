@@ -4,24 +4,6 @@
 
 namespace nes
 {
-    // [TODO]: Temp Fix. Right now, I have shaders in their own folder.
-    // - When I have all Assets in a single folder, then I can just prepend the NES_CONTENT_DIR
-    //   directory.
-    // - I will also have to update my shader compilation script.
-    // - NOTE: You will probably want to load Shaders separately from world assets, so that you
-    //   can immediately start rendering and don't stall the update loop.
-    static void ResolveAssetPath(AssetMetadata& metaData)
-    {
-        if (metaData.m_typeID == Shader::GetStaticTypeID())
-        {
-            metaData.m_path = std::filesystem::path(NES_SHADER_DIR) / metaData.m_path;
-        }
-        else
-        {
-            metaData.m_path = std::filesystem::path(NES_CONTENT_DIR) / metaData.m_path;
-        }
-    }
-
     void AssetPack::AddAsset(const AssetMetadata& metaData)
     {
         if (!Contains(metaData.m_assetID))
@@ -90,17 +72,16 @@ namespace nes
 
             // Path
             assetNode["Path"].Read<std::string>(path);
-            metaData.m_path = path;
+            metaData.m_relativePath = path;
             
-            ResolveAssetPath(metaData);
-            if (!metaData.m_path.has_extension())
+            if (!metaData.m_relativePath.has_extension())
             {
-                NES_ERROR("Failed to load AssetPack! Invalid relative path for Asset: '{}'", metaData.m_path.string());
+                NES_ERROR("Failed to load AssetPack! Invalid relative path for Asset: '{}'", metaData.m_relativePath.string());
                 return false;
             }
 
             // Set the filename (no extension) as the asset name.
-            metaData.m_assetName = metaData.m_path.stem().string();
+            metaData.m_assetName = metaData.m_relativePath.stem().string();
             outPack.AddAsset(metaData);
         }
 
@@ -115,7 +96,7 @@ namespace nes
             writer.BeginMap();
             writer.Write("AssetID", metaData.m_assetID);
             writer.Write("TypeID", metaData.m_typeID);
-            writer.Write("Path", metaData.m_path.string());
+            writer.Write("Path", metaData.m_relativePath.string());
             writer.EndMap();
         }
         writer.EndSequence();
