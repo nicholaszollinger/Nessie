@@ -7,14 +7,30 @@ namespace pbr
 {
     void MeshComponentInspector::DrawImpl(MeshComponent* pTarget, const nes::InspectorContext& context)
     {
-        bool modified = nes::editor::PropertyAssetID<MeshAsset>("Mesh", pTarget->m_meshID);
-        modified |= nes::editor::PropertyAssetID<PBRMaterial>("Material", pTarget->m_materialID);
+        bool modified = nes::editor::PropertyAssetID<MeshAsset>("Mesh", pTarget->m_sourceMeshID);
+        if (modified)
+        {
+            // The Mesh Asset has changed, so I have to resize the Material IDs array to fit the number of submeshes.
+            auto pMeshAsset = nes::AssetManager::GetAsset<MeshAsset>(pTarget->m_sourceMeshID);
+            
+            // Initialize to the default materials for the mesh. 
+            pTarget->m_materials = pMeshAsset->GetMaterials();
+        }
+
+        if (pTarget->m_materials.size() == 1)
+        {
+            modified |= nes::editor::PropertyAssetID<PBRMaterial>("Material", pTarget->m_materials[0]);
+        }
+        else
+        {
+            modified |= nes::editor::PropertyAssetIDArray<PBRMaterial>("Materials", pTarget->m_materials);   
+        }
 
         auto* pRegistry = context.m_pWorld->GetEntityRegistry();
         if (modified && pRegistry)
         {
             const nes::EntityID id = context.m_selectionIDs[0];
-            pRegistry->TriggerUpdate<MeshComponent>(pRegistry->GetEntity(id), pTarget->m_meshID, pTarget->m_materialID);
+            pRegistry->TriggerUpdate<MeshComponent>(pRegistry->GetEntity(id), pTarget->m_sourceMeshID, pTarget->m_materials);
         }
     }
 }

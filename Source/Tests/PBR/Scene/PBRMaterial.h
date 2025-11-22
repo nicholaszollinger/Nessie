@@ -67,6 +67,9 @@ namespace pbr
     
         // Whether this Material should be considered Transparent or not. 
         bool                        m_isTransparent         = false;
+
+        bool                        operator==(const PBRMaterialDesc& other) const;
+        bool                        operator!=(const PBRMaterialDesc& other) const { return !(*this == other); }
     };
 
     //----------------------------------------------------------------------------------------------------

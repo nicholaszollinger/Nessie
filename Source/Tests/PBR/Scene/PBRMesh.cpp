@@ -13,7 +13,7 @@
 
 namespace pbr
 {
-    void helpers::CalculateTangentSpace(std::vector<Vertex>& outVertices, const std::vector<uint32>& indices, const Mesh& mesh)
+    void helpers::CalculateTangentSpace(std::vector<Vertex>& outVertices, const std::vector<uint32>& indices, const MeshInstance& mesh)
     {
         std::vector<nes::Vec3> tangents(mesh.m_vertexCount, nes::Vec3::Zero());
         std::vector<nes::Vec3> bitangents(mesh.m_vertexCount, nes::Vec3::Zero());
@@ -99,7 +99,7 @@ namespace pbr
         }
     }
 
-    void helpers::AppendCubeMeshData(std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh)
+    void helpers::AppendCubeMeshData(std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, MeshInstance& outMesh)
     {
         outMesh.m_firstVertex = static_cast<uint32>(outVertices.size());
         outMesh.m_firstIndex = static_cast<uint32>(outIndices.size());
@@ -166,7 +166,7 @@ namespace pbr
         //CalculateTangentSpace(outVertices, outIndices, outMesh);
     }
 
-    void helpers::AppendSphereMeshData(const SphereGenDesc& sphereDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh)
+    void helpers::AppendSphereMeshData(const SphereGenDesc& sphereDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, MeshInstance& outMesh)
     {
         outMesh.m_firstVertex = static_cast<uint32>(outVertices.size());
         outMesh.m_firstIndex = static_cast<uint32>(outIndices.size());
@@ -216,7 +216,7 @@ namespace pbr
         CalculateTangentSpace(outVertices, outIndices, outMesh);
     }
 
-    void helpers::AppendPlaneData(const PlaneGenDesc& planeDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh)
+    void helpers::AppendPlaneData(const PlaneGenDesc& planeDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, MeshInstance& outMesh)
     {
         outMesh.m_firstVertex = static_cast<uint32>(outVertices.size());
         outMesh.m_firstIndex = static_cast<uint32>(outIndices.size());
@@ -316,20 +316,193 @@ namespace pbr
         return kBindings;
     }
 
+    static bool LoadMaterialDataForSubMesh(const uint32 meshIndex, const aiScene* pScene, const aiMaterial* pMaterial, const std::filesystem::path& path, PBRMaterialDesc& outMaterialDesc)
+    {
+        // Create the Default PBR Material for the Mesh:
+        outMaterialDesc.m_baseColorMap = nes::kInvalidAssetID;
+        outMaterialDesc.m_normalMap = nes::kInvalidAssetID;
+        outMaterialDesc.m_roughnessMetallicMap = nes::kInvalidAssetID;
+        outMaterialDesc.m_emissionMap = nes::kInvalidAssetID;
+        outMaterialDesc.m_baseColor = nes::Float4(1.f);
+        outMaterialDesc.m_emission = nes::Float3(1.f);
+        outMaterialDesc.m_metallic = 1.f;
+        outMaterialDesc.m_roughness = 1.f;
+        outMaterialDesc.m_isTransparent = false;
+        
+        // Base Color Factor
+        aiColor4D colorFactor;
+        bool hasBaseColor = pMaterial->Get(AI_MATKEY_BASE_COLOR, colorFactor) == AI_SUCCESS;
+        if (!hasBaseColor)
+        {
+            hasBaseColor = pMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, colorFactor) == AI_SUCCESS;
+        }
+        if (!hasBaseColor)
+        {
+            NES_ERROR("Failed to get Base Color from material! Name: {}", pMaterial->GetName().C_Str());
+            return false;
+        }
+        outMaterialDesc.m_baseColor = nes::Float4(colorFactor.r, colorFactor.g, colorFactor.b, colorFactor.a);
+
+        // Emission Color Factor
+        if (pMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, colorFactor) == AI_SUCCESS)
+            outMaterialDesc.m_emission = nes::Float3(colorFactor.r, colorFactor.g, colorFactor.b);
+        
+        // Metallic Factor
+        float metallic;
+        if (pMaterial->Get(AI_MATKEY_METALLIC_FACTOR, metallic) == AI_SUCCESS)
+            outMaterialDesc.m_metallic = metallic;
+
+        // Roughness Factor
+        float roughness;
+        if (pMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)
+            outMaterialDesc.m_roughness = roughness;
+            
+        // Opacity
+        float opacity;
+        if (pMaterial->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
+        {
+            outMaterialDesc.m_baseColor.w = opacity;
+            outMaterialDesc.m_isTransparent = opacity < 1.f;
+        }
+
+        // Texture Maps:
+        aiString texturePath;
+        
+        // Base Color Texture
+        if (pMaterial->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &texturePath) == AI_SUCCESS)
+        {
+            if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
+            {
+                NES_ASSERT(false, "Embedded texture not implemented yet!");
+                return false;
+            }
+            else
+            {
+                // Load texture from path:
+                std::filesystem::path filePath = path.parent_path();
+                filePath /= texturePath.C_Str();
+                
+                const auto result = nes::AssetManager::LoadSync<nes::Texture>(outMaterialDesc.m_baseColorMap, filePath);
+                if (result != nes::ELoadResult::Success)
+                {
+                    // Set to the Error Texture
+                    NES_ERROR("Failed to load Base Color texture for Mesh! Setting to Error Texture...\n\t - Mesh Path: {}", path.string());
+                    outMaterialDesc.m_baseColorMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Error);
+                }
+            }
+        }
+
+        // Normal Texture
+        if (pMaterial->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS)
+        {
+            if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
+            {
+                NES_ASSERT(false, "Embedded texture not implemented yet!");
+                return false;
+            }
+            else
+            {
+                // Load texture from path:
+                std::filesystem::path filePath = path.parent_path();
+                filePath /= texturePath.C_Str();
+                
+                const auto result = nes::AssetManager::LoadSync<nes::Texture>(outMaterialDesc.m_normalMap, filePath);
+                if (result != nes::ELoadResult::Success)
+                {
+                    // Set to the FlatNormal Texture
+                    NES_ERROR("Failed to load Normal texture for Mesh! Setting to FlatNormal Texture...\n\t - Mesh Path: {}", path.string());
+                    outMaterialDesc.m_normalMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::FlatNormal);
+                }
+            }
+        }
+
+        // Roughness (G), Metallic (B)
+        if (pMaterial->GetTexture(AI_MATKEY_METALLIC_TEXTURE, &texturePath) == AI_SUCCESS)
+        {
+#if NES_DEBUG
+            // Ensure that Roughness & Metallic are the same texture.
+            aiString roughnessPath;
+            pMaterial->GetTexture(AI_MATKEY_ROUGHNESS_TEXTURE, &roughnessPath);
+            NES_ASSERT(roughnessPath == texturePath, "Invalid PBR Material Textures. Roughness and Metallic should in the same texture. Roughness in the G channel, and Metallic in the B channel.");
+#endif
+
+            if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
+            {
+                NES_ASSERT(false, "Embedded texture not implemented yet!");
+                return false;
+            }
+            else
+            {
+                // Load texture from path:
+                std::filesystem::path filePath = path.parent_path();
+                filePath /= texturePath.C_Str();
+                
+                const auto result = nes::AssetManager::LoadSync<nes::Texture>(outMaterialDesc.m_roughnessMetallicMap, filePath);
+                if (result != nes::ELoadResult::Success)
+                {
+                    // Set to the FlatNormal Texture
+                    NES_ERROR("Failed to load Roughness/Metallic texture for Mesh! Setting to Black Texture...\n\t - Mesh Path: {}", path.string());
+                    outMaterialDesc.m_roughnessMetallicMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
+                }
+            }
+        }
+
+        // Emission Map
+        // [TODO]: Emission Factor should probably be in the same texture (Alpha Channel).
+        if (pMaterial->GetTexture(aiTextureType_EMISSION_COLOR, 0, &texturePath) == AI_SUCCESS)
+        {
+            if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
+            {
+                NES_ASSERT(false, "Embedded texture not implemented yet!");
+                return false;
+            }
+            else
+            {
+                // Load texture from path:
+                std::filesystem::path filePath = path.parent_path();
+                filePath /= texturePath.C_Str();
+                
+                const auto result = nes::AssetManager::LoadSync<nes::Texture>(outMaterialDesc.m_emissionMap, filePath);
+                if (result != nes::ELoadResult::Success)
+                {
+                    // Set to the FlatNormal Texture
+                    NES_ERROR("Failed to load Emissive texture for Mesh! Setting to Black Texture...\n\t - Mesh Path: {}", path.string());
+                    outMaterialDesc.m_emissionMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
+                }
+            }
+        }
+
+        // Create the default material for the Mesh.
+        // Ensure default values for each map type:
+        if (outMaterialDesc.m_baseColorMap == nes::kInvalidAssetID)
+            outMaterialDesc.m_baseColorMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::White);
+
+        if (outMaterialDesc.m_normalMap == nes::kInvalidAssetID)
+            outMaterialDesc.m_normalMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::FlatNormal);
+
+        if (outMaterialDesc.m_roughnessMetallicMap == nes::kInvalidAssetID)
+            outMaterialDesc.m_roughnessMetallicMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::White);
+
+        if (outMaterialDesc.m_emissionMap == nes::kInvalidAssetID)
+            outMaterialDesc.m_emissionMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
+        
+        return true;
+    }
+
     MeshAsset::MeshAsset(const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, const nes::AssetID defaultMaterialID)
         : m_vertices(vertices)
         , m_indices(indices)
-        , m_defaultMaterialID(defaultMaterialID)
     {
-        //
+        m_materialIDs.emplace_back(defaultMaterialID);
+        m_subMeshes.emplace_back(0u, static_cast<uint32>(indices.size()), static_cast<uint32>(vertices.size()),0u);
     }
 
     MeshAsset::MeshAsset(Vertex* pVertices, const uint32 vertexCount, uint32* indices, const uint32 indexCount, const nes::AssetID defaultMaterialID)
         : m_vertices(pVertices, pVertices + vertexCount)
         , m_indices(indices, indices + indexCount)
-        , m_defaultMaterialID(defaultMaterialID)
     {
-        //
+        m_materialIDs.emplace_back(defaultMaterialID);
+        m_subMeshes.emplace_back(0u, indexCount, vertexCount, 0u);
     }
 
     nes::ELoadResult MeshAsset::LoadFromFile(const std::filesystem::path& path)
@@ -352,7 +525,7 @@ namespace pbr
         return LoadFromYAML(mesh, path.stem().string());
     }
 
-    nes::ELoadResult MeshAsset::LoadFromYAML(const nes::YamlNode& node, const std::string& yamlFileName)
+    nes::ELoadResult MeshAsset::LoadFromYAML(const nes::YamlNode& node, const std::string& /*yamlFileName*/)
     {
         bool invertWinding;
         node["InvertWinding"].Read(invertWinding, true);
@@ -361,7 +534,6 @@ namespace pbr
         int importFlags = aiProcess_Triangulate | aiProcess_MakeLeftHanded | aiProcess_FlipUVs;
         if (invertWinding)
             importFlags |= aiProcess_FlipWindingOrder;
-
         
         std::filesystem::path path = NES_CONTENT_DIR;
         std::string relativePath;
@@ -374,229 +546,119 @@ namespace pbr
             NES_ERROR("Failed to load assimp file! Error: {}", importer.GetErrorString());
             return nes::ELoadResult::Failure;
         }
+        
+        NES_ASSERT(pScene->mNumMeshes > 0, "No Meshes in file! {}", path.string());
 
-        // Assume a single mesh for now.
-        NES_ASSERT(pScene->mNumMeshes > 0);
-        const aiMesh* pMesh = pScene->mMeshes[0];
-
-        // Load Index data:
-        const uint32 numIndices = pMesh->mNumFaces * 3;
-        m_indices.reserve(numIndices);
-        for (uint32 i = 0; i < pMesh->mNumFaces; ++i)
+        std::unordered_map<uint32, uint32> sourceMaterialIndexToAssetIndex{};
+        std::vector<PBRMaterialDesc> uniqueMaterialDescs{};
+        uniqueMaterialDescs.reserve(pScene->mNumMeshes);
+        
+        for (uint32 meshIndex = 0; meshIndex < pScene->mNumMeshes; ++meshIndex)
         {
-            const aiFace& face = pMesh->mFaces[i];
-            for (uint32 j = 0; j < face.mNumIndices; ++j)
-            {
-                m_indices.emplace_back(face.mIndices[j]);
-            }
-        }
+            const aiMesh* pMesh = pScene->mMeshes[meshIndex];
 
-        // Load Vertex Data:
-        m_vertices.resize(pMesh->mNumVertices);
-        for (uint32 i = 0; i < pMesh->mNumVertices; ++i)
-        {
-            m_vertices[i].m_position = nes::Vec3(pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z);
-            m_vertices[i].m_normal = nes::Vec3(pMesh->mNormals[i].x, pMesh->mNormals[i].y, pMesh->mNormals[i].z);
-
-            if (pMesh->HasTangentsAndBitangents())
+            const uint32 firstVertex = static_cast<uint32>(m_vertices.size());
+            const uint32 firstIndex = static_cast<uint32>(m_indices.size());
+        
+            // Load Index data:
+            const uint32 numIndices = pMesh->mNumFaces * 3;
+            m_indices.reserve(firstIndex + numIndices);
+            for (uint32 i = 0; i < pMesh->mNumFaces; ++i)
             {
-                m_vertices[i].m_tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
-                m_vertices[i].m_bitangent = { pMesh->mBitangents[i].x, pMesh->mBitangents[i].y ,pMesh->mBitangents[i].z };
+                const aiFace& face = pMesh->mFaces[i];
+                for (uint32 j = 0; j < face.mNumIndices; ++j)
+                {
+                    m_indices.emplace_back(face.mIndices[j]);
+                }
             }
 
-            if (pMesh->HasTextureCoords(0))
+            // Load Vertex Data:
+            m_vertices.reserve(firstVertex + pMesh->mNumVertices);
+            for (uint32 i = 0; i < pMesh->mNumVertices; ++i)
             {
-                m_vertices[i].m_texCoord = nes::Vec2(pMesh->mTextureCoords[0][i].x, pMesh->mTextureCoords[0][i].y);
-            }
-        }
+                auto& vertex = m_vertices.emplace_back();
+                vertex.m_position = nes::Vec3(pMesh->mVertices[i].x, pMesh->mVertices[i].y, pMesh->mVertices[i].z);
+                vertex.m_normal = nes::Vec3(pMesh->mNormals[i].x, pMesh->mNormals[i].y, pMesh->mNormals[i].z);
 
-        // Calculate Tangent space if necessary:
-        if (!pMesh->HasTangentsAndBitangents())
-        {
-            Mesh mesh;
-            mesh.m_vertexCount = pMesh->mNumVertices;
-            mesh.m_indexCount = numIndices;
-            mesh.m_firstVertex = 0;
-            mesh.m_firstIndex = 0;
-            helpers::CalculateTangentSpace(m_vertices, m_indices, mesh);
+                if (pMesh->HasTangentsAndBitangents())
+                {
+                    vertex.m_tangent = { pMesh->mTangents[i].x, pMesh->mTangents[i].y ,pMesh->mTangents[i].z };
+                    vertex.m_bitangent = { pMesh->mBitangents[i].x, pMesh->mBitangents[i].y ,pMesh->mBitangents[i].z };
+                }
+
+                if (pMesh->HasTextureCoords(0))
+                {
+                    vertex.m_texCoord = nes::Vec2(pMesh->mTextureCoords[0][i].x, pMesh->mTextureCoords[0][i].y);
+                }
+            }
+            
+            // Calculate Tangent space if necessary:
+            if (!pMesh->HasTangentsAndBitangents())
+            {
+                MeshInstance mesh;
+                mesh.m_firstVertex = firstVertex;
+                mesh.m_vertexCount = pMesh->mNumVertices;
+                mesh.m_firstIndex = firstIndex;
+                mesh.m_indexCount = numIndices;
+                helpers::CalculateTangentSpace(m_vertices, m_indices, mesh);
+            }
+            
+            nes::AssetID materialID = nes::kInvalidAssetID;
+            uint32 materialIndex = 0;
+            if (pScene->HasMaterials() && pMesh->mMaterialIndex < pScene->mNumMaterials)
+            {
+                if (!sourceMaterialIndexToAssetIndex.contains(pMesh->mMaterialIndex))
+                {
+                    // We haven't loaded this material yet, load it:
+                    PBRMaterialDesc materialDesc;
+                    const aiMaterial* pMaterial = pScene->mMaterials[pMesh->mMaterialIndex];
+                    if (!LoadMaterialDataForSubMesh(meshIndex, pScene, pMaterial, path, materialDesc))
+                    {
+                        NES_ERROR("Failed to load Material for Submesh '{}'! MeshAsset: '{}'", meshIndex, path.string());
+                        return nes::ELoadResult::Failure;
+                    }
+
+                    // Compare against other materials in the submesh, so that
+                    // we don't create duplicates of the same material asset value.
+                    materialIndex = std::numeric_limits<uint32>::max();
+                    for (size_t i = 0; i < uniqueMaterialDescs.size(); ++i)
+                    {
+                        if (uniqueMaterialDescs[i] == materialDesc)
+                        {
+                            // We already created an asset with this value:
+                            materialIndex = static_cast<uint32>(i);
+                            materialID = m_materialIDs[materialIndex];
+                            m_materialIDs.emplace_back(materialID);
+                            break;
+                        }
+                    }
+
+                    // This is a unique material desc, create the asset.
+                    if (materialIndex == std::numeric_limits<uint32>::max())
+                    {
+                        PBRMaterial defaultMaterial(materialDesc);
+                        nes::AssetManager::AddMemoryAsset<PBRMaterial>(materialID, std::move(defaultMaterial), std::format("M_{}_{}", path.stem().string(), meshIndex));
+                        
+                        m_materialIDs.emplace_back(materialID);
+                        materialIndex = static_cast<uint32>(m_materialIDs.size() - 1);
+                        uniqueMaterialDescs.emplace_back(materialDesc);
+                    }
+                    
+                    sourceMaterialIndexToAssetIndex.emplace(pMesh->mMaterialIndex, materialIndex);
+                }
+                else
+                {
+                    // This material is already loaded, reuse it for this submesh.
+                    // Set the existing material index from the loaded result.
+                    materialIndex = sourceMaterialIndexToAssetIndex.at(pMesh->mMaterialIndex);
+                    m_materialIDs.emplace_back(m_materialIDs[materialIndex]);
+                }
+            }
+
+            // Create the submesh:
+            m_subMeshes.emplace_back(firstIndex, numIndices, pMesh->mNumVertices, materialIndex);
         }
         
-        // Create the Default PBR Material for the Mesh:
-        // [TODO]: Assuming a single material for now.
-        // [TODO]: This would probably be done in an import step.
-        PBRMaterialDesc materialDesc{};
-        materialDesc.m_baseColorMap = nes::kInvalidAssetID;
-        materialDesc.m_normalMap = nes::kInvalidAssetID;
-        materialDesc.m_roughnessMetallicMap = nes::kInvalidAssetID;
-        materialDesc.m_emissionMap = nes::kInvalidAssetID;
-        materialDesc.m_baseColor = nes::Float4(1.f);
-        materialDesc.m_emission = nes::Float3(1.f);
-        materialDesc.m_metallic = 1.f;
-        materialDesc.m_roughness = 1.f;
-        materialDesc.m_isTransparent = false;
-        
-        if (pScene->HasMaterials())
-        {
-            const aiMaterial* pMaterial = pScene->mMaterials[0];
-            
-            // Base Color Factor
-            aiColor4D colorFactor;
-            if (pMaterial->Get(AI_MATKEY_BASE_COLOR, colorFactor) != AI_SUCCESS)
-            {
-                NES_ERROR("Failed to get Base Color from material! Name: {}", pMaterial->GetName().C_Str());
-                return nes::ELoadResult::Failure;
-            }
-            materialDesc.m_baseColor = nes::Float4(colorFactor.r, colorFactor.g, colorFactor.b, colorFactor.a);
-
-            // Emission Color Factor
-            if (pMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, colorFactor) == AI_SUCCESS)
-                materialDesc.m_emission = nes::Float3(colorFactor.r, colorFactor.g, colorFactor.b);
-            
-            // Metallic Factor
-            float metallic;
-            if (pMaterial->Get(AI_MATKEY_METALLIC_FACTOR, metallic) == AI_SUCCESS)
-                materialDesc.m_metallic = metallic;
-
-            // Roughness Factor
-            float roughness;
-            if (pMaterial->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS)
-                materialDesc.m_roughness = roughness;
-                
-            // Opacity
-            float opacity;
-            if (pMaterial->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS)
-            {
-                materialDesc.m_baseColor.w = opacity;
-                materialDesc.m_isTransparent = opacity < 1.f;
-            }
-
-            // Texture Maps:
-            aiString texturePath;
-            
-            // Base Color Texture
-            if (pMaterial->GetTexture(AI_MATKEY_BASE_COLOR_TEXTURE, &texturePath) == AI_SUCCESS)
-            {
-                if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
-                {
-                    NES_ASSERT(false, "Embedded texture not implemented yet!");
-                    return nes::ELoadResult::Failure;
-                }
-                else
-                {
-                    // Load texture from path:
-                    std::filesystem::path filePath = path.parent_path();
-                    filePath /= texturePath.C_Str();
-                    
-                    const auto result = nes::AssetManager::LoadSync<nes::Texture>(materialDesc.m_baseColorMap, filePath);
-                    if (result != nes::ELoadResult::Success)
-                    {
-                        // Set to the Error Texture
-                        NES_ERROR("Failed to load Base Color texture for Mesh! Setting to Error Texture...\n\t - Mesh Path: {}", path.string());
-                        materialDesc.m_baseColorMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Error);
-                    }
-                }
-            }
-
-            // Normal Texture
-            if (pMaterial->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS)
-            {
-                if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
-                {
-                    NES_ASSERT(false, "Embedded texture not implemented yet!");
-                    return nes::ELoadResult::Failure;
-                }
-                else
-                {
-                    // Load texture from path:
-                    std::filesystem::path filePath = path.parent_path();
-                    filePath /= texturePath.C_Str();
-                    
-                    const auto result = nes::AssetManager::LoadSync<nes::Texture>(materialDesc.m_normalMap, filePath);
-                    if (result != nes::ELoadResult::Success)
-                    {
-                        // Set to the FlatNormal Texture
-                        NES_ERROR("Failed to load Normal texture for Mesh! Setting to FlatNormal Texture...\n\t - Mesh Path: {}", path.string());
-                        materialDesc.m_normalMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::FlatNormal);
-                    }
-                }
-            }
-
-            // Roughness (G), Metallic (B)
-            if (pMaterial->GetTexture(AI_MATKEY_METALLIC_TEXTURE, &texturePath) == AI_SUCCESS)
-            {
-    #if NES_DEBUG
-                // Ensure that Roughness & Metallic are the same texture.
-                aiString roughnessPath;
-                pMaterial->GetTexture(AI_MATKEY_ROUGHNESS_TEXTURE, &roughnessPath);
-                NES_ASSERT(roughnessPath == texturePath, "Invalid PBR Material Textures. Roughness and Metallic should in the same texture. Roughness in the G channel, and Metallic in the B channel.");
-    #endif
-
-                if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
-                {
-                    NES_ASSERT(false, "Embedded texture not implemented yet!");
-                    return nes::ELoadResult::Failure;
-                }
-                else
-                {
-                    // Load texture from path:
-                    std::filesystem::path filePath = path.parent_path();
-                    filePath /= texturePath.C_Str();
-                    
-                    const auto result = nes::AssetManager::LoadSync<nes::Texture>(materialDesc.m_roughnessMetallicMap, filePath);
-                    if (result != nes::ELoadResult::Success)
-                    {
-                        // Set to the FlatNormal Texture
-                        NES_ERROR("Failed to load Roughness/Metallic texture for Mesh! Setting to Black Texture...\n\t - Mesh Path: {}", path.string());
-                        materialDesc.m_roughnessMetallicMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
-                    }
-                }
-            }
-
-            // Emission Map
-            // [TODO]: Emissive Amount should probably be in the same texture (Alpha Channel).
-            if (pMaterial->GetTexture(aiTextureType_EMISSION_COLOR, 0, &texturePath) == AI_SUCCESS)
-            {
-                if ([[maybe_unused]] auto pEmbeddedTexture = pScene->GetEmbeddedTexture(texturePath.C_Str()))
-                {
-                    NES_ASSERT(false, "Embedded texture not implemented yet!");
-                    return nes::ELoadResult::Failure;
-                }
-                else
-                {
-                    // Load texture from path:
-                    std::filesystem::path filePath = path.parent_path();
-                    filePath /= texturePath.C_Str();
-                    
-                    const auto result = nes::AssetManager::LoadSync<nes::Texture>(materialDesc.m_emissionMap, filePath);
-                    if (result != nes::ELoadResult::Success)
-                    {
-                        // Set to the FlatNormal Texture
-                        NES_ERROR("Failed to load Emissive texture for Mesh! Setting to Black Texture...\n\t - Mesh Path: {}", path.string());
-                        materialDesc.m_emissionMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
-                    }
-                }
-            }
-        }
-
-        // Create the default material for the Mesh:
-        {
-            // Ensure default values for each map type:
-            if (materialDesc.m_baseColorMap == nes::kInvalidAssetID)
-                materialDesc.m_baseColorMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::White);
-
-            if (materialDesc.m_normalMap == nes::kInvalidAssetID)
-                materialDesc.m_normalMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::FlatNormal);
-
-            if (materialDesc.m_roughnessMetallicMap == nes::kInvalidAssetID)
-                materialDesc.m_roughnessMetallicMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::White);
-
-            if (materialDesc.m_emissionMap == nes::kInvalidAssetID)
-                materialDesc.m_emissionMap = PBRSceneRenderer::GetDefaultTextureID(EDefaultTextureType::Black);
-            
-            PBRMaterial defaultMaterial(materialDesc);
-            nes::AssetManager::AddMemoryAsset<PBRMaterial>(m_defaultMaterialID, std::move(defaultMaterial), std::format("{} Material", yamlFileName.c_str()));
-        }
-
         return nes::ELoadResult::Success;
     }
 }

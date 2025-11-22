@@ -5,6 +5,19 @@
 
 namespace pbr
 {
+    bool PBRMaterialDesc::operator==(const PBRMaterialDesc& other) const
+    {
+        return m_isTransparent == other.m_isTransparent
+            && m_emissionMap == other.m_emissionMap
+            && m_baseColorMap == other.m_baseColorMap
+            && m_normalMap == other.m_normalMap
+            && m_roughnessMetallicMap == other.m_roughnessMetallicMap
+            && m_metallic == other.m_metallic
+            && m_roughness == other.m_roughness
+            && m_baseColor ==  other.m_baseColor
+            && m_emission ==  other.m_emission;
+    }
+
     PBRMaterial::PBRMaterial(const PBRMaterialDesc& desc)
         : m_desc(desc)
     {

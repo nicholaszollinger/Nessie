@@ -18,15 +18,48 @@ World:
     - AssetID: 55
       TypeID: 2829778445906215252
       Path: "Images\\Copper\\copper-rock1-roughMetal.png"
+    - AssetID: 56
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Floor_01_Dif_Style_02_Alb.png"
+    - AssetID: 57
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Floor_01_Dif_Style_02_Norm.png"
+    - AssetID: 58
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Floor_01_Dif_Style_02_Metal.png"
+    - AssetID: 59
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_01_Dif_Style_02_Alb.png"
+    - AssetID: 60
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_01_Dif_Style_02_Norm.png"
+    - AssetID: 61
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_01_Dif_Style_02_Metal.png"
     - AssetID: 5001
       TypeID: 14967253334840397702
       Path: "Materials\\GoldMaterial.yaml"
     - AssetID: 5002
       TypeID: 14967253334840397702
       Path: "Materials\\CopperRockMaterial.yaml"
+    - AssetID: 5003
+      TypeID: 14967253334840397702
+      Path: "Materials\\M_Squared_Floor_01_6x6.yaml"
+    - AssetID: 5004
+      TypeID: 14967253334840397702
+      Path: "Materials\\M_Wall_01.yaml"
     - AssetID: 3000
       TypeID: 17524471269486645012
       Path: "Meshes\\ancient_vase.yaml"
+    - AssetID: 3001
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Column_01_Big.yaml"
+    - AssetID: 3002
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Floors\\Floor_Squared_01_6x6.yaml"
+    - AssetID: 3003
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Down_01_Long.yaml"
   Entities:
     - Entity: 1
       Name: "Camera"
@@ -70,69 +103,68 @@ World:
             Position: [-0.1, 0.6, 0]
             Rotation: [0, 0, 0]
             Scale: [1, 1, 1]
-    - Entity: 2
-      Name: "Gold_Sphere"
+    - Entity: 2086995108049125769
+      Name: "Column_Left_01"
       Components:
         - NodeComponent:
-            Parent: 0
+            Parent: 8368641897046766814
             Children: []
         - MeshComponent:
-            Mesh: 3
-            Material: 5001
+            Mesh: 3001
+            Materials: [18446744073709551615]
         - TransformComponent:
-            Position: [1.1, 1, 0]
-            Rotation: [0, 0, 0]
+            Position: [-5.3, 3, 0]
+            Rotation: [0, 0, 180]
             Scale: [1, 1, 1]
-    - Entity: 3
-      Name: "Floor"
+    - Entity: 8368641897046766814
+      Name: "Floor_01"
       Components:
         - NodeComponent:
             Parent: 0
-            Children: []
+            Children: [2086995108049125769, 11179676736823221682, 7350183876406483440, 15962759032495902211, 4275870512410127826, 6704529316633205887]
         - MeshComponent:
-            Mesh: 2
-            Material: 5000
+            Mesh: 3002
+            Materials: [5003]
         - TransformComponent:
             Position: [0, 0, 0]
-            Rotation: [0, 0, 0]
-            Scale: [1, 1, 1]
-    - Entity: 4
-      Name: "Copper_Sphere"
-      Components:
-        - NodeComponent:
-            Parent: 0
-            Children: []
-        - MeshComponent:
-            Mesh: 3
-            Material: 5002
-        - TransformComponent:
-            Position: [-1, 0.7, 0]
-            Rotation: [0, 0, 0]
-            Scale: [1, 1, 1]
-    - Entity: 6
-      Name: "Vase"
-      Components:
-        - NodeComponent:
-            Parent: 0
-            Children: []
-        - MeshComponent:
-            Mesh: 3000
-            Material: 18446744073709551615
-        - TransformComponent:
-            Position: [-2, 0, 0]
             Rotation: [90, 0, 0]
-            Scale: [1.5, 1.5, 1.5]
-    - Entity: 7
-      Name: "Point_Light"
+            Scale: [1, 1, 1]
+    - Entity: 11179676736823221682
+      Name: "Column_Right_01"
       Components:
         - NodeComponent:
-            Parent: 0
+            Parent: 8368641897046766814
             Children: []
-        - PointLightComponent:
-            Color: [1, 0, 0, 1]
-            Intensity: 8e+04
-            Radius: 10
+        - MeshComponent:
+            Mesh: 3001
+            Materials: [18446744073709551615]
         - TransformComponent:
-            Position: [0.1, 0.1, 0]
+            Position: [5.3, 3, 0]
             Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 6704529316633205887
+      Name: "Wall_Right"
+      Components:
+        - NodeComponent:
+            Parent: 8368641897046766814
+            Children: []
+        - MeshComponent:
+            Mesh: 3003
+            Materials: [5004, 5004, 5004, 5004]
+        - TransformComponent:
+            Position: [5, 3, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 15962759032495902211
+      Name: "Wall_Left"
+      Components:
+        - NodeComponent:
+            Parent: 8368641897046766814
+            Children: []
+        - MeshComponent:
+            Mesh: 3003
+            Materials: [5004, 5004, 5004, 5004]
+        - TransformComponent:
+            Position: [-5, -3, 0]
+            Rotation: [0, 0, 180]
             Scale: [1, 1, 1]
