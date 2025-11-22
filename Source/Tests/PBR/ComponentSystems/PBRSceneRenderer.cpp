@@ -359,7 +359,7 @@ namespace pbr
         }
         
         // Create the Default Meshes:
-        Mesh sceneMesh;
+        MeshInstance sceneMesh;
         m_scene.m_indices.reserve(6400);
         m_scene.m_vertices.reserve(6400);
 
@@ -1109,21 +1109,24 @@ namespace pbr
                 {
                     if (!registry.IsValidEntity(instance.m_entity))
                         continue;
-                    
-                    // Push the object's position and the cascade index:
-                    pushConstants.m_model = instance.m_model;
-                    commandBuffer.SetPushConstant(0, &pushConstants, sizeof(DepthPassPushConstants));
+
+                    for (const auto& submesh : instance.m_submeshes)
+                    {
+                        // Push the object's position and the cascade index:
+                        pushConstants.m_model = instance.m_model;
+                        commandBuffer.SetPushConstant(0, &pushConstants, sizeof(DepthPassPushConstants));
                 
-                    // Bind Mesh Vertex Buffer.
-                    const Mesh& mesh = m_scene.m_meshes[instance.m_meshIndex];
-                    nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
-                    commandBuffer.BindVertexBuffers({ meshVertexBuffer}, 0);
+                        // Bind Mesh Vertex Buffer.
+                        const MeshInstance& mesh = m_scene.m_meshes[submesh.m_meshIndex];
+                        nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
+                        commandBuffer.BindVertexBuffers({ meshVertexBuffer}, 0);
                 
-                    // Draw
-                    nes::DrawIndexedDesc drawDesc{};
-                    drawDesc.m_firstIndex = mesh.m_firstIndex;
-                    drawDesc.m_indexCount = mesh.m_indexCount;
-                    commandBuffer.DrawIndexed(drawDesc);
+                        // Draw
+                        nes::DrawIndexedDesc drawDesc{};
+                        drawDesc.m_firstIndex = mesh.m_firstIndex;
+                        drawDesc.m_indexCount = mesh.m_indexCount;
+                        commandBuffer.DrawIndexed(drawDesc);
+                    }
                 }
 
                 // Finish.
@@ -1175,33 +1178,36 @@ namespace pbr
         commandBuffer.BindDescriptorSet(1, frame.m_materialDataSet);
         commandBuffer.BindDescriptorSet(2, frame.m_lightDataSet);
         commandBuffer.BindDescriptorSet(3, frame.m_sampledShadowDataSet);
-
+        
         // Bind the index buffer for the entire range:
         nes::IndexBufferRange indexBuffer = nes::IndexBufferRange(&m_indicesBuffer, m_scene.m_indices.size(), 0);
         commandBuffer.BindIndexBuffer(indexBuffer);
 
         for (const auto& instance : m_scene.m_instances)
         {
-            // Push the instance data:
-            InstanceUBO object;
-            object.SetTransform(instance.m_model);
-            object.SetMesh(instance.m_meshIndex);
-            object.SetMaterial(instance.m_materialIndex);
-            commandBuffer.SetPushConstant(0, &object, sizeof(InstanceUBO));
+            for (auto& submesh : instance.m_submeshes)
+            {
+                // Push the instance data:
+                InstanceUBO object;
+                object.SetTransform(instance.m_model);
+                object.SetMesh(submesh.m_meshIndex);
+                object.SetMaterial(submesh.m_materialIndex);
+                commandBuffer.SetPushConstant(0, &object, sizeof(InstanceUBO));
 
-            // Bind the Material Textures:
-            commandBuffer.BindDescriptorSet(4, m_materialDescriptorSets[instance.m_materialIndex]);
+                // Bind the Material Textures:
+                commandBuffer.BindDescriptorSet(4, m_materialDescriptorSets[submesh.m_materialIndex]);
 
-            // Bind Mesh Vertex Buffer.
-            const Mesh& mesh = m_scene.m_meshes[instance.m_meshIndex];
-            nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
-            commandBuffer.BindVertexBuffers({ meshVertexBuffer}, 0);
+                // Bind Mesh Vertex Buffer.
+                const MeshInstance& mesh = m_scene.m_meshes[submesh.m_meshIndex];
+                nes::VertexBufferRange meshVertexBuffer(&m_verticesBuffer, sizeof(Vertex), mesh.m_vertexCount, mesh.m_firstVertex * sizeof(Vertex));
+                commandBuffer.BindVertexBuffers({ meshVertexBuffer}, 0);
 
-            // Draw
-            nes::DrawIndexedDesc drawDesc{};
-            drawDesc.m_firstIndex = mesh.m_firstIndex;
-            drawDesc.m_indexCount = mesh.m_indexCount;
-            commandBuffer.DrawIndexed(drawDesc);
+                // Draw
+                nes::DrawIndexedDesc drawDesc{};
+                drawDesc.m_firstIndex = mesh.m_firstIndex;
+                drawDesc.m_indexCount = mesh.m_indexCount;
+                commandBuffer.DrawIndexed(drawDesc);
+            }
         }
     }
 
@@ -1219,40 +1225,63 @@ namespace pbr
 
     void PBRSceneRenderer::RegisterMeshComponent(nes::EntityHandle entity, MeshComponent& meshComp)
     {
-        auto pMesh = nes::AssetManager::GetAsset<MeshAsset>(meshComp.m_meshID);
-        if (!m_scene.m_idToMeshIndex.contains(meshComp.m_meshID))
+        auto pMesh = nes::AssetManager::GetAsset<MeshAsset>(meshComp.m_sourceMeshID);
+        if (!m_scene.m_idToMeshInstanceIndices.contains(meshComp.m_sourceMeshID))
         {
             if (pMesh != nullptr)
                 RegisterMeshAsset(pMesh);
         }
-                
-        if (meshComp.m_materialID == nes::kInvalidAssetID)
+
+        // Register the Component Materials:
+        const auto& sourceMeshMaterials = pMesh->GetMaterials();
+        if (meshComp.m_materials.empty())
         {
-            // Get the default material for the asset.
-            meshComp.m_materialID = pMesh->GetDefaultMaterialID();
-
-            // Default Material if none present:
-            if (meshComp.m_materialID == nes::kInvalidAssetID)
-                meshComp.m_materialID = GetDefaultMaterialID();
+            meshComp.m_materials = sourceMeshMaterials;
         }
-
-        // Register a new Material data if not already:
-        if (!m_scene.m_idToMaterialIndex.contains(meshComp.m_materialID))
+        
+        for (size_t i = 0; i < meshComp.m_materials.size(); ++i)
         {
-            auto pMaterial = nes::AssetManager::GetAsset<PBRMaterial>(meshComp.m_materialID);
-            if (pMaterial != nullptr)
-                RegisterMaterialAsset(pMaterial);
-        }
+            nes::AssetID& materialID = meshComp.m_materials[i];
+            if (materialID == nes::kInvalidAssetID)
+            {
+                // Get the default material for the asset.
+                if (i < sourceMeshMaterials.size())
+                    materialID = sourceMeshMaterials[i];
 
+                // Default Material if none present:
+                if (materialID == nes::kInvalidAssetID)
+                    materialID = GetDefaultMaterialID();
+            }
+
+            // Register the Material Asset data if not already:
+            if (!m_scene.m_idToMaterialIndex.contains(materialID))
+            {
+                auto pMaterial = nes::AssetManager::GetAsset<PBRMaterial>(materialID);
+                if (pMaterial != nullptr)
+                    RegisterMaterialAsset(pMaterial);
+            }
+        }
+        
         // Add the instance to our array.
-        EntityInstance instance
+        EntityInstance instance;
+        instance.m_entity = entity;
+
+        auto& meshInstanceIndices = m_scene.m_idToMeshInstanceIndices[meshComp.m_sourceMeshID];
+        NES_ASSERT(meshInstanceIndices.size() == meshComp.m_materials.size());
+
+        // Add all submesh data instance for this entity:
+        for (size_t i = 0; i < meshInstanceIndices.size(); ++i)
         {
-            .m_entity = entity,
-            .m_meshIndex = m_scene.m_idToMeshIndex.at(meshComp.m_meshID),
-            .m_materialIndex = m_scene.m_idToMaterialIndex.at(meshComp.m_materialID)
-        };
+            SubMeshInstance submeshInstance;
+            submeshInstance.m_meshIndex = meshInstanceIndices[i];
+            submeshInstance.m_materialIndex = m_scene.m_idToMaterialIndex[meshComp.m_materials[i]];
+            instance.m_submeshes.emplace_back(submeshInstance);
+        }
+        
+        //.m_meshIndex = m_scene.m_idToMeshIndex.at(meshComp.m_sourceMeshID),
+        //.m_materialIndex = m_scene.m_idToMaterialIndex.at(meshComp.m_materialID
         m_scene.m_instances.emplace_back(instance);
-        m_scene.m_entityToInstanceMap.emplace(entity, static_cast<uint32>(m_scene.m_instances.size() - 1));
+        m_scene.m_entityToInstanceMap.emplace(entity, m_scene.m_instances.empty()? 0 : static_cast<uint32>(m_scene.m_instances.size() - 1));
     }
 
     void PBRSceneRenderer::UnregisterMeshComponent(nes::EntityHandle entity, MeshComponent& /*meshComp*/)
@@ -1285,24 +1314,40 @@ namespace pbr
         NES_ASSERT(pMesh != nullptr);
 
         const auto id = pMesh->GetAssetID();
-        if (m_scene.m_idToMeshIndex.contains(id))
+        if (m_scene.m_idToMeshInstanceIndices.contains(id))
             return;
 
         const auto& meshVertices = pMesh->GetVertices();
         const auto& meshIndices = pMesh->GetIndices();
 
-        // Set the Index/Vertex information.
-        Mesh sceneMesh;
-        sceneMesh.m_firstVertex = static_cast<uint32>(m_scene.m_vertices.size());
-        sceneMesh.m_firstIndex = static_cast<uint32>(m_scene.m_indices.size());
-        sceneMesh.m_vertexCount = static_cast<uint32>(meshVertices.size());
-        sceneMesh.m_indexCount = static_cast<uint32>(meshIndices.size());
-
-        // Insert the data:
+        const uint32 baseVertex = static_cast<uint32>(m_scene.m_vertices.size());
+        const uint32 baseIndex = static_cast<uint32>(m_scene.m_indices.size());
         m_scene.m_vertices.insert(m_scene.m_vertices.end(), meshVertices.begin(), meshVertices.end());
         m_scene.m_indices.insert(m_scene.m_indices.end(), meshIndices.begin(), meshIndices.end());
-        m_scene.m_meshes.emplace_back(sceneMesh);
-        m_scene.m_idToMeshIndex.emplace(id, static_cast<uint32>(m_scene.m_meshes.size() - 1));
+
+        std::vector<uint32> meshInstanceIndices;
+        meshInstanceIndices.reserve(meshIndices.size());
+
+        uint32 subMeshVertexOffset = 0;
+        
+        for (auto& submesh : pMesh->GetSubMeshes())
+        {
+            // Set the Index/Vertex information.
+            MeshInstance sceneMesh;
+            sceneMesh.m_firstVertex = baseVertex + subMeshVertexOffset;
+            sceneMesh.m_firstIndex = baseIndex + submesh.m_firstIndex;
+            sceneMesh.m_vertexCount = submesh.m_vertexCount;
+            sceneMesh.m_indexCount = submesh.m_indexCount;
+            
+            subMeshVertexOffset += submesh.m_vertexCount;
+
+            // Add to the Mesh Instances:
+            m_scene.m_meshes.emplace_back(sceneMesh);
+            meshInstanceIndices.emplace_back(static_cast<uint32>(m_scene.m_meshes.size() - 1));
+        }
+
+        // Map the Asset ID of the source mesh to the instances within the scene.
+        m_scene.m_idToMeshInstanceIndices.emplace(id, std::move(meshInstanceIndices));
     }
 
     void PBRSceneRenderer::RegisterMaterialAsset(nes::AssetPtr<PBRMaterial>& pMaterial)
@@ -1533,9 +1578,9 @@ namespace pbr
         auto& meshComponent = registry.get<MeshComponent>(entity);
 
         // Set the initial mesh to a cube:
-        if (meshComponent.m_meshID == nes::kInvalidAssetID)
+        if (meshComponent.m_sourceMeshID == nes::kInvalidAssetID)
         {
-            meshComponent.m_meshID = GetDefaultMeshID(EDefaultMeshType::Cube);
+            meshComponent.m_sourceMeshID = GetDefaultMeshID(EDefaultMeshType::Cube);
         }
         
         RegisterMeshComponent(entity, meshComponent);
@@ -1553,43 +1598,49 @@ namespace pbr
         auto& instance = m_scene.m_instances[index];
 
         // Get the mesh and material indices:
-        uint32 meshIndex = std::numeric_limits<uint32>::max();
-        uint32 materialIndex = std::numeric_limits<uint32>::max();
+        std::vector<uint32> meshInstanceIndices{};
+        std::vector<uint32> materialIndices{};
 
-        if (m_scene.m_idToMeshIndex.contains(meshComponent.m_meshID))
+        if (m_scene.m_idToMeshInstanceIndices.contains(meshComponent.m_sourceMeshID))
         {
-            meshIndex = m_scene.m_idToMeshIndex.at(meshComponent.m_meshID);
+            meshInstanceIndices = m_scene.m_idToMeshInstanceIndices.at(meshComponent.m_sourceMeshID);
         }
         else
         {
-            auto pMeshAsset = nes::AssetManager::GetAsset<MeshAsset>(meshComponent.m_meshID);
+            auto pMeshAsset = nes::AssetManager::GetAsset<MeshAsset>(meshComponent.m_sourceMeshID);
             if (pMeshAsset != nullptr)
             {
                 RegisterMeshAsset(pMeshAsset);
-                meshIndex = m_scene.m_idToMeshIndex.at(meshComponent.m_meshID);
+                meshInstanceIndices = m_scene.m_idToMeshInstanceIndices.at(meshComponent.m_sourceMeshID);
             }
         }
 
-        if (m_scene.m_idToMaterialIndex.contains(meshComponent.m_materialID))
+        // Get the indices for each material asset:
+        for (auto& materialID : meshComponent.m_materials)
         {
-            materialIndex = m_scene.m_idToMaterialIndex.at(meshComponent.m_materialID);
-        }
-        else
-        {
-            // Register the material asset.
-            auto pMaterialAsset = nes::AssetManager::GetAsset<PBRMaterial>(meshComponent.m_materialID);
-            if (pMaterialAsset != nullptr)
+            if (m_scene.m_idToMaterialIndex.contains(materialID))
             {
-                RegisterMaterialAsset(pMaterialAsset);
-                materialIndex = m_scene.m_idToMaterialIndex.at(meshComponent.m_materialID);
+                materialIndices.emplace_back(m_scene.m_idToMaterialIndex.at(materialID));
+            }
+            else
+            {
+                // Register the material asset.
+                auto pMaterialAsset = nes::AssetManager::GetAsset<PBRMaterial>(materialID);
+                if (pMaterialAsset != nullptr)
+                {
+                    RegisterMaterialAsset(pMaterialAsset);
+                    materialIndices.emplace_back(m_scene.m_idToMaterialIndex.at(materialID));
+                }
             }
         }
+        
+        NES_ASSERT(meshInstanceIndices.size() == materialIndices.size());
 
-        NES_ASSERT(meshIndex < m_scene.m_meshes.size());
-        NES_ASSERT(materialIndex < m_scene.m_materials.size());
-
-        instance.m_meshIndex = meshIndex;
-        instance.m_materialIndex = materialIndex;
+        instance.m_submeshes.clear();
+        for (size_t i = 0; i < meshInstanceIndices.size(); ++i)
+        {
+            instance.m_submeshes.emplace_back(meshInstanceIndices[i], materialIndices[i]);
+        }
     }
 
     void PBRSceneRenderer::OnMeshComponentRemoved(entt::registry& registry, const entt::entity entity)

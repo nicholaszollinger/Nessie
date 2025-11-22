@@ -1,0 +1,11 @@
+PBRMaterial:
+  BaseColor: [1.0, 1.0, 1.0, 1.0]
+  Emission: [0, 0, 0]
+  Roughness: 0.77
+  Metallic: 1.0
+  Alpha: 1.0
+  Maps:
+    BaseColor: 59
+    Normal: 60
+    RoughnessMetallic: 61
+    Emission: 18446744073709551615 # No emission.

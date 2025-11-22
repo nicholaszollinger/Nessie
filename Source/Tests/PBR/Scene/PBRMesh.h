@@ -24,7 +24,7 @@ namespace pbr
     /// @brief : Runtime data for a Mesh asset. The firstVertex/Index are offsets into the Device Buffer
     ///     that contains all the Vertices/Indices in the Scene.
     //----------------------------------------------------------------------------------------------------
-    struct Mesh
+    struct MeshInstance
     {
         uint32      m_firstVertex = 0;  // Index of the first vertex in the data buffer.
         uint32      m_firstIndex = 0;   // Index of the first index in the data buffer.
@@ -58,23 +58,35 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculates the tangents and bitangents for a set of vertices.
         //----------------------------------------------------------------------------------------------------
-        void CalculateTangentSpace(std::vector<Vertex>& outVertices, const std::vector<uint32>& indices, const Mesh& mesh);
+        void CalculateTangentSpace(std::vector<Vertex>& outVertices, const std::vector<uint32>& indices, const MeshInstance& mesh);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Generate a cube's vertices, indices, and associated mesh data for the scene.
         //----------------------------------------------------------------------------------------------------
-        void AppendCubeMeshData(std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh);
+        void AppendCubeMeshData(std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, MeshInstance& outMesh);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Generate a sphere's vertices, indices, and associated mesh data for the scene.
         //----------------------------------------------------------------------------------------------------
-        void AppendSphereMeshData(const SphereGenDesc& sphereDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh);
+        void AppendSphereMeshData(const SphereGenDesc& sphereDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, MeshInstance& outMesh);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Generate a plane's vertices, indices, and associated mesh data for the scene.
         //----------------------------------------------------------------------------------------------------
-        void AppendPlaneData(const PlaneGenDesc& planeDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, Mesh& outMesh);
+        void AppendPlaneData(const PlaneGenDesc& planeDesc, std::vector<Vertex>& outVertices, std::vector<uint32>& outIndices, MeshInstance& outMesh);
     }
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : A Submesh defines a single mesh within a Mesh Asset. Mesh Assets can contain multiple submeshes
+    ///     and materials for each submesh.
+    //----------------------------------------------------------------------------------------------------
+    struct SubMesh
+    {
+        uint32      m_firstIndex = 0;       // First index in the MeshAsset's indices array.
+        uint32      m_indexCount = 0;       // Number of indices for this Submesh.
+        uint32      m_vertexCount = 0;
+        uint32      m_materialIndex = 0;    // The index into the MeshAsset's material array.
+    };
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Mesh Asset loaded from disk.
@@ -87,27 +99,31 @@ namespace pbr
         MeshAsset() = default;
     
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a Mesh Asset from data. Must be manually added to Asset Manager. 
+        /// @brief : Create a Mesh Asset from data. Must be manually added to Asset Manager.
+        /// @note : The resulting mesh will contain a single submesh and material
         //----------------------------------------------------------------------------------------------------
         MeshAsset(const std::vector<Vertex>& vertices, const std::vector<uint32>& indices, const nes::AssetID defaultMaterialID);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Create a Mesh Asset from data. Must be manually added to Asset Manager. 
+        /// @brief : Create a Mesh Asset from data. Must be manually added to Asset Manager.
+        /// @note : The resulting mesh will contain a single submesh and material
         //----------------------------------------------------------------------------------------------------
         MeshAsset(Vertex* pVertices, const uint32 vertexCount, uint32* indices, const uint32 indexCount, const nes::AssetID defaultMaterialID);
     
-        const std::vector<Vertex>&  GetVertices() const  { return m_vertices; }
-        const std::vector<uint32>&  GetIndices() const   { return m_indices; }
-        nes::AssetID                GetDefaultMaterialID() const  { return m_defaultMaterialID; }
+        const std::vector<Vertex>&          GetVertices() const             { return m_vertices; }
+        const std::vector<uint32>&          GetIndices() const              { return m_indices; }
+        const std::vector<SubMesh>&         GetSubMeshes() const            { return m_subMeshes; }
+        const std::vector<nes::AssetID>&    GetMaterials() const            { return m_materialIDs; }
 
     private:
-        virtual nes::ELoadResult    LoadFromFile(const std::filesystem::path& path) override;
-        nes::ELoadResult            LoadFromYAML(const nes::YamlNode& node, const std::string& yamlFileName);
+        virtual nes::ELoadResult            LoadFromFile(const std::filesystem::path& path) override;
+        nes::ELoadResult                    LoadFromYAML(const nes::YamlNode& node, const std::string& yamlFileName);
 
     private:
-        std::vector<Vertex>         m_vertices{};
-        std::vector<uint32>         m_indices{};
-        nes::AssetID                m_defaultMaterialID = nes::kInvalidAssetID;
+        std::vector<SubMesh>                m_subMeshes{};
+        std::vector<nes::AssetID>           m_materialIDs{};
+        std::vector<Vertex>                 m_vertices{};
+        std::vector<uint32>                 m_indices{};
     };
 
     static_assert(nes::ValidAssetType<MeshAsset>, "Mesh is not a Valid Asset Type!");

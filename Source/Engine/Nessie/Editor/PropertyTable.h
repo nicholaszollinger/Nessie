@@ -371,5 +371,41 @@ namespace nes::editor
 
         return modified;
     }
+
+    template <ValidAssetType Type>
+    bool PropertyAssetIDArray(const char* label, std::vector<AssetID>& assetIDs, const char* toolTip = "")
+    {
+        bool modified = false;
+
+        const bool hasElements = !assetIDs.empty();
+        const bool isOpen = internal::BeginCollapsableProperty(label, toolTip);
+
+        // Render the array size as the value:
+        internal::BeginPropertyValue();
+        ImGui::Text("Array Size: %zu", assetIDs.size());
+        internal::EndPropertyValue();
+
+        // Render the array elements.
+        std::string name;
+        if (isOpen && hasElements)
+        {
+            // Push indent
+            ImGui::Indent();
+
+            for (size_t i = 0; i < assetIDs.size(); ++i)
+            {
+                ImGui::PushID(static_cast<int>(i));
+                name = std::format("Index[{}]", i);
+                modified |= PropertyAssetID<Type>(name.c_str(), assetIDs[i]);
+                ImGui::PopID();
+            }
+            
+            ImGui::Unindent();
+        }
+        
+        internal::EndCollapsableProperty(isOpen);
+
+        return modified;
+    }
     
 }
