@@ -666,7 +666,7 @@ namespace pbr
 
         // Vertex Device Buffer
         {
-            static constexpr uint32 kMaxVertices = 6'400;
+            static constexpr uint32 kMaxVertices = 25'600;
             
             nes::AllocateBufferDesc desc;
             desc.m_size = kMaxVertices * sizeof(Vertex); //static_cast<uint32>(m_scene.m_vertices.size()) * sizeof(Vertex);

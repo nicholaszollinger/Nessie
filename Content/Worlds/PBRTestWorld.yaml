@@ -1,23 +1,5 @@
 World:
   Assets:
-    - AssetID: 50
-      TypeID: 2829778445906215252
-      Path: "Images\\light-gold-ue\\lightgold_albedo.png"
-    - AssetID: 51
-      TypeID: 2829778445906215252
-      Path: "Images\\light-gold-ue\\lightgold_normal-dx.png"
-    - AssetID: 52
-      TypeID: 2829778445906215252
-      Path: "Images\\light-gold-ue\\lightgold_RoughnessMetallic.png"
-    - AssetID: 53
-      TypeID: 2829778445906215252
-      Path: "Images\\Copper\\copper-rock1-alb.png"
-    - AssetID: 54
-      TypeID: 2829778445906215252
-      Path: "Images\\Copper\\copper-rock1-normal.png"
-    - AssetID: 55
-      TypeID: 2829778445906215252
-      Path: "Images\\Copper\\copper-rock1-roughMetal.png"
     - AssetID: 56
       TypeID: 2829778445906215252
       Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Floor_01_Dif_Style_02_Alb.png"
@@ -36,21 +18,75 @@ World:
     - AssetID: 61
       TypeID: 2829778445906215252
       Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_01_Dif_Style_02_Metal.png"
-    - AssetID: 5001
-      TypeID: 14967253334840397702
-      Path: "Materials\\GoldMaterial.yaml"
-    - AssetID: 5002
-      TypeID: 14967253334840397702
-      Path: "Materials\\CopperRockMaterial.yaml"
+    - AssetID: 66
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_01_Dif_Style_02_Illum.png"
+    - AssetID: 62
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_03_Dif_Style_02_Alb.png"
+    - AssetID: 63
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_03_Dif_Style_02_Norm.png"
+    - AssetID: 64
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_03_Dif_Style_02_Metal.png"
+    - AssetID: 65
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_03_Dif_Style_02_Illum.png"
+    - AssetID: 67
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Stuff_01_Dif_Style_02_Alb.png"
+    - AssetID: 68
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Stuff_01_Dif_Style_02_Norm.png"
+    - AssetID: 69
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Stuff_01_Dif_Style_02_Metal.png"
+    - AssetID: 70
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Stuff_01_Dif_Style_02_Illum.png"
+    - AssetID: 71
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_12_Dif_Style_02_Alb.png"
+    - AssetID: 72
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_12_Dif_Style_02_Norm.png"
+    - AssetID: 73
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_12_Dif_Style_02_Metal.png"
+    - AssetID: 74
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_12_Dif_Style_02_Illum.png"
+    - AssetID: 75
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_05_Dif_Style_02_Alb.png"
+    - AssetID: 76
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_05_Dif_Style_02_Norm.png"
+    - AssetID: 77
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_05_Dif_Style_02_Metal.png"
+    - AssetID: 78
+      TypeID: 2829778445906215252
+      Path: "3D Scifi Starter Kit Free\\_Textures\\HD_Wall_05_Dif_Style_02_Illum.png"
     - AssetID: 5003
       TypeID: 14967253334840397702
       Path: "Materials\\M_Squared_Floor_01_6x6.yaml"
     - AssetID: 5004
       TypeID: 14967253334840397702
       Path: "Materials\\M_Wall_01.yaml"
-    - AssetID: 3000
-      TypeID: 17524471269486645012
-      Path: "Meshes\\ancient_vase.yaml"
+    - AssetID: 5005
+      TypeID: 14967253334840397702
+      Path: "Materials\\M_Column_01.yaml"
+    - AssetID: 5006
+      TypeID: 14967253334840397702
+      Path: "Materials\\M_Wall_Pipes_01.yaml"
+    - AssetID: 5007
+      TypeID: 14967253334840397702
+      Path: "Materials\\M_Porthole.yaml"
+    - AssetID: 5008
+      TypeID: 14967253334840397702
+      Path: "Materials\\M_Doorway_Column.yaml"
     - AssetID: 3001
       TypeID: 17524471269486645012
       Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Column_01_Big.yaml"
@@ -59,7 +95,34 @@ World:
       Path: "3D Scifi Starter Kit Free\\_Meshes\\Floors\\Floor_Squared_01_6x6.yaml"
     - AssetID: 3003
       TypeID: 17524471269486645012
-      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Down_01_Long.yaml"
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Simple_03_Long.yaml"
+    - AssetID: 3004
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Floors\\Floor_Angle_01.yaml"
+    - AssetID: 3005
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Simple_Turn_Large_90.yaml"
+    - AssetID: 3006
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Simple_Turn_Short_90.yaml"
+    - AssetID: 3007
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Pipes_Large.yaml"
+    - AssetID: 3008
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Walls\\Wall_Porthole.yaml"
+    - AssetID: 3009
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Doors\\Doorway_Column.yaml"
+    - AssetID: 3010
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Fences\\Fence_Turn_Long.yaml"
+    - AssetID: 3011
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Fences\\Fence_Turn_Short.yaml"
+    - AssetID: 3012
+      TypeID: 17524471269486645012
+      Path: "3D Scifi Starter Kit Free\\_Meshes\\Fences\\Fence_Long.yaml"
   Entities:
     - Entity: 1
       Name: "Camera"
@@ -68,7 +131,7 @@ World:
             Parent: 0
             Children: []
         - FreeCamMovementComponent:
-            MoveSpeed: 12
+            MoveSpeed: 5
             Sensitivity: 0.69
         - CameraComponent:
             Camera:
@@ -81,8 +144,8 @@ World:
               Iso: 100
               ProjectionType: 0
         - TransformComponent:
-            Position: [-0.12, 1.14, -2.25]
-            Rotation: [17, 7, 0]
+            Position: [4.2, 2.1, 6.252]
+            Rotation: [4, -47, 0]
             Scale: [1, 1, 1]
     - Entity: 5
       Name: "Directional_Light"
@@ -97,7 +160,7 @@ World:
             SunMaxLux: 1.2e+05
         - DirectionalLightComponent:
             Color: [1, 0.9171, 0.8152, 1]
-            Direction: [-0.1651, -0.7927, 0.5869]
+            Direction: [-0.03682, -0.897, 0.4405]
             Intensity: 1.2e+05
         - TransformComponent:
             Position: [-0.1, 0.6, 0]
@@ -111,9 +174,9 @@ World:
             Children: []
         - MeshComponent:
             Mesh: 3001
-            Materials: [18446744073709551615]
+            Materials: [5005]
         - TransformComponent:
-            Position: [-5.3, 3, 0]
+            Position: [-5, 3, 0]
             Rotation: [0, 0, 180]
             Scale: [1, 1, 1]
     - Entity: 8368641897046766814
@@ -121,7 +184,7 @@ World:
       Components:
         - NodeComponent:
             Parent: 0
-            Children: [2086995108049125769, 11179676736823221682, 7350183876406483440, 15962759032495902211, 4275870512410127826, 6704529316633205887]
+            Children: [2086995108049125769, 11179676736823221682, 7350183876406483440, 15962759032495902211, 4275870512410127826, 6704529316633205887, 8553188276893216400, 11406019193041648089]
         - MeshComponent:
             Mesh: 3002
             Materials: [5003]
@@ -137,9 +200,9 @@ World:
             Children: []
         - MeshComponent:
             Mesh: 3001
-            Materials: [18446744073709551615]
+            Materials: [5005]
         - TransformComponent:
-            Position: [5.3, 3, 0]
+            Position: [5, 3, 0]
             Rotation: [0, 0, 0]
             Scale: [1, 1, 1]
     - Entity: 6704529316633205887
@@ -150,7 +213,7 @@ World:
             Children: []
         - MeshComponent:
             Mesh: 3003
-            Materials: [5004, 5004, 5004, 5004]
+            Materials: [5004, 5004, 5004]
         - TransformComponent:
             Position: [5, 3, 0]
             Rotation: [0, 0, 0]
@@ -163,8 +226,414 @@ World:
             Children: []
         - MeshComponent:
             Mesh: 3003
-            Materials: [5004, 5004, 5004, 5004]
+            Materials: [5004, 5004, 5004]
         - TransformComponent:
             Position: [-5, -3, 0]
             Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 954341578282430316
+      Name: "Point_Light"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - PointLightComponent:
+            Color: [0.8284, 0.9344, 1, 1]
+            Intensity: 8e+04
+            Radius: 55
+        - TransformComponent:
+            Position: [0.1, 2.2, 10.7]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 12068299593312149349
+      Name: "Floor_02"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: [5599676516417239223, 3440698776786191987, 8948048245197733023, 5693294132639867527]
+        - MeshComponent:
+            Mesh: 3002
+            Materials: [5003]
+        - TransformComponent:
+            Position: [0, 0, 6]
+            Rotation: [90, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 5599676516417239223
+      Name: "Wall_Left"
+      Components:
+        - NodeComponent:
+            Parent: 12068299593312149349
+            Children: []
+        - MeshComponent:
+            Mesh: 3003
+            Materials: [5004, 5004, 5004]
+        - TransformComponent:
+            Position: [5, 3, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 3440698776786191987
+      Name: "Wall_Right"
+      Components:
+        - NodeComponent:
+            Parent: 12068299593312149349
+            Children: []
+        - MeshComponent:
+            Mesh: 3003
+            Materials: [5004, 5004, 5004]
+        - TransformComponent:
+            Position: [-5, -3, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 14377059569240451603
+      Name: "Floor_Turn"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3004
+            Materials: [5003]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, -90]
+            Scale: [1, 1, 1]
+    - Entity: 14829096314721884138
+      Name: "TurnLeft"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: [14377059569240451603, 2850020875487283662, 10989622477214781117, 13466707116609791947, 3564874050116889506, 14494406755349448880, 11242707391331219749, 11281331816458384179, 10633622612604129772]
+        - TransformComponent:
+            Position: [0, 0, 18]
+            Rotation: [90, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 8948048245197733023
+      Name: "Column_Left"
+      Components:
+        - NodeComponent:
+            Parent: 12068299593312149349
+            Children: []
+        - MeshComponent:
+            Mesh: 3001
+            Materials: [5005]
+        - TransformComponent:
+            Position: [-5, 3, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 5693294132639867527
+      Name: "Column_Right"
+      Components:
+        - NodeComponent:
+            Parent: 12068299593312149349
+            Children: []
+        - MeshComponent:
+            Mesh: 3001
+            Materials: [5005]
+        - TransformComponent:
+            Position: [5, 3, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 2850020875487283662
+      Name: "Floor_Entry"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3002
+            Materials: [5003]
+        - TransformComponent:
+            Position: [0, -6, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 3564874050116889506
+      Name: "Wall_OutsideTurn"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3005
+            Materials: [5004, 5004]
+        - TransformComponent:
+            Position: [-3, 5, 0]
+            Rotation: [0, 0, 90]
+            Scale: [1, 1, 1]
+    - Entity: 14494406755349448880
+      Name: "Wall_InsideTurn"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3006
+            Materials: [5004, 5004]
+        - TransformComponent:
+            Position: [-5, -9, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 11242707391331219749
+      Name: "Wall_Entry"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3003
+            Materials: [5004, 5004, 5004]
+        - TransformComponent:
+            Position: [5, -3, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 10989622477214781117
+      Name: "Floor_Exit"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3002
+            Materials: [5003]
+        - TransformComponent:
+            Position: [-6, 0, 0]
+            Rotation: [0, 0, 90]
+            Scale: [1, 1, 1]
+    - Entity: 11281331816458384179
+      Name: "Wall_Exit"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: [1499120658919715834]
+        - MeshComponent:
+            Mesh: 3003
+            Materials: [5004, 5004, 5004]
+        - TransformComponent:
+            Position: [-9, 5, 0]
+            Rotation: [0, 0, 90]
+            Scale: [1, 1, 1]
+    - Entity: 13466707116609791947
+      Name: "Floor_UnderInsideTurn"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: []
+        - MeshComponent:
+            Mesh: 3002
+            Materials: [5003]
+        - TransformComponent:
+            Position: [-6, -6, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 1499120658919715834
+      Name: "Pipes"
+      Components:
+        - NodeComponent:
+            Parent: 11281331816458384179
+            Children: []
+        - MeshComponent:
+            Mesh: 3007
+            Materials: [5006]
+        - TransformComponent:
+            Position: [-1.9, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 3189828166462142062
+      Name: "Floor_03"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: [16162370301964742925, 9794473449371048714, 5894786751807248156, 12179118222693236809, 6521597667849658586, 7470176472467019453, 9207378914933128485]
+        - TransformComponent:
+            Position: [-12, 0, 18]
+            Rotation: [90, 90, 0]
+            Scale: [1, 1, 1]
+    - Entity: 16162370301964742925
+      Name: "Floor"
+      Components:
+        - NodeComponent:
+            Parent: 3189828166462142062
+            Children: []
+        - MeshComponent:
+            Mesh: 3002
+            Materials: [5003]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 9794473449371048714
+      Name: "Porthole_Right"
+      Components:
+        - NodeComponent:
+            Parent: 3189828166462142062
+            Children: []
+        - MeshComponent:
+            Mesh: 3008
+            Materials: [5007]
+        - TransformComponent:
+            Position: [-4.7, -3, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 5894786751807248156
+      Name: "Porthole_Left"
+      Components:
+        - NodeComponent:
+            Parent: 3189828166462142062
+            Children: []
+        - MeshComponent:
+            Mesh: 3008
+            Materials: [5007]
+        - TransformComponent:
+            Position: [4.7, 3, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 11556015145980147745
+      Name: "DoorwayColumn_Left"
+      Components:
+        - NodeComponent:
+            Parent: 11406019193041648089
+            Children: []
+        - MeshComponent:
+            Mesh: 3009
+            Materials: [5008]
+        - TransformComponent:
+            Position: [0.5, 0, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 4620585473372765679
+      Name: "DoorwayColumn_Right"
+      Components:
+        - NodeComponent:
+            Parent: 11406019193041648089
+            Children: []
+        - MeshComponent:
+            Mesh: 3009
+            Materials: [5008]
+        - TransformComponent:
+            Position: [-0.5, 0, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 11406019193041648089
+      Name: "Door"
+      Components:
+        - NodeComponent:
+            Parent: 8368641897046766814
+            Children: [11556015145980147745, 4620585473372765679, 9709940604534290177]
+        - TransformComponent:
+            Position: [0, -3.5, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 7470176472467019453
+      Name: "DoorwayColumn_Left"
+      Components:
+        - NodeComponent:
+            Parent: 3189828166462142062
+            Children: []
+        - MeshComponent:
+            Mesh: 3009
+            Materials: [5008]
+        - TransformComponent:
+            Position: [-0.5, -3.5, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 9207378914933128485
+      Name: "DoorwayColumn_Right"
+      Components:
+        - NodeComponent:
+            Parent: 3189828166462142062
+            Children: []
+        - MeshComponent:
+            Mesh: 3009
+            Materials: [5008]
+        - TransformComponent:
+            Position: [0.5, -3.5, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 13290880184596871153
+      Name: "Fence_Turn_90"
+      Components:
+        - NodeComponent:
+            Parent: 10633622612604129772
+            Children: []
+        - MeshComponent:
+            Mesh: 3010
+            Materials: [18446744073709551615]
+        - TransformComponent:
+            Position: [0, 0, 0]
+            Rotation: [0, 0, -90]
+            Scale: [1, 1, 1]
+    - Entity: 10633622612604129772
+      Name: "Fence_Turn_Inside"
+      Components:
+        - NodeComponent:
+            Parent: 14829096314721884138
+            Children: [13290880184596871153, 1475999158980547856, 8872582797148665480]
+        - TransformComponent:
+            Position: [-10.5, 1.5, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 8872582797148665480
+      Name: "Fence_Long_2"
+      Components:
+        - NodeComponent:
+            Parent: 10633622612604129772
+            Children: [13873048462365353535]
+        - MeshComponent:
+            Mesh: 3012
+            Materials: [18446744073709551615]
+        - TransformComponent:
+            Position: [8.8, -6.49, 0]
+            Rotation: [0, 0, 90]
+            Scale: [1, 1, 1]
+    - Entity: 1475999158980547856
+      Name: "Fence_Long_1"
+      Components:
+        - NodeComponent:
+            Parent: 10633622612604129772
+            Children: [5827793561715844435]
+        - MeshComponent:
+            Mesh: 3012
+            Materials: [18446744073709551615]
+        - TransformComponent:
+            Position: [5.625, -15.3, 0]
+            Rotation: [0, 0, 0]
+            Scale: [1, 1, 1]
+    - Entity: 5827793561715844435
+      Name: "Fence_End"
+      Components:
+        - NodeComponent:
+            Parent: 1475999158980547856
+            Children: []
+        - MeshComponent:
+            Mesh: 3011
+            Materials: [18446744073709551615]
+        - TransformComponent:
+            Position: [6.5, 11.25, 0]
+            Rotation: [0, 0, 180]
+            Scale: [1, 1, 1]
+    - Entity: 13873048462365353535
+      Name: "FenceEnd"
+      Components:
+        - NodeComponent:
+            Parent: 8872582797148665480
+            Children: []
+        - MeshComponent:
+            Mesh: 3011
+            Materials: [18446744073709551615]
+        - TransformComponent:
+            Position: [-5.628, 12.88, 0]
+            Rotation: [0, 0, -90]
+            Scale: [1, 1, 1]
+    - Entity: 10420183838961849684
+      Name: "Point_Light_2"
+      Components:
+        - NodeComponent:
+            Parent: 0
+            Children: []
+        - PointLightComponent:
+            Color: [1, 1, 1, 1]
+            Intensity: 8e+04
+            Radius: 30
+        - TransformComponent:
+            Position: [-10.5, 2.6, 18.3]
+            Rotation: [0, 0, 0]
             Scale: [1, 1, 1]

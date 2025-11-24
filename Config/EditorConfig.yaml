@@ -2,14 +2,14 @@ Editor:
   DefaultLayout: "Default"
   Windows:
     - Name: "Viewport"
-      CameraPosition: [-0.3928, 3.751, -8.265]
-      CameraForward: [-0.01167, -0.3249, 0.9457]
+      CameraPosition: [1.306, 2.736, -2.104]
+      CameraForward: [-0.2262, -0.1891, 0.9555]
       CameraUp: [0, 1, 0]
       CameraMovementSpeed: 12
       CameraSensitivity: 0.294
-      SelectedAspectRatioIndex: 1
+      SelectedAspectRatioIndex: 0
       Camera:
-        PerspectiveFOV: 60
+        PerspectiveFOV: 57
         OrthographicSize: 10
         NearPlane: 0.1
         FarPlane: 1000

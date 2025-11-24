@@ -71,7 +71,6 @@ namespace nes
     void ViewportWindow::RenderImGui()
     {
         const bool isSimulating = m_pRenderer && m_pWorld->IsSimulating();
-        
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowBorderSize, 0.f);
         
@@ -136,14 +135,21 @@ namespace nes
         if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !isSimulating)
         {
             m_rotationEnabled = true;
-    
-            // Let ImGui know you're capturing the mouse
-            ImGui::SetMouseCursor(ImGuiMouseCursor_None);  // Hide cursor via ImGui
+
+            // Tell ImGui you want mouse input
+            ImGui::SetWindowFocus();
+            ImGuiIO& io = ImGui::GetIO();
+            io.WantCaptureMouse = false;  // Release mouse to your application
+            
             InputManager::SetCursorMode(nes::ECursorMode::Disabled);
         }
 
         if (m_rotationEnabled)
         {
+            // Block ImGui from seeing mouse movement
+            ImGuiIO& io = ImGui::GetIO();
+            io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+            
             // Clear the rotation enabled state if we are now simulating the world.
             if (isSimulating)
             {

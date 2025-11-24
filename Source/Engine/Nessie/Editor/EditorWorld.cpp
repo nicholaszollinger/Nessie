@@ -63,7 +63,7 @@ namespace nes
     // - I already get the correct registry through GetEntityRegistry()
     void EditorWorld::DestroyEntity(const EntityHandle entity)
     {
-        GetEntityRegistry()->DestroyEntity(entity);
+        GetEntityRegistry()->MarkEntityForDestruction(entity);
     }
 
     void EditorWorld::ParentEntity(const EntityHandle entity, const EntityHandle parent)
