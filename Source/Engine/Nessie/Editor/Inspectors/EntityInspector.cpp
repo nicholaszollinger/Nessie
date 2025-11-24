@@ -27,17 +27,18 @@ namespace nes
         // Validate the target:
         if (pTarget == nullptr || context.m_pWorld == nullptr || *pTarget == kInvalidEntityHandle)
         {
-            auto* pRegistry = context.m_pWorld->GetEntityRegistry();
-            
             // If the last selected entity is still valid, render it.
-            if (m_lastSelected != kInvalidEntityHandle && pRegistry && pRegistry->IsValidEntity(m_lastSelected))
+            auto* pRegistry = context.m_pWorld->GetEntityRegistry();
+            if (m_lastSelected != kInvalidEntityID && pRegistry && pRegistry->IsValidEntity(m_lastSelected))
             {
-                DrawComponentList(*pRegistry, m_lastSelected);
-                DrawSelectedComponentDetails(*pRegistry, m_lastSelected, context);
+                auto entity = pRegistry->GetEntity(m_lastSelected);
+                DrawComponentList(*pRegistry, entity);
+                DrawSelectedComponentDetails(*pRegistry, entity, context);
             }
             else
             {
-                m_lastSelected = kInvalidEntityHandle;
+                // Current target and last target are invalid, reset.
+                m_lastSelected = kInvalidEntityID;
                 m_selectedComponentType = std::numeric_limits<size_t>::max();
             }
             
@@ -46,15 +47,17 @@ namespace nes
 
         // Render the new entity:
         EntityHandle& entity = *pTarget;
-        if (m_lastSelected != entity)
-        {
-            m_selectedComponentType = std::numeric_limits<size_t>::max();
-            m_lastSelected = entity;
-            AssembleComponentInspectors();
-        }
 
         if (auto* pRegistry = context.m_pWorld->GetEntityRegistry())
         {
+            auto id = pRegistry->GetComponent<IDComponent>(entity).GetID();
+            if (m_lastSelected != id)
+            {
+                m_selectedComponentType = std::numeric_limits<size_t>::max();
+                m_lastSelected = id;
+                AssembleComponentInspectors();
+            }
+
             DrawComponentList(*pRegistry, entity);
             DrawSelectedComponentDetails(*pRegistry, entity, context);
         }

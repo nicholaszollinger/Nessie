@@ -1,4 +1,6 @@
 ﻿// WorldBase.cpp
+#include <ranges>
+
 #include "Nessie/World.h"
 
 namespace nes
@@ -86,7 +88,7 @@ namespace nes
         
         // All Entities must have an IDComponent, so this is equivalent to getting all entities. 
         auto view = srcRegistry.GetAllEntitiesWith<IDComponent>();
-        for (auto srcEntity : view)
+        for (auto srcEntity : std::ranges::reverse_view(view))
         {
             auto& idComp = view.get<IDComponent>(srcEntity);
             

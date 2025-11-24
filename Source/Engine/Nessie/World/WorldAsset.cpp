@@ -2,6 +2,7 @@
 #include "WorldAsset.h"
 
 #include <fstream>
+#include <ranges>
 
 #include "Nessie/World.h"
 #include "Nessie/Core/String/StringID.h"
@@ -100,9 +101,8 @@ namespace nes
         
         out.BeginSequence("Entities");
         auto entities = m_entityRegistry.GetAllEntitiesWith<IDComponent>();
-        for (auto it = entities.rbegin(); it != entities.rend(); ++it)
+        for (auto entity : std::ranges::reverse_view(entities))
         {
-            EntityHandle entity = *it;
             out.BeginMap();
 
             // IDComponent information:
