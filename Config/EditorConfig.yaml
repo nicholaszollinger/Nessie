@@ -2,6 +2,7 @@ Editor:
   DefaultLayout: "Default"
   Windows:
     - Name: "Viewport"
+      IsOpen: true
       CameraPosition: [1.306, 2.736, -2.104]
       CameraForward: [-0.2262, -0.1891, 0.9555]
       CameraUp: [0, 1, 0]
@@ -18,8 +19,11 @@ Editor:
         Iso: 100
         ProjectionType: 0
     - Name: "Hierarchy"
+      IsOpen: true
     - Name: "Inspector"
+      IsOpen: true
     - Name: "Console"
+      IsOpen: true
   Layouts:
     - Name: "Default"
       DockSplits:

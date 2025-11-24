@@ -36,7 +36,6 @@ namespace nes
             if (pWindow)
             {
                 pWindow->Deserialize(windowNode);
-                pWindow->SetOpen();
             }
         }
         
