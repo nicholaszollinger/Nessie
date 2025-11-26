@@ -183,6 +183,21 @@ namespace nes
     {
         if (ImGui::BeginChild("Details", ImVec2(0, 0)))
         {
+            auto* pTransform = registry.TryGetComponent<TransformComponent>(entity);
+            
+            // Render the Transform Component if available.
+            if (m_transformInspector != nullptr && pTransform != nullptr)
+            {
+                if (editor::CollapsableHeader("Transform"))
+                {
+                    if (editor::BeginPropertyTable())
+                    {
+                        m_transformInspector->Draw(pTransform, context);                        
+                    }
+                    editor::EndPropertyTable();
+                }
+            }
+            
             // No selected component.
             if (m_selectedComponentType == std::numeric_limits<size_t>::max())
             {
@@ -218,7 +233,11 @@ namespace nes
             auto pInspector = EditorInspectorRegistry::GetInspector(componentType.m_typeID);
             if (pInspector != nullptr)
             {
-                m_componentInspectors.emplace_back(pInspector);
+                // Cache the transform inspector, so that we always render it.
+                if (componentType.m_typeID == entt::type_id<TransformComponent>().hash())
+                    m_transformInspector = pInspector;
+                else
+                    m_componentInspectors.emplace_back(pInspector);
             }
         }
     }

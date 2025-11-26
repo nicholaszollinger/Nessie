@@ -53,6 +53,11 @@ namespace nes::editor
     }
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Draws a header that spans the entire width.
+    //----------------------------------------------------------------------------------------------------
+    void Header(const std::string& name);
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Draws a header that spans the entire width, and can hide subsequent elements within it.
     //----------------------------------------------------------------------------------------------------
     bool CollapsableHeader(const std::string& name, const bool openByDefault = true);

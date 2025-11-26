@@ -42,6 +42,7 @@ namespace nes
 
     private:
         std::vector<std::shared_ptr<EditorInspectorBase>> m_componentInspectors{};
+        std::shared_ptr<EditorInspectorBase> m_transformInspector = nullptr;
         ImGuiTextFilter m_searchFilter{};
         size_t          m_selectedComponentType = 0;
         EntityID        m_lastSelected = kInvalidEntityID;

@@ -28,14 +28,14 @@ namespace nes::editor
     void        SetInputEnabled(const bool enabled);
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Push a global ID on the ImGui ID stack.
+    /// @brief : Pushes to a new stack level for generating IDs.
     //----------------------------------------------------------------------------------------------------
-    void        PushID();
+    void        PushIDLevel();
 
     //----------------------------------------------------------------------------------------------------
-    /// @brief : Pop a global ID from the ImGui ID stack.
+    /// @brief : Pops to a previous ID stack level for generating IDs.
     //----------------------------------------------------------------------------------------------------
-    void        PopID();
+    void        PopIDLevel();
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Move the draw cursor on the X-Axis for ImGui draw calls. 
