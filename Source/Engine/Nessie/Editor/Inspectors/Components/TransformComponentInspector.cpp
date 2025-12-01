@@ -17,6 +17,11 @@ namespace nes
         modified |= editor::Property("Rotation", rotation);
         modified |= editor::Property("Scale", scale);
 
+        // [Debug World Values]: 
+        //editor::Property("World Pos", pTarget->GetWorldPosition());
+        //editor::Property("World Rot", pTarget->GetWorldRotation());
+        //editor::Property("World Scale", pTarget->GetWorldScale());
+
         auto* pRegistry = context.m_pWorld->GetEntityRegistry();
         if (modified && pRegistry)
         {

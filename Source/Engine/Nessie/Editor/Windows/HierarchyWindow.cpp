@@ -4,6 +4,7 @@
 #include "imgui_internal.h"
 #include "Nessie/Editor/SelectionManager.h"
 #include "Nessie/Graphics/ImGui/ImGuiUtils.h"
+#include "Nessie/World/ComponentSystems/TransformSystem.h"
 
 namespace nes
 {
@@ -614,6 +615,16 @@ namespace nes
         // Parent to the current entity:
         if (parent != kInvalidEntityID)
         {
+            // [Consider]: Instead of this check, you can have the World object have an overload that takes in
+            // a Parent ID, which can handle this case. That way, we don't need to worry about the Transform Component
+            // at all. We simply pass the parent on, and it handles it.
+            const auto parentEntity = registry.GetEntity(parent);
+            if (auto* pParentTransform = registry.TryGetComponent<TransformComponent>(parentEntity))
+            {
+                // Match the parent's world transform exactly.
+                registry.AddComponent<TransformComponent>(newChild, *pParentTransform);
+            }
+            
             m_pWorld->ParentEntity(newChildIDComp.GetID(), parent);
 
             // Force the entity to be open on the next draw.

@@ -16,7 +16,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's location, in world space. 
         //----------------------------------------------------------------------------------------------------
-        Vec3                    GetWorldPosition() const        { return m_worldMatrix.GetTranslation(); }
+        Vec3                    GetWorldPosition() const        { return m_worldPosition; }
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's world orientation. 
@@ -26,7 +26,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's total world scale. 
         //----------------------------------------------------------------------------------------------------
-        Vec3                    GetWorldScale() const           { return m_worldMatrix.GetScale(); }
+        Vec3                    GetWorldScale() const           { return m_worldScale; }
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Entity's position relative to its parent. 
@@ -46,17 +46,17 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Local Transform in its Matrix representation. 
         //----------------------------------------------------------------------------------------------------
-        const Mat44&            GetLocalTransformMatrix() const { return m_localMatrix; }
+        const Mat44&            GetLocalTransformMatrix() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the World Transformation Matrix of this Entity. 
         //----------------------------------------------------------------------------------------------------
-        const Mat44&            GetWorldTransformMatrix() const { return m_worldMatrix; }
+        const Mat44&            GetWorldTransformMatrix() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the transformation matrix that converts points/directions to local space.
         //----------------------------------------------------------------------------------------------------
-        Mat44                   GetWorldToLocalTransformMatrix() const { return m_worldMatrix.Inversed(); }
+        Mat44                   GetWorldToLocalTransformMatrix() const;
 
         static void             Serialize(YamlOutStream& out, const TransformComponent& component);
         static void             Deserialize(const YamlNode& in, TransformComponent& component);
@@ -64,12 +64,12 @@ namespace nes
     private:
         friend class TransformSystem;
         
-        Mat44                   m_worldMatrix = Mat44::Identity();  // Transforms a world position to this entity's space.
-        Mat44                   m_localMatrix = Mat44::Identity();  // Transforms from parent space to the entity's space.
         Vec3                    m_localPosition = Vec3::Zero();     // Position relative to its Parent.
         Vec3                    m_localScale = Vec3::One();         // Scale relative to its Parent.
         Rotation                m_localRotation = Rotation::Zero(); // Rotation relative to its Parent.
-        Rotation                m_worldRotation = Rotation::Zero(); // Cached world rotation in Rotation form, because converting from Matrix/Quat->Euler angles can result in bad results.
+        Vec3                    m_worldPosition = Vec3::Zero();     // Calculated world position.
+        Vec3                    m_worldScale = Vec3::One();         // Calculated world scale.
+        Rotation                m_worldRotation = Rotation::Zero(); // Calculated world rotation in euler form, because converting from Matrix/Quat->Euler angles can result in bad results.
         uint32                  m_hierarchyDepth = 0;               // 0 = Root node.
         bool                    m_isDirty = false;                  // If true, then both the local and world matrices are out of date.
     };

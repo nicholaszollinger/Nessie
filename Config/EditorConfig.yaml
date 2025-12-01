@@ -3,14 +3,14 @@ Editor:
   Windows:
     - Name: "Viewport"
       IsOpen: true
-      CameraPosition: [1.306, 2.736, -2.104]
-      CameraForward: [-0.2262, -0.1891, 0.9555]
+      CameraPosition: [5.543, 10.33, -7.859]
+      CameraForward: [-0.4846, -0.4502, 0.75]
       CameraUp: [0, 1, 0]
       CameraMovementSpeed: 12
       CameraSensitivity: 0.294
       SelectedAspectRatioIndex: 0
       Camera:
-        PerspectiveFOV: 57
+        PerspectiveFOV: 60
         OrthographicSize: 10
         NearPlane: 0.1
         FarPlane: 1000
