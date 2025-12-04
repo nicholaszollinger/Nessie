@@ -188,7 +188,7 @@ namespace nes
             // Render the Transform Component if available.
             if (m_transformInspector != nullptr && pTransform != nullptr)
             {
-                if (editor::CollapsableHeader("Transform"))
+                if (editor::CollapsibleHeader("Transform"))
                 {
                     if (editor::BeginPropertyTable())
                     {
@@ -208,7 +208,7 @@ namespace nes
             NES_ASSERT(m_selectedComponentType < m_componentInspectors.size());
             auto pInspector = m_componentInspectors[m_selectedComponentType];
             
-            if (editor::CollapsableHeader(pInspector->GetTargetShortTypename()))
+            if (editor::CollapsibleHeader(pInspector->GetTargetShortTypename()))
             {
                 if (editor::BeginPropertyTable())
                 {

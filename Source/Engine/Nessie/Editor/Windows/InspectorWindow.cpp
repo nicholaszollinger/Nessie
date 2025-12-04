@@ -2,6 +2,7 @@
 #include "InspectorWindow.h"
 #include "Nessie/Editor/SelectionManager.h"
 #include "Nessie/Editor/Inspectors/EntityInspector.h"
+#include "Nessie/Editor/EditorWorld.h"
 
 namespace nes
 {
@@ -23,7 +24,7 @@ namespace nes
             // [TODO]: Handle different contexts, i.e. Asset information as well.
             //  - For now, I am just going to assume that entities are always being selected.
             InspectorContext context;
-            context.m_pWorld = m_pWorld;
+            context.m_pWorld = Cast<WorldBase>(m_pWorld);
             context.m_selectionIDs = editor::SelectionManager::GetSelections(editor::SelectionManager::kGlobalContext);
             if (context.m_selectionIDs.empty() || context.m_selectionIDs.size() > 1)
             {

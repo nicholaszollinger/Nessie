@@ -3,7 +3,7 @@
 
 namespace nes
 {
-    void EditorWindow::SetWorld(const StrongPtr<WorldBase>& world)
+    void EditorWindow::SetWorld(const StrongPtr<EditorWorld>& world)
     {
         m_pWorld = world;
         OnWorldSet();

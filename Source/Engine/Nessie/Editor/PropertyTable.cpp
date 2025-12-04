@@ -114,7 +114,7 @@ namespace nes::editor
         ImGui::PopID();
     }
     
-    bool CollapsableHeader(const std::string& name, const bool openByDefault)
+    bool CollapsibleHeader(const std::string& name, const bool openByDefault)
     {
         ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_Framed
             | ImGuiTreeNodeFlags_SpanAvailWidth

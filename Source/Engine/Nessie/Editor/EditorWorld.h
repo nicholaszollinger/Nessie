@@ -15,6 +15,10 @@ namespace nes
     class EditorWorld final : public WorldBase
     {
     public:
+        using WorldBase::ParentEntity;
+        using WorldBase::DestroyEntity;
+        using WorldBase::RemoveParent;
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the Runtime World Instance that has the renderer and update logic. 
         //----------------------------------------------------------------------------------------------------
@@ -37,6 +41,14 @@ namespace nes
         virtual EntityHandle                CreateEntity(const std::string& name) override;
         virtual void                        DestroyEntity(const EntityHandle entity) override;
         virtual void                        ParentEntity(const EntityHandle entity, const EntityHandle parent) override;
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Get all Entities that either do not have a NodeComponent or don't have a parent.
+        //----------------------------------------------------------------------------------------------------
+        const std::vector<EntityID>*        GetRootEntities() const;
+        void                                AddRootEntity(const EntityID id);
+        void                                ReorderRootEntity(const EntityID id, const EntityID target, const bool insertAfter);
+        void                                RemoveRootEntity(const EntityID id);
         
         virtual EntityRegistry*             GetEntityRegistry() override;
         virtual StrongPtr<WorldRenderer>    GetRenderer() const override;
@@ -49,7 +61,16 @@ namespace nes
         virtual void                        OnBeginSimulation() override;
         virtual void                        OnEndSimulation() override;
 
+        std::vector<EntityID>*              GetMutableRootEntities();
+        void                                ConnectRootEntityCallbacks(EntityRegistry& registry);
+        void                                RemoveRootEntityCallbacks(EntityRegistry& registry);
+        void                                OnIDComponentAdded(entt::registry& registry, entt::entity entity);
+        void                                OnNodeComponentAdded(entt::registry& registry, entt::entity entity);
+        void                                OnNodeComponentRemoved(entt::registry& registry, entt::entity entity);
+        void                                OnIDComponentDestroyed(entt::registry& registry, entt::entity entity);
+
     private:
+        std::vector<EntityID>               m_runtimeRootEntities{};
         StrongPtr<World>                    m_pRuntimeWorld = nullptr;
         AssetPtr<WorldAsset>                m_pCurrentWorldAsset = nullptr;
     };

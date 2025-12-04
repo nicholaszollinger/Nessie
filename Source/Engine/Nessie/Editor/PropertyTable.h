@@ -60,7 +60,7 @@ namespace nes::editor
     //----------------------------------------------------------------------------------------------------
     /// @brief : Draws a header that spans the entire width, and can hide subsequent elements within it.
     //----------------------------------------------------------------------------------------------------
-    bool CollapsableHeader(const std::string& name, const bool openByDefault = true);
+    bool CollapsibleHeader(const std::string& name, const bool openByDefault = true);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Begin a group of property calls. This sets up the table structure for subsequent properties.

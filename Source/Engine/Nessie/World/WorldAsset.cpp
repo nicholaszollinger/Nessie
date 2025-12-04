@@ -3,7 +3,6 @@
 
 #include <fstream>
 #include <ranges>
-
 #include "Nessie/World.h"
 #include "Nessie/Core/String/StringID.h"
 
@@ -11,6 +10,8 @@ namespace nes
 {
     WorldAsset::WorldAsset(WorldAsset&& other) noexcept
         : m_entityRegistry(std::move(other.m_entityRegistry))
+        , m_rootEntities(std::move(other.m_rootEntities))
+        , m_assetPack(std::move(other.m_assetPack))
     {
         //
     }
@@ -20,6 +21,8 @@ namespace nes
         if (this != &other)
         {
             m_entityRegistry = std::move(other.m_entityRegistry);
+            m_rootEntities = std::move(other.m_rootEntities);
+            m_assetPack = std::move(other.m_assetPack);
         }
 
         return *this;
@@ -86,7 +89,7 @@ namespace nes
         auto& componentRegistry = ComponentRegistry::Get();
         auto componentTypes = componentRegistry.GetAllComponentTypes();
         
-        // Remove non-serializable components..
+        // Remove non-serializable components:
         for (size_t i = 0; i < componentTypes.size();)
         {
             if (!componentTypes[i].m_serializeYAML)
@@ -98,30 +101,14 @@ namespace nes
             
             ++i;
         }
-        
+
+        // Save all entities in root entity order.
+        // - All children of the root entity will be saved
         out.BeginSequence("Entities");
-        auto entities = m_entityRegistry.GetAllEntitiesWith<IDComponent>();
-        for (auto entity : std::ranges::reverse_view(entities))
+        for (auto entityID : m_rootEntities)
         {
-            out.BeginMap();
-
-            // IDComponent information:
-            auto& idComp = m_entityRegistry.GetComponent<IDComponent>(entity);
-            out.Write("Entity", idComp.GetID());
-            out.Write("Name", idComp.GetName());
-
-            // [TODO]: Enabled state.
-
-            // Save all Components.
-            out.BeginSequence("Components");
-            for (auto& componentType : componentTypes)
-            {
-                NES_ASSERT(componentType.m_serializeYAML);
-                componentType.m_serializeYAML(out, m_entityRegistry, entity);
-            }
-            out.EndSequence();
-            
-            out.EndMap(); // End "Entity" Map.
+            const auto entity = m_entityRegistry.GetEntity(entityID);
+            SaveEntityAndChildren(entity, componentTypes, out);
         }
         out.EndSequence(); // End "Entities" sequence.
         
@@ -137,7 +124,6 @@ namespace nes
         componentName.reserve(64);
 
         auto& componentRegistry = ComponentRegistry::Get();
-        
         for (auto entityNode : entities)
         {
             // ID Component Information:
@@ -178,8 +164,49 @@ namespace nes
                     pDesc->m_deserializeYAML(componentNode, m_entityRegistry, entity);
                 }
             }
+
+            auto* pNodeComponent = m_entityRegistry.TryGetComponent<NodeComponent>(entity);
+            if (!pNodeComponent || pNodeComponent->m_parentID == kInvalidEntityID)
+            {
+                // This entity is a root entity, add it to the end of the array.
+                m_rootEntities.emplace_back(entityLoadID);
+            }
         }
         
         return true;
     }
+
+    void WorldAsset::SaveEntityAndChildren(const EntityHandle entity, const std::vector<ComponentTypeDesc>& componentTypes, YamlOutStream& out)
+    {
+        NES_ASSERT(entity != kInvalidEntityHandle, "Invalid child found when saving world!");
+        out.BeginMap();
+        
+        // IDComponent information:
+        auto& idComp = m_entityRegistry.GetComponent<IDComponent>(entity);
+        out.Write("Entity", idComp.GetID());
+        out.Write("Name", idComp.GetName());
+
+        // [TODO]: Enabled state.
+
+        // Save all Components.
+        out.BeginSequence("Components");
+        for (auto& componentType : componentTypes)
+        {
+            NES_ASSERT(componentType.m_serializeYAML);
+            componentType.m_serializeYAML(out, m_entityRegistry, entity);
+        }
+        out.EndSequence();
+            
+        out.EndMap(); // End "Entity" Map.
+
+        // Save all children data, recursively:
+        if (auto* pNodeComponent = m_entityRegistry.TryGetComponent<NodeComponent>(entity))
+        {
+            for (const auto childID : pNodeComponent->m_childrenIDs)
+            {
+                const auto child = m_entityRegistry.GetEntity(childID);
+                SaveEntityAndChildren(child, componentTypes, out);
+            }
+        }
+    }   
 }

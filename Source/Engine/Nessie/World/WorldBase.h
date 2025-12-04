@@ -78,11 +78,6 @@ namespace nes
         void                        MergeWorld(WorldAsset& srcWorld);
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Export the current entity information to the WorldAsset.
-        //----------------------------------------------------------------------------------------------------
-        void                        ExportToAsset(WorldAsset& dstAsset);
-
-        //----------------------------------------------------------------------------------------------------
         /// @brief : Create a new entity in the world. 
         //----------------------------------------------------------------------------------------------------
         virtual EntityHandle        CreateEntity(const std::string& newName) = 0;
@@ -223,6 +218,8 @@ namespace nes
         virtual void                OnEndSimulation();
     
     private:
+        void                        MergeEntityAndChildren(EntityRegistry& srcRegistry, EntityRegistry& dstRegistry, const std::vector<ComponentTypeDesc>& componentTypes, EntityID entityID);
+        
         //----------------------------------------------------------------------------------------------------
         /// @brief : Allows systems to initialize entities that need to be initialized. 
         //----------------------------------------------------------------------------------------------------

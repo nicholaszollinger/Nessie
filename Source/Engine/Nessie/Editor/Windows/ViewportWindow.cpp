@@ -8,7 +8,7 @@
 #include "Nessie/Graphics/ImGui/ImGuiRenderer.h"
 #include "Nessie/Graphics/ImGui/ImGuiUtils.h"
 #include "Nessie/Input/InputManager.h"
-#include "Nessie/World/WorldBase.h"
+#include "Nessie/Editor/EditorWorld.h"
 
 namespace nes
 {

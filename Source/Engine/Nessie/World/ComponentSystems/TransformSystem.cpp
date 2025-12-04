@@ -5,12 +5,12 @@
 
 namespace nes
 {
-    const Mat44& TransformComponent::GetLocalTransformMatrix() const
+    Mat44 TransformComponent::GetLocalTransformMatrix() const
     {
         return Mat44::ComposeTransform(m_localPosition, m_localRotation, m_localScale);
     }
 
-    const Mat44& TransformComponent::GetWorldTransformMatrix() const
+    Mat44 TransformComponent::GetWorldTransformMatrix() const
     {
         return Mat44::ComposeTransform(m_worldPosition, m_worldRotation, m_worldScale);
     }
@@ -401,7 +401,7 @@ namespace nes
         auto& childTransform = registry.GetComponent<TransformComponent>(child);
         auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
         
-        const Vec3 localPosition = childTransform.GetWorldPosition() - parentTransform.GetLocalPosition(); 
+        const Vec3 localPosition = childTransform.GetWorldPosition() - parentTransform.GetWorldPosition(); 
         const Rotation localRotation = childTransform.GetWorldRotation() - parentTransform.GetWorldRotation();
         const Vec3 localScale = childTransform.GetWorldScale() / parentTransform.GetWorldScale();
         

@@ -46,12 +46,12 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Get the Local Transform in its Matrix representation. 
         //----------------------------------------------------------------------------------------------------
-        const Mat44&            GetLocalTransformMatrix() const;
+        Mat44                   GetLocalTransformMatrix() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the World Transformation Matrix of this Entity. 
         //----------------------------------------------------------------------------------------------------
-        const Mat44&            GetWorldTransformMatrix() const;
+        Mat44                   GetWorldTransformMatrix() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the transformation matrix that converts points/directions to local space.

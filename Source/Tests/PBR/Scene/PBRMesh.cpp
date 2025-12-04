@@ -316,7 +316,7 @@ namespace pbr
         return kBindings;
     }
 
-    static bool LoadMaterialDataForSubMesh(const uint32 meshIndex, const aiScene* pScene, const aiMaterial* pMaterial, const std::filesystem::path& path, PBRMaterialDesc& outMaterialDesc)
+    static bool LoadMaterialDataForSubMesh(const uint32, const aiScene* pScene, const aiMaterial* pMaterial, const std::filesystem::path& path, PBRMaterialDesc& outMaterialDesc)
     {
         // Create the Default PBR Material for the Mesh:
         outMaterialDesc.m_baseColorMap = nes::kInvalidAssetID;
