@@ -1,6 +1,7 @@
 ﻿// PBRSceneRenderer.cpp
 #include "PBRSceneRenderer.h"
 
+#include "Components/SkyboxComponent.h"
 #include "Components/LightComponents.h"
 #include "Components/MeshComponent.h"
 #include "Nessie/Application/Device/DeviceManager.h"
@@ -24,6 +25,7 @@ namespace pbr
         NES_REGISTER_COMPONENT(MeshComponent);
         NES_REGISTER_COMPONENT(PointLightComponent);
         NES_REGISTER_COMPONENT(DirectionalLightComponent);
+        NES_REGISTER_COMPONENT(SkyboxComponent);
     }
 
     bool PBRSceneRenderer::Init()
@@ -69,7 +71,6 @@ namespace pbr
     
         m_skyboxPipeline = nullptr;
         m_skyboxPipelineLayout = nullptr;
-        m_skyboxDescriptorSet = nullptr;
     
         m_gridPipeline = nullptr;
         m_gridPipelineLayout = nullptr;
@@ -118,21 +119,16 @@ namespace pbr
     void PBRSceneRenderer::ProcessDisabledEntities()
     {
         // [TODO]: Disabling entities isn't implemented just yet in the editor, so I don't have to worry about it at the moment.
-        
-        //auto& registry = GetRegistry();
-        // [TODO]: If a CameraComponent is disabled, and it is my Active Camera, print an Error? No Active Camera? Select the next active Camera?
-        // [TODO]: Disable PointLights.
-        // [TODO]: Disable DirectionalLights.
     }
 
     void PBRSceneRenderer::ProcessDestroyedEntities(const bool destroyingWorld)
     {
-        auto* registry = GetEntityRegistry();
-        if (!destroyingWorld && registry)
+        auto* pRegistry = GetEntityRegistry();
+        if (!destroyingWorld && pRegistry)
         {
             // Handle removing meshes:
             {
-                auto view = registry->GetAllEntitiesWith<nes::IDComponent, nes::PendingDestruction, MeshComponent>(entt::exclude<nes::DisabledComponent>);
+                auto view = pRegistry->GetAllEntitiesWith<nes::IDComponent, nes::PendingDestruction, MeshComponent>(entt::exclude<nes::DisabledComponent>);
                 for (auto entity : view)
                 {
                     auto& meshComp = view.get<MeshComponent>(entity);
@@ -149,7 +145,7 @@ namespace pbr
         
         if (pRegistry)
         {
-            BuildSceneData(*pRegistry, device, commandBuffer);
+            BuildSceneData(*pRegistry, device, commandBuffer, context);
         }
         
         UpdateUniformBuffers(worldCamera, context);
@@ -759,8 +755,6 @@ namespace pbr
 
     void PBRSceneRenderer::CreateDescriptorSets(nes::RenderDevice& device)
     {
-        nes::Descriptor* pTextureSampler = &m_textureSampler;
-    
         // Camera Descriptors
         nes::BufferViewDesc cameraView{};
         cameraView.m_pBuffer = &m_globalsBuffer;
@@ -892,25 +886,15 @@ namespace pbr
                 };
                 frame.m_sampledShadowDataSet.UpdateBindings(shadowUpdateDescs.data(), 0, static_cast<uint32>(shadowUpdateDescs.size()));
             }
+
+            // Skybox Descriptor Set: Sampler and CubeImage.
+            {
+                m_descriptorPool.AllocateDescriptorSets(m_skyboxPipelineLayout, 1, &frame.m_skyboxDescriptorSet);
+                UpdateSkyboxTexture(frame.m_skyboxDescriptorSet);
+            }
         }
     
-        // Skybox Descriptor Set: Sampler and CubeImage.
-        {
-            m_descriptorPool.AllocateDescriptorSets(m_skyboxPipelineLayout, 1, &m_skyboxDescriptorSet);
-
-            // Get the Skybox Texture View:
-            const auto textureIndex = m_scene.m_idToTextureIndex[m_scene.m_skyboxTextureID];
-            NES_ASSERT(textureIndex < m_scene.m_textures.size());
-            nes::Descriptor* pSkyboxTexture = &m_scene.m_textures[textureIndex];
-            NES_ASSERT(*pSkyboxTexture != nullptr);
-
-            std::array updateDescs =
-            {
-                nes::DescriptorBindingUpdateDesc(&pTextureSampler, 1),
-                nes::DescriptorBindingUpdateDesc(&pSkyboxTexture, 1),
-            };
-            m_skyboxDescriptorSet.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
-        }
+        
     }
 
     void PBRSceneRenderer::UpdateUniformBuffers(const nes::WorldCamera& worldCamera, const nes::RenderFrameContext& context)
@@ -980,8 +964,10 @@ namespace pbr
         }
     }
 
-    void PBRSceneRenderer::BuildSceneData(nes::EntityRegistry& registry, nes::RenderDevice& device, nes::CommandBuffer& commandBuffer)
+    void PBRSceneRenderer::BuildSceneData(nes::EntityRegistry& registry, nes::RenderDevice& device, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
     {
+        auto& frame = m_frames[context.GetFrameIndex()];
+        
         // Update all model matrices for the instances:
         for (auto& instance : m_scene.m_instances)
         {
@@ -1014,16 +1000,70 @@ namespace pbr
             auto view = registry.GetAllEntitiesWith<DirectionalLightComponent>(entt::exclude<nes::DisabledComponent>);
             m_scene.m_directionalLights.clear();
 
+            nes::EntityHandle directionalLight = nes::kInvalidEntityHandle; 
+            int highestPriority = std::numeric_limits<int>::min();
             for (auto entity : view)
             {
                 auto& lightComp = view.get<DirectionalLightComponent>(entity);
 
+                if (lightComp.m_priority > highestPriority)
+                {
+                    directionalLight = entity;
+                    highestPriority = lightComp.m_priority;
+                }
+            }
+
+            // Only one directional light for now.
+            // [TODO]: I should get rid of the array representation now that I am doing the priority check.
+            if (directionalLight != nes::kInvalidEntityHandle)
+            {
+                auto& lightComp = registry.GetComponent<DirectionalLightComponent>(directionalLight);
+                
                 DirectionalLight light{};
                 light.m_direction = nes::Float3(lightComp.m_direction.x, lightComp.m_direction.y, lightComp.m_direction.z);
                 light.m_color = nes::Float3(lightComp.m_color.r, lightComp.m_color.g, lightComp.m_color.b);
                 light.m_intensity = lightComp.m_intensity;
                 m_scene.m_directionalLights.push_back(light);
             }
+        }
+
+        // Skybox
+        {
+            auto view = registry.GetAllEntitiesWith<SkyboxComponent>(entt::exclude<nes::DisabledComponent>);
+
+            nes::AssetID skyboxAssetID = nes::kInvalidAssetID;
+            int highestPriority = std::numeric_limits<int>::min();
+            for (auto entity : view)
+            {
+                auto& skyboxComp = view.get<SkyboxComponent>(entity);
+
+                if (skyboxComp.m_priority > highestPriority)
+                {
+                    highestPriority = skyboxComp.m_priority;
+                    skyboxAssetID = skyboxComp.m_skyboxAssetID;
+                }
+            }
+
+            // If there are no skyboxes in the world, set the default.
+            if (skyboxAssetID == nes::kInvalidAssetID)
+            {
+                skyboxAssetID = GetDefaultSkyboxID();
+            }
+
+            // We need to update our current skybox:
+            if (skyboxAssetID != m_scene.m_skyboxTextureID)
+            {
+                const bool needsRegister = !m_scene.m_idToTextureIndex.contains(skyboxAssetID);
+                auto pTexture = nes::AssetManager::GetAsset<nes::TextureCube>(skyboxAssetID);
+                if (needsRegister && pTexture)
+                {
+                    RegisterTextureCubeAsset(device, pTexture);
+                }
+
+                m_scene.m_skyboxTextureID = skyboxAssetID;
+            }
+
+            UpdateSkyboxTexture(frame.m_skyboxDescriptorSet);
         }
 
         // [TODO]: Should probably make the Uploader a member variable.
@@ -1154,11 +1194,12 @@ namespace pbr
         NES_ASSERT(m_skyboxPipeline != nullptr);
         NES_ASSERT(m_skyboxPipelineLayout != nullptr);
         NES_ASSERT(m_frames.size() > context.GetFrameIndex());
-
+        
+        auto& frame = m_frames[context.GetFrameIndex()];
         commandBuffer.BindPipelineLayout(m_skyboxPipelineLayout);
         commandBuffer.BindPipeline(m_skyboxPipeline);
-        commandBuffer.BindDescriptorSet(0, m_frames[context.GetFrameIndex()].m_cameraSet);
-        commandBuffer.BindDescriptorSet(1, m_skyboxDescriptorSet);
+        commandBuffer.BindDescriptorSet(0, frame.m_cameraSet);
+        commandBuffer.BindDescriptorSet(1, frame.m_skyboxDescriptorSet);
 
         // Draw 3 Vertices, 
         commandBuffer.DrawVertices(3);
@@ -1505,6 +1546,23 @@ namespace pbr
         return m_colorTarget;
     }
 
+    void PBRSceneRenderer::UpdateSkyboxTexture(nes::DescriptorSet& set)
+    {
+        // Get the Skybox Texture View:
+        const auto textureIndex = m_scene.m_idToTextureIndex[m_scene.m_skyboxTextureID];
+        NES_ASSERT(textureIndex < m_scene.m_textures.size());
+        nes::Descriptor* pSkyboxTexture = &m_scene.m_textures[textureIndex];
+        NES_ASSERT(*pSkyboxTexture != nullptr);
+        nes::Descriptor* pTextureSampler = &m_textureSampler;
+
+        std::array updateDescs =
+        {
+            nes::DescriptorBindingUpdateDesc(&pTextureSampler, 1),
+            nes::DescriptorBindingUpdateDesc(&pSkyboxTexture, 1),
+        };
+        set.UpdateBindings(updateDescs.data(), 0, static_cast<uint32>(updateDescs.size()));
+    }
+
     void PBRSceneRenderer::OnWorldSet()
     {
         if (auto* pRegistry = GetEntityRegistry())
@@ -1523,7 +1581,7 @@ namespace pbr
         {
             pRegistry->OnComponentCreated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
             pRegistry->OnComponentUpdated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
-            pRegistry->OnComponentDestroyed<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+            pRegistry->OnComponentDestroyed<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);
         }
     }
 
@@ -1545,14 +1603,14 @@ namespace pbr
         {
             pOldRegistry->OnComponentCreated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
             pOldRegistry->OnComponentUpdated<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
-            pOldRegistry->OnComponentDestroyed<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+            pOldRegistry->OnComponentDestroyed<MeshComponent>().disconnect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);
         }
         
         if (pNewRegistry != nullptr)
         {
             pNewRegistry->OnComponentCreated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
             pNewRegistry->OnComponentUpdated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
-            pNewRegistry->OnComponentDestroyed<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+            pNewRegistry->OnComponentDestroyed<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);
         }
     }
 
@@ -2022,5 +2080,10 @@ namespace pbr
     nes::AssetID PBRSceneRenderer::GetDefaultMaterialID()
     {
         return s_defaultMaterialID;
+    }
+
+    nes::AssetID PBRSceneRenderer::GetDefaultSkyboxID()
+    {
+        return s_defaultSkyboxID;
     }
 }

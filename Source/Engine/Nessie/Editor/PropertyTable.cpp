@@ -210,6 +210,30 @@ namespace nes::editor
         internal::EndProperty();
     }
 
+    bool Property(const char* label, int& value, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+        
+        const bool modified = ImGui::InputScalar(internal::CreateHiddenPropertyValueLabel(label).c_str(), ImGuiDataType_S32, &value);
+        
+        internal::EndPropertyValue();
+        internal::EndProperty();
+        
+        return modified;
+    }
+
+    void Property(const char* label, const int& value, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+
+        internal::BeginPropertyValue(true);
+        ImGui::InputScalar(internal::CreateHiddenPropertyValueLabel(label).c_str(), ImGuiDataType_S32, const_cast<int*>(&value));
+        internal::EndPropertyValue(true);
+        
+        internal::EndProperty();
+    }
+
     bool Property(const char* label, uint64& value, const char* toolTip)
     {
         internal::BeginProperty(label, toolTip);

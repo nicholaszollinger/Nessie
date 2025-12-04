@@ -3,8 +3,8 @@ Editor:
   Windows:
     - Name: "Viewport"
       IsOpen: true
-      CameraPosition: [7.794, 7.801, -11.13]
-      CameraForward: [-0.2967, -0.2238, 0.9284]
+      CameraPosition: [6.759, 8.722, -10.53]
+      CameraForward: [-0.2721, -0.2338, 0.9334]
       CameraUp: [0, 1, 0]
       CameraMovementSpeed: 12
       CameraSensitivity: 0.294

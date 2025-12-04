@@ -15,6 +15,7 @@ namespace pbr
     {
         nes::editor::PropertyColor("Color", pTarget->m_color, false);
         nes::editor::Property("Direction", pTarget->m_direction);
-        nes::editor::Property("Intensity", pTarget->m_intensity, 1.f, 001.f, FLT_MAX, "%.2f lux", "The amount of energy emitted by the light, in lux (lumens/m^2).");        
+        nes::editor::Property("Intensity", pTarget->m_intensity, 1.f, 001.f, FLT_MAX, "%.2f lux", "The amount of energy emitted by the light, in lux (lumens/m^2).");
+        nes::editor::Property("Priority", pTarget->m_priority, "The Directional Light with the highest priority will be used to light the Scene");
     }
 }

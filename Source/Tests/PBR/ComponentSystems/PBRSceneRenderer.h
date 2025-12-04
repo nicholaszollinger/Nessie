@@ -43,6 +43,7 @@ namespace pbr
         static nes::AssetID             GetDefaultMeshID(const EDefaultMeshType type);
         static nes::AssetID             GetDefaultTextureID(const EDefaultTextureType type);
         static nes::AssetID             GetDefaultMaterialID();
+        static nes::AssetID             GetDefaultSkyboxID();
 
     private:
         
@@ -93,6 +94,7 @@ namespace pbr
             nes::DescriptorSet          m_materialDataSet = nullptr;            // Value for the ObjectBuffer.
             nes::DescriptorSet          m_shadowPassDataSet = nullptr;          // Value for the Shadow Pass.
             nes::DescriptorSet          m_sampledShadowDataSet = nullptr;       // Value for shadow data used in the PBR pipeline.
+            nes::DescriptorSet          m_skyboxDescriptorSet = nullptr;        // Value of the current Skybox.
             
             uint64                      m_cameraBufferOffset = 0;               // Byte offset in the Global buffer for the CameraUBO for this frame. 
             uint64                      m_lightCountOffset  = 0;                // Byte offset in the Global buffer for the LightCountUBO for this frame. 
@@ -142,7 +144,7 @@ namespace pbr
         //----------------------------------------------------------------------------------------------------
         /// @brief : Fill out the ObjectUBO array in the scene for all instances.
         //----------------------------------------------------------------------------------------------------
-        void                            BuildSceneData(nes::EntityRegistry& registry, nes::RenderDevice& device, nes::CommandBuffer& commandBuffer);
+        void                            BuildSceneData(nes::EntityRegistry& registry, nes::RenderDevice& device, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Renders the scene from the perspective of the directional light, storing the depth data in
@@ -200,7 +202,7 @@ namespace pbr
         ///     the m_msaaImage, otherwise it will be the m_colorTarget that has no multisampling.
         //----------------------------------------------------------------------------------------------------
         nes::RenderTarget&              GetColorDrawTarget();
-
+        
         virtual void                    OnWorldSet() override;
         virtual void                    OnWorldRemoved() override;
         virtual void                    OnBeginSimulation() override;
@@ -210,6 +212,7 @@ namespace pbr
         void                            OnMeshComponentAdded(entt::registry& registry, const entt::entity entity);
         void                            OnMeshComponentUpdated(entt::registry& registry, const entt::entity entity);
         void                            OnMeshComponentRemoved(entt::registry& registry, const entt::entity entity);
+        void                            UpdateSkyboxTexture(nes::DescriptorSet& set);
         nes::RenderTarget               CreateColorRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
         nes::RenderTarget               LoadDepthRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
         void                            LoadGraphicsPipeline(const nes::YamlNode& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
@@ -255,7 +258,6 @@ namespace pbr
         // Skybox Pipeline
         nes::PipelineLayout             m_skyboxPipelineLayout = nullptr;
         nes::Pipeline                   m_skyboxPipeline = nullptr;
-        nes::DescriptorSet              m_skyboxDescriptorSet = nullptr;
         
         // Grid Pipeline
         nes::PipelineLayout             m_gridPipelineLayout = nullptr;
@@ -272,7 +274,6 @@ namespace pbr
         nes::DeviceBuffer               m_verticesBuffer = nullptr;             // Vertex Data
         nes::DeviceBuffer               m_globalsBuffer = nullptr;              // Contains the Camera, LightCount and Shadow Data for each frame.  
         std::vector<nes::DescriptorSet> m_materialDescriptorSets{};
-        
         nes::EntityID                   m_activeCameraID = nes::kInvalidEntityID;
     };
 

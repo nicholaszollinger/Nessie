@@ -23,6 +23,7 @@ namespace pbr
         out.Write("Color", component.m_color);
         out.Write("Direction", component.m_direction);
         out.Write("Intensity", component.m_intensity);
+        out.Write("Priority", component.m_priority);
     }
 
     void DirectionalLightComponent::Deserialize(const nes::YamlNode& in, DirectionalLightComponent& component)
@@ -31,5 +32,6 @@ namespace pbr
         in["Direction"].Read(component.m_direction, nes::Vec3(1.f, -1.f, 1.f));
         component.m_direction.Normalize();
         in["Intensity"].Read(component.m_intensity, 100'000.f); // 100K lux by default.
+        in["Priority"].Read(component.m_priority, 0);
     }
 }

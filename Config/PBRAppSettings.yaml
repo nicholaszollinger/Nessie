@@ -31,7 +31,7 @@ Assets:
   # Default Skybox
 - AssetID: 500
   TypeID: 17573926464023591641
-  Path: "Skybox\\blue\\BlueSpace.yaml"
+  Path: "Skybox\\Skybox.yaml"
   # Materials
 - AssetID: 5000
   TypeID: 14967253334840397702

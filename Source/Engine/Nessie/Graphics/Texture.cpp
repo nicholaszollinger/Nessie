@@ -222,7 +222,7 @@ namespace nes
             dataUploader.RecordCommands(cmdBuffer);
             
             // Submit commands:
-            Renderer::SubmitAndWaitTempCommands(cmdBuffer);
+            Renderer::SubmitAndWaitTempCommands(cmdBuffer, dataUploader.GetSignalSemaphores(), dataUploader.GetAcquireBarriers());
         }
 
         // Free the data loaded from stb. We are storing the memory above.

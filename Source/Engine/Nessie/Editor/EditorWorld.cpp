@@ -226,6 +226,7 @@ namespace nes
 
             // Destroy any entities that were in the runtime world.
             m_pRuntimeWorld->DestroyAllEntities();
+            m_runtimeRootEntities.clear();
 
             // Respond to root entity creation:
             ConnectRootEntityCallbacks(*m_pRuntimeWorld->GetEntityRegistry());

@@ -4,6 +4,7 @@
 #include "Editor/DayNightSimComponentInspector.h"
 #include "Editor/LightComponentInspectors.h"
 #include "Editor/MeshComponentInspector.h"
+#include "Editor/SkyboxComponentInspector.h"
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Editor/EditorWorld.h"
 #include "Nessie/Editor/Inspectors/Components/CameraComponentInspector.h"
@@ -49,6 +50,7 @@ bool PBRExampleApp::Init()
     nes::EditorInspectorRegistry::RegisterInspector<pbr::MeshComponentInspector>();
     nes::EditorInspectorRegistry::RegisterInspector<nes::FreeCamMovementComponentInspector>();
     nes::EditorInspectorRegistry::RegisterInspector<pbr::DayNightSimComponentInspector>();
+    nes::EditorInspectorRegistry::RegisterInspector<pbr::SkyboxComponentInspector>();
 
     // Setup ImGui:
     nes::ImGuiDesc desc{};
