@@ -13,6 +13,20 @@ namespace nes
 {
     static constexpr float kRowHeight = 21.f;
     static constexpr auto kDividerLineThickness = 2.f;
+
+    static int TextEditCallback(ImGuiInputTextCallbackData* data)
+    {
+        if (data->EventFlag == ImGuiInputTextFlags_CallbackEdit)
+        {
+            // Reject spaces at the beginning (cursor at position 0)
+            while (data->BufTextLen > 0 && data->Buf[0] == ' ')
+            {
+                data->DeleteChars(0, 1);
+            }
+        }
+        
+        return 0; // Return 0 to accept the character
+    }
         
     HierarchyWindow::HierarchyWindow()
     {
@@ -499,9 +513,9 @@ namespace nes
 
         static constexpr ImGuiInputTextFlags kInputTextFlags = ImGuiInputTextFlags_EnterReturnsTrue 
             | ImGuiInputTextFlags_AutoSelectAll
-            | ImGuiInputTextFlags_CharsNoBlank; // Prevents spaces.
+            | ImGuiInputTextFlags_CallbackEdit;
 
-        if (ImGui::InputText("##rename_input", m_inputBuffer, kInputBufferSize, kInputTextFlags))
+        if (ImGui::InputText("##rename_input", m_inputBuffer, kInputBufferSize, kInputTextFlags, TextEditCallback))
         {
             // Only apply new name if buffer is not empty
             if (m_inputBuffer[0] != '\0')
@@ -942,7 +956,7 @@ namespace nes
 
     void HierarchyWindow::CreateNewGlobalEntity(EntityRegistry& registry)
     {
-        auto newEntity = registry.CreateEntity("NewEntity");
+        auto newEntity = registry.CreateEntity(std::format("NewEntity_{}", m_newEntityCounter++));
         auto& idComp = registry.GetComponent<IDComponent>(newEntity);
         
         // Select the new entity:
@@ -956,7 +970,7 @@ namespace nes
     void HierarchyWindow::CreateNewWorldEntity(EntityRegistry& registry, const EntityID parent)
     {
         // Create an Entity.
-        auto newChild = m_pWorld->CreateEntity("NewEntity");
+        auto newChild = m_pWorld->CreateEntity(std::format("NewEntity_{}", m_newEntityCounter++));
         auto& newChildIDComp = registry.GetComponent<IDComponent>(newChild);
 
         // Parent to the current entity:

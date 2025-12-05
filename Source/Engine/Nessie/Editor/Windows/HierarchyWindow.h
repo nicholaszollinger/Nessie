@@ -99,6 +99,7 @@ namespace nes
         ImGuiTextFilter         m_filter;
         EntityID                m_currentRenameEntity = kInvalidEntityID;
         EntityID                m_forceOpenEntity = kInvalidEntityID;
+        uint64                  m_newEntityCounter = 0;
         char                    m_inputBuffer[256] = {};
         bool                    m_isFocused = false;
         bool                    m_isDraggingEntity = false;
