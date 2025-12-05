@@ -1,6 +1,7 @@
 // PBRExampleApp.cpp
 #include "PBRExampleApp.h"
 
+#include <fstream>
 #include "Editor/DayNightSimComponentInspector.h"
 #include "Editor/LightComponentInspectors.h"
 #include "Editor/MeshComponentInspector.h"
@@ -19,6 +20,7 @@
 #include "Nessie/Graphics/Shader.h"
 #include "PBRExampleWorld.h"
 #include "Nessie/Input/InputManager.h"
+#include "Nessie/FileIO/YAML/Serializers/YamlMathSerializers.h"
 
 PBRExampleApp::PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc)
     : nes::Application(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc))
@@ -28,7 +30,6 @@ PBRExampleApp::PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& w
 
 void PBRExampleApp::PushEvent(nes::Event& e)
 {
-
     if (m_pEditorWorld)
         m_pEditorWorld->OnEvent(e);
 }
@@ -60,14 +61,17 @@ bool PBRExampleApp::Init()
     desc.m_framesInFlight = nes::Renderer::GetMaxFramesInFlight();
     m_imgui.Init(nes::Renderer::GetDevice(), desc);
 
+    LoadUserSettings();
+
     // Register Editor Window Types:
     m_viewportWindow = m_windowManager.RegisterWindow<nes::ViewportWindow>();
     auto pHierarchyWindow = m_windowManager.RegisterWindow<nes::HierarchyWindow>();
     auto pInspectorWindow = m_windowManager.RegisterWindow<nes::InspectorWindow>();
     m_windowManager.RegisterWindow<nes::EditorConsole>();
 
+    std::filesystem::path worldAssetPath;
     // Initialize the Window Manager, after all Windows have been registered.
-    if (!m_windowManager.Init())
+    if (!m_windowManager.Init(worldAssetPath))
     {
         NES_ERROR("Failed to initialize EditorWindowManager!");
         return false;
@@ -77,11 +81,11 @@ bool PBRExampleApp::Init()
     m_pEditorWorld = nes::Create<nes::EditorWorld>();
     auto pWorld = nes::Create<pbr::PBRExampleWorld>();
     m_pEditorWorld->SetRuntimeWorld(pWorld);
-
+    
     // Load the World Asset
-    std::filesystem::path path = NES_CONTENT_DIR;
-    path /= "Worlds/PBRTestWorld.yaml";
-    if (nes::AssetManager::LoadSync<nes::WorldAsset>(m_worldAssetID, path) != nes::ELoadResult::Success)
+    // std::filesystem::path path = NES_CONTENT_DIR;
+    // path /= "Worlds/PBRTestWorld.yaml";
+    if (nes::AssetManager::LoadSync<nes::WorldAsset>(m_worldAssetID, worldAssetPath) != nes::ELoadResult::Success)
     {
         NES_ERROR("Failed to load World Asset!");
         return false;
@@ -114,6 +118,9 @@ bool PBRExampleApp::Init()
     
     nes::AssetManager::LoadAssetPackAsync(assetPack, onComplete, onAssetLoaded);
     m_windowManager.SetWorld(m_pEditorWorld);
+
+    // Reveal the window:
+    GetWindow().ShowWindow();
     
     return true;
 }
@@ -208,6 +215,79 @@ void PBRExampleApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderF
     }
     
     m_imgui.EndFrame();
+}
+
+void PBRExampleApp::LoadUserSettings()
+{
+    std::filesystem::path path = NES_SAVED_DIR;
+    path /= "User/UProjectConfig.yaml";
+
+    auto& window = GetWindow();
+    if (!std::filesystem::exists(path))
+    {
+        window.CenterWindow();
+        return;
+    }
+    
+    nes::YamlInStream stream(path);
+    auto root = stream.GetRoot();
+    auto applicationWindow = root["ApplicationWindow"];
+    
+    nes::IVec2 position;
+    applicationWindow["Position"].Read(position, nes::IVec2(std::numeric_limits<int>::max()));
+
+    nes::UVec2 size;
+    applicationWindow["Size"].Read(size, nes::UVec2(std::numeric_limits<uint32>::max()));
+
+    bool fullscreen;
+    applicationWindow["IsFullscreen"].Read(fullscreen, false);
+
+    bool vsyncEnabled;
+    applicationWindow["Vsync"].Read(vsyncEnabled, false);
+
+    // Set the size
+    if (size.x < std::numeric_limits<uint32>::max() && size.y < std::numeric_limits<uint32>::max())
+    {
+        window.Resize(size.x, size.y);
+    }
+
+    // Set the position
+    if (position.x < std::numeric_limits<int>::max() && position.y < std::numeric_limits<int>::max())
+        window.SetPosition(position.x, position.y);
+    else
+        window.CenterWindow();
+
+    window.SetFullscreen(fullscreen);
+    window.SetVsync(vsyncEnabled);
+}
+
+void PBRExampleApp::SaveUserSettings()
+{
+    std::filesystem::path path = NES_SAVED_DIR;
+    path /= "User/UProjectConfig.yaml";
+    
+    std::ofstream stream(path.string());
+    if (!stream.is_open())
+    {
+        NES_ERROR("Failed to create User file for ProjectConfig! You probably didn't create the file directories correctly!\n\tPath:", path.string());
+        return;
+    }
+    
+    nes::YamlOutStream writer(path, stream);
+
+    if (!m_desc.m_isHeadless)
+    {
+        auto& window = GetWindow();
+        const auto& desc = window.GetDesc();
+
+        writer.BeginMap("ApplicationWindow");
+        writer.Write("Position", desc.m_windowPosition);
+        writer.Write("Size", desc.m_windowResolution);
+        writer.Write("Vsync", desc.m_vsyncEnabled);
+        writer.Write("IsFullscreen", window.IsFullscreen());
+        
+        writer.EndMap();
+    }
 }
 
 void PBRExampleApp::RenderImGuiEditor()
@@ -437,6 +517,8 @@ void PBRExampleApp::PreShutdown()
 
     m_viewportWindow = nullptr;
     m_windowManager.Shutdown();
+
+    SaveUserSettings();
     
     // Close ImGui.
     m_imgui.Shutdown();

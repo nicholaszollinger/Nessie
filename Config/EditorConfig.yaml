@@ -1,29 +1,6 @@
 Editor:
+  DefaultWorldAsset: "Worlds\\PBRTestWorld.yaml"
   DefaultLayout: "Default"
-  Windows:
-    - Name: "Viewport"
-      IsOpen: true
-      CameraPosition: [6.759, 8.722, -10.53]
-      CameraForward: [-0.2721, -0.2338, 0.9334]
-      CameraUp: [0, 1, 0]
-      CameraMovementSpeed: 12
-      CameraSensitivity: 0.294
-      SelectedAspectRatioIndex: 0
-      Camera:
-        PerspectiveFOV: 60
-        OrthographicSize: 10
-        NearPlane: 0.1
-        FarPlane: 1000
-        Aperture: 8
-        ShutterSpeed: 125
-        Iso: 100
-        ProjectionType: 0
-    - Name: "Hierarchy"
-      IsOpen: true
-    - Name: "Inspector"
-      IsOpen: true
-    - Name: "Console"
-      IsOpen: true
   Layouts:
     - Name: "Default"
       DockSplits:

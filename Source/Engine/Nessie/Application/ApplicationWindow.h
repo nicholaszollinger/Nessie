@@ -82,6 +82,12 @@ namespace nes
 
     public:
         //----------------------------------------------------------------------------------------------------
+        /// @brief : The Application window starts off hidden until explicitly shown. This must be called to
+        ///     reveal the window.
+        //----------------------------------------------------------------------------------------------------
+        void                    ShowWindow();
+        
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Resize the window. 
         //----------------------------------------------------------------------------------------------------
         void                    Resize(const UVec2& extent);
@@ -95,6 +101,16 @@ namespace nes
         /// @brief : Get the current resolution of the window. The size will be in pixel dimensions. 
         //----------------------------------------------------------------------------------------------------
         UVec2                   GetResolution() const           { return m_desc.m_windowResolution; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the position of the window. 
+        //----------------------------------------------------------------------------------------------------
+        void                    SetPosition(const int x, const int y);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Center the window on the current monitor.
+        //----------------------------------------------------------------------------------------------------
+        void                    CenterWindow();
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get whether the Window is in Fullscreen, Windowed, etc. 
@@ -132,6 +148,16 @@ namespace nes
         /// @brief : Check if the Window is minimized. 
         //----------------------------------------------------------------------------------------------------
         bool                    IsMinimized() const             { return m_desc.m_isMinimized; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set whether the window is in fullscreen mode.
+        //----------------------------------------------------------------------------------------------------
+        void                    SetFullscreen(const bool enabled);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Check if the window is fullscreen.
+        //----------------------------------------------------------------------------------------------------
+        bool                    IsFullscreen() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set how the cursor interacts with the window. 
@@ -187,6 +213,7 @@ namespace nes
         void                    Internal_Shutdown();
     
     protected:
+        
         WindowDesc              m_desc;                             // Current window properties.
         NativeWindow            m_nativeWindow{};                   // Platform specific window handles, and the GLFW Window*.
         void*                   m_subWindowWithFocus = nullptr;

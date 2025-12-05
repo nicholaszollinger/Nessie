@@ -69,6 +69,7 @@ function p.ConfigureProject(dependencyInjector)
 
     prebuildcommands { "{MKDIR} %[" .. projectCore.DefaultOutDir .. "]"}
 	prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/]"}
+    prebuildcommands { "{MKDIR} %[" .. projectCore.SolutionDir .. "Saved/User/]"}
     
     filter{}
 end

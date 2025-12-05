@@ -28,7 +28,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Loads window states and layouts from the EditorConfig.yaml
         //----------------------------------------------------------------------------------------------------
-        bool                    Init();
+        bool                    Init(std::filesystem::path& outWorldToLoadPath);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Closes all windows, and saves window settings to the EditorConfig.yaml
@@ -38,7 +38,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the current World context for all editors.
         //----------------------------------------------------------------------------------------------------
-        void                    SetWorld(const StrongPtr<WorldBase>& pWorld) const;
+        void                    SetWorld(const StrongPtr<EditorWorld>& pWorld);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Must be called every frame. Initializes the main window and docking area.
@@ -99,12 +99,19 @@ namespace nes
 
             return nullptr;
         }
+
+    private:
+        void                                        SaveEditorConfig();
+        void                                        SaveUserEditorConfig();
     
     private:
         std::unordered_map<std::string, size_t>    m_nameToIndexMap{};      // Maps a window name to it's index in the windows array.
         std::vector<std::shared_ptr<EditorWindow>> m_windows{};             // Container of available windows.
         std::unordered_map<std::string, EditorWindowLayout> m_layouts{};    // Container of layouts that can be applied to the Editor.
+        StrongPtr<EditorWorld>                      m_pWorld = nullptr;
+        std::filesystem::path                       m_defaultWorldRelativePath = {};
         std::string                                 m_defaultLayout = {};   // Name of the default layout.
+        std::string                                 m_currentLayout = {};   // Editor Layout that is actively being used.
         ImGuiID                                     m_dockSpaceID = {};     // The id of the main window dockspace.
     };
 }

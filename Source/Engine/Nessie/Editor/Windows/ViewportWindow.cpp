@@ -16,6 +16,14 @@ namespace nes
     {
         m_desc.m_name = "Viewport";
         m_desc.m_flags = ImGuiWindowFlags_NoNav;
+        
+        // Move up and back from the origin, and pitch down 45 degrees.
+        m_editorCamera.m_position = Vec3(0.f, 8, -16);
+        
+        const auto mat = Mat44::MakeRotation(Vec3::AxisX(), math::ToRadians(20.f));
+        m_editorCamera.m_forward = mat.TransformVector(Vec3::Forward());
+        m_editorCamera.m_up = Vec3::Up();
+        
         CreateImGuiSampler();
     }
 
