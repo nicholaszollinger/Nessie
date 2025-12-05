@@ -27,17 +27,18 @@ namespace nes
         // Validate the target:
         if (pTarget == nullptr || context.m_pWorld == nullptr || *pTarget == kInvalidEntityHandle)
         {
-            auto* pRegistry = context.m_pWorld->GetEntityRegistry();
-            
             // If the last selected entity is still valid, render it.
-            if (m_lastSelected != kInvalidEntityHandle && pRegistry && pRegistry->IsValidEntity(m_lastSelected))
+            auto* pRegistry = context.m_pWorld->GetEntityRegistry();
+            if (m_lastSelected != kInvalidEntityID && pRegistry && pRegistry->IsValidEntity(m_lastSelected))
             {
-                DrawComponentList(*pRegistry, m_lastSelected);
-                DrawSelectedComponentDetails(*pRegistry, m_lastSelected, context);
+                auto entity = pRegistry->GetEntity(m_lastSelected);
+                DrawComponentList(*pRegistry, entity);
+                DrawSelectedComponentDetails(*pRegistry, entity, context);
             }
             else
             {
-                m_lastSelected = kInvalidEntityHandle;
+                // Current target and last target are invalid, reset.
+                m_lastSelected = kInvalidEntityID;
                 m_selectedComponentType = std::numeric_limits<size_t>::max();
             }
             
@@ -46,15 +47,17 @@ namespace nes
 
         // Render the new entity:
         EntityHandle& entity = *pTarget;
-        if (m_lastSelected != entity)
-        {
-            m_selectedComponentType = std::numeric_limits<size_t>::max();
-            m_lastSelected = entity;
-            AssembleComponentInspectors();
-        }
 
         if (auto* pRegistry = context.m_pWorld->GetEntityRegistry())
         {
+            auto id = pRegistry->GetComponent<IDComponent>(entity).GetID();
+            if (m_lastSelected != id)
+            {
+                m_selectedComponentType = std::numeric_limits<size_t>::max();
+                m_lastSelected = id;
+                AssembleComponentInspectors();
+            }
+
             DrawComponentList(*pRegistry, entity);
             DrawSelectedComponentDetails(*pRegistry, entity, context);
         }
@@ -180,6 +183,21 @@ namespace nes
     {
         if (ImGui::BeginChild("Details", ImVec2(0, 0)))
         {
+            auto* pTransform = registry.TryGetComponent<TransformComponent>(entity);
+            
+            // Render the Transform Component if available.
+            if (m_transformInspector != nullptr && pTransform != nullptr)
+            {
+                if (editor::CollapsibleHeader("Transform"))
+                {
+                    if (editor::BeginPropertyTable())
+                    {
+                        m_transformInspector->Draw(pTransform, context);                        
+                    }
+                    editor::EndPropertyTable();
+                }
+            }
+            
             // No selected component.
             if (m_selectedComponentType == std::numeric_limits<size_t>::max())
             {
@@ -190,7 +208,7 @@ namespace nes
             NES_ASSERT(m_selectedComponentType < m_componentInspectors.size());
             auto pInspector = m_componentInspectors[m_selectedComponentType];
             
-            if (editor::CollapsableHeader(pInspector->GetTargetShortTypename()))
+            if (editor::CollapsibleHeader(pInspector->GetTargetShortTypename()))
             {
                 if (editor::BeginPropertyTable())
                 {
@@ -215,7 +233,11 @@ namespace nes
             auto pInspector = EditorInspectorRegistry::GetInspector(componentType.m_typeID);
             if (pInspector != nullptr)
             {
-                m_componentInspectors.emplace_back(pInspector);
+                // Cache the transform inspector, so that we always render it.
+                if (componentType.m_typeID == entt::type_id<TransformComponent>().hash())
+                    m_transformInspector = pInspector;
+                else
+                    m_componentInspectors.emplace_back(pInspector);
             }
         }
     }

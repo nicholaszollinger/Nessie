@@ -7,6 +7,12 @@ namespace nes
     class World : public WorldBase
     {
     public:
+        // WorldBase EntityID overloads:
+        using WorldBase::ParentEntity;
+        using WorldBase::DestroyEntity;
+        using WorldBase::RemoveParent;
+
+    public:
         virtual EntityHandle    CreateEntity(const std::string& newName) override final;
         virtual void            DestroyEntity(EntityHandle entity) override final;
         virtual EntityRegistry* GetEntityRegistry() override final;

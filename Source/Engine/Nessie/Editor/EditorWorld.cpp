@@ -1,5 +1,7 @@
 ﻿// EditorWorld.cpp
 #include "EditorWorld.h"
+
+#include "Nessie/Core/MoveElement.h"
 #include "Nessie/World/RuntimeWorld.h"
 #include "Nessie/World/ComponentSystems/TransformSystem.h"
 
@@ -23,6 +25,8 @@ namespace nes
         {
             system->SetWorld(*this);
         }
+
+        ConnectRootEntityCallbacks(m_pCurrentWorldAsset->GetEntityRegistry());
     }
 
     void EditorWorld::SetRuntimeWorld(const StrongPtr<World>& pWorld)
@@ -58,18 +62,86 @@ namespace nes
         NES_ASSERT(m_pRuntimeWorld != nullptr);
         return m_pRuntimeWorld->CreateEntity(name);
     }
-
-    // [TODO]: Do I need this?
-    // - I already get the correct registry through GetEntityRegistry()
+    
     void EditorWorld::DestroyEntity(const EntityHandle entity)
     {
-        GetEntityRegistry()->DestroyEntity(entity);
+        GetEntityRegistry()->MarkEntityForDestruction(entity);
     }
 
     void EditorWorld::ParentEntity(const EntityHandle entity, const EntityHandle parent)
     {
+        auto* pRegistry = GetEntityRegistry();
+        NES_ASSERT(pRegistry != nullptr);
+
+        // Update Root Entity status:
+        auto& idComp = pRegistry->GetComponent<IDComponent>(entity);
+        auto& nodeComp = pRegistry->GetComponent<NodeComponent>(entity);
+        if (!nodeComp.HasParent() && parent != kInvalidEntityHandle)
+        {
+            // We are parenting a root entity to another entity, remove it from the array.
+            RemoveRootEntity(idComp.GetID());
+        }
+        else if (nodeComp.HasParent() && parent == kInvalidEntityHandle)
+        {
+            // We are removing the parent entity, it is now a root.
+            AddRootEntity(idComp.GetID());
+        }
+        
         NES_ASSERT(m_pRuntimeWorld != nullptr);
         m_pRuntimeWorld->ParentEntity(entity, parent);
+    }
+
+    const std::vector<EntityID>* EditorWorld::GetRootEntities() const
+    {
+        if (IsSimulating())
+            return &m_runtimeRootEntities;
+        
+        if (m_pCurrentWorldAsset != nullptr)
+            return &m_pCurrentWorldAsset->GetRootEntities();
+
+        return nullptr;
+    }
+
+    void EditorWorld::AddRootEntity(const EntityID id)
+    {
+        if (auto* pRootEntities = GetMutableRootEntities())
+        {
+            if (std::ranges::find(*pRootEntities, id) == pRootEntities->end())
+            {
+                pRootEntities->emplace_back(id);
+            }            
+        }
+    }
+
+    void EditorWorld::ReorderRootEntity(const EntityID id, const EntityID target, const bool insertAfter)
+    {
+        if (auto* pRootEntities = GetMutableRootEntities())
+        {
+            auto targetPosition = std::ranges::find(*pRootEntities, target);
+            auto currentPosition = std::ranges::find(*pRootEntities, id);
+        
+            if (std::ranges::find(*pRootEntities, id) == pRootEntities->end())
+            {
+                // The entity is not already a root, insert it.
+                if (insertAfter && targetPosition != pRootEntities->end())
+                    ++targetPosition;
+            
+                pRootEntities->insert(targetPosition, id);
+            }
+            else
+            {
+                MoveElement(*pRootEntities, currentPosition, targetPosition, insertAfter);
+            }
+        }
+        
+    }
+
+    void EditorWorld::RemoveRootEntity(const EntityID id)
+    {
+        if (auto* pRootEntities = GetMutableRootEntities())
+        {
+            std::erase(*pRootEntities, id);  
+        }
     }
 
     EntityRegistry* EditorWorld::GetEntityRegistry()
@@ -124,6 +196,8 @@ namespace nes
         
         if (m_pCurrentWorldAsset != nullptr)
         {
+            RemoveRootEntityCallbacks(m_pCurrentWorldAsset->GetEntityRegistry());
+            
             // Save on close:
             // [TODO:Later]: Have a prompt for saving unsaved changes.
             AssetManager::SaveAssetSync(m_pCurrentWorldAsset->GetAssetID());
@@ -144,6 +218,7 @@ namespace nes
         if (m_pRuntimeWorld != nullptr)
         {
             NES_ASSERT(m_pCurrentWorldAsset != nullptr);
+            RemoveRootEntityCallbacks(m_pCurrentWorldAsset->GetEntityRegistry());
 
             // Beginning the simulation will set the IsSimulating flag, which will
             // instruct the runtime world to use its own entity registry rather than the Asset Version.
@@ -151,7 +226,11 @@ namespace nes
 
             // Destroy any entities that were in the runtime world.
             m_pRuntimeWorld->DestroyAllEntities();
+            m_runtimeRootEntities.clear();
 
+            // Respond to root entity creation:
+            ConnectRootEntityCallbacks(*m_pRuntimeWorld->GetEntityRegistry());
+            
             // Merge the asset's entities into the runtime world.
             m_pRuntimeWorld->MergeWorld(*m_pCurrentWorldAsset);
         }
@@ -163,15 +242,18 @@ namespace nes
         
         if (m_pRuntimeWorld != nullptr)
         {
+            // Remove the callbacks from the Runtime World's registry.
+            RemoveRootEntityCallbacks(*m_pRuntimeWorld->GetEntityRegistry());
             m_pRuntimeWorld->EndSimulation();
-
+            
             // [Note]
             // We don't need to clear the entities, since GetEntityRegistry will now return the asset's registry
             // instead of this one. All entities are cleaned up from the runtime registry when beginning the simulation.
 
             NES_ASSERT(m_pCurrentWorldAsset != nullptr);
             auto& assetEntityRegistry = m_pCurrentWorldAsset->GetEntityRegistry();
-
+            
+            ConnectRootEntityCallbacks(assetEntityRegistry);
             auto view = assetEntityRegistry.GetAllEntitiesWith<IDComponent>();
             for (auto entity : view)
             {
@@ -183,5 +265,78 @@ namespace nes
                     assetEntityRegistry.AddComponent<PendingEnable>(entity);
             }
         }
+    }
+
+    std::vector<EntityID>* EditorWorld::GetMutableRootEntities()
+    {
+        if (IsSimulating())
+            return &m_runtimeRootEntities;
+        
+        if (m_pCurrentWorldAsset != nullptr)
+            return &m_pCurrentWorldAsset->GetRootEntities();
+
+        return nullptr;
+    }
+
+    void EditorWorld::ConnectRootEntityCallbacks(EntityRegistry& registry)
+    {
+        registry.OnComponentCreated<IDComponent>().connect<&EditorWorld::OnIDComponentAdded>(this);
+        registry.OnComponentCreated<NodeComponent>().connect<&EditorWorld::OnNodeComponentAdded>(this);
+        registry.OnComponentDestroyed<NodeComponent>().connect<&EditorWorld::OnNodeComponentRemoved>(this);
+        registry.OnComponentDestroyed<IDComponent>().connect<&EditorWorld::OnIDComponentDestroyed>(this);
+    }
+
+    void EditorWorld::RemoveRootEntityCallbacks(EntityRegistry& registry)
+    {
+        registry.OnComponentCreated<IDComponent>().disconnect<&EditorWorld::OnIDComponentAdded>(this);
+        registry.OnComponentCreated<NodeComponent>().disconnect<&EditorWorld::OnNodeComponentAdded>(this);
+        registry.OnComponentDestroyed<NodeComponent>().disconnect<&EditorWorld::OnNodeComponentRemoved>(this);
+        registry.OnComponentDestroyed<IDComponent>().disconnect<&EditorWorld::OnIDComponentDestroyed>(this);
+    }
+
+    void EditorWorld::OnIDComponentAdded(entt::registry& registry, entt::entity entity)
+    {
+        auto* pRootEntities = GetMutableRootEntities();
+        NES_ASSERT(pRootEntities != nullptr);
+        
+        const auto id = registry.get<IDComponent>(entity).GetID();
+        pRootEntities->emplace_back(id);
+    }
+
+    void EditorWorld::OnNodeComponentAdded(entt::registry& registry, entt::entity entity)
+    {
+        auto* pRootEntities = GetMutableRootEntities();
+        NES_ASSERT(pRootEntities != nullptr);
+        
+        const auto id = registry.get<IDComponent>(entity).GetID();
+        auto& nodeComp = registry.get<NodeComponent>(entity);
+
+        // If it's not a root entity (no parent), remove it.
+        // - The Entity will be set as a root entity to being with, when the IDComponent is added.
+        if (nodeComp.m_parentID != kInvalidEntityID)
+        {
+            std::erase(*pRootEntities, id);
+        }
+    }
+
+    void EditorWorld::OnNodeComponentRemoved(entt::registry& registry, entt::entity entity)
+    {
+        auto* pRootEntities = GetMutableRootEntities();
+        NES_ASSERT(pRootEntities != nullptr);
+        
+        // Remove from the Root entities, if applicable.
+        if (auto* pIDComponent = registry.try_get<IDComponent>(entity))
+        {
+            std::erase(*pRootEntities, pIDComponent->GetID());
+        }
+    }
+
+    void EditorWorld::OnIDComponentDestroyed(entt::registry& registry, entt::entity entity)
+    {
+        auto* pRootEntities = GetMutableRootEntities();
+        NES_ASSERT(pRootEntities != nullptr);
+        
+        const auto id = registry.get<IDComponent>(entity).GetID();
+        std::erase(*pRootEntities, id);
     }
 }

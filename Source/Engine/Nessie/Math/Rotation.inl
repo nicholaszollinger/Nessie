@@ -48,6 +48,11 @@ namespace nes
         *this = *this - other;
         return *this;
     }
+
+    bool Rotation::operator==(const Rotation& other) const
+    {
+        return Vec3::Equals(Vec3(m_pitch, m_yaw, m_roll), Vec3(other.m_pitch, other.m_yaw, other.m_roll)).TestAllXYZTrue();
+    }
     
     void Rotation::Clamp()
     {

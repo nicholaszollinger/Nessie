@@ -8,7 +8,7 @@
 #include "Nessie/Graphics/ImGui/ImGuiRenderer.h"
 #include "Nessie/Graphics/ImGui/ImGuiUtils.h"
 #include "Nessie/Input/InputManager.h"
-#include "Nessie/World/WorldBase.h"
+#include "Nessie/Editor/EditorWorld.h"
 
 namespace nes
 {
@@ -33,7 +33,6 @@ namespace nes
             return;
         
         const bool shift = InputManager::IsKeyDown(EKeyCode::LeftShift) || InputManager::IsKeyDown(EKeyCode::RightShift);
-        const bool ctrl = InputManager::IsKeyDown(EKeyCode::LeftControl) || InputManager::IsKeyDown(EKeyCode::RightControl);
         
         // Speed:
         float speed = m_freeCamMoveSpeed * deltaTime;
@@ -41,7 +40,7 @@ namespace nes
             speed *= 2.f;
 
         // Position:
-        const Vec3 right = m_editorCamera.m_forward.Cross(m_editorCamera.m_up);
+        const Vec3 right = m_editorCamera.m_forward.Cross(m_editorCamera.m_up).Normalized();
         if (InputManager::IsKeyDown(EKeyCode::A))
             m_editorCamera.m_position += speed * right;
         if (InputManager::IsKeyDown(EKeyCode::D))
@@ -50,9 +49,9 @@ namespace nes
             m_editorCamera.m_position += speed * m_editorCamera.m_forward;
         if (InputManager::IsKeyDown(EKeyCode::S))
             m_editorCamera.m_position -= speed * m_editorCamera.m_forward;
-        if (InputManager::IsKeyDown(EKeyCode::Space))
+        if (InputManager::IsKeyDown(EKeyCode::E))
             m_editorCamera.m_position.y += speed;
-        if (ctrl)
+        if (InputManager::IsKeyDown(EKeyCode::Q))
             m_editorCamera.m_position.y -= speed;
         
         // Forward:
@@ -71,7 +70,6 @@ namespace nes
     void ViewportWindow::RenderImGui()
     {
         const bool isSimulating = m_pRenderer && m_pWorld->IsSimulating();
-        
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_WindowBorderSize, 0.f);
         
@@ -136,14 +134,21 @@ namespace nes
         if (ImGui::IsItemHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) && !isSimulating)
         {
             m_rotationEnabled = true;
-    
-            // Let ImGui know you're capturing the mouse
-            ImGui::SetMouseCursor(ImGuiMouseCursor_None);  // Hide cursor via ImGui
+
+            // Tell ImGui you want mouse input
+            ImGui::SetWindowFocus();
+            ImGuiIO& io = ImGui::GetIO();
+            io.WantCaptureMouse = false;  // Release mouse to your application
+            
             InputManager::SetCursorMode(nes::ECursorMode::Disabled);
         }
 
         if (m_rotationEnabled)
         {
+            // Block ImGui from seeing mouse movement
+            ImGuiIO& io = ImGui::GetIO();
+            io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+            
             // Clear the rotation enabled state if we are now simulating the world.
             if (isSimulating)
             {

@@ -8,6 +8,7 @@
 namespace nes
 {
     class WorldBase;
+    class EditorWorld;
     
     struct EditorWindowDesc
     {
@@ -42,7 +43,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the current World reference that is being observed. 
         //----------------------------------------------------------------------------------------------------
-        void                    SetWorld(const StrongPtr<WorldBase>& world);
+        void                    SetWorld(const StrongPtr<EditorWorld>& world);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Load the window settings from YAML. The default method loads the Window's name.
@@ -77,7 +78,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current world context for the Editor.
         //----------------------------------------------------------------------------------------------------
-        StrongPtr<WorldBase>    GetWorld() { return m_pWorld; }
+        StrongPtr<EditorWorld>  GetWorld() { return m_pWorld; }
     
     protected:
         //----------------------------------------------------------------------------------------------------
@@ -87,7 +88,7 @@ namespace nes
         
     protected:
         EditorWindowDesc        m_desc{};
-        StrongPtr<WorldBase>    m_pWorld = nullptr;
+        StrongPtr<EditorWorld>  m_pWorld = nullptr;
     };
     
 }

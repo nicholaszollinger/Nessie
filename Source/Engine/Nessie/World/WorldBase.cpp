@@ -1,4 +1,6 @@
 ﻿// WorldBase.cpp
+#include <ranges>
+
 #include "Nessie/World.h"
 
 namespace nes
@@ -83,62 +85,11 @@ namespace nes
         auto componentTypes = componentRegistry.GetAllComponentTypes();
         auto& srcRegistry = srcWorld.GetEntityRegistry();
         auto& dstRegistry = *pRegistry;
-        
-        // All Entities must have an IDComponent, so this is equivalent to getting all entities. 
-        auto view = srcRegistry.GetAllEntitiesWith<IDComponent>();
-        for (auto srcEntity : view)
+
+        // Add Entities to this world while maintaining the current order.
+        for (auto srcEntityID : srcWorld.GetRootEntities())
         {
-            auto& idComp = view.get<IDComponent>(srcEntity);
-            
-            // Check if an Entity with that ID already exists.
-            EntityHandle dstEntity = dstRegistry.GetEntity(idComp.GetID());
-
-            // If not, create a new entity.
-            if (dstEntity == kInvalidEntityHandle)
-                dstEntity = dstRegistry.CreateEntity(idComp.GetID(), idComp.GetName());
-
-            // Add all registered components that exist in the Registry.
-            // - If the entity already exists, this will update its current components.
-            for (const auto& desc : componentTypes)
-            {
-                NES_ASSERT(desc.m_copyFunction != nullptr);
-                desc.m_copyFunction(srcRegistry, dstRegistry, srcEntity, dstEntity);
-            }
-
-            // Add Pending Initialization and Enable methods.
-            dstRegistry.AddComponent<PendingInitialization>(dstEntity);
-        }
-    }
-
-    void WorldBase::ExportToAsset(WorldAsset& dstAsset)
-    {
-        auto* pRegistry = GetEntityRegistry();
-        if (pRegistry == nullptr)
-            return;
-        
-        auto& componentRegistry = ComponentRegistry::Get();
-        auto componentTypes = componentRegistry.GetAllComponentTypes();
-        auto& srcRegistry = *pRegistry;
-
-        // Clear the current asset registry:
-        auto& dstRegistry = dstAsset.GetEntityRegistry();
-        dstRegistry.Clear();
-
-        // All Entities must have an IDComponent, so this is equivalent to getting all entities. 
-        auto view = srcRegistry.GetAllEntitiesWith<IDComponent>();
-        for (auto srcEntity : view)
-        {
-            auto& idComp = view.get<IDComponent>(srcEntity);
-            
-            EntityHandle dstEntity = dstRegistry.CreateEntity(idComp.GetID(), idComp.GetName());
-
-            // Add all registered components that exist in the Registry.
-            // - If the entity already exists, this will update its current components.
-            for (const auto& desc : componentTypes)
-            {
-                NES_ASSERT(desc.m_copyFunction != nullptr);
-                desc.m_copyFunction(srcRegistry, dstRegistry, srcEntity, dstEntity);
-            }
+            MergeEntityAndChildren(srcRegistry, dstRegistry, componentTypes, srcEntityID);
         }
     }
 
@@ -249,6 +200,41 @@ namespace nes
         for (auto& pSystem : m_systems)
         {
             pSystem->OnEndSimulation();
+        }
+    }
+
+    void WorldBase::MergeEntityAndChildren(EntityRegistry& srcRegistry, EntityRegistry& dstRegistry, const std::vector<ComponentTypeDesc>& componentTypes, EntityID srcEntityID)
+    {
+        const auto srcEntity = srcRegistry.GetEntity(srcEntityID);
+        if (srcEntity == kInvalidEntityHandle)
+            return;
+        
+        auto& idComp = srcRegistry.GetComponent<IDComponent>(srcEntity);
+            
+        // Check if an Entity with that ID already exists.
+        EntityHandle dstEntity = dstRegistry.GetEntity(idComp.GetID());
+
+        // If not, create a new entity.
+        if (dstEntity == kInvalidEntityHandle)
+            dstEntity = dstRegistry.CreateEntity(idComp.GetID(), idComp.GetName());
+
+        // Add all registered components that exist in the Registry.
+        // - If the entity already exists, this will update its current components.
+        for (const auto& desc : componentTypes)
+        {
+            NES_ASSERT(desc.m_copyFunction != nullptr);
+            desc.m_copyFunction(srcRegistry, dstRegistry, srcEntity, dstEntity);
+        }
+
+        // Add Pending Initialization and Enable methods.
+        dstRegistry.AddComponent<PendingInitialization>(dstEntity);
+
+        if (auto* pSrcNodeComp = srcRegistry.TryGetComponent<NodeComponent>(srcEntity))
+        {
+            for (const auto srcChildID : pSrcNodeComp->m_childrenIDs)
+            {
+                MergeEntityAndChildren(srcRegistry, dstRegistry, componentTypes, srcChildID);
+            }
         }
     }
 

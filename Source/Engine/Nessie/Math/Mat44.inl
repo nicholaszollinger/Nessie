@@ -1311,8 +1311,14 @@ namespace nes
         const float zDotZ = z.LengthSqr();
         outScale = Vec3(xDotX, yDotY, zDotZ).Sqrt();
 
-        // If the resulting x, y and z vectors don't form a left-handed matrix, flip the z axis.
-        if (!Vec3::IsLeftHanded(x, y, z))
+        // Normalize vectors before checking handedness
+        // const Vec3 xNorm = x / outScale.x;
+        // const Vec3 yNorm = y / outScale.y;
+        // const Vec3 zNorm = z / outScale.z;
+        
+        // In left-handed space, we want RIGHT-handed orthonormal vectors
+        // So flip if they ARE left-handed
+        if (Vec3::IsLeftHanded(x, y, z))
             outScale.z = -outScale.z;
 
         // Determine the rotation and translation

@@ -21,6 +21,9 @@ namespace nes::editor
 
     // Color for the Z-Axis (Blue).
     static constexpr auto kZAxisColor = IM_COL32(26, 64, 224, 255);
+
+    // Padding around headers.
+    static constexpr float kHeaderFramePadding = 6.f;
     
     namespace internal
     {
@@ -93,8 +96,25 @@ namespace nes::editor
             return std::format("##{0}", label);
         }
     }
+
+    void Header(const std::string& name)
+    {
+        ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_Framed
+            | ImGuiTreeNodeFlags_SpanAvailWidth
+            | ImGuiTreeNodeFlags_AllowOverlap
+            | ImGuiTreeNodeFlags_FramePadding
+            | ImGuiTreeNodeFlags_Leaf               // Makes it non-interactive (no arrow)
+            | ImGuiTreeNodeFlags_NoTreePushOnOpen;  // Don't indent following content
+        
+        NES_UI_SCOPED_STYLE(ImGuiStyleVar_FrameRounding, 0.f);
+        NES_UI_SCOPED_STYLE(ImGuiStyleVar_FramePadding, ImVec2(kHeaderFramePadding, kHeaderFramePadding));
+
+        ImGui::PushID(internal::CreateHiddenPropertyValueLabel(name.c_str()).c_str());
+        ImGui::TreeNodeEx(name.c_str(), treeNodeFlags);
+        ImGui::PopID();
+    }
     
-    bool CollapsableHeader(const std::string& name, const bool openByDefault)
+    bool CollapsibleHeader(const std::string& name, const bool openByDefault)
     {
         ImGuiTreeNodeFlags treeNodeFlags = ImGuiTreeNodeFlags_Framed
             | ImGuiTreeNodeFlags_SpanAvailWidth
@@ -104,38 +124,35 @@ namespace nes::editor
         if (openByDefault)
             treeNodeFlags |= ImGuiTreeNodeFlags_DefaultOpen;
         
-        static constexpr float kFramePadding = 6.f;
         NES_UI_SCOPED_STYLE(ImGuiStyleVar_FrameRounding, 0.f);
-        NES_UI_SCOPED_STYLE(ImGuiStyleVar_FramePadding, ImVec2(kFramePadding, kFramePadding));
+        NES_UI_SCOPED_STYLE(ImGuiStyleVar_FramePadding, ImVec2(kHeaderFramePadding, kHeaderFramePadding));
 
-        ImGui::PushID(name.c_str());
+        ImGui::PushID(internal::CreateHiddenPropertyValueLabel(name.c_str()).c_str());
         bool isOpen = ImGui::CollapsingHeader(name.c_str(), treeNodeFlags);
         ImGui::PopID();
         return isOpen;
     }
 
+    
     bool BeginPropertyTable()
     {
         ImGui::PushStyleColor(ImGuiCol_TableBorderLight, ImVec4(0.02f, 0.02f, 0.02f, 0.50f));
         
         static constexpr ImGuiTableFlags kFlags = ImGuiTableFlags_Resizable
             | ImGuiTableFlags_BordersInner
-            | ImGuiTableFlags_NoSavedSettings
-            | ImGuiTableFlags_ScrollY
-            | ImGuiTableFlags_NoHostExtendY;
+            | ImGuiTableFlags_NoSavedSettings;
         
         bool isOpen = ImGui::BeginTable(GenerateID(), 2, kFlags);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 100.f);
         ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch);
-
-        PushID();
+        PushIDLevel();
         
         return isOpen;
     }
 
     void EndPropertyTable()
     {
-        PopID();
+        PopIDLevel();
         ImGui::EndTable();
         ImGui::PopStyleColor(1);
     }
@@ -190,6 +207,30 @@ namespace nes::editor
         ImGui::InputText(internal::CreateHiddenPropertyValueLabel(label).c_str(), const_cast<char*>(value.data()), value.size(), ImGuiInputTextFlags_ReadOnly);
         internal::EndPropertyValue(true);
 
+        internal::EndProperty();
+    }
+
+    bool Property(const char* label, int& value, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+        
+        const bool modified = ImGui::InputScalar(internal::CreateHiddenPropertyValueLabel(label).c_str(), ImGuiDataType_S32, &value);
+        
+        internal::EndPropertyValue();
+        internal::EndProperty();
+        
+        return modified;
+    }
+
+    void Property(const char* label, const int& value, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+
+        internal::BeginPropertyValue(true);
+        ImGui::InputScalar(internal::CreateHiddenPropertyValueLabel(label).c_str(), ImGuiDataType_S32, const_cast<int*>(&value));
+        internal::EndPropertyValue(true);
+        
         internal::EndProperty();
     }
 

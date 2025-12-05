@@ -53,9 +53,14 @@ namespace nes::editor
     }
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Draws a header that spans the entire width.
+    //----------------------------------------------------------------------------------------------------
+    void Header(const std::string& name);
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Draws a header that spans the entire width, and can hide subsequent elements within it.
     //----------------------------------------------------------------------------------------------------
-    bool CollapsableHeader(const std::string& name, const bool openByDefault = true);
+    bool CollapsibleHeader(const std::string& name, const bool openByDefault = true);
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Begin a group of property calls. This sets up the table structure for subsequent properties.
@@ -112,6 +117,23 @@ namespace nes::editor
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     //----------------------------------------------------------------------------------------------------
     void Property(const char* label, const std::string& value, const char* toolTip = "");
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Render an int property that can be edited.
+    ///	@param label : Name of the property.
+    ///	@param value : Value to edit.
+    ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
+    ///	@returns : Returns true if the value has changed.
+    //----------------------------------------------------------------------------------------------------
+    bool Property(const char* label, int& value, const char* toolTip = "");
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Render an int property, but disable any edits.
+    ///	@param label : Name of the property.
+    ///	@param value : Value to show.
+    ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
+    //----------------------------------------------------------------------------------------------------
+    void Property(const char* label, const int& value, const char* toolTip = "");
 
     //----------------------------------------------------------------------------------------------------
     /// @brief : Render a uint64 property that can be edited.

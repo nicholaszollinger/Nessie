@@ -5,6 +5,21 @@
 
 namespace nes
 {
+    Mat44 TransformComponent::GetLocalTransformMatrix() const
+    {
+        return Mat44::ComposeTransform(m_localPosition, m_localRotation, m_localScale);
+    }
+
+    Mat44 TransformComponent::GetWorldTransformMatrix() const
+    {
+        return Mat44::ComposeTransform(m_worldPosition, m_worldRotation, m_worldScale);
+    }
+
+    Mat44 TransformComponent::GetWorldToLocalTransformMatrix() const
+    {
+        return GetWorldTransformMatrix().Inversed();
+    }
+
     void TransformComponent::Serialize(YamlOutStream& out, const TransformComponent& component)
     {
         out.Write("Position", component.m_localPosition);
@@ -18,9 +33,11 @@ namespace nes
         in["Rotation"].Read(component.m_localRotation, Rotation::Zero());
         in["Scale"].Read(component.m_localScale, Vec3::Zero());
         
-        component.m_localMatrix = Mat44::ComposeTransform(component.m_localPosition, component.m_localRotation, component.m_localScale);
-        component.m_worldMatrix = component.m_localMatrix;
+        //component.m_localMatrix = Mat44::ComposeTransform(component.m_localPosition, component.m_localRotation, component.m_localScale);
+        //component.m_worldMatrix = component.m_localMatrix;
+        component.m_worldPosition = component.m_localPosition;
         component.m_worldRotation = component.m_localRotation;
+        component.m_worldScale = component.m_localScale;
         component.m_isDirty = true;
     }
 
@@ -380,6 +397,14 @@ namespace nes
         if (childNode.m_parentID == parentID)
             return;
 
+        // Calculate the child's new local transform based on the new parent.
+        auto& childTransform = registry.GetComponent<TransformComponent>(child);
+        auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
+        
+        const Vec3 localPosition = childTransform.GetWorldPosition() - parentTransform.GetWorldPosition(); 
+        const Rotation localRotation = childTransform.GetWorldRotation() - parentTransform.GetWorldRotation();
+        const Vec3 localScale = childTransform.GetWorldScale() / parentTransform.GetWorldScale();
+        
         // Remove from the old parent, if necessary:
         if (childNode.m_parentID != kInvalidEntityID)
         {
@@ -397,6 +422,11 @@ namespace nes
         auto& parentNode = registry.GetComponent<NodeComponent>(parent);
         childNode.m_parentID = parentID;
         parentNode.m_childrenIDs.push_back(childID);
+
+        // Set the calculated local transform.
+        childTransform.m_localPosition = localPosition;
+        childTransform.m_localRotation = localRotation;
+        childTransform.m_localScale = localScale;
         
         MarkDirty(registry, child);
 
@@ -420,6 +450,12 @@ namespace nes
             }
             
             childNode.m_parentID = kInvalidEntityID;
+
+            // The child has no parent, so its local space is the new world space.
+            auto& transform = registry.GetComponent<TransformComponent>(entity);
+            transform.m_localPosition = transform.m_worldPosition;
+            transform.m_localRotation = transform.m_worldRotation;
+            transform.m_localScale = transform.m_worldScale;
 
             // The hierarchy has changed; needs to be updated.
             MarkDirty(registry, entity);
@@ -445,9 +481,9 @@ namespace nes
             // Convert to local space.
             EntityHandle parent = registry.GetEntity(node.m_parentID);
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
-            const Mat44 parentInverse = parentTransform.m_worldMatrix.Inversed();
+            const Mat44 worldToLocalSpace = parentTransform.GetWorldToLocalTransformMatrix();
             
-            transform.m_localPosition = parentInverse.TransformPoint(position);
+            transform.m_localPosition = worldToLocalSpace.TransformPoint(position);
             transform.m_localRotation = (parentTransform.m_worldRotation - rotation).Normalized();
             transform.m_localScale = scale / parentTransform.GetWorldScale();
         }
@@ -472,8 +508,8 @@ namespace nes
             EntityHandle parent = registry.GetEntity(node.m_parentID);
 
             auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
-            Mat44 parentInverse = parentTransform.m_worldMatrix.Inversed();
-            transform.m_localPosition = parentInverse.TransformPoint(position);
+            Mat44 worldToLocalSpace = parentTransform.GetWorldToLocalTransformMatrix();
+            transform.m_localPosition = worldToLocalSpace.TransformPoint(position);
         }
         
         MarkDirty(registry, entity);
@@ -606,10 +642,7 @@ namespace nes
         // Skip unchanging transforms.
         if (!transform.m_isDirty)
             return;
-
-        // Update the local matrix.
-        transform.m_localMatrix = Mat44::ComposeTransform(transform.m_localPosition, transform.m_localRotation, transform.m_localScale);
-
+        
         // Compute the world matrix.
         const auto& node = registry.GetComponent<NodeComponent>(entity);
         if (node.m_parentID != 0)
@@ -618,20 +651,24 @@ namespace nes
             if (registry.IsValidEntity(parent))
             {
                 const auto& parentTransform = registry.GetComponent<TransformComponent>(parent);
-                transform.m_worldMatrix = parentTransform.m_worldMatrix * transform.m_localMatrix;
+                transform.m_worldPosition = parentTransform.m_worldPosition + parentTransform.m_worldRotation.RotatedVector(transform.m_localPosition);
                 transform.m_worldRotation = (parentTransform.m_worldRotation + transform.m_localRotation).Normalized();
+                transform.m_worldScale = parentTransform.m_worldScale * transform.m_localScale;
             }
             else
             {
-                transform.m_worldMatrix = transform.m_localMatrix;
+                // Parent is invalid, treat as a root.
+                transform.m_worldPosition = transform.m_localPosition;
                 transform.m_worldRotation = transform.m_localRotation;
+                transform.m_worldScale = transform.m_localScale;
             }
         }
         else
         {
             // This is a root:
-            transform.m_worldMatrix = transform.m_localMatrix;
+            transform.m_worldPosition = transform.m_localPosition;
             transform.m_worldRotation = transform.m_localRotation;
+            transform.m_worldScale = transform.m_localScale;
         }
 
         // Transform is updated.

@@ -392,11 +392,30 @@ float GetDistanceAtt(float distance, float radius)
 // Calculate photometric distance attenuation
 float GetPhotometricAtt(float distance, float radius)
 {
-    // Inverse square law with smooth cutoff
-    float attenuation = 1.0 / (distance * distance);
-    
-    float cutoff = 1.0 - pow(Saturate(distance / radius), 4.0);
-    cutoff * cutoff;
+//    // Inverse square law with smooth cutoff
+//    float attenuation = 1.0 / (distance * distance);
+//    
+//    float cutoff = 1.0 - pow(Saturate(distance / radius), 4.0);
+//    cutoff *= cutoff;
+//    return attenuation * cutoff;
+
+//    float cutoff = 1.0 - pow(Saturate(distance / radius), 4.0);
+//    cutoff *= cutoff;
+//
+//    float d = max(distance, 0.01);
+//    float attenuation = 1.0 / (4.0 * kPi * d * d);  // Include 4π here
+//
+//    return attenuation * cutoff;
+
+    // Gentler windowing - squared instead of ^4
+    // - This was done so that the radius value had more of an effect on the final result.
+    float normalizedDist = Saturate(distance / radius);
+    float cutoff = 1.0 - (normalizedDist * normalizedDist);
+    cutoff *= cutoff;
+
+    float d = max(distance, 0.01);
+    float attenuation = 1.0 / (d * d);
+
     return attenuation * cutoff;
 }
 
@@ -631,10 +650,10 @@ void main()
         float distance = length(L);
         L /= distance;
 
-        float luminousIntensity = light.intensity / (4.0 * kPi);
+        //float luminousIntensity = light.intensity / (4.0 * kPi);
 
         float attenuation = GetPhotometricAtt(distance, light.radius);
-        vec3 radiance = light.color * luminousIntensity * attenuation;
+        vec3 radiance = light.color * light.intensity * attenuation;
 
         lightSum += BRDF(N, V, L, albedo, metallic, roughness, Rf0) * radiance;
     }
@@ -655,12 +674,15 @@ void main()
     // This ensures the base color is always visible
     vec3 ambient = albedo * 0.03; // 3% ambient contribution
 
-    // Resulting color = Direct Lighting + Indirect Lighting + Emissive
-    vec3 color = lightSum + ambient + emissive;
+    vec3 color = lightSum + ambient;
 
     // Convert to linear color:
     color = HDRToLinear(color * u_camera.exposureFactor);
+    
+    // Add emissive value after tone mapping.
+    color += emissive;
 
+    // Resulting color = Direct Lighting + Indirect Lighting + Emissive.
     outColor = vec4(color, 1.0);
     
 #if SHOW_CASCADES

@@ -4,6 +4,7 @@
 #include "Editor/DayNightSimComponentInspector.h"
 #include "Editor/LightComponentInspectors.h"
 #include "Editor/MeshComponentInspector.h"
+#include "Editor/SkyboxComponentInspector.h"
 #include "Nessie/Application/EntryPoint.h"
 #include "Nessie/Editor/EditorWorld.h"
 #include "Nessie/Editor/Inspectors/Components/CameraComponentInspector.h"
@@ -17,6 +18,7 @@
 #include "Nessie/Graphics/Texture.h"
 #include "Nessie/Graphics/Shader.h"
 #include "PBRExampleWorld.h"
+#include "Nessie/Input/InputManager.h"
 
 PBRExampleApp::PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& windowDesc, nes::RendererDesc&& rendererDesc)
     : nes::Application(std::move(appDesc), std::move(windowDesc), std::move(rendererDesc))
@@ -48,6 +50,7 @@ bool PBRExampleApp::Init()
     nes::EditorInspectorRegistry::RegisterInspector<pbr::MeshComponentInspector>();
     nes::EditorInspectorRegistry::RegisterInspector<nes::FreeCamMovementComponentInspector>();
     nes::EditorInspectorRegistry::RegisterInspector<pbr::DayNightSimComponentInspector>();
+    nes::EditorInspectorRegistry::RegisterInspector<pbr::SkyboxComponentInspector>();
 
     // Setup ImGui:
     nes::ImGuiDesc desc{};
@@ -136,6 +139,14 @@ void PBRExampleApp::OnResize(const uint32, const uint32)
 
 void PBRExampleApp::Render(nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context)
 {
+    ImGuiIO& io = ImGui::GetIO();
+    const nes::ECursorMode cursorMode = nes::InputManager::GetCursorMode();
+    if (cursorMode == nes::ECursorMode::Disabled)
+    {
+        // Mouse is locked - tell ImGui the mouse is unavailable
+        io.AddMousePosEvent(-FLT_MAX, -FLT_MAX);
+    }
+    
     // Record ImGui Draw calls:
     m_imgui.BeginFrame();
     RenderImGuiEditor();

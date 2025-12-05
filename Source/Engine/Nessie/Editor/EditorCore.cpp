@@ -42,13 +42,13 @@ namespace nes::editor
         }
     }
     
-    void PushID()
+    void PushIDLevel()
     {
         ImGui::PushID(s_globalContextID++);
         s_globalContextCounter = 0;
     }
     
-    void PopID()
+    void PopIDLevel()
     {
         ImGui::PopID();
         --s_globalContextID;

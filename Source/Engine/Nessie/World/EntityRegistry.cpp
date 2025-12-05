@@ -37,6 +37,12 @@ namespace nes
         Clear();
     }
 
+    void EntityRegistry::Clear()
+    {
+        m_entityMap.clear();
+        m_registry.clear();
+    }
+
     EntityHandle EntityRegistry::CreateEntity(const std::string& name)
     {
         // Create a new entity, and add the ID Component.
@@ -205,11 +211,5 @@ namespace nes
             return false;
 
         return IsValidEntity(handle);
-    }
-
-    void EntityRegistry::Clear()
-    {
-        m_entityMap.clear();
-        m_registry.clear();
     }
 }

@@ -1,0 +1,10 @@
+# Blue Space Textures
+TextureCube:
+  Paths: [
+      "Skybox\\blue\\bkg1_front.png", # Front
+      "Skybox\\blue\\bkg1_back.png", # Back
+      "Skybox\\blue\\bkg1_top.png", # Up
+      "Skybox\\blue\\bkg1_bot.png", # Down
+      "Skybox\\blue\\bkg1_left.png", # Left
+      "Skybox\\blue\\bkg1_right.png", # Right
+  ]

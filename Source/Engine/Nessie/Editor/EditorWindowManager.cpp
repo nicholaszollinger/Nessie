@@ -5,6 +5,7 @@
 #include <fstream>
 #include "imgui_internal.h"
 #include "SelectionManager.h"
+#include "Nessie/Editor/EditorWorld.h"
 #include "Nessie/FileIO/YAML/YamlSerializer.h"
 
 namespace nes
@@ -36,7 +37,6 @@ namespace nes
             if (pWindow)
             {
                 pWindow->Deserialize(windowNode);
-                pWindow->SetOpen();
             }
         }
         
