@@ -72,10 +72,11 @@ namespace nes
         
         auto view = pRegistry->GetAllEntitiesWith<TransformComponent, FreeCamMovementComponent>(entt::exclude<DisabledComponent>);
 
-        Vec3 inputMovement;
-        Vec2 inputRotation;
-        bool shift;
+        Vec3 inputMovement = Vec3::Zero();
+        Vec2 inputRotation = Vec2::Zero();
+        bool shift = false;
         ProcessInput(inputMovement, inputRotation, shift);
+        const float speedModifier = shift? 2.f : 1.f;
         
         for (auto entity : view)
         {
@@ -83,37 +84,44 @@ namespace nes
             auto& freeCam = view.get<FreeCamMovementComponent>(entity);
 
             // Speed:
-            float speed = freeCam.m_moveSpeed * deltaTime;
-            if (shift)
-                speed *= 2.f;
+            const float speed = freeCam.m_moveSpeed * speedModifier * deltaTime;
 
-            // Delta Rotation:
-            const float heading = inputRotation.y * freeCam.m_sensitivity;
-            const float pitch = math::Clamp(inputRotation.x * freeCam.m_sensitivity, -0.49f * math::Pi(), 0.49f * math::Pi());
-            const Vec3 deltaPitchYawRoll = Vec3(pitch, heading, 0.f);
+            // Get the current forward and up vectors.
+            auto worldTransform = transform.GetWorldTransformMatrix();
+            Vec3 forward = worldTransform.GetForward();
+            const Vec3 right = forward.Cross(Vec3::Up()).Normalized();
+            
+            // Calculate the new position:
+            Vec3 newPosition = transform.GetLocalPosition();
+            newPosition -= (right * speed * inputMovement.x);
+            newPosition += (forward * speed * inputMovement.z);
+            newPosition.y += (speed * inputMovement.y); // Up and down applied in world space.
 
-            // Delta Movement.
-            const Vec3 deltaMovement = inputMovement * speed;
-
-            // If there is enough change:
-            if (deltaPitchYawRoll.LengthSqr() > 0.f || deltaMovement.LengthSqr() > 0.f)
+            // Rotation:
+            Rotation deltaRotation = Rotation::Zero();
+            if (m_rotationEnabled)
             {
-                // calculate local rotation:
-                Rotation localRotation = transform.GetLocalRotation();
-                if (deltaPitchYawRoll.LengthSqr() > 0.f)
-                {
-                    const Rotation deltaRotation(deltaPitchYawRoll);
-                    localRotation += deltaRotation;
-                    localRotation.m_roll = 0.f;
-                }
+                // Delta Rotation:
+                const float pitch = math::ToRadians(inputRotation.x  * freeCam.m_sensitivity);
+                const float yaw = math::ToRadians(inputRotation.y * freeCam.m_sensitivity);
+                deltaRotation = Rotation(math::ToDegrees(pitch), math::ToDegrees(yaw), 0.f);
 
-                // Calculate local position:
-                Vec3 localPosition = transform.GetLocalPosition();
-                localPosition += localRotation.RotatedVector(Vec3(deltaMovement.x, 0.f, deltaMovement.z));
-                localPosition.y += deltaMovement.y;
+                // Current Rotation:
+                const auto oldRotation = transform.GetWorldRotation();
+                
+                // Clamp the delta pitch to prevent gimbal lock for the final rotation:
+                const float maxNewPitch = math::Clamp(oldRotation.m_pitch + deltaRotation.m_pitch, -90.f + math::PrecisionDelta(), 90.f - math::PrecisionDelta());
+                deltaRotation.m_pitch = maxNewPitch - oldRotation.m_pitch;
+            }
 
-                // Apply the transformation:
-                m_pTransformSystem->SetLocalTransform(entity, localPosition, localRotation, transform.GetLocalScale());
+            if (inputMovement.LengthSqr() > 0.f)
+            {
+                m_pTransformSystem->SetLocalPosition(entity, newPosition);
+            }
+
+            if (deltaRotation != Rotation::Zero())
+            {
+                m_pTransformSystem->RotateWorld(entity, deltaRotation);
             }
         }
     }
@@ -121,7 +129,6 @@ namespace nes
     void FreeCamSystem::ProcessInput(Vec3& outInputMovement, Vec2& outInputRotation, bool& outShiftDown) const
     {
         outShiftDown = InputManager::IsKeyDown(EKeyCode::LeftShift) || InputManager::IsKeyDown(EKeyCode::RightShift);
-        
         outInputMovement = Vec3::Zero();
         outInputRotation = Vec2::Zero();
 
@@ -138,10 +145,10 @@ namespace nes
         if (InputManager::IsKeyDown(EKeyCode::D))
             outInputMovement.x += 1.f;
         
-        if (InputManager::IsKeyDown(EKeyCode::Space))
+        if (InputManager::IsKeyDown(EKeyCode::E))
             outInputMovement.y += 1.f;  
             
-        if (InputManager::IsKeyDown(EKeyCode::LeftControl) || InputManager::IsKeyDown(EKeyCode::RightControl))
+        if (InputManager::IsKeyDown(EKeyCode::Q))
             outInputMovement.y -= 1.f;
 
         // Normalize movement vector
@@ -153,7 +160,6 @@ namespace nes
             const Vec2 delta = InputManager::GetCursorDelta();
             outInputRotation.x = delta.y;
             outInputRotation.y = delta.x;
-            outInputRotation.Normalize();
         }
     }
 }

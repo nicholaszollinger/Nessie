@@ -33,6 +33,8 @@ namespace nes
         NES_INLINE Rotation         operator-(const Rotation other) const;
         NES_INLINE Rotation&        operator+=(const Rotation& other);
         NES_INLINE Rotation&        operator-=(const Rotation& other);
+        NES_INLINE bool             operator==(const Rotation& other) const;
+        NES_INLINE bool             operator!=(const Rotation& other) const { return !(*this == other); }
 
         //----------------------------------------------------------------------------------------------------
         ///	@brief : Clamps each axis value to the range [0, 360). 

@@ -209,7 +209,7 @@ World:
             Children: []
         - FreeCamMovementComponent:
             MoveSpeed: 5
-            Sensitivity: 0.69
+            Sensitivity: 0.294
         - CameraComponent:
             Camera:
               PerspectiveFOV: 60

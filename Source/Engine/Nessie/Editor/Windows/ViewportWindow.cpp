@@ -33,7 +33,6 @@ namespace nes
             return;
         
         const bool shift = InputManager::IsKeyDown(EKeyCode::LeftShift) || InputManager::IsKeyDown(EKeyCode::RightShift);
-        const bool ctrl = InputManager::IsKeyDown(EKeyCode::LeftControl) || InputManager::IsKeyDown(EKeyCode::RightControl);
         
         // Speed:
         float speed = m_freeCamMoveSpeed * deltaTime;
@@ -41,7 +40,7 @@ namespace nes
             speed *= 2.f;
 
         // Position:
-        const Vec3 right = m_editorCamera.m_forward.Cross(m_editorCamera.m_up);
+        const Vec3 right = m_editorCamera.m_forward.Cross(m_editorCamera.m_up).Normalized();
         if (InputManager::IsKeyDown(EKeyCode::A))
             m_editorCamera.m_position += speed * right;
         if (InputManager::IsKeyDown(EKeyCode::D))
@@ -50,9 +49,9 @@ namespace nes
             m_editorCamera.m_position += speed * m_editorCamera.m_forward;
         if (InputManager::IsKeyDown(EKeyCode::S))
             m_editorCamera.m_position -= speed * m_editorCamera.m_forward;
-        if (InputManager::IsKeyDown(EKeyCode::Space))
+        if (InputManager::IsKeyDown(EKeyCode::E))
             m_editorCamera.m_position.y += speed;
-        if (ctrl)
+        if (InputManager::IsKeyDown(EKeyCode::Q))
             m_editorCamera.m_position.y -= speed;
         
         // Forward:
