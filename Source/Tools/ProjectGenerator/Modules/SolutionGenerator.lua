@@ -66,6 +66,8 @@ function m.CreateSolution()
     defines
     {
         --"YAML_CPP_STATIC_DEFINE"
+        "NES_PROJECT_DIR=R\"($(SolutionDir))\"",
+        "NES_SAVED_DIR=R\"($(SolutionDir)Saved\\)\"",
         "NES_CONFIG_DIR=R\"($(SolutionDir)Config\\)\"",
         "NES_CONTENT_DIR=R\"($(SolutionDir)Content\\)\"",
         "NES_SHADER_DIR=R\"($(SolutionDir)Shaders\\)\"",

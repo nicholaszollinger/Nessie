@@ -65,6 +65,7 @@ bool RectangleApp::Init()
     CreateDescriptorPool(device);
     CreateDescriptorSets(device);
 
+    GetWindow().ShowWindow();
     return true;
 }
 

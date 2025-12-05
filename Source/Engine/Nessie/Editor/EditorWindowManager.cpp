@@ -10,13 +10,13 @@
 
 namespace nes
 {
-    bool EditorWindowManager::Init()
+    bool EditorWindowManager::Init(std::filesystem::path& outWorldToLoadPath)
     {
         // Load the Editor Config:
-        std::filesystem::path path = NES_CONFIG_DIR;
-        path /= "EditorConfig.yaml";
+        std::filesystem::path editorConfigPath = NES_CONFIG_DIR;
+        editorConfigPath /= "EditorConfig.yaml";
 
-        YamlInStream reader(path);
+        YamlInStream reader(editorConfigPath);
         if (!reader.IsOpen())
         {
             NES_ERROR("Failed to load Editor config file!");
@@ -25,20 +25,11 @@ namespace nes
 
         YamlNode root = reader.GetRoot();
         YamlNode editor = root["Editor"];
-        YamlNode windows = editor["Windows"];
-        
-        // Load open windows:
-        std::string windowName = {};
-        for (auto windowNode : windows)
-        {
-            // [TODO]: This should create an instance, rather than getting one.
-            windowNode["Name"].Read(windowName);
-            auto pWindow = GetWindow<EditorWindow>(windowName);
-            if (pWindow)
-            {
-                pWindow->Deserialize(windowNode);
-            }
-        }
+
+        // Load the default world path for the project.
+        std::string worldRelativePath;
+        editor["DefaultWorldAsset"].Read(worldRelativePath);
+        m_defaultWorldRelativePath = worldRelativePath;
         
         // Load Editor Layouts:
         editor["DefaultLayout"].Read(m_defaultLayout);
@@ -68,6 +59,65 @@ namespace nes
 
             m_layouts.emplace(layout.m_name, layout);
         }
+        
+        std::filesystem::path userConfigPath = NES_SAVED_DIR;
+        userConfigPath /= "User/UEditorConfig.yaml";
+
+        if (std::filesystem::exists(userConfigPath))
+        {
+            YamlInStream userReader(userConfigPath);
+            YamlNode userRoot = userReader.GetRoot();
+
+            // Use the previous world that was open.
+            userRoot["WorldAsset"].Read(worldRelativePath);
+            std::filesystem::path worldFullPath = NES_CONTENT_DIR;
+            worldFullPath /= worldRelativePath;
+
+            // If it doesn't exist, reset to default:
+            if (std::filesystem::exists(worldFullPath))
+                outWorldToLoadPath = worldFullPath;
+            else
+            {
+                outWorldToLoadPath = NES_CONTENT_DIR;
+                outWorldToLoadPath /= m_defaultWorldRelativePath;
+            }
+
+            // Get the current layout
+            userRoot["CurrentLayout"].Read(m_currentLayout, {});
+            
+            // Load open window settings:
+            YamlNode windows = userRoot["Windows"];
+            std::string windowName = {};
+            for (auto windowNode : windows)
+            {
+                // [TODO]: This should create an instance, rather than getting one.
+                windowNode["Name"].Read(windowName);
+                auto pWindow = GetWindow<EditorWindow>(windowName);
+                if (pWindow)
+                {
+                    pWindow->Deserialize(windowNode);
+                }
+            }
+        }
+        else
+        {
+            // No user settings have been created/saved, so use defaults. 
+            outWorldToLoadPath = NES_CONTENT_DIR;
+            outWorldToLoadPath /= m_defaultWorldRelativePath;
+            m_currentLayout = m_defaultLayout;
+            
+            // Ensure all windows are open for that layout:
+            auto& layout = m_layouts.at(m_currentLayout);
+            for (auto& dockWindow : layout.m_windows)
+            {
+                // Open the window:
+                auto pWindow = GetWindow<EditorWindow>(dockWindow.m_windowName);
+                if (pWindow != nullptr)
+                {
+                    pWindow->SetOpen(true);
+                }
+            }
+        }
 
         return true;
     }
@@ -76,75 +126,18 @@ namespace nes
     {
         // Remove all Selections.
         editor::SelectionManager::DeselectAll();
-        
-        std::filesystem::path path = NES_CONFIG_DIR;
-        path /= "EditorConfig.yaml";
 
-        std::ofstream stream(path.string());
-        if (!stream.is_open())
-        {
-            // [TODO]: Create the file if not present.
-            return;
-        }
-
-        YamlOutStream writer(path, stream);
-        writer.BeginMap("Editor");
-
-        // Default Layout
-        writer.Write("DefaultLayout", m_defaultLayout);
-
-        // Save the open windows:
-        writer.BeginSequence("Windows");
-        for (auto& window : m_windows)
-        {
-            writer.BeginMap();
-            window->Serialize(writer);
-            writer.EndMap();
-        }
-        writer.EndSequence();
-
-        // Save the Layouts:
-        writer.BeginSequence("Layouts");
-        for (const auto& [name, layout] : m_layouts)
-        {
-            writer.BeginMap();
-            writer.Write("Name", name);
-
-            // DockSplits:
-            writer.BeginSequence("DockSplits");
-            for (const auto& dockSplit : layout.m_splits)
-            {
-                writer.BeginMap();
-                writer.Write("SplitNode", dockSplit.m_splitNode);
-                writer.Write("SplitDir", dockSplit.m_direction);
-                writer.Write("SplitRatio", dockSplit.m_ratio);
-                writer.EndMap();
-            }
-            writer.EndSequence();
-
-            // Windows:
-            writer.BeginSequence("Windows");
-            for (const auto& dockWindow : layout.m_windows)
-            {
-                writer.BeginMap();
-                writer.Write("Name", dockWindow.m_windowName);
-                writer.Write("DockIndex", dockWindow.m_splitIndex);
-                writer.EndMap();
-            }
-            writer.EndSequence();
-
-            writer.EndMap(); // Ends the layout
-        }
-        writer.EndSequence(); // Ends the array of layouts
-        
-        writer.EndMap(); // End the Editor Map.
+        SaveEditorConfig();
+        SaveUserEditorConfig();
         
         // Clear the windows instances.
         m_windows.clear();
+        m_pWorld = nullptr;
     }
 
-    void EditorWindowManager::SetWorld(const StrongPtr<WorldBase>& pWorld) const
+    void EditorWindowManager::SetWorld(const StrongPtr<EditorWorld>& pWorld)
     {
+        m_pWorld = pWorld;
         for (auto& pWindow : m_windows)
         {
             pWindow->SetWorld(pWorld);
@@ -181,12 +174,19 @@ namespace nes
         if (!layoutInitialized)
         {
             layoutInitialized = true;
+            if (m_currentLayout.empty())
+            {
+                m_currentLayout = m_defaultLayout;
+                ApplyWindowLayout(m_currentLayout);
+                return;
+            }
+            
             // Check if the dock space has already been configured (from .ini file)
             ImGuiDockNode* node = ImGui::DockBuilderGetNode(m_dockSpaceID);
             if (node == nullptr || !node->IsSplitNode())
             {
                 // No saved layout exists, set the default layout:
-                ApplyWindowLayout(m_defaultLayout);
+                ApplyWindowLayout(m_currentLayout);
             }
         }
     }
@@ -300,5 +300,111 @@ namespace nes
                 pWindow->RenderImGui();
             }
         }
+    }
+
+    void EditorWindowManager::SaveEditorConfig()
+    {
+        std::filesystem::path path = NES_CONFIG_DIR;
+        path /= "EditorConfig.yaml";
+
+        std::ofstream stream(path.string());
+        if (!stream.is_open())
+        {
+            NES_ERROR("Failed to Editor Config file! You probably didn't create the file directories correctly!\n\tPath:", path.string());
+            return;
+        }
+
+        // Save Editor Settings
+        YamlOutStream writer(path, stream);
+        writer.BeginMap("Editor");
+
+        writer.Write("DefaultWorldAsset", m_defaultWorldRelativePath.string());
+
+        // Default Layout
+        writer.Write("DefaultLayout", m_defaultLayout);
+
+        // // Save the open windows:
+        // writer.BeginSequence("Windows");
+        // for (auto& window : m_windows)
+        // {
+        //     writer.BeginMap();
+        //     window->Serialize(writer);
+        //     writer.EndMap();
+        // }
+        // writer.EndSequence();
+
+        // Save the Layouts:
+        writer.BeginSequence("Layouts");
+        for (const auto& [name, layout] : m_layouts)
+        {
+            writer.BeginMap();
+            writer.Write("Name", name);
+
+            // DockSplits:
+            writer.BeginSequence("DockSplits");
+            for (const auto& dockSplit : layout.m_splits)
+            {
+                writer.BeginMap();
+                writer.Write("SplitNode", dockSplit.m_splitNode);
+                writer.Write("SplitDir", dockSplit.m_direction);
+                writer.Write("SplitRatio", dockSplit.m_ratio);
+                writer.EndMap();
+            }
+            writer.EndSequence();
+
+            // Windows:
+            writer.BeginSequence("Windows");
+            for (const auto& dockWindow : layout.m_windows)
+            {
+                writer.BeginMap();
+                writer.Write("Name", dockWindow.m_windowName);
+                writer.Write("DockIndex", dockWindow.m_splitIndex);
+                writer.EndMap();
+            }
+            writer.EndSequence();
+
+            writer.EndMap(); // Ends the layout
+        }
+        writer.EndSequence(); // Ends the array of layouts
+        
+        writer.EndMap(); // End the Editor Map.
+    }
+
+    void EditorWindowManager::SaveUserEditorConfig()
+    {
+        std::filesystem::path path = NES_SAVED_DIR;
+        path /= "User/UEditorConfig.yaml";
+
+        std::ofstream stream(path.string());
+        if (!stream.is_open())
+        {
+            NES_ERROR("Failed to create User file for EditorConfig! You probably didn't create the file directories correctly!\n\tPath:", path.string());
+            return;
+        }
+        
+        YamlOutStream writer(path, stream);
+
+        // Save the current open world asset:
+        std::filesystem::path currentWorldRelativePath{};
+        if (m_pWorld)
+        {
+            if (auto pWorldAsset = m_pWorld->GetCurrentWorldAsset())
+            {
+                currentWorldRelativePath = pWorldAsset.GetMetadata().m_relativePath;
+                currentWorldRelativePath = std::filesystem::relative(currentWorldRelativePath, NES_CONTENT_DIR);
+            }
+        }
+        writer.Write("WorldAsset", currentWorldRelativePath.string());
+        writer.Write("CurrentLayout", m_currentLayout.empty()? m_defaultLayout : m_currentLayout);
+
+        // Save the open window settings:
+        writer.BeginSequence("Windows");
+        for (auto& window : m_windows)
+        {
+            writer.BeginMap();
+            window->Serialize(writer);
+            writer.EndMap();
+        }
+        writer.EndSequence();
     }
 }

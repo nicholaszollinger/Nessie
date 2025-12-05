@@ -83,7 +83,7 @@ namespace nes
         // Editor Camera
         WorldCamera                 m_editorCamera{};
         bool                        m_rotationEnabled = false;
-        float                       m_freeCamMoveSpeed = 50.f;
-        float                       m_freeCamSensitivity = 0.75f;
+        float                       m_freeCamMoveSpeed = 30.f;
+        float                       m_freeCamSensitivity = 0.25f;
     };
 }

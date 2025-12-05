@@ -24,6 +24,9 @@ namespace nes
         
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
+        // Hide until explicitly shown.
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+
         // Set whether the Window is resizable or not.
         glfwWindowHint(GLFW_RESIZABLE, desc.m_isResizable);
         
@@ -187,6 +190,15 @@ namespace nes
             MouseMoveEvent event(static_cast<float>(xPos), static_cast<float>(yPos));
             app.Internal_OnInputEvent(event);
         });
+
+        glfwSetWindowPosCallback(pWindow, [](GLFWwindow*, const int xPos, const int yPos)
+        {
+            auto& app = Application::Get();
+
+            auto& window = app.GetWindow();
+            window.m_desc.m_windowPosition.x = static_cast<uint32>(xPos);
+            window.m_desc.m_windowPosition.y = static_cast<uint32>(yPos);
+        });
         
         // Ensure that the first call to process events will rebuild the swap chain.
         m_swapChainNeedsRebuild = true;
@@ -242,6 +254,19 @@ namespace nes
         m_desc.m_isMinimized = minimized;
     }
 
+    void ApplicationWindow::SetFullscreen(const bool enabled)
+    {
+        if (enabled)
+            glfwMaximizeWindow(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw));
+        else
+            glfwRestoreWindow(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw));
+    }
+    
+    bool ApplicationWindow::IsFullscreen() const
+    {
+        return glfwGetWindowAttrib(checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw), GLFW_MAXIMIZED);
+    }
+
     Vec2 ApplicationWindow::GetCursorPosition() const
     {
         double posX, posY;
@@ -265,7 +290,13 @@ namespace nes
         
         m_desc.m_cursorMode = mode;
     }
-    
+
+    void ApplicationWindow::ShowWindow()
+    {
+        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
+        glfwShowWindow(pWindow);
+    }
+
     void ApplicationWindow::Resize(const UVec2& extent)
     {
         Resize(extent.x, extent.y);
@@ -275,6 +306,28 @@ namespace nes
     {
         GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
         glfwSetWindowSize(pWindow, static_cast<int>(width), static_cast<int>(height));
+    }
+
+    void ApplicationWindow::SetPosition(const int x, const int y)
+    {
+        GLFWwindow* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
+        glfwSetWindowPos(pWindow, x, y);
+    }
+
+    void ApplicationWindow::CenterWindow()
+    {
+        auto* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
+        GLFWmonitor* pMonitor = glfwGetPrimaryMonitor();
+        const GLFWvidmode* mode = glfwGetVideoMode(pMonitor);
+        
+        int monitorX, monitorY;
+        glfwGetMonitorPos(pMonitor, &monitorX, &monitorY);
+        
+        glfwSetWindowPos(
+            pWindow,
+            monitorX + (mode->width - static_cast<int>(m_desc.m_windowResolution.x)) / 2,
+            monitorY + (mode->height - static_cast<int>(m_desc.m_windowResolution.y)) / 2
+        );
     }
 
     void SetGLFWCursorMode(GLFWwindow* pWindow, const ECursorMode oldMode, const ECursorMode newMode)

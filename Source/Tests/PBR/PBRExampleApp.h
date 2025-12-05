@@ -31,6 +31,8 @@ private:
 
 private:
     // Editor-Specific Members.
+    void                                LoadUserSettings();
+    void                                SaveUserSettings();
     void                                RenderImGuiEditor();
     void                                RenderSimulationControls();
     
