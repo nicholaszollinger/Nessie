@@ -192,7 +192,11 @@ namespace pbr
             
             RenderInstances(commandBuffer, context);
             RenderSkybox(commandBuffer, context);
-            RenderGrid(commandBuffer, context);
+
+            // [TODO]:
+            // Should probably be moved to the Editor when you can.
+            if (!GetWorld().IsSimulating())
+                RenderGrid(commandBuffer, context);
  
             // Finish.
             commandBuffer.EndRendering();
