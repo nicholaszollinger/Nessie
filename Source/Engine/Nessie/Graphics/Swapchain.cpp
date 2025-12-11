@@ -92,7 +92,8 @@ namespace nes
         }
         
         // Build the initial swapchain to the size of the Window.
-        BuildSwapchain(swapchainDesc.m_pWindow->GetResolution(), swapchainDesc.m_pWindow->IsVsyncEnabled());
+        const auto resolution = swapchainDesc.m_pWindow->GetResolution();
+        BuildSwapchain(UVec2(resolution.x, resolution.y), swapchainDesc.m_pWindow->IsVsyncEnabled());
     }
 
     Swapchain::~Swapchain()

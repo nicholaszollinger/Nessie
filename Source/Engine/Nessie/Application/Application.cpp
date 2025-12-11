@@ -42,7 +42,7 @@ namespace nes
         thread::SetThreadName("Main Thread");
 
         // Start the application:
-        OnStartup(std::move(windowDesc), std::move(rendererDesc));
+        OnStartup(windowDesc, std::move(rendererDesc));
     }
 
     Application::~Application()
@@ -170,9 +170,6 @@ namespace nes
             // Update the Renderer:
             m_pRenderer->RequestSwapchainRebuild();
 
-            // [TODO]: This needs to be passed to the world.
-            //Internal_OnResize(width, height);
-
             // Push the resize event to the Application:
             WindowResizeEvent event(width, height);
             PushEvent(event);
@@ -198,7 +195,7 @@ namespace nes
         return m_performanceInfo;
     }
 
-    void Application::OnStartup(WindowDesc&& windowDesc, RendererDesc&& rendererDesc)
+    void Application::OnStartup(const WindowDesc& windowDesc, RendererDesc&& rendererDesc)
     {
         // Initialize the Device Manager.
         m_pDeviceManager = std::make_unique<DeviceManager>();
@@ -233,7 +230,7 @@ namespace nes
             m_pWindow = std::make_unique<ApplicationWindow>();
 
         // Initialize the window.
-        if (!m_pWindow->Internal_Init(*this, std::move(windowDesc)))
+        if (!m_pWindow->Internal_Init(*this, windowDesc))
         {
             NES_ERROR("Failed to initialize application window!");
             m_shouldQuit = true;
@@ -268,6 +265,12 @@ namespace nes
         
         // Allow the Application to respond.
         PreShutdown();
+        
+        if (m_pAssetManager)
+        {
+            // Terminate the asset thread and any open jobs before shutting down other systems.
+            m_pAssetManager->TerminateAssetThread();
+        }
         
         // Shutdown the renderer.
         if (m_pRenderer != nullptr)

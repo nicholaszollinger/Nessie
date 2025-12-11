@@ -478,12 +478,13 @@ namespace nes
 #endif
     }
 
-    void AssetManager::Shutdown()
+    void AssetManager::TerminateAssetThread()
     {
         NES_ASSERT(g_pInstance != nullptr);
 
 #ifndef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
         // Shutdown the Asset Thread.
+        m_assetThreadShouldQuit = true;
         m_assetThread.WaitUntilDone();
         m_assetThread.Terminate();
 
@@ -497,7 +498,16 @@ namespace nes
         }
         m_threadMemoryAssets.clear();
         m_threadLoadedAssetMap.clear();
-        
+#endif
+    }
+
+    void AssetManager::Shutdown()
+    {
+        NES_ASSERT(g_pInstance != nullptr);
+
+#ifndef NES_FORCE_ASSET_MANAGER_SINGLE_THREADED
+        if (!m_assetThread.IsTerminated())
+            TerminateAssetThread();
 #endif
         
         // Free all remaining assets:
@@ -758,7 +768,6 @@ namespace nes
             }
         }
 
-
         return ELoadResult::Success;
     }
 
@@ -769,7 +778,7 @@ namespace nes
             case EAssetThreadInstruction::ProcessLoadOperations:
             {
                 AssetThreadProcessLoadOperations();
-                return true;
+                return !m_assetThreadShouldQuit;
             }
         }
 
@@ -779,7 +788,7 @@ namespace nes
 
     void AssetManager::AssetThreadProcessLoadOperations()
     {
-        while (!m_threadJobQueue.IsEmptyLocked())
+        while (!m_assetThreadShouldQuit && !m_threadJobQueue.IsEmptyLocked())
         {
             // Grab the next request:
             m_threadJobQueue.Lock();
@@ -790,6 +799,9 @@ namespace nes
             // Run each job.
             for (auto& job : loadRequest.m_jobs)
             {
+                if (m_assetThreadShouldQuit)
+                    break;
+                
                 // We don't use the result. Even if there is an error, we will
                 // try to load all Assets, so that all entries in the main thread's info
                 // map are updated appropriately when processing the loaded results.

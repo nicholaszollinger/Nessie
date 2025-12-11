@@ -144,7 +144,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Start up the Application. Creates the window and all manager classes.
         //----------------------------------------------------------------------------------------------------
-        void                                OnStartup(WindowDesc&& windowDesc, RendererDesc&& rendererDesc);
+        void                                OnStartup(const WindowDesc& windowDesc, RendererDesc&& rendererDesc);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Update time values after finishing a frame.

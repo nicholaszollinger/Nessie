@@ -16,12 +16,10 @@
 
 namespace nes
 {
-    bool HeadlessWindow::Internal_Init(Application& app, WindowDesc&& desc)
+    bool HeadlessWindow::Internal_Init(Application& app, const WindowDesc&)
     {
-        m_desc = std::move(desc);
-        m_desc.m_windowResolution = { 0, 0 };
-        m_desc.m_isResizable = false;
-        m_desc.m_cursorMode = ECursorMode::Visible;
+        m_isResizable = false;
+        m_cursorMode = ECursorMode::Visible;
 
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 

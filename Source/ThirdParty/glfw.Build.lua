@@ -20,13 +20,14 @@ function d.ConfigureProject()
     {
         projectDir .. "include/GLFW/glfw3.h",
 		projectDir .. "include/GLFW/glfw3native.h",
-        projectDir .. "include/GLFW/internal.h",
-        projectDir .. "include/GLFW/mappings.h",
-        projectDir .. "include/GLFW/null_joystick.h",
-        projectDir .. "include/GLFW/null_platform.h",
-        projectDir .. "include/GLFW/platform.h",
+        
+        projectDir .. "src/internal.h",
+        projectDir .. "src/mappings.h",
+        projectDir .. "src/null_joystick.h",
+        projectDir .. "src/null_platform.h",
+        projectDir .. "src/platform.h",
 
-		projectDir .. "src/glfw_config.h",
+		--projectDir .. "src/glfw_config.h",
 		projectDir .. "src/context.c",
 		projectDir .. "src/init.c",
 		projectDir .. "src/input.c",
@@ -45,10 +46,10 @@ function d.ConfigureProject()
     filter "system:windows"
         files
         {
-            projectDir .. "include/GLFW/win32_joystick.h",
-            projectDir .. "include/GLFW/win32_platform.h",
-            projectDir .. "include/GLFW/win32_thread.h",
-            projectDir .. "include/GLFW/win32_time.h",
+            projectDir .. "src/win32_joystick.h",
+            projectDir .. "src/win32_platform.h",
+            projectDir .. "src/win32_thread.h",
+            projectDir .. "src/win32_time.h",
 
             projectDir .. "src/win32_init.c",
 			projectDir .. "src/win32_joystick.c",
