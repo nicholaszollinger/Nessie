@@ -142,32 +142,6 @@ World:
       TypeID: 17524471269486645012
       Path: "3D Scifi Starter Kit Free\\_Meshes\\Roofs\\Roof_Square_Angle.yaml"
   Entities:
-    - Entity: 9325100780599403532
-      Name: "Parent"
-      Components:
-        - NodeComponent:
-            Parent: 0
-            Children: []
-        - MeshComponent:
-            Mesh: 1
-            Materials: [5000]
-        - TransformComponent:
-            Position: [24.2, 0, 0]
-            Rotation: [45, 0, 0]
-            Scale: [1, 2, 1]
-    - Entity: 13768697045479437767
-      Name: "Child"
-      Components:
-        - NodeComponent:
-            Parent: 0
-            Children: []
-        - MeshComponent:
-            Mesh: 1
-            Materials: [5000]
-        - TransformComponent:
-            Position: [7, 0, 0]
-            Rotation: [0, 0, 0]
-            Scale: [1, 1, 1]
     - Entity: 14316442348980745632
       Name: "Skybox_Space"
       Components:
@@ -193,14 +167,6 @@ World:
             Direction: [-0.03006, -0.9326, 0.3596]
             Intensity: 1.2e+05
             Priority: 10
-    - Entity: 18201692904082889763
-      Name: "Directional_Light2"
-      Components:
-        - DirectionalLightComponent:
-            Color: [0.348, 0.7507, 1, 1]
-            Direction: [0, -1, 0]
-            Intensity: 1.2e+05
-            Priority: 0
     - Entity: 1
       Name: "Camera"
       Components:
