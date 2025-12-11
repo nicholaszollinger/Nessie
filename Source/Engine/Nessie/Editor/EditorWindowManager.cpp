@@ -74,7 +74,7 @@ namespace nes
             worldFullPath /= worldRelativePath;
 
             // If it doesn't exist, reset to default:
-            if (std::filesystem::exists(worldFullPath))
+            if (worldFullPath.has_extension() && std::filesystem::exists(worldFullPath))
                 outWorldToLoadPath = worldFullPath;
             else
             {
@@ -144,28 +144,8 @@ namespace nes
         }
     }
 
-    void EditorWindowManager::BeginMainWindowAndDockSpace()
+    void EditorWindowManager::SetupDockSpace(const float sizeX, const float sizeY)
     {
-        // Set up the main viewport window
-        ImGuiViewport* imGuiViewport = ImGui::GetMainViewport();
-        ImGui::SetNextWindowPos(imGuiViewport->WorkPos);
-        ImGui::SetNextWindowSize(imGuiViewport->WorkSize);
-        ImGui::SetNextWindowViewport(imGuiViewport->ID);
-
-        // Window flags for the main container
-        ImGuiWindowFlags mainWindowFlags = ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoDocking;
-        mainWindowFlags |= ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse;
-        mainWindowFlags |= ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove;
-        mainWindowFlags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
-        // Make the window background transparent
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
-        ImGui::Begin("DockSpaceWindow", nullptr, mainWindowFlags);
-        ImGui::PopStyleVar(3);
-
         // Create the dock space
         m_dockSpaceID = ImGui::GetID("MainDockSpace");
         
@@ -189,14 +169,8 @@ namespace nes
                 ApplyWindowLayout(m_currentLayout);
             }
         }
-    }
 
-    void EditorWindowManager::EndMainWindowAndDockSpace()
-    {
-        // // Create the dock space with the remaining space.
-        ImVec2 dockSpaceSize = ImGui::GetContentRegionAvail();
-        ImGui::DockSpace(m_dockSpaceID, dockSpaceSize, ImGuiDockNodeFlags_PassthruCentralNode);
-        ImGui::End();
+        ImGui::DockSpace(m_dockSpaceID, ImVec2(sizeX, sizeY), ImGuiDockNodeFlags_PassthruCentralNode);
     }
 
     void EditorWindowManager::ApplyWindowLayout(const std::string& layoutName)
@@ -276,18 +250,13 @@ namespace nes
     
     void EditorWindowManager::RenderWindowMenu() const
     {
-        if (ImGui::BeginMenu("Window"))
+        for (auto& pWindow : m_windows)
         {
-            for (auto& pWindow : m_windows)
+            auto& name = pWindow->GetName();
+            if (ImGui::MenuItem(name.c_str()))
             {
-                auto& name = pWindow->GetName();
-                if (ImGui::MenuItem(name.c_str()))
-                {
-                    OpenWindow(name);
-                }
+                OpenWindow(name);
             }
-
-            ImGui::EndMenu();
         }
     }
 
@@ -322,17 +291,7 @@ namespace nes
 
         // Default Layout
         writer.Write("DefaultLayout", m_defaultLayout);
-
-        // // Save the open windows:
-        // writer.BeginSequence("Windows");
-        // for (auto& window : m_windows)
-        // {
-        //     writer.BeginMap();
-        //     window->Serialize(writer);
-        //     writer.EndMap();
-        // }
-        // writer.EndSequence();
-
+        
         // Save the Layouts:
         writer.BeginSequence("Layouts");
         for (const auto& [name, layout] : m_layouts)
@@ -392,6 +351,11 @@ namespace nes
             {
                 currentWorldRelativePath = pWorldAsset.GetMetadata().m_relativePath;
                 currentWorldRelativePath = std::filesystem::relative(currentWorldRelativePath, NES_CONTENT_DIR);
+            }
+            else
+            {
+                // Our world asset wasn't loaded or is invalid, save the default.
+                currentWorldRelativePath = m_defaultWorldRelativePath;
             }
         }
         writer.Write("WorldAsset", currentWorldRelativePath.string());

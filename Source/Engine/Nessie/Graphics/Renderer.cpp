@@ -268,10 +268,9 @@ namespace nes
         
         if (m_swapchain.NeedsRebuild())
         {
-            const auto& desc = m_pWindow->GetDesc();
-            const auto windowSize = desc.m_windowResolution;
-            const bool vsyncEnabled = desc.m_vsyncEnabled;
-            m_swapchain.OnResize(windowSize, vsyncEnabled);
+            const auto windowSize = m_pWindow->GetResolution();
+            const bool vsyncEnabled = m_pWindow->IsVsyncEnabled();
+            m_swapchain.OnResize(UVec2(windowSize.x, windowSize.y), vsyncEnabled);
         }
         
         // Acquire the next image to render to. If out of date (Needs rebuild) or an error occurred, return false.

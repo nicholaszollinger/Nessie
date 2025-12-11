@@ -374,6 +374,13 @@ namespace nes
         void                            SyncFrame();
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Should be called before Shutdown. This finishes the current Asset Thread task, and then
+        ///     cancels all other load operations. This ensures we don't have any open loading jobs occurring
+        ///     during the shutdown phase.
+        //----------------------------------------------------------------------------------------------------
+        void                            TerminateAssetThread();
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Shutdown the AssetManager. This will destroy all loaded assets.
         //----------------------------------------------------------------------------------------------------
         void                            Shutdown();
@@ -560,7 +567,9 @@ namespace nes
         Mutex                           m_threadLoadedAssetMapMutex{};      // Mutex to protect access to the thread's asset info map.
         Mutex                           m_typeRegistryMutex{};              // Mutex to protect access to the type registry information.
         LoadRequestID                   m_nextRequestID = 0;                // Counter incremented when a new request is made, used to set the ID of a LoadRequest.
-        bool                            m_threadInfoMapNeedsSync = false;   // Flag to indicate that the Asset Thread needs an updated copy of the asset info map. 
+        std::atomic_bool                m_assetThreadShouldQuit = false;     // Used to signal to the asset thread that it should terminate early. 
+        bool                            m_threadInfoMapNeedsSync = false;   // Flag to indicate that the Asset Thread needs an updated copy of the asset info map.
+        
     };
     
     //----------------------------------------------------------------------------------------------------

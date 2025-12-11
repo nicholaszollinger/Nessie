@@ -11,11 +11,11 @@ namespace nes
     class HeadlessWindow final : public ApplicationWindow
     {
     public:
-        virtual bool Internal_Init(Application& app, WindowDesc&& windowDesc) override;
+        virtual bool Internal_Init(Application& app, const WindowDesc& windowDesc) override;
         virtual void Internal_ProcessEvents() override;
     
         virtual void SetCursorMode(const ECursorMode) override {}
-        virtual void SetIsMinimized(const bool) override {}
+        virtual void SetMinimized(const bool) override {}
         virtual void SetVsync(const bool) override {}
     };
 }

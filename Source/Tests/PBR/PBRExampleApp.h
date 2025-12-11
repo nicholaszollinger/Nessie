@@ -34,11 +34,15 @@ private:
     void                                LoadUserSettings();
     void                                SaveUserSettings();
     void                                RenderImGuiEditor();
-    void                                RenderSimulationControls();
+    void                                RenderWindowTopBar(const float topBarHeight);
+    void                                RenderWindowBottomBar(const float bottomBarHeight);
     
     nes::ImGuiRenderer                  m_imgui = nullptr;
     nes::EditorWindowManager            m_windowManager{};
     std::shared_ptr<nes::ViewportWindow> m_viewportWindow = nullptr;
     nes::StrongPtr<nes::EditorWorld>     m_pEditorWorld = nullptr; 
     nes::AssetID                        m_worldAssetID = nes::kInvalidAssetID;
+    
+    std::string                         m_loadingDisplayString = "";
+    float                               m_loadProgress = 0.f;
 };

@@ -22,7 +22,7 @@ namespace nes
         Fullscreen,
         FullscreenBorderless,
     };
-
+    
     //----------------------------------------------------------------------------------------------------
     /// @brief : Expects NES_PLATFORM_WINDOWS macro. 
     //----------------------------------------------------------------------------------------------------
@@ -42,6 +42,12 @@ namespace nes
         WindowsWindow   m_windows{};
     };
 
+    struct WindowState
+    {
+        IVec2           m_position{};
+        IVec2           m_resolution{};
+    };
+
     //----------------------------------------------------------------------------------------------------
     /// @brief : Various properties about the window. Used in Window creation as well.
     //----------------------------------------------------------------------------------------------------
@@ -56,13 +62,14 @@ namespace nes
         ECursorMode     m_cursorMode    = ECursorMode::Visible;
         bool            m_isResizable   = true;
         bool            m_vsyncEnabled  = false;
-        bool            m_isMinimized   = false;
+        bool            m_isDecorated   = true;
 
         WindowDesc&     SetLabel(const char* label)             { m_label = label; return *this; }
         WindowDesc&     SetResolution(const uint32 width, const uint32 height) { m_windowResolution = {width, height}; return *this; }
         WindowDesc&     SetWindowMode(const EWindowMode mode)   { m_windowMode = mode; return *this; }
         WindowDesc&     EnableVsync(const bool enabled)         { m_vsyncEnabled = enabled; return *this; }
         WindowDesc&     EnableResize(const bool enabled)        { m_isResizable = enabled; return *this; }
+        WindowDesc&     RemoveDefaultDecoration()               { m_isDecorated = false; return *this; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -70,6 +77,15 @@ namespace nes
     //----------------------------------------------------------------------------------------------------
     class ApplicationWindow
     {
+    public:
+        enum class ERequestedModeChange : uint8
+        {
+            None = 0,
+            Minimize = NES_BIT(0),
+            Maximize = NES_BIT(1),
+            Restore = NES_BIT(2),
+        };
+        
     public:
         ApplicationWindow() = default;
         virtual ~ApplicationWindow() = default;
@@ -100,7 +116,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current resolution of the window. The size will be in pixel dimensions. 
         //----------------------------------------------------------------------------------------------------
-        UVec2                   GetResolution() const           { return m_desc.m_windowResolution; }
+        IVec2                   GetResolution() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set the position of the window. 
@@ -113,9 +129,25 @@ namespace nes
         void                    CenterWindow();
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the size and position that the window will be restored to when un-maximizing.
+        //----------------------------------------------------------------------------------------------------
+        WindowState             GetWindowRestoreState() const                   { return m_restoreState; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Set the size and position of the window when un-maximizing the window.
+        //----------------------------------------------------------------------------------------------------
+        void                    SetWindowRestoreState(const WindowState& state) { m_restoreState = state; }
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Advanced use. Set the size of the window when un-maximizing the window. This will set the
+        /// restore position to center the window.
+        //----------------------------------------------------------------------------------------------------
+        void                    SetWindowRestoreStateCentered(const int width, const int height);
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Get whether the Window is in Fullscreen, Windowed, etc. 
         //----------------------------------------------------------------------------------------------------
-        EWindowMode             GetWindowMode() const           { return m_desc.m_windowMode; }
+        EWindowMode             GetWindowMode() const                           { return m_windowMode; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current relative position of the cursor in the window. The window origin is
@@ -127,7 +159,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Window can be resized. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsResizable() const             { return m_desc.m_isResizable; }
+        bool                    IsResizable() const                             { return m_isResizable; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the Window should sync its framerate with the monitor. Only if supported. 
@@ -137,27 +169,27 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Vsync is enabled on the Window. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsVsyncEnabled() const          { return m_desc.m_vsyncEnabled; }
+        bool                    IsVsyncEnabled() const                          { return m_vsyncEnabled; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the window is minimized or not. 
         //----------------------------------------------------------------------------------------------------
-        virtual void            SetIsMinimized(const bool minimized);
+        virtual void            SetMinimized(const bool minimized);
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the Window is minimized. 
         //----------------------------------------------------------------------------------------------------
-        bool                    IsMinimized() const             { return m_desc.m_isMinimized; }
+        bool                    IsMinimized() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set whether the window is in fullscreen mode.
         //----------------------------------------------------------------------------------------------------
-        void                    SetFullscreen(const bool enabled);
+        void                    SetMaximized(const bool enabled);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Check if the window is fullscreen.
         //----------------------------------------------------------------------------------------------------
-        bool                    IsFullscreen() const;
+        bool                    IsMaximized() const;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Set how the cursor interacts with the window. 
@@ -167,7 +199,7 @@ namespace nes
         //----------------------------------------------------------------------------------------------------
         /// @brief : Get the current cursor mode.
         //----------------------------------------------------------------------------------------------------
-        ECursorMode             GetCursorMode() const           { return m_desc.m_cursorMode; }
+        ECursorMode             GetCursorMode() const           { return m_cursorMode; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Determine if this is the main application window - if the main application window is closed,
@@ -184,11 +216,6 @@ namespace nes
         /// @brief : Close the window.
         //----------------------------------------------------------------------------------------------------
         void                    Close();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the current properties of the application window. 
-        //----------------------------------------------------------------------------------------------------
-        const WindowDesc&       GetDesc() const                 { return m_desc; }
         
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Get the native window handle for the platform.
@@ -200,7 +227,7 @@ namespace nes
         ///	@param app : The Application that has created this window.
         ///	@param desc : Window properties requested by the Application.
         //----------------------------------------------------------------------------------------------------
-        virtual bool            Internal_Init(Application& app, WindowDesc&& desc);
+        virtual bool            Internal_Init(Application& app, const WindowDesc& desc);
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Process window events. Must be called every frame, when all threads are synced. 
@@ -213,11 +240,24 @@ namespace nes
         void                    Internal_Shutdown();
     
     protected:
-        
-        WindowDesc              m_desc;                             // Current window properties.
+        std::string             m_label{};
         NativeWindow            m_nativeWindow{};                   // Platform specific window handles, and the GLFW Window*.
+        WindowState             m_restoreState{};                   // Saved Window Properties to restore to when maximizing.
         void*                   m_subWindowWithFocus = nullptr;
         void*                   m_subWindowLastUnderCursor = nullptr;
+        ECursorMode             m_cursorMode = ECursorMode::Visible;
+        EWindowMode             m_windowMode = EWindowMode::Windowed;
         bool                    m_swapChainNeedsRebuild = false;    // Flag to determine if the Renderer needs to update the swap chain.
+        bool                    m_isResizable = true;
+        bool                    m_vsyncEnabled = false;
+        
+    private:
+        // [TODO]: I am handling deferred minimize/maximize and restore with these flags for now.
+        // Should probably be changed later:
+        void                    ApplyPendingStateChanges();
+        bool                    RequestedStateChange() const { return m_requestedState != ERequestedModeChange::None; }
+        ERequestedModeChange    m_requestedState = ERequestedModeChange::None;
     };
+
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ApplicationWindow::ERequestedModeChange)
 }
