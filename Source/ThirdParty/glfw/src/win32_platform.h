@@ -358,6 +358,11 @@ typedef struct VkWin32SurfaceCreateInfoKHR
 typedef VkResult (APIENTRY *PFN_vkCreateWin32SurfaceKHR)(VkInstance,const VkWin32SurfaceCreateInfoKHR*,const VkAllocationCallbacks*,VkSurfaceKHR*);
 typedef VkBool32 (APIENTRY *PFN_vkGetPhysicalDeviceWin32PresentationSupportKHR)(VkPhysicalDevice,uint32_t);
 
+// [Nick]
+#if !defined(_GLFW_WNDCLASSNAME)
+#define _GLFW_WNDCLASSNAME L"GLFW30"
+#endif
+
 #define GLFW_WIN32_WINDOW_STATE         _GLFWwindowWin32  win32;
 #define GLFW_WIN32_LIBRARY_WINDOW_STATE _GLFWlibraryWin32 win32;
 #define GLFW_WIN32_MONITOR_STATE        _GLFWmonitorWin32 win32;
@@ -530,6 +535,10 @@ GLFWbool _glfwConnectWin32(int platformID, _GLFWplatform* platform);
 int _glfwInitWin32(void);
 void _glfwTerminateWin32(void);
 
+// [Nick]
+GLFWbool _glfwRegisterWindowClassWin32(void);
+void _glfwUnregisterWindowClassWin32(void);
+
 WCHAR* _glfwCreateWideStringFromUTF8Win32(const char* source);
 char* _glfwCreateUTF8FromWideStringWin32(const WCHAR* source);
 BOOL _glfwIsWindowsVersionOrGreaterWin32(WORD major, WORD minor, WORD sp);
@@ -595,6 +604,9 @@ void _glfwDestroyCursorWin32(_GLFWcursor* cursor);
 void _glfwSetCursorWin32(_GLFWwindow* window, _GLFWcursor* cursor);
 void _glfwSetClipboardStringWin32(const char* string);
 const char* _glfwGetClipboardStringWin32(void);
+
+// [Nick]
+void _glfwSetWindowTitlebarWin32(_GLFWwindow* window, GLFWbool enabled);
 
 EGLenum _glfwGetEGLPlatformWin32(EGLint** attribs);
 EGLNativeDisplayType _glfwGetEGLNativeDisplayWin32(void);

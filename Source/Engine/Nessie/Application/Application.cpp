@@ -103,6 +103,24 @@ namespace nes
             return;
         }
 
+        // Render a single frame before showing the window.
+        {
+            SyncFrame();
+            m_pWindow->Internal_ProcessEvents();
+            if (m_pRenderer->BeginFrame())
+            {
+                // Render the frame.
+                Render(m_pRenderer->GetCurrentCommandBuffer(), m_pRenderer->GetRenderFrameContext());
+
+                // Stop recording render commands.
+                m_pRenderer->EndFrame();
+            }
+            
+            m_pWindow->ShowWindow();
+        }
+
+        // Main Loop:
+        UpdateFrameTime();
         while (!m_shouldQuit && !m_pWindow->ShouldClose())
         {
             // Thread Sync.

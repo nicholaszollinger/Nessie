@@ -57,8 +57,28 @@ namespace nes
         explicit WindowFocusEvent(const bool hasFocus) : m_hasFocus(hasFocus) { }
 
         //----------------------------------------------------------------------------------------------------
-        /// @brief : Check if the Window has gained (true) or lost focus (false)..  
+        /// @brief : Check if the Window has gained (true) or lost focus (false).  
         //----------------------------------------------------------------------------------------------------
         bool HasFocus() const { return m_hasFocus; }
+    };
+
+    //----------------------------------------------------------------------------------------------------
+    ///	@brief : Used to detect whether the window's titlebar has been hit with the given x and y window
+    ///     coordinates.
+    //----------------------------------------------------------------------------------------------------
+    class WindowTitlebarHitTestEvent final : public Event
+    {
+        NES_EVENT(WindowTitlebarHitTestEvent)
+    
+    public:
+        explicit WindowTitlebarHitTestEvent(const int xPos, const int yPos, int& hit) : m_xPos(xPos), m_yPos(yPos), m_hit(hit) { }; 
+        int     GetX() const                { return m_xPos; }
+        int     GetY() const                { return m_yPos; }
+        void    SetHit(const bool hit)      { m_hit = static_cast<int>(hit); }
+    
+    private:
+        int     m_xPos;
+        int     m_yPos;
+        int&    m_hit;
     };
 }

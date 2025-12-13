@@ -33,6 +33,13 @@ PBRExampleApp::PBRExampleApp(nes::ApplicationDesc&& appDesc, nes::WindowDesc&& w
 
 void PBRExampleApp::PushEvent(nes::Event& e)
 {
+    if (auto* titlebarHitTest = e.Cast<nes::WindowTitlebarHitTestEvent>())
+    {
+        titlebarHitTest->SetHit(m_titleBarHovered);
+        titlebarHitTest->SetHandled();
+        return;
+    }
+    
     if (m_pEditorWorld)
         m_pEditorWorld->OnEvent(e);
 }
@@ -125,9 +132,6 @@ bool PBRExampleApp::Init()
     
     nes::AssetManager::LoadAssetPackAsync(assetPack, onComplete, onAssetLoaded);
     m_windowManager.SetWorld(m_pEditorWorld);
-
-    // Reveal the window:
-    GetWindow().ShowWindow();
     
     return true;
 }
@@ -239,14 +243,15 @@ void PBRExampleApp::LoadUserSettings()
     nes::YamlInStream stream(path);
     auto root = stream.GetRoot();
     auto applicationWindow = root["ApplicationWindow"];
-
-    nes::WindowState restoreState;
-    applicationWindow["Position"].Read(restoreState.m_position, nes::IVec2(std::numeric_limits<int>::max()));
-    applicationWindow["Size"].Read(restoreState.m_resolution, nes::IVec2(std::numeric_limits<int>::max()));
+    
+    nes::IVec2 position;
+    nes::IVec2 resolution;
+    applicationWindow["Position"].Read(position, nes::IVec2(std::numeric_limits<int>::max()));
+    applicationWindow["Size"].Read(resolution, nes::IVec2(std::numeric_limits<int>::max()));
 
     // Set defaults if invalid.
-    if (restoreState.m_resolution.x < 0 || restoreState.m_resolution.y < 0)
-        restoreState.m_resolution = window.GetResolution();
+    if (resolution.x < 0 || resolution.y < 0)
+        resolution = window.GetResolution();
     
     bool fullscreen;
     applicationWindow["IsFullscreen"].Read(fullscreen, false);
@@ -254,21 +259,20 @@ void PBRExampleApp::LoadUserSettings()
     bool vsyncEnabled;
     applicationWindow["Vsync"].Read(vsyncEnabled, false);
 
+    // Set the position:
+    if (position.x < 0 || position.y < 0)
+        window.CenterWindow();
+    else
+        window.SetPosition(position.x, position.y);
+
+    // Set the size:
     if (fullscreen)
     {
-        if (restoreState.m_position.x < 0 || restoreState.m_position.y < 0)
-            window.SetWindowRestoreStateCentered(restoreState.m_resolution.x, restoreState.m_position.y);
-        else
-            window.SetWindowRestoreState(restoreState);        
-        
         window.SetMaximized(true);
     }
     else
     {
-        if (restoreState.m_position.x < 0 || restoreState.m_position.y < 0)
-            window.CenterWindow();
-        else
-            window.SetPosition(restoreState.m_position.x, restoreState.m_position.y);
+        window.Resize(resolution.x, resolution.y);
     }
     
     window.SetVsync(vsyncEnabled);
@@ -291,11 +295,9 @@ void PBRExampleApp::SaveUserSettings()
     if (!m_desc.m_isHeadless)
     {
         auto& window = GetWindow();
-        const auto& restoreState = window.GetWindowRestoreState();
-
         writer.BeginMap("ApplicationWindow");
-        writer.Write("Position", restoreState.m_position);
-        writer.Write("Size", restoreState.m_resolution);
+        writer.Write("Position", window.GetPosition());
+        writer.Write("Size", window.GetResolution());
         writer.Write("Vsync", window.IsVsyncEnabled());
         writer.Write("IsFullscreen", window.IsMaximized());
         
@@ -305,26 +307,28 @@ void PBRExampleApp::SaveUserSettings()
 
 void PBRExampleApp::RenderImGuiEditor()
 {
+    m_titleBarHovered = false;
+    
     // Set up the main viewport window
     ImGuiViewport* imGuiViewport = ImGui::GetMainViewport();
     ImGui::SetNextWindowPos(imGuiViewport->WorkPos);
     ImGui::SetNextWindowSize(imGuiViewport->WorkSize);
     ImGui::SetNextWindowViewport(imGuiViewport->ID);
-
+    
     // Window flags for the main container
     static constexpr ImGuiWindowFlags kMainWindowFlags = ImGuiWindowFlags_NoDocking
         | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoCollapse
         | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove
         | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
-
+    
     // Make the window background transparent
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
     ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-
+    
     const bool mainWindowOpen = ImGui::Begin("MainWindow", nullptr, kMainWindowFlags);
     ImGui::PopStyleVar(3);
-
+    
     if (mainWindowOpen)
     {
         static constexpr float kTopBarHeight = 40.f;
@@ -334,7 +338,7 @@ void PBRExampleApp::RenderImGuiEditor()
         // Render the top bar, with menu, window buttons, etc.  
         RenderWindowTopBar(kTopBarHeight);
         ImGui::SetCursorPos(ImVec2(windowPadding.x, kTopBarHeight + windowPadding.y));
-
+    
         // Set up the dockspace for each of the Editor Windows to dock in.
         ImVec2 regionAvailable = ImGui::GetContentRegionAvail();
         regionAvailable.y -= kBottomBarHeight;
@@ -344,8 +348,8 @@ void PBRExampleApp::RenderImGuiEditor()
         RenderWindowBottomBar(kBottomBarHeight);
     }
     ImGui::End();
-
-    // Render windows within the dockspace:
+    
+    // Render windows within the dock space:
     if (mainWindowOpen)
         m_windowManager.RenderWindows();
 }
@@ -449,44 +453,11 @@ void PBRExampleApp::RenderWindowTopBar(const float topBarHeight)
     // Calculate the draggable area (everything except the window buttons on the right)
     const float dragAreaWidth = windowButtonsStartX - windowPadding.x;
     ImGui::SetCursorPos(ImVec2(windowPadding.x, windowPadding.y));
-
-    // [TODO]: Make these member variables, instead of static values in the function.
-    static float moveOffsetX = 0.f;
-    static float moveOffsetY = 0.f;
-    auto* rootWindow = ImGui::GetCurrentWindow()->RootWindow;
+    
     ImGui::SetNextItemAllowOverlap();
-    if (ImGui::InvisibleButton("##titleBarDragZone", ImVec2(dragAreaWidth, topBarHeight), ImGuiButtonFlags_PressedOnClick))
-    {
-        const ImVec2 point = ImGui::GetMousePos();
-        const ImRect rect = rootWindow->Rect();
-        
-        // Calculate the difference between the cursor pos and window pos
-        moveOffsetX = point.x - rect.Min.x;
-        moveOffsetY = point.y - rect.Min.y;
-    }
-    if (ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left) && ImGui::IsItemHovered())
-    {
-        // [TODO]: Maximize on double-clicking the area:
-    }
-    if (!appWindow.IsMaximized() && ImGui::IsItemActive())
-    {
-        if (ImGui::IsMouseDragging(ImGuiMouseButton_Left))
-        {
-            // [TODO]: Restore the window when dragging, instead of disallowing the
-            // move altogether. I need to know what the restored size is. When I call maximize, I don't have
-            // the previous resolution saved.
-            // if (appWindow.IsMaximized())
-            // {
-            //     // Restore the window:
-            //     appWindow.SetMaximized(false);
-            // }
-
-            // Move the Window:
-            const ImVec2 point = ImGui::GetMousePos();
-            appWindow.SetPosition(static_cast<int>(point.x - moveOffsetX),  static_cast<int>(point.y - moveOffsetY));
-        }
-    }
-
+    ImGui::InvisibleButton("##titleBarDragZone", ImVec2(dragAreaWidth, topBarHeight), ImGuiButtonFlags_PressedOnClick);
+    m_titleBarHovered = ImGui::IsItemHovered();
+    
     //------------------------------
     // Top Bar Buttons:
     //------------------------------
@@ -748,8 +719,6 @@ void PBRExampleApp::RenderWindowBottomBar(const float bottomBarHeight)
         
         ImGui::EndChild();
     }
-    
-    
 }
 
 void PBRExampleApp::PreShutdown()
@@ -786,7 +755,7 @@ std::unique_ptr<nes::Application> nes::CreateApplication(const nes::CommandLineA
         .SetWindowMode(EWindowMode::Windowed)
         .EnableResize(true)
         .EnableVsync(false)
-        .RemoveDefaultDecoration();
+        .SetWindowStyle(EWindowStyleFlags::NoTitlebar);
 
     RendererDesc rendererDesc = nes::RendererDesc()
         .EnableValidationLayer()

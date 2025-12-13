@@ -668,6 +668,7 @@ GLFWbool _glfwConnectWin32(int platformID, _GLFWplatform* platform)
         .waitEvents = _glfwWaitEventsWin32,
         .waitEventsTimeout = _glfwWaitEventsTimeoutWin32,
         .postEmptyEvent = _glfwPostEmptyEventWin32,
+        .setWindowTitleBar = _glfwSetWindowTitlebarWin32, // [Nick]
         .getEGLPlatform = _glfwGetEGLPlatformWin32,
         .getEGLNativeDisplay = _glfwGetEGLNativeDisplayWin32,
         .getEGLNativeWindow = _glfwGetEGLNativeWindowWin32,
@@ -695,6 +696,10 @@ int _glfwInitWin32(void)
     else if (IsWindowsVistaOrGreater())
         SetProcessDPIAware();
 
+    // [Nick]
+    if (!_glfwRegisterWindowClassWin32())
+        return GLFW_FALSE;
+
     if (!createHelperWindow())
         return GLFW_FALSE;
 
@@ -717,6 +722,9 @@ void _glfwTerminateWin32(void)
     if (_glfw.win32.mainWindowClass)
         UnregisterClassW(MAKEINTATOM(_glfw.win32.mainWindowClass), _glfw.win32.instance);
 
+    // [Nick]
+    _glfwUnregisterWindowClassWin32();
+    
     _glfw_free(_glfw.win32.clipboardString);
     _glfw_free(_glfw.win32.rawInput);
 
