@@ -45,4 +45,5 @@ private:
     
     std::string                         m_loadingDisplayString = "";
     float                               m_loadProgress = 0.f;
+    bool                                m_titleBarHovered = false;
 };

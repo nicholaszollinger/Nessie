@@ -41,11 +41,12 @@ namespace nes
         void*           m_glfw = nullptr; /// GLFW Window* 
         WindowsWindow   m_windows{};
     };
-
-    struct WindowState
+    
+    enum class EWindowStyleFlags
     {
-        IVec2           m_position{};
-        IVec2           m_resolution{};
+        None = 0,       // Window will have the native decoration for the platform.
+        NoDecoration,   // All decoration will be removed from the window, on Windows, this means no title bar and no resizing.
+        NoTitlebar,     // On Windows, the title bar is removed, but resizing is still allowed. A 'Borderless window'.
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -54,22 +55,20 @@ namespace nes
     struct WindowDesc
     {
         std::string     m_label         = "App Window";
-
-        /// Window resolution
         UVec2           m_windowResolution { 1600, 900 };
         UVec2           m_windowPosition   { 0, 0 };
         EWindowMode     m_windowMode    = EWindowMode::Windowed;
         ECursorMode     m_cursorMode    = ECursorMode::Visible;
         bool            m_isResizable   = true;
         bool            m_vsyncEnabled  = false;
-        bool            m_isDecorated   = true;
+        EWindowStyleFlags m_styleFlags  = EWindowStyleFlags::None;
 
         WindowDesc&     SetLabel(const char* label)             { m_label = label; return *this; }
         WindowDesc&     SetResolution(const uint32 width, const uint32 height) { m_windowResolution = {width, height}; return *this; }
         WindowDesc&     SetWindowMode(const EWindowMode mode)   { m_windowMode = mode; return *this; }
         WindowDesc&     EnableVsync(const bool enabled)         { m_vsyncEnabled = enabled; return *this; }
         WindowDesc&     EnableResize(const bool enabled)        { m_isResizable = enabled; return *this; }
-        WindowDesc&     RemoveDefaultDecoration()               { m_isDecorated = false; return *this; }
+        WindowDesc&     SetWindowStyle(const EWindowStyleFlags style) { m_styleFlags = style; return *this; }
     };
 
     //----------------------------------------------------------------------------------------------------
@@ -78,12 +77,14 @@ namespace nes
     class ApplicationWindow
     {
     public:
-        enum class ERequestedModeChange : uint8
+        enum class EUpdateState : uint8
         {
             None = 0,
             Minimize = NES_BIT(0),
             Maximize = NES_BIT(1),
             Restore = NES_BIT(2),
+            Resize = NES_BIT(3),
+            Reposition = NES_BIT(4),
         };
         
     public:
@@ -124,19 +125,14 @@ namespace nes
         void                    SetPosition(const int x, const int y);
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current position of the window, in screen coordinates.
+        //----------------------------------------------------------------------------------------------------
+        IVec2                   GetPosition() const;
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Center the window on the current monitor.
         //----------------------------------------------------------------------------------------------------
         void                    CenterWindow();
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Get the size and position that the window will be restored to when un-maximizing.
-        //----------------------------------------------------------------------------------------------------
-        WindowState             GetWindowRestoreState() const                   { return m_restoreState; }
-
-        //----------------------------------------------------------------------------------------------------
-        /// @brief : Advanced use. Set the size and position of the window when un-maximizing the window.
-        //----------------------------------------------------------------------------------------------------
-        void                    SetWindowRestoreState(const WindowState& state) { m_restoreState = state; }
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Advanced use. Set the size of the window when un-maximizing the window. This will set the
@@ -192,6 +188,16 @@ namespace nes
         bool                    IsMaximized() const;
 
         //----------------------------------------------------------------------------------------------------
+        /// @brief : Get the current styling of the window. (See EWindowStyleFlags for details).
+        //----------------------------------------------------------------------------------------------------
+        void                    SetWindowStyle(const EWindowStyleFlags style);
+
+        //----------------------------------------------------------------------------------------------------
+        /// @brief : Set the window style. (See EWindowStyleFlags for details).
+        //----------------------------------------------------------------------------------------------------
+        EWindowStyleFlags       GetWindowStyle() const                          { return m_style; }
+
+        //----------------------------------------------------------------------------------------------------
         /// @brief : Set how the cursor interacts with the window. 
         //----------------------------------------------------------------------------------------------------
         virtual void            SetCursorMode(const ECursorMode mode);
@@ -242,22 +248,23 @@ namespace nes
     protected:
         std::string             m_label{};
         NativeWindow            m_nativeWindow{};                   // Platform specific window handles, and the GLFW Window*.
-        WindowState             m_restoreState{};                   // Saved Window Properties to restore to when maximizing.
+        IVec2                   m_resolution{};
+        IVec2                   m_position{};
+        //WindowState             m_currentState{};                   // The current window position and resolution.
         void*                   m_subWindowWithFocus = nullptr;
         void*                   m_subWindowLastUnderCursor = nullptr;
         ECursorMode             m_cursorMode = ECursorMode::Visible;
         EWindowMode             m_windowMode = EWindowMode::Windowed;
+        EWindowStyleFlags       m_style = EWindowStyleFlags::None;
         bool                    m_swapChainNeedsRebuild = false;    // Flag to determine if the Renderer needs to update the swap chain.
         bool                    m_isResizable = true;
         bool                    m_vsyncEnabled = false;
         
     private:
-        // [TODO]: I am handling deferred minimize/maximize and restore with these flags for now.
-        // Should probably be changed later:
         void                    ApplyPendingStateChanges();
-        bool                    RequestedStateChange() const { return m_requestedState != ERequestedModeChange::None; }
-        ERequestedModeChange    m_requestedState = ERequestedModeChange::None;
+        bool                    RequestedStateChange() const { return m_requestedState != EUpdateState::None; }
+        EUpdateState            m_requestedState = EUpdateState::None;
     };
 
-    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ApplicationWindow::ERequestedModeChange)
+    NES_DEFINE_BIT_OPERATIONS_FOR_ENUM(ApplicationWindow::EUpdateState)
 }
