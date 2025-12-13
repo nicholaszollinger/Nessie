@@ -246,7 +246,7 @@ void PBRExampleApp::LoadUserSettings()
     
     nes::IVec2 position;
     nes::IVec2 resolution;
-    applicationWindow["Position"].Read(position, nes::IVec2(std::numeric_limits<int>::max()));
+    applicationWindow["Position"].Read(position, nes::IVec2(-1));
     applicationWindow["Size"].Read(resolution, nes::IVec2(std::numeric_limits<int>::max()));
 
     // Set defaults if invalid.

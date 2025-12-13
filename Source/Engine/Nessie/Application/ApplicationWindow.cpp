@@ -220,8 +220,7 @@ namespace nes
         if (m_swapChainNeedsRebuild)
         {
             auto& app = Application::Get();
-            auto resolution = GetResolution();
-            app.Internal_OnWindowResize(static_cast<uint32>(resolution.x), static_cast<uint32>(resolution.y));
+            app.Internal_OnWindowResize(static_cast<uint32>(m_resolution.x), static_cast<uint32>(m_resolution.y));
 
             // Clear the flag.
             m_swapChainNeedsRebuild = false;
@@ -240,10 +239,16 @@ namespace nes
 
     void ApplicationWindow::ApplyPendingStateChanges()
     {
-        if (!RequestedStateChange())
-            return;
-
         auto* pWindow = checked_cast<GLFWwindow*>(m_nativeWindow.m_glfw);
+        
+        if (!RequestedStateChange())
+        {
+            // Update our current state, then return.
+            glfwGetWindowSize(pWindow, &m_resolution.x, &m_resolution.y);
+            glfwGetWindowPos(pWindow, &m_position.x, &m_position.y);
+            return;
+        }
+
         if ((m_requestedState & EUpdateState::Minimize))
         {
             glfwIconifyWindow(pWindow);
@@ -264,6 +269,10 @@ namespace nes
         {
             glfwSetWindowSize(pWindow, m_resolution.x, m_resolution.y);
         }
+
+        // Update our current state.
+        glfwGetWindowSize(pWindow, &m_resolution.x, &m_resolution.y);
+        glfwGetWindowPos(pWindow, &m_position.x, &m_position.y);
         
         m_swapChainNeedsRebuild = true;
         m_requestedState = EUpdateState::None;
