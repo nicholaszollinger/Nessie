@@ -119,6 +119,23 @@ namespace nes::editor
     void Property(const char* label, const std::string& value, const char* toolTip = "");
 
     //----------------------------------------------------------------------------------------------------
+    /// @brief : Render a boolean checkbox property that can be edited.
+    ///	@param label : Name of the property.
+    ///	@param value : Value to edit.
+    ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
+    ///	@returns : Returns true if the value has changed.
+    //----------------------------------------------------------------------------------------------------
+    bool Property(const char* label, bool& value, const char* toolTip = "");
+
+    //----------------------------------------------------------------------------------------------------
+    /// @brief : Render a boolean checkbox property, but disable any edits.
+    ///	@param label : Name of the property.
+    ///	@param value : Value to show.
+    ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
+    //----------------------------------------------------------------------------------------------------
+    void Property(const char* label, const bool& value, const char* toolTip = "");
+
+    //----------------------------------------------------------------------------------------------------
     /// @brief : Render an int property that can be edited.
     ///	@param label : Name of the property.
     ///	@param value : Value to edit.
