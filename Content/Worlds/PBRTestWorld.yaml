@@ -186,6 +186,7 @@ World:
               ShutterSpeed: 125
               Iso: 100
               ProjectionType: 0
+            IsActive: true
         - TransformComponent:
             Position: [4.2, 2.1, 6.252]
             Rotation: [4, -47, 0]

@@ -210,6 +210,30 @@ namespace nes::editor
         internal::EndProperty();
     }
 
+    bool Property(const char* label, bool& value, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+        internal::BeginPropertyValue();
+        
+        const bool modified = ImGui::Checkbox(internal::CreateHiddenPropertyValueLabel(label).c_str(), &value);
+        
+        internal::EndPropertyValue();
+        internal::EndProperty();
+        
+        return modified;
+    }
+
+    void Property(const char* label, const bool& value, const char* toolTip)
+    {
+        internal::BeginProperty(label, toolTip);
+
+        internal::BeginPropertyValue(true);
+        ImGui::Checkbox(internal::CreateHiddenPropertyValueLabel(label).c_str(), const_cast<bool*>(&value));
+        internal::EndPropertyValue(true);
+        
+        internal::EndProperty();
+    }
+
     bool Property(const char* label, int& value, const char* toolTip)
     {
         internal::BeginProperty(label, toolTip);

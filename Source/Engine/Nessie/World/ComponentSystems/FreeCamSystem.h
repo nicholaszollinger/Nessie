@@ -11,8 +11,8 @@ namespace nes
     
     struct FreeCamMovementComponent
     {
-        float       m_moveSpeed = 50.f;      // m/s.
-        float       m_sensitivity = 1.25f;
+        float       m_moveSpeed = 20.f;      // m/s.
+        float       m_sensitivity = 0.25f;
 
         static void Serialize(YamlOutStream& out, const FreeCamMovementComponent& component);
         static void Deserialize(const YamlNode& in, FreeCamMovementComponent& component);

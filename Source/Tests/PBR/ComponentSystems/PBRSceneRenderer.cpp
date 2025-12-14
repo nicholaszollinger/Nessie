@@ -91,15 +91,23 @@ namespace pbr
         // Handle Camera Activation:
         {
             auto view = pRegistry->GetAllEntitiesWith<nes::IDComponent, nes::PendingEnable, nes::CameraComponent>(entt::exclude<nes::DisabledComponent>);
-
-            // [TODO]: Check whether it should be set active on enable.
             for (auto entity : view)
             {
+                if (m_activeCameraID != nes::kInvalidEntityID)
+                {
+                    auto activeEntity = pRegistry->GetEntity(m_activeCameraID);
+                    if (auto* activeCamera = pRegistry->TryGetComponent<nes::CameraComponent>(activeEntity))
+                    {
+                        activeCamera->m_isActive = false;
+                    }
+                }
+                
                 const auto id = view.get<nes::IDComponent>(entity).GetID();
-
-                if (m_activeCameraID == nes::kInvalidEntityID || m_activeCameraID != id)
+                auto& cameraComp = view.get<nes::CameraComponent>(entity);
+                if (m_activeCameraID == nes::kInvalidEntityID || (m_activeCameraID != id && cameraComp.m_isActive))
                 {
                     m_activeCameraID = id;
+                    cameraComp.m_isActive = true;
                 }
             }
         }
@@ -118,7 +126,23 @@ namespace pbr
 
     void PBRSceneRenderer::ProcessDisabledEntities()
     {
-        // [TODO]: Disabling entities isn't implemented just yet in the editor, so I don't have to worry about it at the moment.
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+            return;
+        
+        // Handle removing the Camera
+        {
+            auto view = pRegistry->GetAllEntitiesWith<nes::IDComponent, nes::PendingDisable, nes::CameraComponent>();
+            for (auto entity : view)
+            {
+                if (view.get<nes::IDComponent>(entity).GetID() == m_activeCameraID)
+                {
+                    m_activeCameraID = nes::kInvalidEntityID;
+                    TryFindCameraToActivate();
+                    break;
+                }
+            }
+        }
     }
 
     void PBRSceneRenderer::ProcessDestroyedEntities(const bool destroyingWorld)
@@ -237,9 +261,9 @@ namespace pbr
         }
     }
 
-    nes::WorldCamera PBRSceneRenderer::GetActiveCamera() const
+    nes::WorldCamera PBRSceneRenderer::GetActiveCamera()
     {
-        nes::WorldCamera worldCamera{};
+        nes::WorldCamera worldCamera{.m_position = nes::Vec3(0.f, 1.f, 0.f) };
         auto* pRegistry = GetEntityRegistry();
         if (!pRegistry)
             return worldCamera;
@@ -247,13 +271,32 @@ namespace pbr
         auto activeCameraEntity = pRegistry->GetEntity(m_activeCameraID);
         if (activeCameraEntity == nes::kInvalidEntityHandle)
         {
-            NES_WARN("No Camera in World!");
-            return worldCamera;
+            TryFindCameraToActivate();
+            activeCameraEntity = pRegistry->GetEntity(m_activeCameraID);
+            
+            if (activeCameraEntity == nes::kInvalidEntityHandle || m_activeCameraID == nes::kInvalidEntityID)
+            {
+                NES_WARN("No Camera in World!");
+                return worldCamera;
+            }
         }
     
-        nes::CameraComponent& camera = pRegistry->GetComponent<nes::CameraComponent>(activeCameraEntity);
-        worldCamera.m_camera = camera.m_camera;
-    
+        nes::CameraComponent* pCamera = pRegistry->TryGetComponent<nes::CameraComponent>(activeCameraEntity);
+        if (!pCamera)
+        {
+            TryFindCameraToActivate();
+
+            if (m_activeCameraID != nes::kInvalidEntityID)
+            {
+                auto entity = pRegistry->GetEntity(m_activeCameraID);
+                pCamera = pRegistry->TryGetComponent<nes::CameraComponent>(entity);
+            }
+
+            if (!pCamera)
+                return worldCamera;
+        }
+        
+        worldCamera.m_camera = pCamera->m_camera;
         nes::TransformComponent& transform = pRegistry->GetComponent<nes::TransformComponent>(activeCameraEntity);
         worldCamera.m_position = transform.GetWorldPosition();
         const auto& worldMatrix = transform.GetWorldTransformMatrix(); 
@@ -261,6 +304,40 @@ namespace pbr
         worldCamera.m_up = worldMatrix.GetUp();
     
         return worldCamera;
+    }
+
+    void PBRSceneRenderer::SetActiveCameraEntity(const nes::EntityID& id)
+    {
+        if (auto* pRegistry = GetEntityRegistry())
+        {
+            auto entity = pRegistry->GetEntity(id);
+            if (entity == nes::kInvalidEntityHandle)
+                return;
+            
+            auto* pNewCamera = pRegistry->TryGetComponent<nes::CameraComponent>(entity);
+            if (!pNewCamera)
+                return;
+            
+            if (m_activeCameraID == id && pNewCamera->m_isActive == false)
+            {
+                // We are deactivating our current camera. Try to set another available camera:
+                TryFindCameraToActivate();
+            }
+            else if (m_activeCameraID != id)
+            {
+                const auto currentActiveEntity = pRegistry->GetEntity(m_activeCameraID);
+                if (m_activeCameraID != nes::kInvalidEntityID && currentActiveEntity != nes::kInvalidEntityHandle)
+                {
+                    // Set our current active camera flag to false.
+                    auto* pCamera = pRegistry->TryGetComponent<nes::CameraComponent>(currentActiveEntity);
+                    pCamera->m_isActive = false;
+                }
+
+                // Set the new active camera value:
+                m_activeCameraID = id;
+                pNewCamera->m_isActive = true;
+            }
+        }
     }
 
     void PBRSceneRenderer::OnViewportResize(const uint32 width, const uint32 height)
@@ -1573,7 +1650,7 @@ namespace pbr
         {
             pRegistry->OnComponentCreated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentAdded>(this);
             pRegistry->OnComponentUpdated<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentUpdated>(this);
-            pRegistry->OnComponentDestroyed<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);    
+            pRegistry->OnComponentDestroyed<MeshComponent>().connect<&PBRSceneRenderer::OnMeshComponentRemoved>(this);
         }
 
         ClearSceneInstanceData();
@@ -2054,6 +2131,71 @@ namespace pbr
         std::string debugName;
         pipelineNode["DebugName"].Read(debugName);
         outPipeline.SetDebugName(debugName);
+    }
+
+    void PBRSceneRenderer::TryFindCameraToActivate()
+    {
+        auto* pRegistry = GetEntityRegistry();
+        if (!pRegistry)
+        {
+            m_activeCameraID = nes::kInvalidEntityID;
+            return;
+        }
+
+        // Find the best candidate camera in the scene.
+        nes::EntityID bestCandidate = nes::kInvalidEntityID;
+        const nes::EntityID oldActive = m_activeCameraID;
+        float bestScore = std::numeric_limits<float>::min();
+        
+        nes::Vec3 targetPosition = nes::Vec3::Zero();
+        static constexpr float kMaxDistanceSqr = 500.f * 500.f;
+        auto currentActiveEntity = pRegistry->GetEntity(m_activeCameraID);
+        
+        // Set our target position to the last current camera position.
+        if (currentActiveEntity != nes::kInvalidEntityHandle)
+        {
+            if (auto* pTransform = pRegistry->TryGetComponent<nes::TransformComponent>(currentActiveEntity))
+                targetPosition = pTransform->GetWorldPosition();
+        }
+        
+        auto view = pRegistry->GetAllEntitiesWith<nes::CameraComponent, nes::TransformComponent>(entt::exclude<nes::DisabledComponent, nes::PendingDestruction, nes::PendingDisable>);
+        for (auto entity : view)
+        {
+            auto& idComp = pRegistry->GetComponent<nes::IDComponent>(entity);
+            auto& cameraComp = pRegistry->GetComponent<nes::CameraComponent>(entity);
+            const auto& transform = pRegistry->GetComponent<nes::TransformComponent>(entity);
+
+            // Start with a negative score if it is the old active camera.
+            // We are assuming that the 
+            float score = oldActive == idComp.GetID()? -100.f : 0.f;
+            
+            // Check if this camera is closer and active.
+            const float distSqr = (transform.GetWorldPosition() - targetPosition).LengthSqr();
+            score += (1.f - nes::math::ClampNormalized(distSqr / kMaxDistanceSqr)) * 50.f;
+            
+            if (cameraComp.m_isActive)
+                score += 50.f;
+            
+            if (bestCandidate == nes::kInvalidEntityID || score > bestScore)
+            {
+                bestScore = score;
+                bestCandidate = idComp.GetID();
+
+                // Clear the active flag, we will set a single camera flag to try when finishing.
+                cameraComp.m_isActive = false;
+            }
+        }
+
+        m_activeCameraID = bestCandidate; //!= nes::kInvalidEntityID? bestActive : bestInactive;
+        if (m_activeCameraID != nes::kInvalidEntityID)
+        {
+            // Set the camera flag to active.
+            auto entity = pRegistry->GetEntity(m_activeCameraID);
+            NES_ASSERT(entity != nes::kInvalidEntityHandle);
+            
+            auto& cameraComp = pRegistry->GetComponent<nes::CameraComponent>(entity);
+            cameraComp.m_isActive = true;
+        }
     }
 
     nes::AssetID PBRSceneRenderer::GetDefaultMeshID(const EDefaultMeshType type)

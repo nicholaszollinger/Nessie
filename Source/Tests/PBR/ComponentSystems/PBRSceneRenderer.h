@@ -35,7 +35,8 @@ namespace pbr
 
         // WorldRenderer API:
         virtual void                    RenderWorldWithCamera(const nes::WorldCamera& worldCamera, nes::CommandBuffer& commandBuffer, const nes::RenderFrameContext& context) override;
-        virtual nes::WorldCamera        GetActiveCamera() const override;
+        virtual nes::WorldCamera        GetActiveCamera() override;
+        virtual void                    SetActiveCameraEntity(const nes::EntityID& id) override;
         virtual nes::RenderTarget*      GetFinalColorTarget() override { return &m_colorTarget; }
         virtual nes::RenderTarget*      GetFinalDepthTarget() override { return nullptr; }
         virtual void                    OnViewportResize(const uint32 width, const uint32 height) override;
@@ -216,6 +217,7 @@ namespace pbr
         nes::RenderTarget               CreateColorRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::EFormat swapchainFormat, const nes::UInt2 swapchainExtent);
         nes::RenderTarget               LoadDepthRenderTarget(const nes::YamlNode& targetNode, const std::string& name, nes::RenderDevice& device, const nes::UInt2 swapchainExtent);
         void                            LoadGraphicsPipeline(const nes::YamlNode& pipelineNode, nes::RenderDevice& device, nes::PipelineLayout& outLayout, nes::Pipeline& outPipeline) const;
+        void                            TryFindCameraToActivate();
 
     private:
         // Default AssetIDs - Set during initialization.

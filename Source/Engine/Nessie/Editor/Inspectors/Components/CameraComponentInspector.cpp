@@ -1,10 +1,11 @@
 ﻿// CameraComponentInspector.cpp
 #include "CameraComponentInspector.h"
 #include "Nessie/Editor/PropertyTable.h"
+#include "Nessie/World/WorldBase.h"
 
 namespace nes
 {
-    void CameraComponentInspector::DrawImpl(CameraComponent* pTarget, const InspectorContext&)
+    void CameraComponentInspector::DrawImpl(CameraComponent* pTarget, const InspectorContext& context)
     {
         auto& camera = pTarget->m_camera;
 
@@ -57,5 +58,13 @@ namespace nes
              "\n- Slow Speed (1/30s, 1) = more light.");
 
         editor::Property("ISO", camera.m_iso, 1.f, 1.f, FLT_MAX, "%.0f", "Sensor sensitivity. Acts as a linear brightness multiplier.");
+
+        // Active State:
+        if (editor::Property("IsActive", pTarget->m_isActive, "Set whether this camera is the active camera in the scene. If this is the only camera in the scene, it will remain active."))
+        {
+            // [Hack]:
+            // Only one entity can be inspected at once right now, so I can just set it here: 
+            context.m_pWorld->GetRenderer()->SetActiveCameraEntity(context.m_selectionIDs[0]); 
+        }
     }
 }

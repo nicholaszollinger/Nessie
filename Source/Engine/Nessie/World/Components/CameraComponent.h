@@ -9,6 +9,7 @@ namespace nes
     struct CameraComponent
     {
         Camera          m_camera{};
+        bool            m_isActive = true;
 
         //----------------------------------------------------------------------------------------------------
         /// @brief : Calculates the projection matrix, which will be either Perspective or Orthographic depending

@@ -5,7 +5,7 @@ namespace nes
 {
     void WorldRenderer::RenderWorld(CommandBuffer& commandBuffer, const RenderFrameContext& context)
     {
-        WorldCamera camera = GetActiveCamera();
+        const WorldCamera camera = GetActiveCamera();
         RenderWorldWithCamera(camera, commandBuffer, context);
     }
 }
