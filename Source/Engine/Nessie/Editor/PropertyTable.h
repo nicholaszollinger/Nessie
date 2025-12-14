@@ -332,11 +332,13 @@ namespace nes::editor
     ///	@tparam Type : Type of Asset that ID is for.
     ///	@param label : Name of the property.
     ///	@param assetID : ID of the Asset that will be edited.
+    /// @param defaultCaseName : This is the name of the first option in the dropdown. Default is "None".
+    /// @param defaultAssetID : This is the value of the first option in the dropdown. Default is nes::kInvalidAssetID.
     ///	@param toolTip : Optional tooltip that will show up when hovering over the name of the property.
     ///	@returns : Returns true if the value has changed.
     //----------------------------------------------------------------------------------------------------
     template <ValidAssetType Type>
-    bool PropertyAssetID(const char* label, AssetID& assetID, const char* toolTip = "")
+    bool PropertyAssetID(const char* label, AssetID& assetID, const char* defaultCaseName = "None", const nes::AssetID defaultAssetID = kInvalidAssetID, const char* toolTip = "")
     {
         bool modified = false;
         internal::BeginProperty(label, toolTip);
@@ -352,10 +354,10 @@ namespace nes::editor
         {
             // [TODO]: Search bar using the ImGui Filter:
             
-            // Add "None" option to clear the asset
-            if (ImGui::Selectable("None", assetID == kInvalidAssetID))
+            // Add a default option.
+            if (ImGui::Selectable(defaultCaseName, assetID == defaultAssetID))
             {
-                assetID = kInvalidAssetID;
+                assetID = defaultAssetID;
                 modified = true;
             }
         
@@ -364,7 +366,7 @@ namespace nes::editor
             
             for (const auto& asset : assets)
             {
-                if (asset == nullptr)
+                if (asset == nullptr || asset.GetMetadata().m_assetID == defaultAssetID)
                     continue;
 
                 const AssetMetadata& metadata = asset.GetMetadata(); 
@@ -395,7 +397,7 @@ namespace nes::editor
     }
 
     template <ValidAssetType Type>
-    bool PropertyAssetIDArray(const char* label, std::vector<AssetID>& assetIDs, const char* toolTip = "")
+    bool PropertyAssetIDArray(const char* label, std::vector<AssetID>& assetIDs, const char* defaultCaseName = "None", const std::vector<AssetID>& defaultOptions = {}, const char* toolTip = "")
     {
         bool modified = false;
 
@@ -418,7 +420,9 @@ namespace nes::editor
             {
                 ImGui::PushID(static_cast<int>(i));
                 name = std::format("Index[{}]", i);
-                modified |= PropertyAssetID<Type>(name.c_str(), assetIDs[i]);
+
+                const AssetID defaultAssetID = i < defaultOptions.size() ? defaultOptions[i] : kInvalidAssetID;
+                modified |= PropertyAssetID<Type>(name.c_str(), assetIDs[i], defaultCaseName, defaultAssetID);
                 ImGui::PopID();
             }
             
