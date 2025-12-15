@@ -28,10 +28,11 @@ This Fall, the aim is finish rendering features and create the Editor UI!
 - PBR Pipeline ✅
 - Cascaded Shadow Mapping ✅
 - ECS refactor - wrapping Entt. ✅
-- Editor UI - using ImGui. ⌛
-- Demo Scene showing off the Render Features and Editor Interface! ⌛
+- Editor UI - using ImGui. ✅
+- Demo Scene showing off the Render Features and Editor Interface! ✅
 
-### Next Year (Unless I can get to these sooner):
+### Next Year:
+- Build System Update: Editor & Runtime Applications; Game Code becomes a DLL.
 - More Advanced Rendering Features:
     - Spotlights, Area Lights
     - Instanced Rendering
@@ -40,8 +41,7 @@ This Fall, the aim is finish rendering features and create the Editor UI!
     - Global Illumination
     - Height Map Terrain
 - Full Jolt Physics Integration
-- Exporting a final executable.
 - Proper Serialization - utilizing a binary format.
 - UI System.
 - Audio System.
-- Scripting, in Python or Lua (lower priority, as I will be the solo dev for this engine).
+- Scripting, in Python or Lua.
